@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 140 45% 98%;
+    --foreground: 155 28% 12%;
+    --card: 140 40% 100%;
+    --card-foreground: 155 28% 12%;
+    --border: 150 25% 82%;
+    --border-strong: 150 32% 65%;
+    --input: 150 24% 90%;
+    --primary: 150 50% 38%;
+    --primary-foreground: 150 80% 95%;
+    --secondary: 150 25% 90%;
+    --secondary-foreground: 150 25% 18%;
+    --muted: 150 20% 90%;
+    --muted-foreground: 150 15% 35%;
+    --accent: 152 45% 92%;
+    --accent-foreground: 150 35% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --ring: 150 45% 38%;
+    --radius: 12px;
+  }
+
+  .dark {
+    --background: 155 22% 8%;
+    --foreground: 150 20% 96%;
+    --card: 155 18% 10%;
+    --card-foreground: 150 20% 96%;
+    --border: 160 16% 20%;
+    --border-strong: 156 20% 32%;
+    --input: 158 16% 18%;
+    --primary: 150 55% 50%;
+    --primary-foreground: 155 15% 8%;
+    --secondary: 160 12% 16%;
+    --secondary-foreground: 150 20% 90%;
+    --muted: 160 16% 18%;
+    --muted-foreground: 152 12% 70%;
+    --accent: 152 28% 20%;
+    --accent-foreground: 150 20% 90%;
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --ring: 150 55% 48%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased min-h-screen;
+    font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
