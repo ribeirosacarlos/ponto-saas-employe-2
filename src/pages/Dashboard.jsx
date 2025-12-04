@@ -94,20 +94,30 @@ export default function Dashboard() {
     setClocking(actionType)
     try {
       const data = await clockRequest(actionType)
+      const savedAt = data.clocked_at || data.created_at
+      const formattedTime = savedAt ? format(new Date(savedAt), 'HH:mm') : 'agora'
       toast({
         title: 'Batida registrada',
-        description: `Horario salvo como ${data.clocked_at || 'agora'}.`,
+        description: `Horario salvo como ${formattedTime}.`,
         variant: 'success',
       })
       fetchEntries()
     } catch (error) {
-      toast({
-        title: 'Erro ao registrar',
-        description:
-          error.response?.data?.message ||
-          'Nao foi possivel registrar o ponto. Verifique permissoes ou tente novamente.',
-        variant: 'error',
-      })
+      if (error.response?.status === 422 && error.response?.data?.message) {
+        toast({
+          title: 'Aguarde um momento',
+          description: error.response.data.message,
+          variant: 'error',
+        })
+      } else {
+        toast({
+          title: 'Erro ao registrar',
+          description:
+            error.response?.data?.message ||
+            'Nao foi possivel registrar o ponto. Verifique permissoes ou tente novamente.',
+          variant: 'error',
+        })
+      }
     } finally {
       setClocking('')
     }
