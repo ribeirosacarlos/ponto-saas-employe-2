@@ -46,9 +46,12 @@ export default {
         },
       },
       borderRadius: {
-        lg: '12px',
-        md: '10px',
-        sm: '8px',
+        '3xl': '18px',
+        '2xl': '14px',
+        xl: '12px',
+        lg: '10px',
+        md: '8px',
+        sm: '6px',
       },
       keyframes: {
         'accordion-down': {

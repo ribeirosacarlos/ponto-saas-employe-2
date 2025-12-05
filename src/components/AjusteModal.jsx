@@ -13,6 +13,7 @@ import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 
 export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
   const [open, setOpen] = useState(false)
@@ -21,6 +22,7 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
     corrected_time: '',
     reason: '',
   })
+  const { t } = useTranslation()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -43,14 +45,12 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Solicitar ajuste</DialogTitle>
-          <DialogDescription>
-            Preencha os horários e descreva o motivo da solicitação de ajuste.
-          </DialogDescription>
+          <DialogTitle>{t('adjustment.dialogTitle')}</DialogTitle>
+          <DialogDescription>{t('adjustment.dialogDescription')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="original_time">Horário original</Label>
+            <Label htmlFor="original_time">{t('adjustment.original')}</Label>
             <Input
               id="original_time"
               name="original_time"
@@ -61,7 +61,7 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="corrected_time">Horário correto</Label>
+            <Label htmlFor="corrected_time">{t('adjustment.corrected')}</Label>
             <Input
               id="corrected_time"
               name="corrected_time"
@@ -72,11 +72,11 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="reason">Justificativa</Label>
+            <Label htmlFor="reason">{t('adjustment.reason')}</Label>
             <Textarea
               id="reason"
               name="reason"
-              placeholder="Descreva o que ocorreu..."
+              placeholder={t('adjustment.placeholder')}
               value={form.reason}
               onChange={handleChange}
               required
@@ -85,11 +85,11 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting }) {
           <div className="flex items-center justify-end gap-3 pt-2">
             <DialogClose asChild>
               <Button variant="ghost" type="button">
-                Cancelar
+                {t('adjustment.cancel')}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting} className="min-w-[140px]">
-              {isSubmitting ? 'Enviando...' : 'Enviar ajuste'}
+              {isSubmitting ? t('adjustment.submitting') : t('adjustment.submit')}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import { cn } from '../../lib/utils'
 import { useToast } from './use-toast.jsx'
+import { useTranslation } from 'react-i18next'
 
 const variantClasses = {
   default: 'border border-border bg-card text-foreground',
@@ -9,6 +10,7 @@ const variantClasses = {
 
 export function Toaster() {
   const { toasts, dismiss } = useToast()
+  const { t } = useTranslation()
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-3">
@@ -30,7 +32,7 @@ export function Toaster() {
             onClick={() => dismiss(toast.id)}
             className="ml-auto text-xs font-semibold text-primary hover:underline"
           >
-            Fechar
+            {t('common.actions.close')}
           </button>
         </div>
       ))}

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api, loginRequest, logoutRequest } from '../lib/api'
+import i18n from '../i18n/index.js'
 
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
@@ -30,7 +31,7 @@ export const useAuthStore = create((set, get) => ({
       const data = await loginRequest(email, password)
       const { token, user, roles = [] } = data
       if (!token) {
-        throw new Error('Token não retornado pela API')
+        throw new Error(i18n.t('auth.errors.tokenMissing'))
       }
 
       api.defaults.headers.common.Authorization = `Bearer ${token}`
@@ -41,9 +42,7 @@ export const useAuthStore = create((set, get) => ({
       return data
     } catch (error) {
       const message =
-        error.message ||
-        error.response?.data?.message ||
-        'Não foi possível fazer login. Verifique as credenciais.'
+        error.message || error.response?.data?.message || i18n.t('auth.errors.loginFailed')
       set({ error: message })
       throw new Error(message)
     } finally {

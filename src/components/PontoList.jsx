@@ -1,19 +1,21 @@
 import { CalendarClock, MapPin, Radio } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-
-const typeLabels = {
-  in: 'Entrada',
-  out: 'Saída',
-}
+import { useTranslation } from 'react-i18next'
 
 export function PontoList({ entries = [], loading }) {
+  const { t } = useTranslation()
+  const typeLabels = {
+    in: t('types.in'),
+    out: t('types.out'),
+  }
+
   return (
     <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Suas batidas</CardTitle>
+        <CardTitle>{t('pontoList.title')}</CardTitle>
         <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-primary">
-          <Radio className="h-4 w-4" /> Em tempo real
+          <Radio className="h-4 w-4" /> {t('pontoList.realtime')}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -28,9 +30,7 @@ export function PontoList({ entries = [], loading }) {
           </div>
         )}
         {!loading && entries.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Nenhuma batida registrada ainda. Comece registrando sua jornada.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('pontoList.empty')}</p>
         )}
         {!loading &&
           entries.map((entry) => (
@@ -45,7 +45,7 @@ export function PontoList({ entries = [], loading }) {
                   <span>
                     {entry.clocked_at
                       ? format(new Date(entry.clocked_at), 'dd/MM/yyyy HH:mm')
-                      : 'Data não informada'}
+                      : t('pontoList.dateMissing')}
                   </span>
                 </div>
                 {(entry.latitude || entry.longitude) && (
@@ -58,7 +58,7 @@ export function PontoList({ entries = [], loading }) {
                 )}
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                {entry.source || 'web'}
+                {entry.source || t('common.sourceFallback')}
               </span>
             </div>
           ))}
