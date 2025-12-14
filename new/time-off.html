@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Férias – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- 1. HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+
+      <!-- Esquerda: voltar + textos -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200"
+          title="Voltar">
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Férias
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Gerencie suas solicitações e saldos
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro (vazio por enquanto / poderia ter busca futura) -->
+      <div class="flex-1 order-3 md:order-2"></div>
+
+      <!-- Direita: Nova Solicitação + avatar -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <button
+          id="open-request"
+          class="hidden sm:inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+          <span class="text-sm">􀉬</span>
+          <span>Nova Solicitação</span>
+        </button>
+
+        <!-- versão mobile (ícone apenas) -->
+        <button
+          id="open-request-mobile"
+          class="sm:hidden h-9 w-9 rounded-full bg-[#1e2a78] flex items-center justify-center text-white shadow-md active:scale-[0.98] transition"
+          title="Nova Solicitação">
+          􀉬
+        </button>
+
+        <!-- Avatar -->
+        <div
+          class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+          <div
+            class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+            JJ
+          </div>
+          <div class="hidden sm:flex flex-col leading-tight">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-800">
+              Jasmine Jones
+            </span>
+            <span class="text-[10px] text-slate-500">
+              HR Manager
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+      <!-- GRID PRINCIPAL: Saldo + Solicitação atual -->
+      <div class="grid gap-5 lg:gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.1fr)]">
+
+        <!-- 2. CARD DE SALDO DE FÉRIAS -->
+        <section
+          class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Time Off
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Saldo de Férias
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Acompanhe seus dias disponíveis, usados e pendentes.
+              </p>
+            </div>
+            <!-- Tag de status de solicitação ativa -->
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+              Solicitação em análise
+            </span>
+          </header>
+
+          <div class="flex items-center gap-4 sm:gap-5">
+            <!-- Indicador semicircular -->
+            <div class="relative h-24 w-24 sm:h-28 sm:w-28 flex items-center justify-center shrink-0">
+              <div class="absolute inset-0 rounded-full border-[10px] sm:border-[11px] border-slate-100"></div>
+              <!-- arco preenchido -->
+              <div
+                class="absolute inset-0 rounded-full border-[10px] sm:border-[11px] border-[#1e2a78] border-b-transparent border-l-transparent border-r-transparent rotate-[130deg]">
+              </div>
+              <div
+                class="relative h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
+                <span class="text-[9px] sm:text-[10px] uppercase tracking-wide text-slate-400">
+                  Restantes
+                </span>
+                <span class="text-[13px] sm:text-sm font-semibold text-slate-900">
+                  16 dias
+                </span>
+              </div>
+            </div>
+
+            <!-- Legenda -->
+            <div class="flex-1 space-y-2 text-[11px] sm:text-[12px]">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#1e2a78]"></span>
+                  <span class="text-slate-500">Dias disponíveis</span>
+                </div>
+                <span class="font-semibold text-slate-900">
+                  16
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                  <span class="text-slate-500">Dias usados</span>
+                </div>
+                <span class="font-semibold text-slate-900">
+                  10
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                  <span class="text-slate-500">Dias pendentes</span>
+                </div>
+                <span class="font-semibold text-slate-900">
+                  4
+                </span>
+              </div>
+
+              <p class="text-[10px] text-slate-400">
+                Período aquisitivo: jan 2023 – dez 2023.
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-1 flex flex-wrap items-center justify-between gap-2">
+            <button
+              class="inline-flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+              Ver Detalhes do Saldo
+            </button>
+            <button
+              class="inline-flex items-center justify-center h-9 px-3 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-[11px] text-slate-700 font-medium transition"
+              id="open-request-secondary">
+              Solicitar Férias
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. CARD — SOLICITAÇÃO ATUAL -->
+        <section
+          class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Solicitação atual
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Próximas férias
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Acompanhe o status da sua solicitação mais recente.
+              </p>
+            </div>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+              Pendente
+            </span>
+          </header>
+
+          <div class="space-y-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Período solicitado</span>
+              <span class="font-semibold text-slate-900">
+                10 Nov → 24 Nov
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Total de dias</span>
+              <span class="font-semibold text-slate-900">
+                11 dias úteis
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Tipo de férias</span>
+              <span class="font-semibold text-slate-900">
+                Anual · 1ª parcela
+              </span>
+            </div>
+          </div>
+
+          <!-- Gestor responsável -->
+          <div class="mt-2 flex items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-center gap-2">
+              <div
+                class="h-8 w-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[11px] font-semibold text-slate-700">
+                MG
+              </div>
+              <div class="flex flex-col leading-tight">
+                <span class="font-medium text-slate-800">Marcos Gonçalves</span>
+                <span class="text-[10px] text-slate-500">Gestor direto</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              Aguardando aprovação
+            </span>
+          </div>
+
+          <!-- Botões -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-2 text-[11px] sm:text-[12px]">
+            <button
+              class="h-9 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+              Editar Solicitação
+            </button>
+            <button
+              class="h-9 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold transition">
+              Cancelar Solicitação
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- 5. HISTÓRICO DE FÉRIAS -->
+      <section class="space-y-3 sm:space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+              Histórico
+            </p>
+            <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+              Solicitações anteriores
+            </h2>
+          </div>
+          <span class="text-[10px] sm:text-[11px] text-slate-400">
+            Últimos 12 meses
+          </span>
+        </div>
+
+        <!-- Card de histórico (exemplo aprovado) -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-timeoff-detail>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    12 Mar – 27 Mar · Férias anuais
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    Período integral aprovado para descanso anual. Retorno previsto para 28 Mar.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Aprovado
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    15 dias úteis
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>15 dias úteis</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                  Aprovado
+                </span>
+              </div>
+              <p class="mt-1 text-[10px] text-slate-400">
+                Comentário RH: saldo ajustado conforme acordo coletivo.
+              </p>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card de histórico (exemplo rejeitado) -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-timeoff-detail>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    05 Set – 09 Set · Ajuste pontual
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    Solicitação para ajuste de dias isolados no período de setembro.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                    Rejeitado
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    3 dias
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>3 dias</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                  Rejeitado
+                </span>
+              </div>
+              <p class="mt-1 text-[10px] text-slate-400">
+                Comentário RH: conflito com férias de outro membro da equipe.
+              </p>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card de histórico (exemplo afastamento) -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-timeoff-detail>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    02 Jun – 10 Jun · Afastamento médico
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    Afastamento aprovado mediante apresentação de atestado médico, com ajuste automático de saldo.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                    Aprovado
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    7 dias
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>7 dias</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                  Aprovado
+                </span>
+              </div>
+              <p class="mt-1 text-[10px] text-slate-400">
+                Comentário RH: atestado arquivado no prontuário eletrônico.
+              </p>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 7. EMPTY STATE (caso não haja solicitações) -->
+      <section id="empty-state" class="hidden">
+        <div
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-6 py-8 sm:px-8 sm:py-10 flex flex-col items-center text-center gap-3">
+          <div
+            class="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 text-xl">
+            􀣺
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm sm:text-[15px] font-semibold text-slate-900">
+              Nenhuma solicitação de férias encontrada.
+            </p>
+            <p class="text-[11px] sm:text-[12px] text-slate-500 max-w-sm mx-auto">
+              Quando você enviar uma solicitação de férias, ela aparecerá aqui para acompanhamento do status.
+            </p>
+          </div>
+          <button
+            class="mt-2 inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition"
+            id="empty-open-request">
+            Solicitar Férias
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 8. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>As solicitações de férias dependem da aprovação do RH.</span>
+      <span>Synergy HR · Férias</span>
+    </footer>
+  </div>
+
+  <!-- 4. MODAL – SOLICITAR FÉRIAS -->
+  <div
+    id="request-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-lg w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Nova solicitação
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Solicitar Férias
+          </h2>
+        </div>
+        <button
+          id="close-request"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <form class="space-y-3 sm:space-y-4 text-[11px] sm:text-[12px]">
+
+        <!-- Datas -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Período solicitado</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div
+              class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+              <span class="text-slate-400 text-xs">􀉉</span>
+              <div class="flex flex-col w-full">
+                <span class="text-[10px] text-slate-500 mb-0.5">Data de início</span>
+                <input
+                  type="date"
+                  class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+              <span class="text-slate-400 text-xs">􀉉</span>
+              <div class="flex flex-col w-full">
+                <span class="text-[10px] text-slate-500 mb-0.5">Data de término</span>
+                <input
+                  type="date"
+                  class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tipo de férias -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Tipo de férias</p>
+          <div
+            class="flex items-center justify-between gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <div class="flex flex-col">
+              <span class="text-[11px] text-slate-700">
+                Anual
+              </span>
+              <span class="text-[10px] text-slate-500">
+                Escolha entre anual, afastamento ou ajuste.
+              </span>
+            </div>
+            <span class="text-slate-400 text-xs">􀆈</span>
+          </div>
+        </div>
+
+        <!-- Justificativa -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Justificativa (opcional)</p>
+          <div
+            class="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <textarea
+              rows="3"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px] resize-none"
+              placeholder="Descreva brevemente o motivo ou contexto da solicitação, se necessário."></textarea>
+          </div>
+        </div>
+
+        <!-- Total de dias -->
+        <div class="flex items-center justify-between pt-1">
+          <span class="text-slate-500">
+            Total de dias estimado
+          </span>
+          <span class="font-semibold text-slate-900">
+            11 dias úteis
+          </span>
+        </div>
+
+        <!-- Botões -->
+        <div class="pt-1 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+            Enviar Solicitação
+          </button>
+          <button
+            type="reset"
+            class="inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-[11px] sm:text-xs text-slate-700 font-medium transition">
+            Limpar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. MODAL – DETALHAMENTO DA SOLICITAÇÃO -->
+  <div
+    id="timeoff-detail-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-lg w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Detalhes da solicitação
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            12 Mar – 27 Mar · Férias anuais
+          </h2>
+        </div>
+        <button
+          id="close-timeoff-detail"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <!-- Status + info -->
+      <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+            Aprovado
+          </span>
+          <span class="text-slate-500">
+            15 dias úteis · Tipo: Anual
+          </span>
+        </div>
+        <span class="text-[10px] text-slate-400">
+          Aprovado em 01 Mar 2023 · RH
+        </span>
+      </div>
+
+      <hr class="border-slate-100" />
+
+      <!-- Datas e resumo -->
+      <div class="grid grid-cols-2 gap-3 text-[11px] sm:text-[12px]">
+        <div class="space-y-1">
+          <p class="text-slate-500">Data de início</p>
+          <p class="font-semibold text-slate-900">12 Mar 2023</p>
+        </div>
+        <div class="space-y-1">
+          <p class="text-slate-500">Data de término</p>
+          <p class="font-semibold text-slate-900">27 Mar 2023</p>
+        </div>
+        <div class="space-y-1">
+          <p class="text-slate-500">Dias totais</p>
+          <p class="font-semibold text-slate-900">15 dias úteis</p>
+        </div>
+        <div class="space-y-1">
+          <p class="text-slate-500">Tipo de férias</p>
+          <p class="font-semibold text-slate-900">Anual · período integral</p>
+        </div>
+      </div>
+
+      <!-- Observações RH -->
+      <div class="space-y-1 pt-1">
+        <p class="text-[11px] sm:text-[12px] font-medium text-slate-700">
+          Observações do RH
+        </p>
+        <div
+          class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] sm:text-[12px] text-slate-600">
+          Solicitação alinhada com calendário da equipe. Saldo suficiente para o período solicitado.
+          Registro de aprovação efetuado no sistema de folha de pagamento.
+        </div>
+      </div>
+
+      <!-- Linha do tempo -->
+      <div class="space-y-2 pt-1 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">
+          Linha do tempo da solicitação
+        </p>
+        <div class="space-y-3">
+          <div class="flex gap-3">
+            <div class="flex flex-col items-center pt-0.5">
+              <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+              <span class="flex-1 w-px bg-slate-200 mt-1"></span>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-slate-800">Solicitado</p>
+              <p class="text-slate-500">Enviado pelo colaborador em 20 Fev 2023 · 09:14</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="flex flex-col items-center pt-0.5">
+              <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+              <span class="flex-1 w-px bg-slate-200 mt-1"></span>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-slate-800">Analisando</p>
+              <p class="text-slate-500">Sob análise do gestor direto e RH entre 21 Fev e 28 Fev.</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="flex flex-col items-center pt-0.5">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-slate-800">Aprovado</p>
+              <p class="text-slate-500">Decisão final registrada em 01 Mar 2023 · 15:02.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-2 text-[11px] sm:text-[12px]">
+        <button
+          class="h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center justify-center gap-1">
+          <span>Exportar Solicitação</span>
+          <span class="text-xs text-slate-400">􀈂</span>
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+          Imprimir
+        </button>
+        <button
+          class="h-9 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT: modais -->
+  <script>
+    // Helpers para abrir/fechar modal genérico
+    function openModal(el) {
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+    function closeModal(el) {
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    // Modal Solicitar Férias
+    const requestModal = document.getElementById('request-modal');
+    const openRequestBtns = [
+      document.getElementById('open-request'),
+      document.getElementById('open-request-mobile'),
+      document.getElementById('open-request-secondary'),
+      document.getElementById('empty-open-request')
+    ].filter(Boolean);
+    const closeRequest = document.getElementById('close-request');
+
+    openRequestBtns.forEach(btn => {
+      btn.addEventListener('click', () => openModal(requestModal));
+    });
+
+    if (closeRequest) {
+      closeRequest.addEventListener('click', () => closeModal(requestModal));
+    }
+
+    requestModal.addEventListener('click', (e) => {
+      if (e.target === requestModal) closeModal(requestModal);
+    });
+
+    // Modal Detalhe de Férias
+    const timeoffDetailModal = document.getElementById('timeoff-detail-modal');
+    const openTimeoffDetailBtns = document.querySelectorAll('[data-open-timeoff-detail]');
+    const closeTimeoffDetail = document.getElementById('close-timeoff-detail');
+
+    openTimeoffDetailBtns.forEach(btn => {
+      btn.addEventListener('click', () => openModal(timeoffDetailModal));
+    });
+
+    if (closeTimeoffDetail) {
+      closeTimeoffDetail.addEventListener('click', () => closeModal(timeoffDetailModal));
+    }
+
+    timeoffDetailModal.addEventListener('click', (e) => {
+      if (e.target === timeoffDetailModal) closeModal(timeoffDetailModal);
+    });
+
+    // Empty state exemplo (se quiser ativar manualmente depois):
+    // document.getElementById('empty-state').classList.remove('hidden');
+    // // e ocultar histórico:
+    // // (poderia envolver os cards de histórico em um container com id para esconder)
+  </script>
+
+</body>
+</html>

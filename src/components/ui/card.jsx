@@ -4,7 +4,7 @@ export function Card({ className, children, ...props }) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-border/70 bg-card/80 shadow-[0_20px_60px_-35px_rgba(16,185,129,0.45)] backdrop-blur',
+        'rounded-[22px] border border-border/70 bg-card/75 shadow-[0_30px_90px_-45px_rgba(92,134,255,0.4)] backdrop-blur-xl',
         className,
       )}
       {...props}
@@ -15,7 +15,7 @@ export function Card({ className, children, ...props }) {
 }
 
 export function CardHeader({ className, ...props }) {
-  return <div className={cn('p-5 pb-3', className)} {...props} />
+  return <div className={cn('px-6 pt-5 pb-3', className)} {...props} />
 }
 
 export function CardTitle({ className, ...props }) {
@@ -23,5 +23,5 @@ export function CardTitle({ className, ...props }) {
 }
 
 export function CardContent({ className, ...props }) {
-  return <div className={cn('p-5 pt-2', className)} {...props} />
+  return <div className={cn('px-6 pb-6 pt-2', className)} {...props} />
 }

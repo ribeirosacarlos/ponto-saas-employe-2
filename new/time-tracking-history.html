@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Histórico de Ponto – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+
+      <!-- Esquerda: voltar + textos -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200">
+          <!-- chevron.left -->
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Histórico de Ponto
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Veja todos os registros do mês
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro: busca -->
+      <div class="flex-1 min-w-[230px] max-w-xl order-3 md:order-2 w-full">
+        <div
+          class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 text-[12px] sm:text-[13px]">
+          <span class="text-slate-400">􀊫</span>
+          <input
+            type="text"
+            placeholder="Buscar por data, observação ou status"
+            class="w-full bg-transparent outline-none text-slate-700 placeholder:text-slate-400" />
+          <button
+            class="hidden sm:inline-flex items-center px-2 py-1 rounded-full bg-slate-100 text-[11px] text-slate-500">
+            ⌘F
+          </button>
+        </div>
+      </div>
+
+      <!-- Direita: filtros + avatar -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <button
+          id="open-filters"
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200"
+          title="Filtros">
+          <!-- slider.horizontal.3 -->
+          􀊚
+        </button>
+
+        <div
+          class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+          <div
+            class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+            JJ
+          </div>
+          <div class="hidden sm:flex flex-col leading-tight">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-800">
+              Jasmine Jones
+            </span>
+            <span class="text-[10px] text-slate-500">
+              HR Manager
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+      <!-- 2. CARD DE RESUMO DO MÊS -->
+      <section
+        class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+              Resumo
+            </p>
+            <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+              Novembro 2023 · Visão geral
+            </h2>
+          </div>
+          <button
+            class="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+            <span>Exportar Mês</span>
+            <span class="text-xs">􀈂</span>
+          </button>
+        </div>
+
+        <!-- Métricas -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px] sm:text-[12px] text-slate-600">
+          <div class="space-y-1">
+            <p>Total de horas no mês</p>
+            <p class="font-semibold text-slate-900">152h 20min</p>
+          </div>
+          <div class="space-y-1">
+            <p>Total de horas extras</p>
+            <p class="font-semibold text-slate-900">10h 45min</p>
+          </div>
+          <div class="space-y-1">
+            <p>Média diária</p>
+            <p class="font-semibold text-slate-900">7h 35min</p>
+          </div>
+          <div class="space-y-1">
+            <p>Dias sem registro</p>
+            <p class="font-semibold text-rose-600">2 dias</p>
+          </div>
+        </div>
+
+        <!-- Mini gráficos (progress bars) -->
+        <div class="space-y-2 mt-1 text-[10px] sm:text-[11px]">
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Cumprimento da carga horária</span>
+              <span class="font-semibold text-slate-800">94%</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 rounded-full bg-emerald-400" style="width: 94%;"></div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Horas extras vs. total</span>
+              <span class="font-semibold text-slate-800">7%</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 rounded-full bg-blue-400" style="width: 30%;"></div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Ausências</span>
+              <span class="font-semibold text-slate-800">2 dias</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 rounded-full bg-rose-400" style="width: 25%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SELETOR DE MESES -->
+      <section
+        class="bg-white rounded-[20px] border border-slate-200 shadow-[0_10px_25px_rgba(15,23,42,0.05)] px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+        <button class="inline-flex items-center gap-1 px-2 py-1 rounded-full hover:bg-slate-50 text-slate-600">
+          <span class="text-xs">‹</span>
+          <span>Outubro 2023</span>
+        </button>
+        <span class="font-semibold text-slate-900">
+          Novembro 2023
+        </span>
+        <button class="inline-flex items-center gap-1 px-2 py-1 rounded-full hover:bg-slate-50 text-slate-600">
+          <span>Dezembro 2023</span>
+          <span class="text-xs">›</span>
+        </button>
+      </section>
+
+      <!-- 4. LISTA DE DIAS -->
+      <section class="space-y-3 sm:space-y-4">
+        <!-- Card por dia -->
+        <!-- Exemplo 1 - Normal -->
+        <article
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_12px_30px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 flex flex-col gap-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-0.5">
+              <p class="text-sm font-semibold text-slate-900">
+                15 Nov, Qua
+              </p>
+              <p class="text-[11px] text-slate-500">
+                Dia útil · Expediente completo
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                Normal
+              </span>
+            </div>
+          </div>
+
+          <!-- Horários -->
+          <div class="mt-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px] sm:text-[12px]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐫</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Entrada</span>
+                <span class="font-semibold text-slate-900">08:59</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐬</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Saída</span>
+                <span class="font-semibold text-slate-900">17:43</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐱</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Intervalo</span>
+                <span class="font-semibold text-slate-900">1h 00min</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐯</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Total</span>
+                <span class="font-semibold text-slate-900">7h 44min</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Observações + botão -->
+          <div
+            class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-start gap-1.5 max-w-lg">
+              <span class="text-slate-400 text-xs mt-0.5">􀈷</span>
+              <p class="text-slate-600">
+                Entrega de sprint da equipe de produto, jornada concluída dentro da carga horária normal.
+              </p>
+            </div>
+            <button
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+              data-open-day-details>
+              <span>Ver Detalhes</span>
+              <span class="text-xs">›</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Exemplo 2 - Extra -->
+        <article
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_12px_30px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 flex flex-col gap-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-0.5">
+              <p class="text-sm font-semibold text-slate-900">
+                14 Nov, Ter
+              </p>
+              <p class="text-[11px] text-slate-500">
+                Jornada com horas extras
+              </p>
+            </div>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+              Extra
+            </span>
+          </div>
+
+          <div class="mt-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px] sm:text-[12px]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐫</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Entrada</span>
+                <span class="font-semibold text-slate-900">08:12</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐬</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Saída</span>
+                <span class="font-semibold text-slate-900">19:05</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐱</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Intervalo</span>
+                <span class="font-semibold text-slate-900">1h 10min</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐯</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Total</span>
+                <span class="font-semibold text-slate-900">9h 43min</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-start gap-1.5 max-w-lg">
+              <span class="text-slate-400 text-xs mt-0.5">􀈷</span>
+              <p class="text-slate-600">
+                Extensão de jornada para alinhamento com diretoria sobre roadmap do próximo trimestre.
+              </p>
+            </div>
+            <button
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+              data-open-day-details>
+              <span>Ver Detalhes</span>
+              <span class="text-xs">›</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Exemplo 3 - Atraso -->
+        <article
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_12px_30px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 flex flex-col gap-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-0.5">
+              <p class="text-sm font-semibold text-slate-900">
+                13 Nov, Seg
+              </p>
+              <p class="text-[11px] text-slate-500">
+                Entrada tardia registrada
+              </p>
+            </div>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+              Atraso
+            </span>
+          </div>
+
+          <div class="mt-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px] sm:text-[12px]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐫</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Entrada</span>
+                <span class="font-semibold text-slate-900">09:42</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐬</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Saída</span>
+                <span class="font-semibold text-slate-900">17:02</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐱</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Intervalo</span>
+                <span class="font-semibold text-slate-900">50min</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 text-xs">􀐯</span>
+              <div class="flex flex-col">
+                <span class="text-slate-500">Total</span>
+                <span class="font-semibold text-slate-900">6h 30min</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-start gap-1.5 max-w-lg">
+              <span class="text-slate-400 text-xs mt-0.5">􀈷</span>
+              <p class="text-slate-600">
+                Colaborador informou atraso devido a trânsito intenso após acidente na via principal.
+              </p>
+            </div>
+            <button
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+              data-open-day-details>
+              <span>Ver Detalhes</span>
+              <span class="text-xs">›</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Exemplo 4 - Ausência -->
+        <article
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_12px_30px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 flex flex-col gap-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-0.5">
+              <p class="text-sm font-semibold text-slate-900">
+                10 Nov, Sex
+              </p>
+              <p class="text-[11px] text-slate-500">
+                Ausência registrada pelo RH
+              </p>
+            </div>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+              Ausência
+            </span>
+          </div>
+
+          <div class="mt-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px] sm:text-[12px]">
+            <div class="flex items-center gap-1.5 opacity-50">
+              <span class="text-slate-300 text-xs">􀐫</span>
+              <div class="flex flex-col">
+                <span class="text-slate-400">Entrada</span>
+                <span class="font-semibold text-slate-400">—</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 opacity-50">
+              <span class="text-slate-300 text-xs">􀐬</span>
+              <div class="flex flex-col">
+                <span class="text-slate-400">Saída</span>
+                <span class="font-semibold text-slate-400">—</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 opacity-50">
+              <span class="text-slate-300 text-xs">􀐱</span>
+              <div class="flex flex-col">
+                <span class="text-slate-400">Intervalo</span>
+                <span class="font-semibold text-slate-400">—</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 opacity-50">
+              <span class="text-slate-300 text-xs">􀐯</span>
+              <div class="flex flex-col">
+                <span class="text-slate-400">Total</span>
+                <span class="font-semibold text-slate-400">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+            <div class="flex items-start gap-1.5 max-w-lg">
+              <span class="text-slate-400 text-xs mt-0.5">􀈷</span>
+              <p class="text-slate-600">
+                Ausência justificada por atestado médico. Documento validado pela equipe de RH.
+              </p>
+            </div>
+            <button
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+              data-open-day-details>
+              <span>Ver Detalhes</span>
+              <span class="text-xs">›</span>
+            </button>
+          </div>
+        </article>
+
+      </section>
+
+    </main>
+
+    <!-- 7. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>Dados sincronizados com o sistema de ponto da empresa.</span>
+      <span>Synergy HR · Histórico de Ponto</span>
+    </footer>
+  </div>
+
+  <!-- 5. MODAL DETALHES DO DIA -->
+  <div
+    id="day-details-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-lg w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Detalhes do dia
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            15 de Novembro, 2023
+          </h2>
+        </div>
+        <button
+          id="close-day-details"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <!-- Timeline -->
+      <div class="space-y-3 text-[11px] sm:text-[12px]">
+        <div class="flex gap-3">
+          <div class="flex flex-col items-center pt-0.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="flex-1 w-px bg-slate-200 mt-1"></span>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-slate-800">Entrada</p>
+            <p class="text-slate-500">08:59 · Recepção · App de ponto</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col items-center pt-0.5">
+            <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+            <span class="flex-1 w-px bg-slate-200 mt-1"></span>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-slate-800">Início de intervalo</p>
+            <p class="text-slate-500">13:03 · 1h programada</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col items-center pt-0.5">
+            <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+            <span class="flex-1 w-px bg-slate-200 mt-1"></span>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-slate-800">Retorno do intervalo</p>
+            <p class="text-slate-500">14:05 · 2 minutos além do previsto</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col items-center pt-0.5">
+            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-slate-800">Saída</p>
+            <p class="text-slate-500">17:43 · Final do expediente</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini gráfico de barras -->
+      <div class="space-y-2 mt-2">
+        <p class="text-[11px] sm:text-[12px] font-medium text-slate-700">
+          Distribuição das horas
+        </p>
+        <div class="space-y-1 text-[10px] sm:text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Manhã (08:59–13:03)</span>
+            <span class="font-semibold text-slate-800">4h 04min</span>
+          </div>
+          <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-2 rounded-full bg-emerald-400" style="width: 55%;"></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Tarde (14:05–17:43)</span>
+            <span class="font-semibold text-slate-800">3h 38min</span>
+          </div>
+          <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-2 rounded-full bg-emerald-300" style="width: 45%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações completas -->
+      <div class="space-y-1">
+        <p class="text-[11px] sm:text-[12px] font-medium text-slate-700">
+          Observações do dia
+        </p>
+        <div
+          class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] sm:text-[12px] text-slate-600">
+          Dia de entrega de sprint da squad de produto. Houve necessidade de pequenos ajustes após homologação,
+          concluídos dentro do horário previsto. Nenhuma ocorrência negativa registrada.
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-[11px] sm:text-[12px] pt-1">
+        <button
+          class="h-9 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Editar Registro
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+          Adicionar Nota
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center justify-center gap-1">
+          <span>Exportar Dia</span>
+          <span class="text-xs text-slate-400">􀈂</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL FILTROS AVANÇADOS -->
+  <div
+    id="filters-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-md w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Filtros avançados
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Refinar histórico
+          </h2>
+        </div>
+        <button
+          id="close-filters"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Status</p>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Normal
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Extra
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Atraso
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Ausência
+          </button>
+        </div>
+      </div>
+
+      <!-- Intervalo de datas -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Intervalo de datas</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">􀉉</span>
+            <input
+              type="date"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">􀉉</span>
+            <input
+              type="date"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro por horas -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Quantidade de horas</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">≥</span>
+            <input
+              type="number"
+              min="0"
+              max="24"
+              placeholder="min. horas"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">≤</span>
+            <input
+              type="number"
+              min="0"
+              max="24"
+              placeholder="máx. horas"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="pt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+        <button
+          class="inline-flex items-center justify-center h-9 px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Aplicar
+        </button>
+        <button
+          class="inline-flex items-center justify-center h-9 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium transition">
+          Limpar Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT MODAIS -->
+  <script>
+    // Modal Detalhes do Dia
+    const dayDetailsModal = document.getElementById('day-details-modal');
+    const openDayDetailsButtons = document.querySelectorAll('[data-open-day-details]');
+    const closeDayDetails = document.getElementById('close-day-details');
+
+    openDayDetailsButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        dayDetailsModal.classList.remove('hidden');
+        dayDetailsModal.classList.add('flex');
+      });
+    });
+
+    closeDayDetails.addEventListener('click', () => {
+      dayDetailsModal.classList.add('hidden');
+      dayDetailsModal.classList.remove('flex');
+    });
+
+    // Fecha modal clicando no fundo escuro
+    dayDetailsModal.addEventListener('click', (e) => {
+      if (e.target === dayDetailsModal) {
+        dayDetailsModal.classList.add('hidden');
+        dayDetailsModal.classList.remove('flex');
+      }
+    });
+
+    // Modal Filtros
+    const filtersModal = document.getElementById('filters-modal');
+    const openFilters = document.getElementById('open-filters');
+    const closeFilters = document.getElementById('close-filters');
+
+    openFilters.addEventListener('click', () => {
+      filtersModal.classList.remove('hidden');
+      filtersModal.classList.add('flex');
+    });
+
+    closeFilters.addEventListener('click', () => {
+      filtersModal.classList.add('hidden');
+      filtersModal.classList.remove('flex');
+    });
+
+    filtersModal.addEventListener('click', (e) => {
+      if (e.target === filtersModal) {
+        filtersModal.classList.add('hidden');
+        filtersModal.classList.remove('flex');
+      }
+    });
+  </script>
+
+</body>
+</html>

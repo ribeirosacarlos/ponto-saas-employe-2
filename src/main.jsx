@@ -9,7 +9,7 @@ import './i18n/index.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider defaultTheme="light">
       <ToastProvider>
         <App />
         <Toaster />

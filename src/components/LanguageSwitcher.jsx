@@ -38,7 +38,7 @@ export function LanguageSwitcher({ className }) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 rounded-lg border border-border/70 bg-background/80"
+        className="h-10 w-10 rounded-full border border-border/70 bg-card/80 shadow-[0_12px_35px_-28px_rgba(92,134,255,0.55)] hover:-translate-y-0.5"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t('languageSwitcher.ariaLabel')}
@@ -47,19 +47,21 @@ export function LanguageSwitcher({ className }) {
         <Languages className="h-4 w-4" />
       </Button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-36 overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-lg backdrop-blur-md">
+        <div className="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-[0_24px_70px_-42px_rgba(92,134,255,0.55)] backdrop-blur-xl">
           {languages.map((lang) => (
             <button
               key={lang.code}
               className={cn(
-                'flex w-full items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:bg-accent',
+                'flex w-full items-center justify-between px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent/80',
                 current === lang.code && 'bg-accent/80',
               )}
               onClick={() => handleChange(lang.code)}
               aria-pressed={current === lang.code}
             >
               {lang.label}
-              {current === lang.code && <span className="text-primary">•</span>}
+              {current === lang.code && (
+                <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary" aria-hidden />
+              )}
             </button>
           ))}
         </div>

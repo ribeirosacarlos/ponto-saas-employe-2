@@ -51,7 +51,7 @@ export const useAuthStore = create((set, get) => ({
   },
   logout: async () => {
     const token = get().token
-    set({ loading: true })
+    set({ loading: true }) // Marca inicio do loading no fluxo de logout
     try {
       if (token) {
         await logoutRequest()

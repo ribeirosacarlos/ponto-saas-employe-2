@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+  <div class="min-h-screen flex flex-col">
+
+    <!-- 1. HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-3 sm:gap-4 justify-between">
+
+      <!-- Esquerda: título/subtítulo -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200"
+          title="Voltar">
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Admin Dashboard
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Visão geral da organização
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro: busca global -->
+      <div class="flex-1 order-3 md:order-2 w-full md:w-auto">
+        <div
+          class="max-w-xl mx-auto md:mx-0 flex items-center gap-2 rounded-full bg-slate-100/80 border border-slate-200 px-3 sm:px-4 py-1.5">
+          <span class="text-slate-400 text-sm">􀊫</span>
+          <input
+            type="text"
+            placeholder="Buscar colaboradores, departamentos ou registros..."
+            class="flex-1 bg-transparent outline-none text-[11px] sm:text-[12px] text-slate-800 placeholder:text-slate-400" />
+          <button
+            class="h-7 w-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+            title="Filtros avançados">
+            <span class="text-xs">􀊫</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Direita: Criar Comunicado + avatar admin -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <button
+          class="hidden sm:inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+          <span class="text-sm">􀈎</span>
+          <span>Criar Comunicado</span>
+        </button>
+        <!-- mobile versão ícone -->
+        <button
+          class="sm:hidden h-9 w-9 rounded-full bg-[#1e2a78] flex items-center justify-center text-white shadow-md active:scale-[0.98] transition"
+          title="Criar Comunicado">
+          􀈎
+        </button>
+
+        <div
+          class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+          <div
+            class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+            AD
+          </div>
+          <div class="hidden sm:flex flex-col leading-tight">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-800">
+              Admin Master
+            </span>
+            <span class="text-[10px] text-slate-500">
+              HR Administrator
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+
+      <!-- GRID ÚNICO ALINHADO (12 colunas) -->
+      <div
+        class="grid gap-5 lg:gap-6 grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 auto-rows-min">
+
+        <!-- 2. KPI CARD – col-span-7 -->
+        <section
+          class="lg:col-span-7 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Visão geral
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Resumo da organização
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Indicadores principais consolidados em tempo real.
+              </p>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              Hoje · 09:24
+            </span>
+          </header>
+
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-[11px] sm:text-[12px]">
+            <!-- KPI 1 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Total de colaboradores</span>
+                <span class="text-slate-400 text-xs">􀉩</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                248
+              </p>
+            </div>
+
+            <!-- KPI 2 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Ativos</span>
+                <span class="text-slate-400 text-xs">􀊱</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                221
+              </p>
+              <p class="text-[10px] text-emerald-600">
+                +6 desde o último mês
+              </p>
+            </div>
+
+            <!-- KPI 3 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Em férias hoje</span>
+                <span class="text-slate-400 text-xs">􀣺</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                12
+              </p>
+              <p class="text-[10px] text-slate-500">
+                Em 7 departamentos
+              </p>
+            </div>
+
+            <!-- KPI 4 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Ausências registradas</span>
+                <span class="text-slate-400 text-xs">􀇿</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                5
+              </p>
+              <p class="text-[10px] text-rose-500">
+                +2 vs. média diária
+              </p>
+            </div>
+
+            <!-- KPI 5 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Horas trabalhadas hoje</span>
+                <span class="text-slate-400 text-xs">􀐫</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                1.324h
+              </p>
+              <p class="text-[10px] text-slate-500">
+                83% da previsão diária
+              </p>
+            </div>
+
+            <!-- KPI 6 -->
+            <div
+              class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Horas extras no mês</span>
+                <span class="text-slate-400 text-xs">􀐰</span>
+              </div>
+              <p class="text-lg sm:text-xl font-semibold text-slate-900">
+                214h
+              </p>
+              <p class="text-[10px] text-amber-600">
+                Revisar nas próximas reuniões
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. HEATMAP – col-span-5 -->
+        <section
+          class="lg:col-span-5 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Atividade de ponto
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Mapa de registros
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Intensidade de registros por dia, ao longo das últimas semanas.
+              </p>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              Últimas 6 semanas
+            </span>
+          </header>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[10px] text-slate-500 px-1">
+              <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex justify-between gap-1.5">
+                <span class="h-4 w-4 rounded-[6px] bg-slate-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-400"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-slate-100"></span>
+              </div>
+              <div class="flex justify-between gap-1.5">
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-400"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-slate-100"></span>
+              </div>
+              <div class="flex justify-between gap-1.5">
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-400"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-500"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-slate-100"></span>
+              </div>
+              <div class="flex justify-between gap-1.5">
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-300"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-200"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-emerald-100"></span>
+                <span class="h-4 w-4 rounded-[6px] bg-slate-100"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500">
+            <div class="flex items-center gap-2">
+              <span>Menos</span>
+              <div class="flex items-center gap-1.5">
+                <span class="h-3 w-3 rounded-[4px] bg-slate-100"></span>
+                <span class="h-3 w-3 rounded-[4px] bg-emerald-100"></span>
+                <span class="h-3 w-3 rounded-[4px] bg-emerald-200"></span>
+                <span class="h-3 w-3 rounded-[4px] bg-emerald-300"></span>
+                <span class="h-3 w-3 rounded-[4px] bg-emerald-400"></span>
+                <span class="h-3 w-3 rounded-[4px] bg-emerald-500"></span>
+              </div>
+              <span>Mais</span>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              Cada quadrado representa registros consolidados
+            </span>
+          </div>
+        </section>
+
+        <!-- 4. STATUS DA EQUIPE – col-span-7 -->
+        <section
+          class="lg:col-span-7 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Equipe
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Status da equipe
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Visão rápida da presença e atividade atual da equipe.
+              </p>
+            </div>
+            <button
+              class="hidden sm:inline-flex items-center h-8 px-3 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition">
+              Ver Equipe Completa
+            </button>
+          </header>
+
+          <div class="space-y-2.5 text-[11px] sm:text-[12px]">
+            <!-- Linha 1 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                  JJ
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Jasmine Jones
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Product Designer · People & Experience
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                  Ativo
+                </span>
+                <span class="hidden sm:inline text-[10px] text-slate-400">
+                  Online · Escritório
+                </span>
+              </div>
+            </div>
+
+            <!-- Linha 2 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                  LA
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Lucas Andrade
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Developer Sr. · Tecnologia
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+                  Em férias
+                </span>
+                <span class="hidden sm:inline text-[10px] text-slate-400">
+                  Retorno em 24 Nov
+                </span>
+              </div>
+            </div>
+
+            <!-- Linha 3 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                  TR
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Thiago Rocha
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    DevOps Engineer · Tecnologia
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                  Remoto
+                </span>
+                <span class="hidden sm:inline text-[10px] text-slate-400">
+                  Em reunião · 10:00–11:00
+                </span>
+              </div>
+            </div>
+
+            <!-- Linha 4 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                  MC
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Marina Costa
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Analista Financeira · Financeiro
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                  Ausente
+                </span>
+                <span class="hidden sm:inline text-[10px] text-slate-400">
+                  Atestado médico
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-1 flex justify-end">
+            <button
+              class="sm:hidden inline-flex items-center h-8 px-3 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition">
+              Ver Equipe Completa
+            </button>
+          </div>
+        </section>
+
+        <!-- 5. REGISTROS CRÍTICOS – col-span-5 -->
+        <section
+          class="lg:col-span-5 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-rose-500">
+                Alertas
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Registros críticos do dia
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Eventos que exigem atenção do RH ou gestores.
+              </p>
+            </div>
+            <button
+              class="inline-flex items-center h-8 px-3 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition">
+              Ver Detalhes
+            </button>
+          </header>
+
+          <div class="space-y-2.5 text-[11px] sm:text-[12px]">
+            <!-- Alerta 1 -->
+            <div class="flex items-start gap-2">
+              <div
+                class="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 text-xs">
+                􀇿
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-900 truncate">
+                  Atraso de 27 minutos · Thiago Rocha
+                </p>
+                <p class="text-[10px] text-slate-500">
+                  Entrada registrada às 09:27 · Previsto para 09:00.
+                </p>
+              </div>
+            </div>
+
+            <!-- Alerta 2 -->
+            <div class="flex items-start gap-2">
+              <div
+                class="h-7 w-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 text-xs">
+                􀇿
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-900 truncate">
+                  Ausência sem registro · Marina Costa
+                </p>
+                <p class="text-[10px] text-slate-500">
+                  Nenhum registro de entrada até o momento · Notificar gestor.
+                </p>
+              </div>
+            </div>
+
+            <!-- Alerta 3 -->
+            <div class="flex items-start gap-2">
+              <div
+                class="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 text-xs">
+                􀇿
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-900 truncate">
+                  Registro incompleto · Fernanda Lima
+                </p>
+                <p class="text-[10px] text-slate-500">
+                  Entrada registrada · Saída não registrada ontem.
+                </p>
+              </div>
+            </div>
+
+            <!-- Alerta 4 -->
+            <div class="flex items-start gap-2">
+              <div
+                class="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 text-xs">
+                􀇿
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-900 truncate">
+                  Saída antecipada · Pedro Silva
+                </p>
+                <p class="text-[10px] text-slate-500">
+                  Saída registrada às 15:48 · Expediente previsto até 18:00.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. FÉRIAS E APROVAÇÕES – col-span-7 -->
+        <section
+          class="lg:col-span-7 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Férias
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Férias e aprovações
+              </h2>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              3 solicitações pendentes
+            </span>
+          </header>
+
+          <div class="space-y-2.5 text-[11px] sm:text-[12px]">
+            <!-- Solicitação 1 -->
+            <div
+              class="rounded-2xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div
+                    class="h-7 w-7 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                    JJ
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-900 truncate">
+                      Jasmine Jones
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      10 Nov → 24 Nov · Anual
+                    </p>
+                  </div>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+                  Pendente
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] text-slate-500">
+                  11 dias úteis · Gestor: Marcos Gonçalves
+                </p>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    class="h-7 px-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-[10px] font-semibold text-white shadow-sm transition">
+                    Aprovar
+                  </button>
+                  <button
+                    class="h-7 px-3 rounded-full bg-rose-50 hover:bg-rose-100 text-[10px] font-semibold text-rose-600 border border-rose-100 transition">
+                    Rejeitar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Solicitação 2 -->
+            <div
+              class="rounded-2xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div
+                    class="h-7 w-7 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                    LA
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-900 truncate">
+                      Lucas Andrade
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      05 Dez → 15 Dez · Ajuste
+                    </p>
+                  </div>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+                  Pendente
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] text-slate-500">
+                  7 dias úteis · Gestor: Ana Ribeiro
+                </p>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    class="h-7 px-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-[10px] font-semibold text-white shadow-sm transition">
+                    Aprovar
+                  </button>
+                  <button
+                    class="h-7 px-3 rounded-full bg-rose-50 hover:bg-rose-100 text-[10px] font-semibold text-rose-600 border border-rose-100 transition">
+                    Rejeitar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Solicitação 3 -->
+            <div
+              class="rounded-2xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div
+                    class="h-7 w-7 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                    TR
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-900 truncate">
+                      Thiago Rocha
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      20 Dez → 05 Jan · Anual
+                    </p>
+                  </div>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+                  Pendente
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] text-slate-500">
+                  11 dias úteis · Gestor: Felipe Martins
+                </p>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    class="h-7 px-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-[10px] font-semibold text-white shadow-sm transition">
+                    Aprovar
+                  </button>
+                  <button
+                    class="h-7 px-3 rounded-full bg-rose-50 hover:bg-rose-100 text-[10px] font-semibold text-rose-600 border border-rose-100 transition">
+                    Rejeitar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 mt-1">
+            <p class="text-[10px] sm:text-[11px] font-medium text-slate-700 mb-1">
+              Próximas férias agendadas
+            </p>
+            <div class="space-y-1.5 text-[10px] sm:text-[11px] text-slate-500">
+              <p>• 02 Dez – 10 Dez · Marina Costa · Financeiro</p>
+              <p>• 15 Jan – 29 Jan · Pedro Silva · Operações</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. COMUNICADOS – col-span-5 -->
+        <section
+          class="lg:col-span-5 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Comunicados
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Comunicados corporativos
+              </h2>
+            </div>
+            <button
+              class="inline-flex items-center h-8 px-3 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition">
+              Criar Novo
+            </button>
+          </header>
+
+          <article
+            class="rounded-[18px] border border-slate-100 bg-slate-50/80 px-3.5 py-3 space-y-1.5 text-[11px] sm:text-[12px]">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 text-sm">􀌩</span>
+                <span class="text-[10px] font-medium text-slate-500">
+                  Aviso Geral
+                </span>
+              </div>
+              <span class="text-[10px] text-slate-400">
+                Hoje · 08:12
+              </span>
+            </div>
+            <p class="font-semibold text-slate-900">
+              Atualização sobre política de trabalho híbrido
+            </p>
+            <p class="text-[10px] text-slate-600">
+              A partir de dezembro, equipes poderão ajustar o modelo híbrido com seus gestores, respeitando mínimo de 2 dias presenciais.
+            </p>
+            <button
+              class="mt-1 inline-flex items-center text-[10px] font-semibold text-[#1e2a78] hover:text-[#25338f]">
+              Ler mais  ›
+            </button>
+          </article>
+
+          <div class="space-y-1.5 text-[10px] sm:text-[11px]">
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-medium text-slate-800 truncate">
+                Fechamento de folha – Novembro
+              </p>
+              <span class="text-slate-400">Ontem · 17:30</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-medium text-slate-800 truncate">
+                Campanha de feedback 360º
+              </p>
+              <span class="text-slate-400">12 Nov</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-medium text-slate-800 truncate">
+                Manutenção programada do sistema de ponto
+              </p>
+              <span class="text-slate-400">09 Nov</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. PRODUTIVIDADE – col-span-7 -->
+        <section
+          class="lg:col-span-7 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Produtividade
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Produtividade por departamento
+              </h2>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                Média de horas registradas por colaborador no mês.
+              </p>
+            </div>
+            <span class="text-[10px] text-slate-400">
+              Base: últimos 30 dias
+            </span>
+          </header>
+
+          <div class="space-y-2.5 text-[11px] sm:text-[12px]">
+            <!-- TI -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-slate-800">TI</span>
+                <span class="text-slate-500">7,9h/dia</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-2.5 rounded-full bg-[#1e2a78] w-[88%]"></div>
+              </div>
+            </div>
+            <!-- Financeiro -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-slate-800">Financeiro</span>
+                <span class="text-slate-500">7,4h/dia</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-2.5 rounded-full bg-indigo-400 w-[82%]"></div>
+              </div>
+            </div>
+            <!-- RH -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-slate-800">RH</span>
+                <span class="text-slate-500">7,1h/dia</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-2.5 rounded-full bg-blue-400 w-[78%]"></div>
+              </div>
+            </div>
+            <!-- Marketing -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-slate-800">Marketing</span>
+                <span class="text-slate-500">6,8h/dia</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-2.5 rounded-full bg-sky-400 w-[74%]"></div>
+              </div>
+            </div>
+            <!-- Operações -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-slate-800">Operações</span>
+                <span class="text-slate-500">8,2h/dia</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-2.5 rounded-full bg-emerald-500 w-[92%]"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. NOVOS COLABORADORES – col-span-5 -->
+        <section
+          class="lg:col-span-5 bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+          <header class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                Novos colaboradores
+              </p>
+              <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                Entradas recentes
+              </h2>
+            </div>
+            <button
+              class="inline-flex items-center h-8 px-3 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition">
+              Ver Todos
+            </button>
+          </header>
+
+          <div class="space-y-2.5 text-[11px] sm:text-[12px]">
+            <!-- Novo 1 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                  AC
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Ana Clara
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Analista de RH · RH
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-0.5">
+                <span class="text-[10px] text-slate-500">
+                  Início: 06 Nov
+                </span>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[9px] font-semibold text-emerald-600 border border-emerald-100">
+                  Começou esta semana
+                </span>
+              </div>
+            </div>
+
+            <!-- Novo 2 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white text-[10px] font-semibold">
+                  RB
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Rafael Barbosa
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Desenvolvedor Jr. · TI
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-0.5">
+                <span class="text-[10px] text-slate-500">
+                  Início: 01 Nov
+                </span>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[9px] font-semibold text-emerald-600 border border-emerald-100">
+                  Em onboarding
+                </span>
+              </div>
+            </div>
+
+            <!-- Novo 3 -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div
+                  class="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                  CF
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">
+                    Camila Fernandes
+                  </p>
+                  <p class="text-[10px] text-slate-500 truncate">
+                    Coord. Marketing · Marketing
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-0.5">
+                <span class="text-[10px] text-slate-500">
+                  Início: 23 Out
+                </span>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[9px] font-semibold text-slate-700 border border-slate-200">
+                  1º mês
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- 10. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>Dashboard administrativo — Dados atualizados em tempo real.</span>
+      <span>Synergy HR · Admin</span>
+    </footer>
+  </div>
+</body>
+</html>

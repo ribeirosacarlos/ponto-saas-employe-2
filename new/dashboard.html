@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard – HR Management</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+
+  <div class="min-h-screen flex flex-col md:flex-row">
+
+    <!-- SIDEBAR (aparece a partir de md) -->
+    <aside
+      class="hidden md:flex md:flex-col md:w-56 lg:w-64 bg-white border-r border-slate-200 px-4 lg:px-5 py-6 gap-6 shrink-0">
+      <!-- Logo / App -->
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#1e2a78] flex items-center justify-center shadow-md">
+          <span class="text-white text-sm lg:text-base font-semibold tracking-tight">HR</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[10px] lg:text-[11px] font-semibold tracking-[0.25em] uppercase text-slate-500">
+            Synergy
+          </span>
+          <span class="text-[11px] text-slate-400 -mt-0.5">
+            HR Management
+          </span>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 space-y-1 text-[12px] lg:text-[13px]">
+        <!-- Dashboard ativo -->
+        <button
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl bg-[#1e2a78] text-white font-medium shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <span class="text-sm">􀓥</span>
+            <span>Dashboard</span>
+          </div>
+          <span class="text-[10px] lg:text-[11px] bg-white/10 px-2 py-0.5 rounded-full">Hoje</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀉉</span>
+          <span>Calendar</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀒇</span>
+          <span>Time Off</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀈷</span>
+          <span>Projects</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀧞</span>
+          <span>Time Tracking</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀑪</span>
+          <span>Reports</span>
+        </button>
+
+        <button class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-50">
+          <span class="text-sm">􀣋</span>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <!-- Rodapé sidebar -->
+      <div class="mt-2 border-t border-slate-200 pt-3 text-[10px] lg:text-[11px] text-slate-500">
+        <p>Versão 1.0 · Synergy HR</p>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col min-w-0">
+      <!-- HEADER -->
+      <header
+        class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <!-- Título + busca -->
+        <div class="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+              Dashboard
+            </h1>
+            <span
+              class="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-[10px] sm:text-[11px] px-2 py-0.5">
+              Hoje · 13 de agosto
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div
+              class="flex-1 flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 text-[12px] sm:text-[13px]">
+              <span class="text-slate-400">􀊫</span>
+              <input
+                type="text"
+                placeholder="Buscar colaborador, equipe ou projeto"
+                class="w-full bg-transparent outline-none text-slate-700 placeholder:text-slate-400" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações / avatar -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button
+            class="hidden sm:inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+            <span class="text-sm">􀉬</span>
+            <span>Criar Solicitação</span>
+          </button>
+
+          <!-- Ícones rápidos -->
+          <button
+            class="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+            􀋃
+          </button>
+          <button
+            class="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+            􀣺
+          </button>
+
+          <!-- Avatar -->
+          <div
+            class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+            <div
+              class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+              JJ
+            </div>
+            <div class="hidden sm:flex flex-col leading-tight">
+              <span class="text-[11px] sm:text-xs font-medium text-slate-800">Jasmine Jones</span>
+              <span class="text-[10px] text-slate-500">HR Manager</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTEÚDO -->
+      <div class="px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+        <div class="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+          <!-- 1. CARD HISTÓRICO DE PONTO -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Time Tracking
+                </p>
+                <h2 class="text-sm font-semibold text-slate-900">
+                  Histórico de Ponto
+                </h2>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                  128h registradas neste mês · 6h extras
+                </p>
+              </div>
+              <button
+                class="text-[10px] sm:text-[11px] font-medium text-[#1e2a78] hover:text-[#25338f] whitespace-nowrap">
+                Ver tudo
+              </button>
+            </header>
+
+            <div class="space-y-2 text-[11px] sm:text-[12px]">
+              <!-- Linha 1 -->
+              <div
+                class="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100">
+                <div class="flex flex-col">
+                  <span class="font-medium text-slate-800">
+                    Terça, 12 ago
+                  </span>
+                  <span class="text-slate-500">
+                    Entrada 09:02 · Saída 17:36
+                  </span>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[10px] sm:text-[11px] font-semibold text-slate-800">08:34</span>
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-[9px] sm:text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Normal
+                  </span>
+                </div>
+              </div>
+
+              <!-- Linha 2 -->
+              <div
+                class="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100">
+                <div class="flex flex-col">
+                  <span class="font-medium text-slate-800">
+                    Segunda, 11 ago
+                  </span>
+                  <span class="text-slate-500">
+                    Entrada 09:21 · Saída 18:10
+                  </span>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[10px] sm:text-[11px] font-semibold text-slate-800">08:49</span>
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-[9px] sm:text-[10px] font-medium text-amber-600 border border-amber-100">
+                    Extra
+                  </span>
+                </div>
+              </div>
+
+              <!-- Linha 3 -->
+              <div
+                class="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100">
+                <div class="flex flex-col">
+                  <span class="font-medium text-slate-800">
+                    Sexta, 09 ago
+                  </span>
+                  <span class="text-slate-500">
+                    Entrada 09:37 · Saída 17:02
+                  </span>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[10px] sm:text-[11px] font-semibold text-slate-800">07:25</span>
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-50 text-[9px] sm:text-[10px] font-medium text-rose-600 border border-rose-100">
+                    Atraso
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. CALENDÁRIO ESTILO GITHUB -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition">
+            <header class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Registro
+                </p>
+                <h2 class="text-sm font-semibold text-slate-900">
+                  Registro Mensal
+                </h2>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                  Visão rápida de presença e horas extras
+                </p>
+              </div>
+              <!-- microinteração simples com details -->
+              <details class="text-[10px] sm:text-[11px] w-full sm:w-auto">
+                <summary
+                  class="list-none cursor-pointer inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">
+                  <span>Expandir</span>
+                  <span class="text-xs">􀄫</span>
+                </summary>
+                <div
+                  class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 space-y-2 text-[10px] sm:text-[11px] text-slate-600">
+                  <div class="flex items-center justify-between">
+                    <span>13 ago · Quarta</span>
+                    <span class="font-semibold text-slate-800">
+                      08:15 · +00:30 extra
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span>12 ago · Terça</span>
+                    <span class="font-semibold text-slate-800">
+                      08:34 · 0h extra
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span>11 ago · Segunda</span>
+                    <span class="font-semibold text-slate-800">
+                      08:49 · +00:15 extra
+                    </span>
+                  </div>
+                  <p class="text-[9px] sm:text-[10px] text-slate-500">
+                    Toque em “Time Tracking” para ver o relatório detalhado.
+                  </p>
+                </div>
+              </details>
+            </header>
+
+            <!-- Grade tipo GitHub -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-[9px] sm:text-[11px] text-slate-500 px-0.5">
+                <span>Sem</span>
+                <span>Seg</span>
+                <span>Ter</span>
+                <span>Qua</span>
+                <span>Qui</span>
+                <span>Sex</span>
+                <span>Sáb</span>
+              </div>
+
+              <div class="flex gap-1 overflow-x-auto pb-1">
+                <!-- colunas (semanas) -->
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-600"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-600"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-50"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-100"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-200"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-400"></span>
+                  <span class="h-3 w-3 rounded-[6px] bg-emerald-600"></span>
+                </div>
+              </div>
+
+              <!-- Legenda -->
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-[9px] sm:text-[10px] text-slate-500">
+                <div class="flex items-center gap-2">
+                  <span>Menos horas</span>
+                  <div class="flex items-center gap-1">
+                    <span class="h-3 w-3 rounded-[6px] bg-slate-100"></span>
+                    <span class="h-3 w-3 rounded-[6px] bg-emerald-100"></span>
+                    <span class="h-3 w-3 rounded-[6px] bg-emerald-300"></span>
+                    <span class="h-3 w-3 rounded-[6px] bg-emerald-500"></span>
+                  </div>
+                  <span>Mais horas</span>
+                </div>
+                <span class="whitespace-nowrap">􀐫 Extra</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. CARD FÉRIAS / TIME OFF -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Time Off
+                </p>
+                <h2 class="text-sm font-semibold text-slate-900">
+                  Férias e Ausências
+                </h2>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1">
+                  Saldo atualizado para o período atual.
+                </p>
+              </div>
+            </header>
+
+            <div class="flex items-center gap-4 sm:gap-5">
+              <!-- Indicador semicircular -->
+              <div class="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center shrink-0">
+                <div class="absolute inset-0 rounded-full border-[9px] sm:border-[10px] border-slate-100"></div>
+                <div
+                  class="absolute inset-0 rounded-full border-[9px] sm:border-[10px] border-[#1e2a78] border-b-transparent border-l-transparent border-r-transparent rotate-[135deg]">
+                </div>
+                <div
+                  class="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
+                  <span class="text-[9px] sm:text-[10px] uppercase tracking-wide text-slate-400">
+                    Dias
+                  </span>
+                  <span class="text-[12px] sm:text-sm font-semibold text-slate-900">
+                    12
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex-1 space-y-2 text-[11px] sm:text-[12px]">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-slate-500">Saldo disponível</span>
+                  <span class="font-semibold text-slate-900">12 dias</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-slate-500">Próximas férias</span>
+                  <span class="font-semibold text-slate-900">
+                    21–28 ago
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-slate-500">Status</span>
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-[9px] sm:text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Aprovado
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-1">
+              <button
+                class="w-full h-9 sm:h-10 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+                Solicitar Férias
+              </button>
+            </div>
+          </section>
+
+          <!-- 4. CARD COMUNICADOS -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-2 sm:gap-3 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition">
+            <header class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <div
+                  class="h-7 w-7 sm:h-8 sm:w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 text-xs sm:text-sm">
+                  􀌕
+                </div>
+                <div>
+                  <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                    Company
+                  </p>
+                  <h2 class="text-sm font-semibold text-slate-900">
+                    Comunicados
+                  </h2>
+                </div>
+              </div>
+              <button
+                class="text-[10px] sm:text-[11px] font-medium text-[#1e2a78] hover:text-[#25338f] whitespace-nowrap">
+                Ver todos
+              </button>
+            </header>
+
+            <div class="mt-1 space-y-1 text-[11px] sm:text-[12px]">
+              <p class="font-medium text-slate-900">
+                Atualização do modelo híbrido
+              </p>
+              <p class="text-slate-500">
+                A partir de setembro, passaremos a contar com 3 dias de home office por semana para
+                todas as equipes administrativas.
+              </p>
+              <p class="text-[10px] text-slate-400 mt-1">
+                Enviado em 12 ago · 17:42 · Escritório Central
+              </p>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

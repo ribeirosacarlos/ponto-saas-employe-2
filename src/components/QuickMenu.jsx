@@ -25,7 +25,7 @@ export function QuickMenu({ onLogout, onHistory }) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 rounded-lg border border-border/70 bg-background/80"
+        className="h-10 w-10 rounded-full border border-border/70 bg-card/80 shadow-[0_12px_35px_-28px_rgba(92,134,255,0.55)] hover:-translate-y-0.5"
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -33,9 +33,9 @@ export function QuickMenu({ onLogout, onHistory }) {
         <Menu className="h-4 w-4" />
       </Button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-lg backdrop-blur-md">
+        <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-border/70 bg-card/90 shadow-[0_24px_70px_-42px_rgba(92,134,255,0.55)] backdrop-blur-xl">
           <button
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent/80"
             onClick={() => {
               onHistory?.()
               setOpen(false)
@@ -45,7 +45,7 @@ export function QuickMenu({ onLogout, onHistory }) {
             {t('dashboard.menu.history')}
           </button>
           <button
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent/80"
             onClick={() => {
               toggleTheme()
               setOpen(false)
@@ -55,7 +55,7 @@ export function QuickMenu({ onLogout, onHistory }) {
             {t('dashboard.menu.theme')}
           </button>
           <button
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent/80"
             onClick={() => {
               onLogout?.()
               setOpen(false)

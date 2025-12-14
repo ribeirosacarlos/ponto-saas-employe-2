@@ -13,7 +13,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       aria-label={t('themeToggle.ariaLabel')}
-      className="rounded-full border border-border/60 bg-background/70"
+      className="rounded-full border border-border/70 bg-card/70 shadow-[0_12px_35px_-28px_rgba(92,134,255,0.55)] hover:-translate-y-0.5"
     >
       {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </Button>
