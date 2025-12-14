@@ -3,9 +3,9 @@ import { useToast } from './use-toast.jsx'
 import { useTranslation } from 'react-i18next'
 
 const variantClasses = {
-  default: 'border border-border bg-card text-foreground',
-  success: 'border border-green-500/70 bg-green-500/10 text-green-100',
-  error: 'border border-red-500/70 bg-red-500/10 text-red-100',
+  default: 'border border-border/70 bg-card/85 text-foreground',
+  success: 'border border-emerald-400/70 bg-emerald-500/12 text-emerald-50',
+  error: 'border border-red-400/70 bg-red-500/12 text-red-50',
 }
 
 export function Toaster() {
@@ -13,19 +13,19 @@ export function Toaster() {
   const { t } = useTranslation()
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-3">
+    <div className="fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-3">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            'flex items-start gap-3 rounded-xl px-4 py-3 shadow-lg backdrop-blur-md',
+            'flex items-start gap-3 rounded-2xl px-5 py-4 shadow-[0_24px_70px_-40px_rgba(92,134,255,0.6)] backdrop-blur-md',
             variantClasses[toast.variant] || variantClasses.default,
           )}
         >
           <div className="space-y-1">
             {toast.title && <p className="text-sm font-semibold">{toast.title}</p>}
             {toast.description && (
-              <p className="text-xs leading-relaxed text-muted-foreground">{toast.description}</p>
+              <p className="text-xs leading-relaxed text-foreground/75">{toast.description}</p>
             )}
           </div>
           <button

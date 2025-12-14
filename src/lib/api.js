@@ -54,3 +54,17 @@ export async function requestAdjustment(payload) {
   const { data } = await api.post('/v1/employee/adjustments', payload)
   return data
 }
+
+export async function breakRequest(action, coords = {}) {
+  const isStart = action === 'start'
+  const type = isStart ? 'break_start' : 'break_end'
+  return clockRequest(type, coords)
+}
+
+export async function startBreak(coords = {}) {
+  return breakRequest('start', coords)
+}
+
+export async function endBreak(coords = {}) {
+  return breakRequest('end', coords)
+}

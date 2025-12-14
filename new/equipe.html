@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Equipe – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+  <div class="min-h-screen flex flex-col">
+
+    <!-- 1. HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-3 sm:gap-4 justify-between">
+
+      <!-- Esquerda: voltar + título/subtítulo -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200"
+          title="Voltar">
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Equipe
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Veja todos os colaboradores
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro: campo de busca -->
+      <div class="flex-1 order-3 md:order-2 w-full md:w-auto">
+        <div
+          class="max-w-lg mx-auto md:mx-0 flex items-center gap-2 rounded-full bg-slate-100/80 border border-slate-200 px-3 sm:px-4 py-1.5">
+          <span class="text-slate-400 text-sm">􀊫</span>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Buscar por nome, cargo ou departamento"
+            class="flex-1 bg-transparent outline-none text-[11px] sm:text-[12px] text-slate-800 placeholder:text-slate-400" />
+          <button
+            id="filter-button"
+            class="h-7 w-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50">
+            <!-- slider.horizontal.3 (ícone aproximado) -->
+            <span class="text-xs">􀊫</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Direita: avatar usuário -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <div
+          class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+          <div
+            class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+            JJ
+          </div>
+          <div class="hidden sm:flex flex-col leading-tight">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-800">
+              Jasmine Jones
+            </span>
+            <span class="text-[10px] text-slate-500">
+              HR Manager
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+      <!-- 2. CHIPS DE FILTRAGEM -->
+      <section class="flex flex-wrap gap-2">
+        <button
+          class="chip-filter inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-medium border border-slate-300 bg-white text-slate-800 shadow-sm data-[active=true]:bg-[#1e2a78] data-[active=true]:text-white data-[active=true]:border-[#1e2a78]"
+          data-filter="all"
+          data-active="true">
+          Todos
+        </button>
+        <button
+          class="chip-filter inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+          data-filter="ativo">
+          Ativos
+        </button>
+        <button
+          class="chip-filter inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+          data-filter="ferias">
+          Em férias
+        </button>
+        <button
+          class="chip-filter inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+          data-filter="remoto">
+          Remotos
+        </button>
+        <button
+          class="chip-filter inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+          data-filter="presencial">
+          Presenciais
+        </button>
+        <button
+          class="inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold border border-[#1e2a78] bg-[#1e2a78]/5 text-[#1e2a78] hover:bg-[#1e2a78]/10">
+          􀉬 Novo colaborador
+        </button>
+      </section>
+
+      <!-- TOPO DA LISTA: info + toggle visão -->
+      <section class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col">
+          <p class="text-[11px] sm:text-[12px] text-slate-500">
+            18 colaboradores encontrados
+          </p>
+          <p class="text-[10px] text-slate-400">
+            Filtros aplicados em tempo real pela busca e chips.
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] sm:text-[12px]">
+          <span class="text-slate-500">Modo de visualização</span>
+          <div class="inline-flex items-center gap-1 rounded-full bg-slate-100 p-0.5">
+            <button
+              id="btn-list-view"
+              class="h-7 px-3 rounded-full bg-white shadow-sm text-slate-900 text-xs font-medium">
+              Lista
+            </button>
+            <button
+              id="btn-grid-view"
+              class="h-7 px-3 rounded-full text-slate-500 text-xs font-medium">
+              Grade
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. LISTA DE COLABORADORES (LIST VIEW) -->
+      <section id="list-view" class="space-y-3 sm:space-y-4">
+        <!-- Card 1 -->
+        <article
+          class="employee-card bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-status="ativo presencial">
+          <div class="flex items-center gap-3">
+            <!-- Avatar -->
+            <div
+              class="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-xs font-semibold">
+              JJ
+            </div>
+
+            <!-- Infos -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Jasmine Jones
+                  </p>
+                  <p class="text-[11px] sm:text-[12px] text-slate-600 truncate">
+                    Product Designer · People & Experience
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Ativo
+                  </span>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+                    Presencial · Híbrido
+                  </span>
+                </div>
+              </div>
+              <p class="mt-1 text-[10px] sm:text-[11px] text-slate-400">
+                Último registro: hoje às 08:59 · Entrada
+              </p>
+            </div>
+
+            <!-- Ações -->
+            <div class="pl-2 flex flex-col items-end gap-1">
+              <button
+                class="quick-view-btn h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                title="Detalhes rápidos">
+                •••
+              </button>
+              <span class="text-slate-300 text-lg leading-none">›</span>
+            </div>
+          </div>
+
+          <!-- linha inferior mobile: status -->
+          <div class="mt-2 flex sm:hidden items-center gap-2 text-[10px]">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+              Ativo
+            </span>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+              Presencial · Híbrido
+            </span>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article
+          class="employee-card bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-status="ferias remoto">
+          <div class="flex items-center gap-3">
+            <div
+              class="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-semibold">
+              LA
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Lucas Andrade
+                  </p>
+                  <p class="text-[11px] sm:text-[12px] text-slate-600 truncate">
+                    Developer Sr. · Tecnologia
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+                    Em férias
+                  </span>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                    Remoto
+                  </span>
+                </div>
+              </div>
+              <p class="mt-1 text-[10px] sm:text-[11px] text-slate-400">
+                Último registro: 05 Nov às 18:14 · Saída
+              </p>
+            </div>
+            <div class="pl-2 flex flex-col items-end gap-1">
+              <button
+                class="quick-view-btn h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                title="Detalhes rápidos">
+                •••
+              </button>
+              <span class="text-slate-300 text-lg leading-none">›</span>
+            </div>
+          </div>
+          <div class="mt-2 flex sm:hidden items-center gap-2 text-[10px]">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-medium text-amber-600 border border-amber-100">
+              Em férias
+            </span>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+              Remoto
+            </span>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article
+          class="employee-card bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-status="afastado presencial">
+          <div class="flex items-center gap-3">
+            <div
+              class="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white text-xs font-semibold">
+              MC
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Marina Costa
+                  </p>
+                  <p class="text-[11px] sm:text-[12px] text-slate-600 truncate">
+                    Analista Financeira · Financeiro
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                    Afastado
+                  </span>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+                    Presencial
+                  </span>
+                </div>
+              </div>
+              <p class="mt-1 text-[10px] sm:text-[11px] text-slate-400">
+                Último registro: 01 Nov às 14:22 · Saída
+              </p>
+            </div>
+            <div class="pl-2 flex flex-col items-end gap-1">
+              <button
+                class="quick-view-btn h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                title="Detalhes rápidos">
+                •••
+              </button>
+              <span class="text-slate-300 text-lg leading-none">›</span>
+            </div>
+          </div>
+          <div class="mt-2 flex sm:hidden items-center gap-2 text-[10px]">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+              Afastado
+            </span>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+              Presencial
+            </span>
+          </div>
+        </article>
+
+        <!-- Card 4 -->
+        <article
+          class="employee-card bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-status="ativo remoto">
+          <div class="flex items-center gap-3">
+            <div
+              class="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white text-xs font-semibold">
+              TR
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Thiago Rocha
+                  </p>
+                  <p class="text-[11px] sm:text-[12px] text-slate-600 truncate">
+                    DevOps Engineer · Tecnologia
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Ativo
+                  </span>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                    Remoto
+                  </span>
+                </div>
+              </div>
+              <p class="mt-1 text-[10px] sm:text-[11px] text-slate-400">
+                Último registro: hoje às 09:10 · Entrada
+              </p>
+            </div>
+            <div class="pl-2 flex flex-col items-end gap-1">
+              <button
+                class="quick-view-btn h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                title="Detalhes rápidos">
+                •••
+              </button>
+              <span class="text-slate-300 text-lg leading-none">›</span>
+            </div>
+          </div>
+          <div class="mt-2 flex sm:hidden items-center gap-2 text-[10px]">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+              Ativo
+            </span>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+              Remoto
+            </span>
+          </div>
+        </article>
+      </section>
+
+      <!-- 4. GRID ALTERNATIVO (GRID VIEW) -->
+      <section
+        id="grid-view"
+        class="hidden grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        <!-- Card em grade 1 -->
+        <article
+          class="employee-card bg-white rounded-[24px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 py-4 cursor-pointer hover:bg-slate-50 transition flex flex-col items-center text-center"
+          data-status="ativo presencial">
+          <div class="relative mb-3">
+            <div
+              class="h-14 w-14 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-xs font-semibold shadow">
+              JJ
+            </div>
+            <span
+              class="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 px-2 rounded-full bg-emerald-500 text-[9px] font-semibold text-white shadow-sm">
+              Ativo
+            </span>
+          </div>
+          <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+            Jasmine Jones
+          </p>
+          <p class="text-[11px] text-slate-600 truncate max-w-[180px]">
+            Product Designer
+          </p>
+          <p class="text-[10px] text-slate-400 mt-1">
+            People & Experience
+          </p>
+        </article>
+
+        <!-- Card em grade 2 -->
+        <article
+          class="employee-card bg-white rounded-[24px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 py-4 cursor-pointer hover:bg-slate-50 transition flex flex-col items-center text-center"
+          data-status="ferias remoto">
+          <div class="relative mb-3">
+            <div
+              class="h-14 w-14 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-semibold shadow">
+              LA
+            </div>
+            <span
+              class="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 px-2 rounded-full bg-amber-400 text-[9px] font-semibold text-white shadow-sm">
+              Férias
+            </span>
+          </div>
+          <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+            Lucas Andrade
+          </p>
+          <p class="text-[11px] text-slate-600 truncate max-w-[180px]">
+            Developer Sr.
+          </p>
+          <p class="text-[10px] text-slate-400 mt-1">
+            Tecnologia · Remoto
+          </p>
+        </article>
+
+        <!-- Card em grade 3 -->
+        <article
+          class="employee-card bg-white rounded-[24px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 py-4 cursor-pointer hover:bg-slate-50 transition flex flex-col items-center text-center"
+          data-status="afastado presencial">
+          <div class="relative mb-3">
+            <div
+              class="h-14 w-14 rounded-full bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white text-xs font-semibold shadow">
+              MC
+            </div>
+            <span
+              class="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 px-2 rounded-full bg-rose-500 text-[9px] font-semibold text-white shadow-sm">
+              Afastado
+            </span>
+          </div>
+          <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+            Marina Costa
+          </p>
+          <p class="text-[11px] text-slate-600 truncate max-w-[180px]">
+            Analista Financeira
+          </p>
+          <p class="text-[10px] text-slate-400 mt-1">
+            Financeiro · Presencial
+          </p>
+        </article>
+
+        <!-- Card em grade 4 -->
+        <article
+          class="employee-card bg-white rounded-[24px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 py-4 cursor-pointer hover:bg-slate-50 transition flex flex-col items-center text-center"
+          data-status="ativo remoto">
+          <div class="relative mb-3">
+            <div
+              class="h-14 w-14 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white text-xs font-semibold shadow">
+              TR
+            </div>
+            <span
+              class="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 px-2 rounded-full bg-emerald-500 text-[9px] font-semibold text-white shadow-sm">
+              Ativo
+            </span>
+          </div>
+          <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+            Thiago Rocha
+          </p>
+          <p class="text-[11px] text-slate-600 truncate max-w-[180px]">
+            DevOps Engineer
+          </p>
+          <p class="text-[10px] text-slate-400 mt-1">
+            Tecnologia · Remoto
+          </p>
+        </article>
+      </section>
+
+      <!-- 7. EMPTY STATE -->
+      <section id="empty-state" class="hidden">
+        <div
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-6 py-8 sm:px-8 sm:py-10 flex flex-col items-center text-center gap-3">
+          <div
+            class="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 text-xl">
+            􀌤
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm sm:text-[15px] font-semibold text-slate-900">
+              Nenhum colaborador encontrado.
+            </p>
+            <p class="text-[11px] sm:text-[12px] text-slate-500 max-w-sm mx-auto">
+              Ajuste a busca ou os filtros para visualizar outros colaboradores ou limpe os filtros atuais.
+            </p>
+          </div>
+          <button
+            id="clear-filters"
+            class="mt-2 inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+            Limpar filtros
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 8. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>Dados fornecidos pelo departamento de RH.</span>
+      <span>Synergy HR · Equipe</span>
+    </footer>
+  </div>
+
+  <!-- 6. MODAL — DETALHES RÁPIDOS (QUICK VIEW) -->
+  <div
+    id="quick-view-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-md w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Detalhes rápidos
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Perfil do colaborador
+          </h2>
+        </div>
+        <button
+          id="close-quick-view"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <!-- Conteúdo do modal (mock, poderia ser dinâmico depois) -->
+      <div class="flex items-center gap-3">
+        <div
+          class="h-14 w-14 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-sm font-semibold">
+          JJ
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+            Jasmine Jones
+          </p>
+          <p class="text-[11px] sm:text-[12px] text-slate-600 truncate">
+            Product Designer · People & Experience
+          </p>
+          <div class="mt-1 flex flex-wrap gap-1.5 text-[10px]">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+              Ativo
+            </span>
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+              Híbrido · São Paulo
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-1 text-[11px] sm:text-[12px]">
+        <p class="text-slate-500">
+          Último registro de ponto
+        </p>
+        <p class="font-medium text-slate-900">
+          Hoje · 08:59 Entrada · 17:42 Saída (7h 51min)
+        </p>
+      </div>
+
+      <div class="space-y-1 text-[11px] sm:text-[12px]">
+        <p class="text-slate-500">
+          Status profissional
+        </p>
+        <p class="text-slate-700">
+          Nível Pleno · Squad Employee Journey · Gestor: Marcos Gonçalves
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-2 text-[11px] sm:text-[12px]">
+        <button
+          class="h-9 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Ver Perfil Completo
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+          Enviar Mensagem
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition">
+          Ver Documentos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT: toggle lista/grade, filtros, busca, modal quick view -->
+  <script>
+    // Helpers modal
+    function openModal(el) {
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+    function closeModal(el) {
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    // Toggle list/grid
+    const listView = document.getElementById('list-view');
+    const gridView = document.getElementById('grid-view');
+    const btnListView = document.getElementById('btn-list-view');
+    const btnGridView = document.getElementById('btn-grid-view');
+
+    function setView(mode) {
+      if (mode === 'list') {
+        listView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+        btnListView.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+        btnGridView.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+        btnGridView.classList.add('text-slate-500');
+      } else {
+        listView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        btnGridView.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+        btnListView.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+        btnListView.classList.add('text-slate-500');
+      }
+    }
+
+    btnListView.addEventListener('click', () => setView('list'));
+    btnGridView.addEventListener('click', () => setView('grid'));
+
+    // Filtros por chips + busca simples
+    const chips = document.querySelectorAll('.chip-filter');
+    const employeeCards = document.querySelectorAll('.employee-card');
+    const searchInput = document.getElementById('search-input');
+    const emptyState = document.getElementById('empty-state');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+
+    let activeFilter = 'all';
+
+    function applyFilters() {
+      const query = (searchInput.value || '').toLowerCase().trim();
+      let visibleCount = 0;
+
+      employeeCards.forEach(card => {
+        const status = (card.getAttribute('data-status') || '').toLowerCase();
+        const text = card.textContent.toLowerCase();
+        const matchesFilter = activeFilter === 'all' || status.includes(activeFilter);
+        const matchesSearch = !query || text.includes(query);
+
+        if (matchesFilter && matchesSearch) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.dataset.active = 'false');
+        chip.dataset.active = 'true';
+        activeFilter = chip.getAttribute('data-filter') || 'all';
+        applyFilters();
+      });
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener('click', () => {
+        // Reset busca e filtros
+        searchInput.value = '';
+        activeFilter = 'all';
+        chips.forEach(c => c.dataset.active = 'false');
+        const allChip = document.querySelector('[data-filter="all"]');
+        if (allChip) allChip.dataset.active = 'true';
+        applyFilters();
+      });
+    }
+
+    // Modal Quick View
+    const quickViewModal = document.getElementById('quick-view-modal');
+    const closeQuickView = document.getElementById('close-quick-view');
+    const quickViewBtns = document.querySelectorAll('.quick-view-btn');
+
+    quickViewBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openModal(quickViewModal);
+      });
+    });
+
+    if (closeQuickView) {
+      closeQuickView.addEventListener('click', () => closeModal(quickViewModal));
+    }
+
+    quickViewModal.addEventListener('click', (e) => {
+      if (e.target === quickViewModal) closeModal(quickViewModal);
+    });
+
+    // Inicialização
+    applyFilters();
+    setView('list');
+  </script>
+</body>
+</html>

@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Check, LogIn, ShieldCheck, Sparkles } from 'lucide-react'
+import { Lock, Mail, ShieldCheck } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { useTranslation } from 'react-i18next'
@@ -13,12 +11,11 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const login = useAuthStore((state) => state.login)
   const loading = useAuthStore((state) => state.loading)
   const { toast } = useToast()
   const { t } = useTranslation()
-
-  const features = t('login.features', { returnObjects: true })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,58 +36,45 @@ export default function Login() {
   }
 
   return (
-    <div className="container flex min-h-screen flex-col items-center justify-center py-10">
-      <div className="mb-6 flex w-full items-center justify-between">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-primary">{t('common.brand')}</p>
-            <p className="text-sm text-muted-foreground">{t('common.brandSubtitle')}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
+    <div className="relative flex min-h-screen items-center justify-center bg-[#f4f5fb] px-4 py-10 text-foreground transition-colors dark:bg-[#070d1c]">
+      <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="absolute left-[-10%] top-10 h-48 w-48 rounded-full bg-[#dfe6ff] blur-[120px] dark:bg-primary/10" />
+        <div className="absolute right-[-12%] top-1/4 h-56 w-56 rounded-full bg-[#ced9ff] blur-[130px] dark:bg-[#142040]" />
+        <div className="absolute bottom-[-15%] left-1/4 h-56 w-56 rounded-full bg-[#e9eeff] blur-[140px] dark:bg-[#0b1330]" />
       </div>
 
-      <div className="grid w-full max-w-5xl gap-6 rounded-[22px] border border-border/70 bg-card/70 p-8 shadow-[0_30px_80px_-50px_rgba(16,185,129,0.6)] backdrop-blur-lg md:grid-cols-[1.3fr,1fr]">
-        <div className="space-y-6">
-          <p className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            <ShieldCheck className="h-4 w-4" />
-            {t('common.connectedBadge')}
-          </p>
-          <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{t('login.heroTitle')}</h1>
-          <p className="text-base text-muted-foreground">{t('login.heroDescription')}</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {features.map((item) => (
-              <div
-                key={item}
-                className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-sm text-muted-foreground"
-              >
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary">
-                  <Check className="h-4 w-4" />
-                </span>
-                {item}
-              </div>
-            ))}
-          </div>
+      <div className="relative w-full max-w-md">
+        <div className="mb-6 flex justify-end">
+          <LanguageSwitcher />
         </div>
 
-        <Card className="bg-background/80">
-          <CardHeader className="space-y-2">
-            <CardTitle className="flex items-center gap-2 text-2xl font-bold">
-              <LogIn className="h-5 w-5 text-primary" />
-              {t('login.cardTitle')}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{t('login.cardDescription')}</p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('login.emailLabel')}</Label>
+        <div className="rounded-[28px] border border-border/60 bg-white p-8 shadow-[0_28px_70px_-35px_rgba(15,23,42,0.35)] transition-colors dark:border-border/50 dark:bg-[#0f172a] dark:shadow-[0_30px_80px_-38px_rgba(0,0,0,0.75)]">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1d2f7a] text-base font-semibold uppercase text-white shadow-inner dark:bg-primary/80">
+              {t('login.brand.badge')}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#1c2c66] dark:text-primary/80">
+                {t('login.brand.title')}
+              </p>
+              <p className="text-sm text-[#6f7690] dark:text-foreground/70">{t('login.brand.subtitle')}</p>
+            </div>
+          </div>
+
+          <div className="mb-6 space-y-2">
+            <h1 className="text-[22px] font-semibold leading-tight text-[#152147] dark:text-white">{t('login.title')}</h1>
+            <p className="text-sm text-[#6f7690] dark:text-foreground/70">{t('login.subtitle')}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-[#2f3b59] dark:text-white/90" htmlFor="email">
+                {t('login.emailLabel')}
+              </Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#9aa4c0] dark:text-foreground/60">
+                  <Mail className="h-5 w-5" />
+                </span>
                 <Input
                   id="email"
                   type="email"
@@ -98,25 +82,69 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-[54px] rounded-2xl border border-[#e2e5f2] bg-[#f5f6fb] pl-12 pr-4 text-[15px] text-[#2f3b59] placeholder:text-[#b0b7c9] shadow-[0_16px_40px_-28px_rgba(21,33,71,0.35)] focus-visible:border-[#c9d4ff] focus-visible:ring-2 focus-visible:ring-[#1d2f7a]/25 focus-visible:ring-offset-0 dark:border-[#1e2745] dark:bg-[#0c1325] dark:text-white dark:placeholder:text-[#667399]"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('login.passwordLabel')}</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-[#2f3b59] dark:text-white/90" htmlFor="password">
+                {t('login.passwordLabel')}
+              </Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#f4af21]">
+                  <Lock className="h-5 w-5 fill-[#f4af21] text-[#f4af21]" />
+                </span>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder={t('login.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-[54px] rounded-2xl border border-[#e2e5f2] bg-[#f5f6fb] pl-12 pr-16 text-[15px] text-[#2f3b59] placeholder:text-[#b0b7c9] shadow-[0_16px_40px_-28px_rgba(21,33,71,0.35)] focus-visible:border-[#c9d4ff] focus-visible:ring-2 focus-visible:ring-[#1d2f7a]/25 focus-visible:ring-offset-0 dark:border-[#1e2745] dark:bg-[#0c1325] dark:text-white dark:placeholder:text-[#667399]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#55608a] transition hover:text-[#1d2f7a] dark:text-foreground/80 dark:hover:text-white"
+                  aria-pressed={showPassword}
+                  aria-label={t('login.togglePasswordAlt')}
+                >
+                  {showPassword ? t('login.hide') : t('login.show')}
+                </button>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t('login.submitting') : t('login.submit')}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                className="text-xs font-semibold text-[#6f7690] underline-offset-4 transition hover:text-[#1d2f7a] dark:text-foreground/80 dark:hover:text-white"
+              >
+                {t('login.forgotPassword')}
+              </button>
+            </div>
+
+            <Button
+              type="submit"
+              className="mt-2 h-[48px] w-full rounded-full bg-[#1c2c66] text-white shadow-[0_18px_40px_-22px_rgba(28,44,102,0.75)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_50px_-24px_rgba(28,44,102,0.9)] focus-visible:ring-offset-0"
+              disabled={loading}
+            >
+              {loading ? t('login.submitting') : t('login.submit')}
+            </Button>
+          </form>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-3 text-xs text-[#7c85a0] dark:text-foreground/70">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-white text-[10px] font-semibold text-[#6b7aa6] shadow-sm dark:border-border/50 dark:bg-[#0f172a] dark:text-foreground">
+            {t('login.footerBadge')}
+          </div>
+          <div className="space-y-0.5 text-center">
+            <p>{t('login.sessionCopy')}</p>
+            <p className="text-[11px] text-[#9aa4c0] dark:text-foreground/60">{t('login.uiCredits')}</p>
+          </div>
+          <ShieldCheck className="h-4 w-4 text-[#1c2c66] dark:text-primary/80" />
+        </div>
       </div>
     </div>
   )

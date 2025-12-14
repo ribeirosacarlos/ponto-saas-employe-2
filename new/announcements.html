@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Comunicados – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- 1. HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+
+      <!-- Esquerda: voltar + textos -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200"
+          title="Voltar">
+          <!-- chevron.left -->
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Comunicados
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Mensagens e avisos do escritório
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro: barra de busca estilo iOS -->
+      <div class="flex-1 min-w-[230px] max-w-xl order-3 md:order-2 w-full">
+        <div
+          class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 text-[12px] sm:text-[13px]">
+          <span class="text-slate-400">􀊫</span>
+          <input
+            type="text"
+            placeholder="Buscar por título, categoria ou conteúdo"
+            class="w-full bg-transparent outline-none text-slate-700 placeholder:text-slate-400" />
+          <button
+            class="hidden sm:inline-flex items-center px-2 py-1 rounded-full bg-slate-100 text-[11px] text-slate-500">
+            ⌘F
+          </button>
+        </div>
+      </div>
+
+      <!-- Direita: filtros + avatar -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <button
+          id="open-filters"
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200"
+          title="Filtros">
+          <!-- slider.horizontal.3 -->
+          􀊚
+        </button>
+
+        <div
+          class="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200">
+          <div
+            class="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
+            JJ
+          </div>
+          <div class="hidden sm:flex flex-col leading-tight">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-800">
+              Jasmine Jones
+            </span>
+            <span class="text-[10px] text-slate-500">
+              HR Manager
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+      <!-- 2. CARD DE DESTAQUE — ÚLTIMO COMUNICADO -->
+      <section
+        class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex gap-3">
+            <div
+              class="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-base sm:text-lg">
+              <!-- megaphone icon -->
+              􀌕
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900 line-clamp-2">
+                  Atualização do modelo híbrido de trabalho para 2024
+                </h2>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                  Atualização
+                </span>
+              </div>
+              <p class="text-[11px] sm:text-[12px] text-slate-600 max-w-2xl">
+                A partir de janeiro de 2024, ajustaremos a política de dias presenciais e home office
+                para todas as equipes administrativas.
+              </p>
+              <p class="text-[10px] text-slate-400">
+                Publicado em 12 nov 2023 · 17:42 · Departamento Administrativo
+              </p>
+            </div>
+          </div>
+          <div class="hidden sm:flex items-start">
+            <button
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+              data-open-announcement>
+              <span>Ler Mais</span>
+              <span class="text-xs">›</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botão Ler Mais no mobile -->
+        <div class="sm:hidden">
+          <button
+            class="mt-1 inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition"
+            data-open-announcement>
+            <span>Ler Mais</span>
+            <span class="text-xs">›</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. FILTRO DE CATEGORIAS (CHIPS) -->
+      <section
+        class="bg-white rounded-[20px] border border-slate-200 shadow-[0_10px_25px_rgba(15,23,42,0.05)] px-3 sm:px-4 py-2.5">
+        <div class="flex items-center justify-between gap-2 text-[11px] sm:text-[12px] mb-2">
+          <span class="text-slate-600">Filtrar por categoria</span>
+          <span class="text-slate-400 hidden sm:inline">Toque para refinar os comunicados.</span>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            class="px-3 py-1.5 rounded-full bg-slate-900 text-white text-[11px] font-medium shadow-sm">
+            Geral
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700 hover:bg-slate-100">
+            RH
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700 hover:bg-slate-100">
+            Financeiro
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700 hover:bg-slate-100">
+            Projetos
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700 hover:bg-slate-100">
+            TI
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-[11px] text-rose-600 hover:bg-rose-100">
+            Urgente
+          </button>
+        </div>
+      </section>
+
+      <!-- 3. LISTA DE COMUNICADOS -->
+      <section id="announcements-list" class="space-y-3 sm:space-y-4">
+
+        <!-- Card 1 -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-announcement>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Recesso de final de ano e jornada reduzida
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    Informamos que entre os dias 23/12 e 02/01 teremos expediente reduzido e
+                    esquema especial de plantão para áreas críticas.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                    Aviso Geral
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    10 nov · 11:05
+                  </span>
+                </div>
+              </div>
+
+              <!-- Data e categoria no mobile -->
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>10 nov · 11:05</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                  Aviso Geral
+                </span>
+              </div>
+            </div>
+
+            <!-- Chevron -->
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-announcement>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Atualização da política de benefícios flexíveis
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    A partir de dezembro incluiremos novas opções de saldo flexível para alimentação,
+                    saúde e bem-estar, com escolha feita diretamente no aplicativo.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-50 text-[10px] font-medium text-purple-600 border border-purple-100">
+                    RH
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    08 nov · 16:20
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>08 nov · 16:20</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-[10px] font-medium text-purple-600 border border-purple-100">
+                  RH
+                </span>
+              </div>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-slate-50 transition"
+          data-open-announcement>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-slate-900 truncate">
+                    Janela de manutenção programada – sistema de ponto
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    No domingo, das 02h às 06h, o sistema de ponto ficará indisponível para manutenção
+                    preventiva. Oriente sua equipe caso haja trabalho em regime de plantão.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-50 text-[10px] font-medium text-sky-600 border border-sky-100">
+                    TI
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    07 nov · 09:30
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>07 nov · 09:30</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-sky-50 text-[10px] font-medium text-sky-600 border border-sky-100">
+                  TI
+                </span>
+              </div>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 4 - Urgente -->
+        <article
+          class="bg-white rounded-[22px] border border-slate-200 shadow-[0_10px_26px_rgba(15,23,42,0.05)] px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer hover:bg-rose-50/40 transition"
+          data-open-announcement>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-[13px] sm:text-sm font-semibold text-rose-700 truncate">
+                    Alerta de segurança – tentativas de phishing
+                  </p>
+                  <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-600 line-clamp-2">
+                    Recebemos relatos de emails falsos em nome do departamento financeiro. Não clique em
+                    links suspeitos e reporte imediatamente qualquer mensagem duvidosa.
+                  </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                    Urgente
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    05 nov · 08:10
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1 flex sm:hidden items-center justify-between text-[10px] text-slate-500">
+                <span>05 nov · 08:10</span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-50 text-[10px] font-medium text-rose-600 border border-rose-100">
+                  Urgente
+                </span>
+              </div>
+            </div>
+            <div class="pl-2 flex items-center">
+              <span class="text-slate-300 text-lg">›</span>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- 6. EMPTY STATE (inicialmente oculto, use se não houver comunicados) -->
+      <section id="empty-state" class="hidden">
+        <div
+          class="bg-white rounded-[24px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-6 py-8 sm:px-8 sm:py-10 flex flex-col items-center text-center gap-3">
+          <div
+            class="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 text-xl">
+            <!-- text.bubble -->
+            􀌤
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm sm:text-[15px] font-semibold text-slate-900">
+              Nenhum comunicado por aqui.
+            </p>
+            <p class="text-[11px] sm:text-[12px] text-slate-500 max-w-sm mx-auto">
+              Assim que o departamento administrativo publicar algum aviso, ele aparecerá nesta página.
+            </p>
+          </div>
+          <button
+            class="mt-2 inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+            Atualizar
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 7. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>Os comunicados são enviados pelo departamento administrativo.</span>
+      <span>Synergy HR · Comunicados</span>
+    </footer>
+  </div>
+
+  <!-- 5. MODAL DE DETALHAMENTO DO COMUNICADO -->
+  <div
+    id="announcement-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-lg w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Comunicado
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Atualização do modelo híbrido de trabalho para 2024
+          </h2>
+        </div>
+        <button
+          id="close-announcement"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[10px] sm:text-[11px]">
+        <span
+          class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+          Atualização
+        </span>
+        <span class="text-slate-400">
+          Publicado em 12 nov 2023 · 17:42 · Departamento Administrativo
+        </span>
+      </div>
+
+      <hr class="border-slate-100" />
+
+      <!-- Conteúdo completo -->
+      <div class="space-y-2 text-[11px] sm:text-[12px] text-slate-700">
+        <p>
+          A partir de janeiro de 2024, ajustaremos o modelo híbrido de trabalho com o objetivo de
+          equilibrar colaboração presencial e flexibilidade de trabalho remoto.
+        </p>
+        <p>
+          O novo modelo prevê <strong>3 dias presenciais</strong> por semana para a maioria das equipes
+          administrativas, com a possibilidade de ajustes específicos para áreas que atuam em regime
+          de plantão, atendimento ao público ou operações críticas.
+        </p>
+        <p>
+          As lideranças de cada área receberão um guia detalhado com orientações para planejamento
+          de agendas, reserva de estações de trabalho e boas práticas de colaboração em ambientes
+          híbridos.
+        </p>
+        <p>
+          Em caso de dúvidas, entre em contacto com o departamento de RH ou utilize o canal oficial
+          de suporte interno.
+        </p>
+      </div>
+
+      <!-- Anexos -->
+      <div class="space-y-2 pt-1">
+        <p class="text-[11px] sm:text-[12px] font-medium text-slate-700">
+          Anexos
+        </p>
+        <div class="flex flex-wrap gap-2 text-[11px] sm:text-[12px]">
+          <button
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            <span class="text-slate-400 text-xs">􀈷</span>
+            <span>Guia-modelo-hibrido-2024.pdf</span>
+          </button>
+          <button
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            <span class="text-slate-400 text-xs">􀈷</span>
+            <span>FAQ-trabalho-remoto.docx</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-2 text-[11px] sm:text-[12px]">
+        <button
+          class="h-9 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Marcar como lido
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+          Salvar
+        </button>
+        <button
+          class="h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition flex items-center justify-center gap-1">
+          <span>Compartilhar</span>
+          <span class="text-xs text-slate-400">􀈂</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL FILTROS -->
+  <div
+    id="filters-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-md w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Filtros de comunicados
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Refinar resultados
+          </h2>
+        </div>
+        <button
+          id="close-filters"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <!-- Categorias -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Categoria</p>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Geral
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            RH
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Financeiro
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Projetos
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            TI
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600">
+            Urgente
+          </button>
+        </div>
+      </div>
+
+      <!-- Intervalo de datas -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Intervalo de datas</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">􀉉</span>
+            <input
+              type="date"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+          <div
+            class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <span class="text-slate-400 text-xs">􀉉</span>
+            <input
+              type="date"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Status (lido / não lido) -->
+      <div class="space-y-2 text-[11px] sm:text-[12px]">
+        <p class="font-medium text-slate-700">Status</p>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Todos
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Não lidos
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700">
+            Lidos
+          </button>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="pt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-[12px]">
+        <button
+          class="inline-flex items-center justify-center h-9 px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+          Aplicar
+        </button>
+        <button
+          class="inline-flex items-center justify-center h-9 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium transition">
+          Limpar Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT: abrir/fechar modais -->
+  <script>
+    // Modal de comunicado
+    const announcementModal = document.getElementById('announcement-modal');
+    const openAnnouncementButtons = document.querySelectorAll('[data-open-announcement]');
+    const closeAnnouncement = document.getElementById('close-announcement');
+
+    openAnnouncementButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        announcementModal.classList.remove('hidden');
+        announcementModal.classList.add('flex');
+      });
+    });
+
+    closeAnnouncement.addEventListener('click', () => {
+      announcementModal.classList.add('hidden');
+      announcementModal.classList.remove('flex');
+    });
+
+    announcementModal.addEventListener('click', (e) => {
+      if (e.target === announcementModal) {
+        announcementModal.classList.add('hidden');
+        announcementModal.classList.remove('flex');
+      }
+    });
+
+    // Modal de filtros
+    const filtersModal = document.getElementById('filters-modal');
+    const openFilters = document.getElementById('open-filters');
+    const closeFilters = document.getElementById('close-filters');
+
+    openFilters.addEventListener('click', () => {
+      filtersModal.classList.remove('hidden');
+      filtersModal.classList.add('flex');
+    });
+
+    closeFilters.addEventListener('click', () => {
+      filtersModal.classList.add('hidden');
+      filtersModal.classList.remove('flex');
+    });
+
+    filtersModal.addEventListener('click', (e) => {
+      if (e.target === filtersModal) {
+        filtersModal.classList.add('hidden');
+        filtersModal.classList.remove('flex');
+      }
+    });
+
+    // Empty state (exemplo de como alternar)
+    // Se algum dia quiser simular "sem comunicados":
+    // document.getElementById('announcements-list').classList.add('hidden');
+    // document.getElementById('empty-state').classList.remove('hidden');
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Perfil – Synergy HR</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f3f4fb] text-slate-900">
+  <div class="min-h-screen flex flex-col">
+
+    <!-- 1. HEADER SUPERIOR -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+
+      <!-- Esquerda: voltar + título -->
+      <div class="flex items-center gap-3 min-w-[220px]">
+        <button
+          class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200"
+          title="Voltar">
+          <!-- chevron.left -->
+          <span class="text-lg">‹</span>
+        </button>
+        <div class="flex flex-col">
+          <h1 class="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">
+            Perfil
+          </h1>
+          <p class="text-[11px] sm:text-xs text-slate-500">
+            Dados do colaborador
+          </p>
+        </div>
+      </div>
+
+      <!-- Centro vazio (reserva para futuras ações) -->
+      <div class="flex-1 order-3 md:order-2"></div>
+
+      <!-- Direita: botão editar -->
+      <div class="flex items-center gap-2 order-2 md:order-3">
+        <button
+          id="open-edit-profile"
+          class="inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition">
+          <span class="text-sm">􀈎</span>
+          <span>Editar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+      <!-- HERO / AVATAR / NOME -->
+      <section
+        class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-5 sm:px-7 py-5 sm:py-6 flex flex-col items-center sm:items-start gap-4">
+
+        <div class="flex flex-col sm:flex-row items-center sm:items-center gap-4 w-full">
+          <!-- Avatar grande -->
+          <div
+            class="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-xl font-semibold shadow-md">
+            JJ
+          </div>
+
+          <!-- Nome, cargo, depto -->
+          <div class="flex-1 flex flex-col items-center sm:items-start gap-1">
+            <h2 class="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900">
+              Jasmine Jones
+            </h2>
+            <p class="text-[12px] sm:text-sm text-slate-600">
+              Product Designer · Equipe de Experiência do Colaborador
+            </p>
+            <div class="flex flex-wrap justify-center sm:justify-start gap-1.5 mt-1">
+              <span
+                class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                Ativo
+              </span>
+              <span
+                class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+                Híbrido · São Paulo
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GRID PRINCIPAL -->
+      <div class="grid gap-5 lg:gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.1fr)]">
+
+        <!-- COLUNA ESQUERDA -->
+        <div class="space-y-5 lg:space-y-6">
+
+          <!-- 2. CARD — INFORMAÇÕES GERAIS -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Informações gerais
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Dados do colaborador
+                </h2>
+              </div>
+            </header>
+
+            <div class="divide-y divide-slate-100 text-[11px] sm:text-[12px]">
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀉩</span>
+                  <span class="text-slate-500">Nome completo</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  Jasmine Jones
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀈷</span>
+                  <span class="text-slate-500">Cargo</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  Product Designer
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀙇</span>
+                  <span class="text-slate-500">Departamento</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  People & Experience
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀉉</span>
+                  <span class="text-slate-500">Data de admissão</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  12 Mar 2020
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀋦</span>
+                  <span class="text-slate-500">Status do contrato</span>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-600 border border-emerald-100">
+                  Ativo
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀐫</span>
+                  <span class="text-slate-500">Horário padrão</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  09:00 – 18:00 · Seg à Sex
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀍕</span>
+                  <span class="text-slate-500">ID interno</span>
+                </div>
+                <span class="font-semibold text-slate-900 text-right">
+                  EMP-004231
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. CARD — CONTATOS -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Contatos
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Informações de contacto
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-2 text-[11px] sm:text-[12px]">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀍕</span>
+                  <span class="text-slate-500">Email corporativo</span>
+                </div>
+                <span class="font-medium text-slate-900 text-right truncate max-w-[220px] sm:max-w-xs">
+                  jasmine.jones@synergyhr.com
+                </span>
+              </div>
+
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀌤</span>
+                  <span class="text-slate-500">Telefone</span>
+                </div>
+                <span class="font-medium text-slate-900 text-right">
+                  +55 (11) 99876-5432
+                </span>
+              </div>
+
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀌱</span>
+                  <span class="text-slate-500">Ramal</span>
+                </div>
+                <span class="font-medium text-slate-900 text-right">
+                  214
+                </span>
+              </div>
+
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀎞</span>
+                  <span class="text-slate-500">Endereço</span>
+                </div>
+                <span class="font-medium text-slate-900 text-right text-ellipsis max-w-[220px] sm:max-w-xs">
+                  Av. das Nações, 1234 · 12º andar · São Paulo – SP
+                </span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex flex-wrap gap-2 text-[11px] sm:text-[12px]">
+              <button
+                class="inline-flex items-center justify-center h-9 px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-white font-semibold shadow-sm active:scale-[0.98] transition">
+                􀍕 Enviar Email
+              </button>
+              <button
+                class="inline-flex items-center justify-center h-9 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold transition">
+                􀌤 Ligar
+              </button>
+            </div>
+          </section>
+
+          <!-- 7. CARD — STATUS PROFISSIONAL -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Status profissional
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Perfil na organização
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-3 text-[11px] sm:text-[12px]">
+              <div>
+                <p class="text-slate-500 mb-1">Competências principais</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] text-slate-800">
+                    UX Research
+                  </span>
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] text-slate-800">
+                    UI Design
+                  </span>
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] text-slate-800">
+                    Design Systems
+                  </span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <p class="text-slate-500">Nível</p>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-[10px] font-medium text-blue-600 border border-blue-100">
+                    Pleno
+                  </span>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-slate-500">Local de trabalho</p>
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-medium text-slate-700 border border-slate-200">
+                    Híbrido · 3x escritório
+                  </span>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-slate-500">Gestor responsável</p>
+                  <span class="font-medium text-slate-900">
+                    Marcos Gonçalves · Head de People & Experience
+                  </span>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-slate-500">Equipe associada</p>
+                  <span class="font-medium text-slate-900">
+                    Squad Employee Journey
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- COLUNA DIREITA -->
+        <div class="space-y-5 lg:space-y-6">
+
+          <!-- 4. CARD — DOCUMENTOS DO COLABORADOR -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Documentos
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Arquivos do colaborador
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-2 text-[11px] sm:text-[12px]">
+              <!-- Item: Contrato -->
+              <button
+                class="w-full flex items-center justify-between gap-3 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    class="h-8 w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+                    􀈷
+                  </span>
+                  <div class="min-w-0 flex-1 text-left">
+                    <p class="font-medium text-slate-900 truncate">
+                      Contrato de trabalho
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      Assinado em 10 Mar 2020 · PDF
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <span class="text-sm">􀈾</span>
+                  <span class="text-lg">›</span>
+                </div>
+              </button>
+
+              <!-- Item: Atestados -->
+              <button
+                class="w-full flex items-center justify-between gap-3 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    class="h-8 w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+                    􀈷
+                  </span>
+                  <div class="min-w-0 flex-1 text-left">
+                    <p class="font-medium text-slate-900 truncate">
+                      Atestados médicos
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      3 documentos anexados · 2022–2023
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <span class="text-sm">􀈾</span>
+                  <span class="text-lg">›</span>
+                </div>
+              </button>
+
+              <!-- Item: Holerites -->
+              <button
+                class="w-full flex items-center justify-between gap-3 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    class="h-8 w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+                    􀈷
+                  </span>
+                  <div class="min-w-0 flex-1 text-left">
+                    <p class="font-medium text-slate-900 truncate">
+                      Holerites
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      Disponíveis últimos 12 meses
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <span class="text-sm">􀈾</span>
+                  <span class="text-lg">›</span>
+                </div>
+              </button>
+
+              <!-- Item: Declarações -->
+              <button
+                class="w-full flex items-center justify-between gap-3 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    class="h-8 w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+                    􀈷
+                  </span>
+                  <div class="min-w-0 flex-1 text-left">
+                    <p class="font-medium text-slate-900 truncate">
+                      Declarações e comprovantes
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      Declaração de vínculo, remuneração e outros
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <span class="text-sm">􀈾</span>
+                  <span class="text-lg">›</span>
+                </div>
+              </button>
+
+              <!-- Item: Histórico de cargos -->
+              <button
+                class="w-full flex items-center justify-between gap-3 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    class="h-8 w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+                    􀙇
+                  </span>
+                  <div class="min-w-0 flex-1 text-left">
+                    <p class="font-medium text-slate-900 truncate">
+                      Histórico de cargos e promoções
+                    </p>
+                    <p class="text-[10px] text-slate-500 truncate">
+                      Atualizado até 2023
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <span class="text-sm">􀈾</span>
+                  <span class="text-lg">›</span>
+                </div>
+              </button>
+            </div>
+          </section>
+
+          <!-- 5. CARD — REGISTRO DE PONTO (ATALHO) -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Ponto
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Resumo de registro
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-2 text-[11px] sm:text-[12px]">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Total de horas no mês</span>
+                <span class="font-semibold text-slate-900">
+                  168h 20min
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Horas extras</span>
+                <span class="font-semibold text-slate-900">
+                  12h 40min
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Último registro</span>
+                <span class="font-semibold text-slate-900 text-right">
+                  Hoje · 08:59 Entrada
+                </span>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button
+                class="inline-flex items-center justify-center h-9 px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+                Ver Histórico Completo
+              </button>
+            </div>
+          </section>
+
+          <!-- 6. CARD — FÉRIAS -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Férias
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Saldo e próximas férias
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-2 text-[11px] sm:text-[12px]">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Dias disponíveis</span>
+                <span class="font-semibold text-slate-900">
+                  16 dias
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-slate-500">Dias usados</span>
+                <span class="font-semibold text-slate-900">
+                  10 dias
+                </span>
+              </div>
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-slate-500">Próximas férias</span>
+                <span class="font-semibold text-slate-900 text-right">
+                  10 Nov – 24 Nov · Pendente
+                </span>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button
+                class="inline-flex items-center justify-center h-9 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-[11px] sm:text-xs text-slate-800 font-semibold transition">
+                Gerenciar Férias
+              </button>
+            </div>
+          </section>
+
+          <!-- 8. CARD — CONFIGURAÇÕES DO PERFIL -->
+          <section
+            class="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+                  Configurações
+                </p>
+                <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+                  Preferências do perfil
+                </h2>
+              </div>
+            </header>
+
+            <div class="space-y-1 text-[11px] sm:text-[12px]">
+              <button
+                class="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀎫</span>
+                  <span class="text-slate-800">Alterar foto de perfil</span>
+                </div>
+                <span class="text-slate-300 text-lg">›</span>
+              </button>
+              <button
+                class="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀍕</span>
+                  <span class="text-slate-800">Atualizar dados pessoais</span>
+                </div>
+                <span class="text-slate-300 text-lg">›</span>
+              </button>
+              <button
+                class="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀋚</span>
+                  <span class="text-slate-800">Preferências de notificação</span>
+                </div>
+                <span class="text-slate-300 text-lg">›</span>
+              </button>
+              <button
+                class="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-2xl hover:bg-slate-50 transition">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-sm">􀎧</span>
+                  <span class="text-slate-800">Privacidade</span>
+                </div>
+                <span class="text-slate-300 text-lg">›</span>
+              </button>
+            </div>
+
+            <div class="pt-2">
+              <button
+                class="inline-flex items-center justify-center h-9 px-4 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] sm:text-xs text-rose-600 font-semibold transition">
+                Sair da Conta
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- 10. FOOTER -->
+    <footer
+      class="px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 bg-white text-[10px] sm:text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+      <span>Dados sincronizados com o RH.</span>
+      <span>Synergy HR · Perfil do Funcionário</span>
+    </footer>
+  </div>
+
+  <!-- 9. MODAL — EDIÇÃO DE PERFIL -->
+  <div
+    id="profile-edit-modal"
+    class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/40 px-4 py-6">
+    <div
+      class="max-w-lg w-full bg-white rounded-[28px] shadow-[0_24px_80px_rgba(15,23,42,0.45)] border border-slate-200 px-5 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">
+            Editar perfil
+          </p>
+          <h2 class="text-sm sm:text-[15px] font-semibold text-slate-900">
+            Atualizar dados do colaborador
+          </h2>
+        </div>
+        <button
+          id="close-edit-profile"
+          class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          ×
+        </button>
+      </div>
+
+      <form class="space-y-3 sm:space-y-4 text-[11px] sm:text-[12px]">
+        <!-- Foto -->
+        <div class="flex items-center gap-3">
+          <div
+            class="h-14 w-14 rounded-full bg-gradient-to-tr from-[#1e2a78] to-indigo-400 flex items-center justify-center text-white text-sm font-semibold">
+            JJ
+          </div>
+          <button
+            type="button"
+            class="h-8 px-3 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-[11px] text-slate-800 font-medium transition">
+            Alterar foto
+          </button>
+        </div>
+
+        <!-- Nome -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Nome completo</p>
+          <div
+            class="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <input
+              type="text"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]"
+              value="Jasmine Jones" />
+          </div>
+        </div>
+
+        <!-- Telefone -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Telefone</p>
+          <div
+            class="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <input
+              type="text"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px]"
+              value="+55 (11) 99876-5432" />
+          </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="space-y-1">
+          <p class="font-medium text-slate-700">Endereço</p>
+          <div
+            class="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+            <textarea
+              rows="2"
+              class="w-full bg-transparent outline-none text-slate-700 text-[11px] resize-none">Av. das Nações, 1234 · 12º andar · São Paulo – SP</textarea>
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="pt-2 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition">
+            Salvar
+          </button>
+          <button
+            type="button"
+            id="cancel-edit-profile"
+            class="inline-flex items-center justify-center h-9 sm:h-10 px-4 sm:px-5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-[11px] sm:text-xs text-slate-700 font-medium transition">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT: abrir/fechar modal -->
+  <script>
+    function openModal(el) {
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+    function closeModal(el) {
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    const profileEditModal = document.getElementById('profile-edit-modal');
+    const openEditProfile = document.getElementById('open-edit-profile');
+    const closeEditProfile = document.getElementById('close-edit-profile');
+    const cancelEditProfile = document.getElementById('cancel-edit-profile');
+
+    if (openEditProfile) {
+      openEditProfile.addEventListener('click', () => openModal(profileEditModal));
+    }
+    if (closeEditProfile) {
+      closeEditProfile.addEventListener('click', () => closeModal(profileEditModal));
+    }
+    if (cancelEditProfile) {
+      cancelEditProfile.addEventListener('click', () => closeModal(profileEditModal));
+    }
+
+    profileEditModal.addEventListener('click', (e) => {
+      if (e.target === profileEditModal) closeModal(profileEditModal);
+    });
+  </script>
+</body>
+</html>

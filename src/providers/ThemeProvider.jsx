@@ -1,23 +1,44 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const ThemeContext = createContext({
-  theme: 'dark',
+  theme: 'light',
   setTheme: () => {},
   toggleTheme: () => {},
 })
 
-export function ThemeProvider({ children, defaultTheme = 'dark' }) {
+const getSystemTheme = () => {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+export function ThemeProvider({ children, defaultTheme = 'light' }) {
   const [theme, setThemeState] = useState(() => {
     if (typeof window === 'undefined') return defaultTheme
-    return localStorage.getItem('app_theme') || defaultTheme
+    return getSystemTheme()
   })
 
   useEffect(() => {
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
     root.classList.add(theme)
-    localStorage.setItem('app_theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (event) => setThemeState(event.matches ? 'dark' : 'light')
+
+    // Update on mount to align with browser preference without user action.
+    setThemeState(mediaQuery.matches ? 'dark' : 'light')
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handler)
+      return () => mediaQuery.removeEventListener('change', handler)
+    }
+
+    mediaQuery.addListener(handler)
+    return () => mediaQuery.removeListener(handler)
+  }, [])
 
   const value = useMemo(
     () => ({
