@@ -1,43 +1,28 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { format, isSameDay, subDays } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { format, isSameDay } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import {
-  Bell,
-  CalendarDays,
-  Clock3,
-  Home,
-  ListChecks,
-  Menu,
-  Search,
-  Settings,
-  Users,
-  X,
-} from 'lucide-react'
+import { Bell, CalendarDays, Clock3, FileText, GraduationCap, Home, IdCard, ListChecks, Menu, Search, Settings, Users, X } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
+import { Button } from '../components/ui/button'
 import { requestAdjustment } from '../lib/api'
 import { useAuthStore } from '../store/useAuth'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
-import { QuickMenu } from '../components/QuickMenu'
 import { AjusteModal } from '../components/AjusteModal'
 import { useClocking } from '../features/ponto/useClocking'
-
+import { EmployeeDocumentsCard } from '../components/EmployeeDocumentsCard'
+import { ThemeToggle } from '../components/ThemeToggle'
+import { AnnouncementsCard } from '../components/AnnouncementsCard'
+import { TimeOffCard } from '../components/TimeOffCard'
+import { UserProfileDropdown } from '../components/UserProfileDropdown'
 export default function Dashboard() {
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const logout = useAuthStore((state) => state.logout)
   const { toast } = useToast()
-  const {
-    entries,
-    loadingEntries,
-    refreshEntries,
-    clocking,
-    registerClock,
-    nextType,
-  } = useClocking()
+  const { entries, loadingEntries, refreshEntries } = useClocking()
   const [sendingAdjustment, setSendingAdjustment] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const todaysEntries = useMemo(
     () =>
@@ -45,25 +30,10 @@ export default function Dashboard() {
     [entries],
   )
 
-  const nextLabel = nextType === 'in' ? t('dashboard.nextLabel.in') : t('dashboard.nextLabel.out')
-
   const todayLabel = useMemo(() => {
-    const label = format(new Date(), "dd 'de' MMMM", { locale: ptBR })
+    const label = new Date().toLocaleDateString(i18n.language, { day: '2-digit', month: 'long' })
     return label.charAt(0).toUpperCase() + label.slice(1)
-  }, [])
-
-  const initials = useMemo(() => {
-    const base = user?.name || user?.email || 'US'
-    const parts = base
-      .trim()
-      .split(' ')
-      .filter(Boolean)
-    return parts
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-  }, [user])
+  }, [i18n.language])
 
   const daySummaries = useMemo(() => {
     const grouped = entries.reduce((acc, entry) => {
@@ -96,7 +66,7 @@ export default function Dashboard() {
         })
 
         const totalMinutes = Math.max(0, Math.round(totalMs / 60000))
-        const status = totalMinutes >= 540 ? 'Extra' : totalMinutes >= 480 ? 'Normal' : 'Atraso'
+        const status = totalMinutes >= 540 ? 'extra' : totalMinutes >= 480 ? 'normal' : 'late'
 
         return { dateKey, firstIn, lastOut, totalMinutes, status }
       })
@@ -127,40 +97,6 @@ export default function Dashboard() {
     }
   }, [daySummaries])
 
-  const dayMinutesMap = useMemo(() => {
-    return daySummaries.reduce((acc, day) => {
-      acc[day.dateKey] = day.totalMinutes
-      return acc
-    }, {})
-  }, [daySummaries])
-
-  const heatmapData = useMemo(() => {
-    const today = new Date()
-    const columns = []
-
-    for (let col = 0; col < 7; col += 1) {
-      const column = []
-      for (let row = 0; row < 7; row += 1) {
-        const offset = (6 - col) * 7 + (6 - row)
-        const date = subDays(today, offset)
-        const key = format(date, 'yyyy-MM-dd')
-        const minutes = dayMinutesMap[key] || 0
-        let level = 0
-        if (minutes >= 540) level = 4
-        else if (minutes >= 480) level = 3
-        else if (minutes >= 240) level = 2
-        else if (minutes > 0) level = 1
-
-        column.push({ key, level })
-      }
-      columns.push(column)
-    }
-
-    return columns
-  }, [dayMinutesMap])
-
-  const heatmapColors = ['bg-slate-100', 'bg-emerald-50', 'bg-emerald-100', 'bg-emerald-300', 'bg-emerald-500']
-
   const formatDuration = (minutes) => {
     const hrs = String(Math.floor(minutes / 60)).padStart(2, '0')
     const mins = String(minutes % 60).padStart(2, '0')
@@ -168,22 +104,134 @@ export default function Dashboard() {
   }
 
   const formatDayLabel = (dateKey) => {
-    const label = format(new Date(dateKey), 'EEEE, dd MMM', { locale: ptBR })
+    const label = new Date(dateKey).toLocaleDateString(i18n.language, {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'short',
+    })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
 
   const statusTone = {
-    Normal: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    Extra: 'bg-amber-50 text-amber-600 border-amber-100',
-    Atraso: 'bg-rose-50 text-rose-600 border-rose-100',
+    normal:
+      'border-emerald-200/80 bg-emerald-500/12 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/15 dark:text-emerald-100',
+    extra:
+      'border-amber-200/80 bg-amber-500/12 text-amber-700 dark:border-amber-400/50 dark:bg-amber-500/15 dark:text-amber-100',
+    late:
+      'border-rose-200/80 bg-rose-500/12 text-rose-700 dark:border-rose-400/50 dark:bg-rose-500/15 dark:text-rose-100',
   }
+
+  const documentSections = useMemo(
+    () => [
+      {
+        id: 'payroll',
+        title: t('dashboardPage.documents.sections.payroll.title'),
+        description: t('dashboardPage.documents.sections.payroll.description'),
+        icon: FileText,
+        accent: 'emerald',
+        items: [
+          {
+            name: t('dashboardPage.documents.sections.payroll.items.current.name'),
+            status: t('dashboardPage.documents.sections.payroll.items.current.status'),
+            updatedAt: t('dashboardPage.documents.sections.payroll.items.current.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.payroll.items.current.action'),
+          },
+          {
+            name: t('dashboardPage.documents.sections.payroll.items.previous.name'),
+            status: t('dashboardPage.documents.sections.payroll.items.previous.status'),
+            updatedAt: t('dashboardPage.documents.sections.payroll.items.previous.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.payroll.items.previous.action'),
+          },
+        ],
+      },
+      {
+        id: 'courses',
+        title: t('dashboardPage.documents.sections.courses.title'),
+        description: t('dashboardPage.documents.sections.courses.description'),
+        icon: GraduationCap,
+        accent: 'indigo',
+        items: [
+          {
+            name: t('dashboardPage.documents.sections.courses.items.onboarding.name'),
+            status: t('dashboardPage.documents.sections.courses.items.onboarding.status'),
+            updatedAt: t('dashboardPage.documents.sections.courses.items.onboarding.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.courses.items.onboarding.action'),
+          },
+          {
+            name: t('dashboardPage.documents.sections.courses.items.lgpd.name'),
+            status: t('dashboardPage.documents.sections.courses.items.lgpd.status'),
+            updatedAt: t('dashboardPage.documents.sections.courses.items.lgpd.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.courses.items.lgpd.action'),
+          },
+        ],
+      },
+      {
+        id: 'personal',
+        title: t('dashboardPage.documents.sections.personal.title'),
+        description: t('dashboardPage.documents.sections.personal.description'),
+        icon: IdCard,
+        accent: 'amber',
+        items: [
+          {
+            name: t('dashboardPage.documents.sections.personal.items.address.name'),
+            status: t('dashboardPage.documents.sections.personal.items.address.status'),
+            updatedAt: t('dashboardPage.documents.sections.personal.items.address.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.personal.items.address.action'),
+          },
+          {
+            name: t('dashboardPage.documents.sections.personal.items.rg.name'),
+            status: t('dashboardPage.documents.sections.personal.items.rg.status'),
+            updatedAt: t('dashboardPage.documents.sections.personal.items.rg.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.personal.items.rg.action'),
+          },
+          {
+            name: t('dashboardPage.documents.sections.personal.items.workCard.name'),
+            status: t('dashboardPage.documents.sections.personal.items.workCard.status'),
+            updatedAt: t('dashboardPage.documents.sections.personal.items.workCard.updatedAt'),
+            actionLabel: t('dashboardPage.documents.sections.personal.items.workCard.action'),
+          },
+        ],
+      },
+    ],
+    [t],
+  )
+
+  const announcements = useMemo(
+    () => [
+      {
+        id: 'hybrid',
+        title: t('dashboardPage.announcements.items.hybrid.title'),
+        body: t('dashboardPage.announcements.items.hybrid.body'),
+        sentAt: t('dashboardPage.announcements.items.hybrid.sentAt'),
+        status: 'pending',
+      },
+      {
+        id: 'security',
+        title: t('dashboardPage.announcements.items.security.title'),
+        body: t('dashboardPage.announcements.items.security.body'),
+        sentAt: t('dashboardPage.announcements.items.security.sentAt'),
+        status: 'seen',
+        viewedAt: t('dashboardPage.announcements.items.security.viewedAt'),
+      },
+    ],
+    [t],
+  )
+
+  const timeOffSummary = useMemo(
+    () => ({
+      availableDays: 12,
+      nextVacation: t('dashboardPage.timeOff.nextVacationValue'),
+      statusKey: 'approved',
+      status: t('dashboardPage.timeOff.statusValue.approved'),
+      absences: t('dashboardPage.timeOff.absencesValue', { count: 0 }),
+    }),
+    [t],
+  )
 
   useEffect(() => {
     if (!token) return
     refreshEntries()
   }, [refreshEntries, token])
-
-  const handleClock = registerClock
 
   const handleAdjustment = async (form, closeModal, resetForm) => {
     setSendingAdjustment(true)
@@ -215,97 +263,164 @@ export default function Dashboard() {
     })
   }
 
+  const handleViewFullHistory = () => {
+    toast({
+      title: t('dashboardPage.toasts.fullHistory.title'),
+      description: t('dashboardPage.toasts.fullHistory.description'),
+    })
+  }
+
+  const handleDocumentAction = (item) => {
+    toast({
+      title: t('dashboardPage.toasts.documentAction.title'),
+      description: t('dashboardPage.toasts.documentAction.description', {
+        action: item.actionLabel || t('dashboardPage.toasts.documentAction.defaultAction'),
+        name: item.name,
+      }),
+    })
+  }
+
+  const handleViewAllDocuments = () => {
+    toast({
+      title: t('dashboardPage.toasts.documents.title'),
+      description: t('dashboardPage.toasts.documents.description'),
+    })
+  }
+
+  const handleProfile = () => {
+    toast({
+      title: t('dashboardPage.toasts.profile.title'),
+      description: t('dashboardPage.toasts.profile.description'),
+    })
+  }
+
+  const handleHelp = () => {
+    toast({
+      title: t('dashboardPage.toasts.help.title'),
+      description: t('dashboardPage.toasts.help.description'),
+    })
+  }
+
+  const handleViewAllTimeOff = () => {
+    toast({
+      title: t('dashboardPage.toasts.timeOff.title'),
+      description: t('dashboardPage.toasts.timeOff.description'),
+    })
+  }
+
+  const handleRequestVacation = () => {
+    toast({
+      title: t('dashboardPage.toasts.vacation.title'),
+      description: t('dashboardPage.toasts.vacation.description'),
+    })
+  }
+
+  const handleViewAllAnnouncements = () => {
+    toast({
+      title: t('dashboardPage.toasts.announcements.title'),
+      description: t('dashboardPage.toasts.announcements.description'),
+    })
+  }
+
   return (
-    <div className="min-h-screen bg-[#f3f4fb] text-slate-900">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="min-h-screen flex flex-col md:flex-row">
         {sidebarOpen && (
           <button
             className="fixed inset-0 z-30 bg-black/30 md:hidden"
-            aria-label="Fechar menu"
+            aria-label={t('dashboardPage.header.closeMenu')}
             onClick={() => setSidebarOpen(false)}
             type="button"
           />
         )}
         <aside
-          className={`fixed md:static inset-y-0 left-0 z-40 flex flex-col bg-slate-900 text-slate-100 border-r border-slate-800 py-6 gap-6 shrink-0 transform transition-transform duration-300 ${
+          className={`fixed md:static inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 ${
             sidebarOpen ? 'translate-x-0 md:translate-x-0 md:ml-0' : '-translate-x-full md:-translate-x-full md:-ml-64'
-          } w-64 px-5 md:flex`}
+          } md:flex`}
         >
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-md">
-                <span className="text-white text-sm font-semibold tracking-tight">HR</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+                HR
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-slate-300">Synergy</span>
-                <span className="text-[11px] text-slate-400">HR Management</span>
+                <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-muted-foreground">Synergy</span>
+                <span className="text-[11px] text-muted-foreground">HR Management</span>
               </div>
             </div>
           </div>
 
           <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px]">
             {[
-              { label: 'Dashboard', icon: Home, active: true, badge: 'Hoje' },
-              { label: 'Calendario', icon: CalendarDays },
-              { label: 'Time Off', icon: Clock3 },
-              { label: 'Projetos', icon: ListChecks },
-              { label: 'Equipe', icon: Users },
-              { label: 'Configuracoes', icon: Settings },
+              { label: t('dashboardPage.nav.dashboard'), icon: Home, active: true, badge: t('dashboardPage.badges.today') },
+              { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
+              { label: t('dashboardPage.nav.timeOff'), icon: Clock3 },
+              { label: t('dashboardPage.nav.projects'), icon: ListChecks },
+              { label: t('dashboardPage.nav.team'), icon: Users },
+              { label: t('dashboardPage.nav.settings'), icon: Settings },
             ].map((item) => {
               const Icon = item.icon
               return (
                 <button
                   key={item.label}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition ${
+                  className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
                     item.active
-                      ? 'bg-emerald-500 text-white font-semibold shadow-md'
-                      : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
+                      : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
                   }`}
                   type="button"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-800 text-slate-200 border border-slate-700">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span>{item.label}</span>
                   </div>
                   {item.badge ? (
-                    <span className="text-[10px] lg:text-[11px] bg-white/10 px-2 py-0.5 rounded-full">{item.badge}</span>
+                    <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
+                      {item.badge}
+                    </span>
                   ) : null}
                 </button>
               )
             })}
           </nav>
 
-          <div className="mt-2 border-t border-slate-800 pt-3 text-[10px] lg:text-[11px] text-slate-400">
-            <p>Versao 1.0 - Synergy HR</p>
+          <div className="mt-auto w-full space-y-3">
+            <UserProfileDropdown user={user} onProfile={handleProfile} onHelp={handleHelp} onLogout={handleLogout} />
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
+              <span>{t('dashboardPage.version.label')}</span>
+              <span>{t('dashboardPage.version.product')}</span>
+            </div>
           </div>
         </aside>
 
         <main className="flex-1 flex flex-col min-w-0">
-          <header className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-card/90 px-4 py-4 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-6 lg:px-8 sm:gap-4">
             <div className="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  className="inline-flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-slate-900 text-slate-100 border border-slate-800 hover:bg-slate-800 shrink-0"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
                   onClick={() => setSidebarOpen((prev) => !prev)}
-                  aria-label="Alternar menu lateral"
+                  aria-label={t('dashboardPage.header.toggleMenu')}
                   type="button"
                 >
                   {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
-                <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-                <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-[10px] sm:text-[11px] px-2 py-0.5">
-                  Hoje - {todayLabel}
+                <h1 className="text-base font-semibold tracking-tight sm:text-lg md:text-xl">
+                  {t('dashboardPage.title')}
+                </h1>
+                <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2 py-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                  {t('dashboardPage.todayPill', { date: todayLabel })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 text-[12px] sm:text-[13px]">
-                  <Search className="h-4 w-4 text-slate-400" />
+                <div className="flex-1 flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+                  <Search className="h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Buscar colaborador, equipe ou projeto"
-                    className="w-full bg-transparent outline-none text-slate-700 placeholder:text-slate-400"
+                    placeholder={t('dashboardPage.searchPlaceholder')}
+                    className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -313,65 +428,30 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-2 sm:gap-3">
               <button
-                className="inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition"
-                onClick={() => handleClock(nextType)}
-                disabled={clocking === nextType}
-                type="button"
-              >
-                {clocking === nextType ? 'Registrando...' : 'Registrar ponto'} ({nextLabel})
-              </button>
-
-              <AjusteModal
-                onSubmit={handleAdjustment}
-                isSubmitting={sendingAdjustment}
-                trigger={
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full border border-slate-200 bg-white text-[11px] sm:text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition"
-                  >
-                    Ajustar ponto
-                  </button>
-                }
-              />
-
-              <button
-                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition hover:bg-muted/80 hover:text-foreground sm:h-9 sm:w-9"
                 type="button"
               >
                 <Bell className="h-4 w-4" />
               </button>
               <LanguageSwitcher className="hidden sm:block" />
-              <QuickMenu
-                onLogout={handleLogout}
-                onHistory={() =>
-                  toast({
-                    title: t('dashboard.menu.history'),
-                    description: t('dashboard.menu.comingSoon'),
-                  })
-                }
-              />
-
-              <div className="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-100 flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-[#1e2a78] text-white text-xs font-semibold flex items-center justify-center">
-                  {initials || 'EU'}
-                </div>
-                <div className="hidden sm:flex flex-col leading-tight">
-                  <span className="text-[11px] sm:text-xs font-medium text-slate-800">{user?.name || 'Colaborador'}</span>
-                  <span className="text-[10px] text-slate-500">{user?.email || 'ponto ativo'}</span>
-                </div>
-              </div>
+              <ThemeToggle />
             </div>
           </header>
 
           <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 auto-rows-fr">
-                <section className="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition h-full">
-                <header className="flex items-start justify-between gap-2">
+              <section className="flex h-full flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
+                <header className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">Time Tracking</p>
-                    <h2 className="text-sm font-semibold text-slate-900">Historico de Ponto</h2>
-                    <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">
-                      {monthlyStats.totalHoursLabel} registradas neste mes - {monthlyStats.extraHoursLabel} extras
+                    <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
+                      {t('dashboardPage.timeTracking.tag')}
+                    </p>
+                    <h2 className="text-sm font-semibold">{t('dashboardPage.timeTracking.title')}</h2>
+                    <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                      {t('dashboardPage.timeTracking.subtitle', {
+                        total: monthlyStats.totalHoursLabel,
+                        extra: monthlyStats.extraHoursLabel,
+                      })}
                     </p>
                   </div>
                 </header>
@@ -380,182 +460,80 @@ export default function Dashboard() {
                   {loadingEntries && (
                     <div className="space-y-2">
                       {[1, 2, 3].map((item) => (
-                        <div key={item} className="h-14 rounded-2xl bg-slate-100 animate-pulse border border-slate-100" />
+                        <div key={item} className="h-14 rounded-2xl border border-border/40 bg-muted/50 animate-pulse" />
                       ))}
                     </div>
                   )}
-                  {!loadingEntries && recentDays.length === 0 && <p className="text-slate-500 text-sm">Nenhum registro encontrado.</p>}
+                  {!loadingEntries && recentDays.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t('dashboardPage.timeTracking.empty')}</p>
+                  )}
                   {!loadingEntries &&
                     recentDays.map((day) => (
                       <div
                         key={day.dateKey}
-                        className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium text-slate-800">{formatDayLabel(day.dateKey)}</span>
-                          <span className="text-slate-500">
-                            Entrada {day.firstIn ? format(new Date(day.firstIn), 'HH:mm') : '--:--'} - Saida {day.lastOut ? format(new Date(day.lastOut), 'HH:mm') : '--:--'}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] sm:text-[11px] font-semibold text-slate-800">
-                            {formatDuration(day.totalMinutes)}
-                          </span>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px] font-medium ${
+                        className="flex items-center justify-between rounded-2xl border border-border bg-muted/70 px-3 py-2"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{formatDayLabel(day.dateKey)}</span>
+                            <span className="text-muted-foreground">
+                              {t('dashboardPage.timeTracking.interval', {
+                                entryLabel: t('dashboardPage.timeTracking.entryLabel'),
+                                exitLabel: t('dashboardPage.timeTracking.exitLabel'),
+                                start: day.firstIn ? format(new Date(day.firstIn), 'HH:mm') : '--:--',
+                                end: day.lastOut ? format(new Date(day.lastOut), 'HH:mm') : '--:--',
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-semibold sm:text-[11px]">
+                              {formatDuration(day.totalMinutes)}
+                            </span>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px] font-medium ${
                               statusTone[day.status]
                             }`}
                           >
-                            {day.status}
+                            {t(`dashboardPage.timeTracking.status.${day.status}`)}
                           </span>
                         </div>
                       </div>
                     ))}
                 </div>
-              </section>
 
-                <section className="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition h-full">
-                <header className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">Registro</p>
-                    <h2 className="text-sm font-semibold text-slate-900">Registro Mensal</h2>
-                    <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">Visao rapida de presenca e horas extras</p>
-                  </div>
-                  <details className="text-[10px] sm:text-[11px] w-full sm:w-auto">
-                    <summary className="list-none cursor-pointer inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">
-                      <span>Expandir</span>
-                      <span className="text-xs">v</span>
-                    </summary>
-                    <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 space-y-2 text-[10px] sm:text-[11px] text-slate-600">
-                      {recentDays.length === 0 && <p>Sem registros recentes.</p>}
-                      {recentDays.map((day) => (
-                        <div className="flex items-center justify-between" key={day.dateKey}>
-                          <span>{formatDayLabel(day.dateKey)}</span>
-                          <span className="font-semibold text-slate-800">
-                            {formatDuration(day.totalMinutes)}
-                            {day.totalMinutes > 480 ? ' - extra' : ''}
-                          </span>
-                        </div>
-                      ))}
-                      <p className="text-[9px] sm:text-[10px] text-slate-500">Use Registrar ponto para atualizar seu status em tempo real.</p>
-                    </div>
-                  </details>
-                </header>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-[9px] sm:text-[11px] text-slate-500 px-0.5">
-                    <span>Dom</span>
-                    <span>Seg</span>
-                    <span>Ter</span>
-                    <span>Qua</span>
-                    <span>Qui</span>
-                    <span>Sex</span>
-                    <span>Sab</span>
-                  </div>
-
-                  <div className="flex gap-1 overflow-x-auto pb-1">
-                    {heatmapData.map((column, colIdx) => (
-                      <div className="flex flex-col gap-1" key={`col-${colIdx}`}>
-                        {column.map((cell) => (
-                          <span
-                            key={cell.key}
-                            className={`h-3 w-3 rounded-[6px] ${heatmapColors[cell.level]} border border-slate-100`}
-                            title={`${formatDayLabel(cell.key)} - ${formatDuration(dayMinutesMap[cell.key] || 0)}`}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 mt-2 text-[9px] sm:text-[10px] text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <span>Menos horas</span>
-                      <div className="flex items-center gap-1">
-                        <span className="h-3 w-3 rounded-[6px] bg-slate-100 border border-slate-100" />
-                        <span className="h-3 w-3 rounded-[6px] bg-emerald-100 border border-slate-100" />
-                        <span className="h-3 w-3 rounded-[6px] bg-emerald-300 border border-slate-100" />
-                        <span className="h-3 w-3 rounded-[6px] bg-emerald-500 border border-slate-100" />
-                      </div>
-                      <span>Mais horas</span>
-                    </div>
-                    <span className="whitespace-nowrap font-semibold text-emerald-600 text-[10px]">Horas extras</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition h-full">
-                <header className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">Time Off</p>
-                    <h2 className="text-sm font-semibold text-slate-900">Ferias e Ausencias</h2>
-                    <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1">Saldo atualizado para o periodo atual.</p>
-                  </div>
-                </header>
-
-                <div className="flex items-center gap-4 sm:gap-5">
-                  <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center shrink-0">
-                    <div className="absolute inset-0 rounded-full border-[9px] sm:border-[10px] border-slate-100" />
-                    <div className="absolute inset-0 rounded-full border-[9px] sm:border-[10px] border-[#1e2a78] border-b-transparent border-l-transparent border-r-transparent rotate-[135deg]" />
-                    <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
-                      <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-slate-400">Dias</span>
-                      <span className="text-[12px] sm:text-sm font-semibold text-slate-900">12</span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-2 text-[11px] sm:text-[12px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500">Saldo disponivel</span>
-                      <span className="font-semibold text-slate-900">12 dias</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500">Proximas ferias</span>
-                      <span className="font-semibold text-slate-900">21-28 ago</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500">Status</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-[9px] sm:text-[10px] font-medium text-emerald-600 border border-emerald-100">
-                        Aprovado
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <button
-                    className="w-full h-9 sm:h-10 rounded-full bg-[#1e2a78] hover:bg-[#25338f] text-[11px] sm:text-xs font-semibold text-white shadow-md active:scale-[0.98] transition"
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                  <Button
                     type="button"
-                  >
-                    Solicitar ferias
-                  </button>
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewFullHistory}
+                  className="h-10 rounded-full border-border bg-background/80 px-3 text-[11px] font-semibold sm:text-xs"
+                >
+                  <Clock3 className="h-4 w-4 text-primary" />
+                  {t('dashboardPage.timeTracking.actions.fullHistory')}
+                </Button>
+                <AjusteModal
+                  onSubmit={handleAdjustment}
+                  isSubmitting={sendingAdjustment}
+                  trigger={
+                    <Button type="button" className="h-10 rounded-full px-4 text-[11px] font-semibold sm:text-xs">
+                        {t('dashboardPage.timeTracking.actions.adjust')}
+                      </Button>
+                    }
+                  />
                 </div>
               </section>
 
-              <section className="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200 shadow-[0_14px_35px_rgba(15,23,42,0.06)] px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-2 sm:gap-3 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition h-full">
-                <header className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 text-xs sm:text-sm">
-                      <CalendarDays className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] sm:text-xs font-medium tracking-[0.16em] uppercase text-slate-500">Company</p>
-                      <h2 className="text-sm font-semibold text-slate-900">Comunicados</h2>
-                    </div>
-                  </div>
-                  <button className="text-[10px] sm:text-[11px] font-medium text-[#1e2a78] hover:text-[#25338f] whitespace-nowrap" type="button">
-                    Ver todos
-                  </button>
-                </header>
+              <EmployeeDocumentsCard
+                sections={documentSections}
+                onViewAll={handleViewAllDocuments}
+                onAction={handleDocumentAction}
+                maxItemsPerSection={1}
+              />
 
-                <div className="mt-1 space-y-1 text-[11px] sm:text-[12px]">
-                  <p className="font-medium text-slate-900">Atualizacao do modelo hibrido</p>
-                  <p className="text-slate-500">
-                    A partir de setembro, passaremos a contar com 3 dias de home office por semana para todas as equipes administrativas.
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">Enviado em 12 ago - 17:42 - Escritorio Central</p>
-                </div>
-              </section>
+              <TimeOffCard summary={timeOffSummary} onRequest={handleRequestVacation} onViewAll={handleViewAllTimeOff} />
+
+              <AnnouncementsCard announcements={announcements} onViewAll={handleViewAllAnnouncements} />
             </div>
-
           </div>
         </main>
       </div>

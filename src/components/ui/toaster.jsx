@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 
 const variantClasses = {
   default: 'border border-border/70 bg-card/85 text-foreground',
-  success: 'border border-emerald-400/70 bg-emerald-500/12 text-emerald-50',
-  error: 'border border-red-400/70 bg-red-500/12 text-red-50',
+  success:
+    'border border-emerald-300/70 bg-emerald-500/12 text-emerald-800 dark:border-emerald-400/60 dark:bg-emerald-500/15 dark:text-emerald-50',
+  error:
+    'border border-red-300/70 bg-red-500/12 text-red-800 dark:border-red-400/60 dark:bg-red-500/15 dark:text-red-50',
 }
 
 export function Toaster() {
@@ -24,9 +26,7 @@ export function Toaster() {
         >
           <div className="space-y-1">
             {toast.title && <p className="text-sm font-semibold">{toast.title}</p>}
-            {toast.description && (
-              <p className="text-xs leading-relaxed text-foreground/75">{toast.description}</p>
-            )}
+            {toast.description && <p className="text-xs leading-relaxed opacity-90">{toast.description}</p>}
           </div>
           <button
             onClick={() => dismiss(toast.id)}

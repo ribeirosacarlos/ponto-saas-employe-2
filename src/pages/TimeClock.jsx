@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, Clock3, LogOut } from 'lucide-react'
+import { ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -33,11 +33,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const { toast } = useToast()
   const {
     status: clockStatus,
-    isOnBreak,
     registerClock,
-    registerBreak,
     clocking,
-    breakLoading,
     loadingEntries,
     refreshEntries,
     lastWorkEntry,
@@ -45,6 +42,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   } = useClocking()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [logoutLoading, setLogoutLoading] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -73,32 +72,14 @@ export default function TimeClock({ onContinueToDashboard }) {
     user?.email?.split('@')[0] ||
     t('dashboard.fallbackName')
 
-  const statusTitle = {
-    idle: t('timeClock.status.title.idle', 'Sem registrar'),
-    working: t('timeClock.status.title.working', 'Trabalhando'),
-    break: t('timeClock.status.title.break', 'Em intervalo'),
-    finished: t('timeClock.status.title.finished', 'Dia finalizado'),
-  }[clockStatus]
+  const normalizedStatus = clockStatus || 'idle'
 
-  const statusDescription = {
-    idle: t('timeClock.status.description.idle', 'Voce ainda nao registrou sua entrada hoje.'),
-    working: t(
-      'timeClock.status.description.working',
-      'Turno ativo. Registre pausas ou saida quando finalizar.',
-    ),
-    break: t(
-      'timeClock.status.description.break',
-      'Intervalo em andamento. Volte quando estiver pronto.',
-    ),
-    finished: t(
-      'timeClock.status.description.finished',
-      'Dia concluido. Registre uma nova entrada amanha.',
-    ),
-  }[clockStatus]
+  const statusTitle = t(`timeClock.status.title.${normalizedStatus}`)
+  const statusDescription = t(`timeClock.status.description.${normalizedStatus}`)
 
-  const mainActionType = clockStatus === 'working' || clockStatus === 'break' ? 'out' : 'in'
-  const shiftButtonLabel = mainActionType === 'in' ? 'Registrar entrada' : 'Registrar saída'
-  const breakButtonLabel = isOnBreak ? 'Voltar do intervalo' : 'Iniciar intervalo'
+  const mainActionType = normalizedStatus === 'working' || normalizedStatus === 'break' ? 'out' : 'in'
+  const shiftButtonLabel = t('timeClock.actions.registerPoint', 'REGISTRAR PONTO')
+  const registeringLabel = t('timeClock.actions.registering')
   const primaryLoading = clocking === mainActionType
 
   const formattedTime = format(currentTime, 'HH:mm')
@@ -109,10 +90,10 @@ export default function TimeClock({ onContinueToDashboard }) {
   })
 
   const lastRecordLabel = lastWorkEntry
-    ? `${lastWorkEntry.type === 'in' ? 'Entrada' : 'Saída'} às ${format(
-        new Date(lastWorkEntry.clocked_at),
-        'HH:mm',
-      )}`
+    ? t('timeClock.lastRecord.label', {
+        type: t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`),
+        time: format(new Date(lastWorkEntry.clocked_at), 'HH:mm'),
+      })
     : t('timeClock.lastRecord.placeholder')
 
   const formatRecentDay = (offset = 0) => {
@@ -125,44 +106,52 @@ export default function TimeClock({ onContinueToDashboard }) {
     })
   }
 
+  const formatRecentInterval = (start, end) =>
+    t('timeClock.recent.interval', {
+      entryLabel: t('timeClock.recent.entryLabel'),
+      exitLabel: t('timeClock.recent.exitLabel'),
+      start,
+      end,
+    })
+
   const summaryStats = useMemo(
     () => [
       { label: t('timeClock.summary.planned'), value: '08:00', tone: 'text-foreground' },
       {
         label: t('timeClock.summary.recorded'),
         value:
-          clockStatus === 'idle'
+          normalizedStatus === 'idle'
             ? '00:00'
-            : clockStatus === 'working' || clockStatus === 'break'
+            : normalizedStatus === 'working' || normalizedStatus === 'break'
               ? '02:45'
               : '08:00',
         tone:
-          clockStatus === 'idle'
+          normalizedStatus === 'idle'
             ? 'text-muted-foreground'
             : 'text-emerald-500 dark:text-emerald-300',
       },
       { label: t('timeClock.summary.bank'), value: '+02:15', tone: 'text-emerald-500 dark:text-emerald-300' },
     ],
-    [clockStatus, t],
+    [normalizedStatus, t],
   )
 
   const recentEntries = useMemo(
     () => [
       {
         day: formatRecentDay(1),
-        interval: `${t('timeClock.recent.entryLabel')} 09:02 às ${t('timeClock.recent.exitLabel')} 17:36`,
+        interval: formatRecentInterval('09:02', '17:36'),
         value: '08:34',
         tone: 'text-emerald-500 dark:text-emerald-300',
       },
       {
         day: formatRecentDay(2),
-        interval: `${t('timeClock.recent.entryLabel')} 09:11 às ${t('timeClock.recent.exitLabel')} 17:21`,
+        interval: formatRecentInterval('09:11', '17:21'),
         value: '08:10',
         tone: 'text-emerald-500 dark:text-emerald-300',
       },
       {
         day: formatRecentDay(3),
-        interval: `${t('timeClock.recent.entryLabel')} 08:59 às ${t('timeClock.recent.exitLabel')} 16:45`,
+        interval: formatRecentInterval('08:59', '16:45'),
         value: '07:46',
         tone: 'text-amber-500 dark:text-amber-300',
       },
@@ -182,35 +171,45 @@ export default function TimeClock({ onContinueToDashboard }) {
     await registerClock(mainActionType)
   }
 
-  const handleBreakToggle = async () => {
-    if (clockStatus === 'idle' || clockStatus === 'finished') {
-      toast({
-        title: 'Registre entrada antes do intervalo',
-        description: 'Inicie sua jornada para abrir um intervalo.',
-        variant: 'error',
-      })
-      return
-    }
-    await registerBreak(isOnBreak ? 'end' : 'start')
-  }
-
   const handleLogout = async () => {
     setLogoutLoading(true)
     await logout()
     setLogoutLoading(false)
+    setIsUserMenuOpen(false)
     toast({
       title: t('toast.logout.title'),
       description: t('toast.logout.description'),
     })
   }
 
+  const handleGoToProfile = () => {
+    setIsUserMenuOpen(false)
+    window.location.href = '/profile'
+  }
+
+  const handleOpenHelp = () => {
+    setIsUserMenuOpen(false)
+    window.location.href = '/help'
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <div className="container flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-border/80 bg-card/95 p-8 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl dark:from-[#0c1222]/95 dark:via-primary/12 dark:to-[#0b1020]/95">
+      <div className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-border/80 bg-gradient-to-br from-background/95 via-card/95 to-background/95 p-8 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-0 opacity-90">
           <div className="absolute left-[-14%] top-[-18%] h-72 w-72 rounded-full bg-primary/18 blur-[120px]" />
-          <div className="absolute right-[-18%] top-[10%] h-80 w-80 rounded-full bg-[#9ad5ff]/14 blur-[120px]" />
-          <div className="absolute bottom-[-18%] left-[26%] h-72 w-72 rounded-full bg-[#7b8fff]/14 blur-[120px]" />
+          <div className="absolute right-[-18%] top-[10%] h-80 w-80 rounded-full bg-primary/16 blur-[120px]" />
+          <div className="absolute bottom-[-18%] left-[26%] h-72 w-72 rounded-full bg-indigo-400/14 blur-[120px] dark:bg-indigo-500/14" />
         </div>
 
         <div className="relative z-10 space-y-10">
@@ -234,8 +233,68 @@ export default function TimeClock({ onContinueToDashboard }) {
                   <p className="text-sm font-semibold text-muted-foreground">{formattedDate}</p>
                   <p className="text-lg font-bold text-foreground">{formattedTime}</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_10px_30px_-18px_rgba(0,0,0,0.55)]">
-                  {initials}
+                <div ref={userMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_10px_30px_-18px_rgba(0,0,0,0.55)] transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
+                  >
+                    {initials}
+                  </button>
+
+                  {isUserMenuOpen ? (
+                    <div className="absolute right-0 top-14 w-64 rounded-2xl border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-38px_rgba(0,0,0,0.45)] backdrop-blur">
+                      <div className="flex items-center gap-3 rounded-xl bg-muted/70 px-3 py-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {user?.name || firstName}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {user?.email || t('dashboard.fallbackEmail', 'usuario@empresa.com')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="my-3 h-px bg-border/80" />
+
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={handleGoToProfile}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <User className="h-4 w-4" />
+                          </span>
+                          {t('timeClock.menu.profile', 'Perfil do técnico')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenHelp}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <HelpCircle className="h-4 w-4" />
+                          </span>
+                          {t('timeClock.menu.help', 'Solicitar ajuda')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={logoutLoading}
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
+                            <LogOut className="h-4 w-4" />
+                          </span>
+                          {t('timeClock.actions.logout')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -254,9 +313,9 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </div>
                 </div>
                 <div className="relative h-28 w-28">
-                  <div className={cn('absolute inset-0 rounded-full bg-gradient-to-br', statusTokens[clockStatus]?.ring)} />
+                  <div className={cn('absolute inset-0 rounded-full bg-gradient-to-br', statusTokens[normalizedStatus]?.ring)} />
                   <div className="absolute inset-[10px] rounded-full border border-border/80 bg-card shadow-inner" />
-                  <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-white/80 text-center text-xs font-semibold shadow-sm backdrop-blur dark:bg-slate-900/70">
+                  <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-background/85 text-center text-xs font-semibold shadow-sm backdrop-blur dark:bg-card/75">
                     <span className="uppercase tracking-[0.18em] text-muted-foreground">
                       {t('timeClock.summary.todayBadge', 'Hoje')}
                     </span>
@@ -282,33 +341,16 @@ export default function TimeClock({ onContinueToDashboard }) {
                 <Button
                   disabled={primaryLoading || loadingEntries}
                   onClick={handlePrimaryAction}
-                  className="h-12 w-full rounded-full border border-primary/25 bg-gradient-to-r from-[#2d3b87] via-[#2c2f71] to-[#2a2c5f] text-white shadow-[0_16px_40px_-24px_rgba(45,59,135,0.55)]"
+                  className="h-12 w-full rounded-full shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
                 >
-                  {primaryLoading ? 'Registrando...' : shiftButtonLabel}
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={breakLoading || loadingEntries || clockStatus === 'idle' || clockStatus === 'finished'}
-                  onClick={handleBreakToggle}
-                  className="h-12 w-full rounded-full border border-border/80 bg-muted text-foreground shadow-[0_12px_22px_-18px_rgba(0,0,0,0.28)]"
-                >
-                  {breakLoading ? 'Registrando...' : breakButtonLabel}
+                  {primaryLoading ? registeringLabel : shiftButtonLabel}
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={handleGoToDashboard}
-                  className="h-12 w-full rounded-full border border-border/80 bg-white text-foreground shadow-[0_12px_22px_-18px_rgba(0,0,0,0.28)] dark:bg-slate-900/70"
+                  className="h-12 w-full rounded-full border border-border bg-background/80 text-foreground shadow-[0_12px_22px_-18px_rgba(62,82,152,0.35)]"
                 >
                   {t('timeClock.actions.goDashboard')}
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={logoutLoading}
-                  onClick={handleLogout}
-                  className="h-12 w-full rounded-full border border-border/80 bg-background text-foreground shadow-[0_10px_22px_-18px_rgba(0,0,0,0.26)]"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {t('timeClock.actions.logout')}
                 </Button>
               </div>
               {lastError ? (

@@ -11,12 +11,9 @@ export function PunchSummaryCard({
   dayRows,
   workedTime,
   hourBank,
-  nextType,
-  nextLabel,
+  nextType = 'in',
   sendingAdjustment,
   onAdjustment,
-  onRegister,
-  clocking,
 }) {
   const [showDetails, setShowDetails] = useState(false)
 
@@ -24,7 +21,7 @@ export function PunchSummaryCard({
     <Card className="relative overflow-hidden bg-card/90">
       <div className="pointer-events-none absolute inset-0 opacity-80">
         <div className="absolute left-[-10%] top-[-18%] h-40 w-40 rounded-full bg-primary/20 blur-[90px]" />
-        <div className="absolute right-[-12%] top-[10%] h-48 w-48 rounded-full bg-[#7c9bff]/14 blur-[120px]" />
+        <div className="absolute right-[-12%] top-[10%] h-48 w-48 rounded-full bg-primary/16 blur-[120px]" />
       </div>
       <CardHeader className="space-y-4">
         <div className="flex items-start justify-between gap-3">
@@ -46,7 +43,7 @@ export function PunchSummaryCard({
           />
         </div>
 
-        <div className="rounded-3xl border border-border/70 bg-gradient-to-r from-primary/12 via-[#7b8fff]/12 to-transparent p-4 shadow-[0_24px_70px_-40px_rgba(92,134,255,0.55)] backdrop-blur-lg">
+        <div className="rounded-3xl border border-border/70 bg-gradient-to-r from-primary/12 via-primary/12 to-transparent p-4 shadow-[0_24px_70px_-40px_rgba(92,134,255,0.55)] backdrop-blur-lg">
           <div className="flex flex-col gap-3 rounded-2xl">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
@@ -124,27 +121,18 @@ export function PunchSummaryCard({
             <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               {t('dashboard.hourBank')}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-red-400">{hourBank}</p>
+            <p className="mt-2 text-2xl font-semibold text-primary">{hourBank}</p>
             <p className="text-[11px] text-muted-foreground">{t('dashboard.hourBankHelper')}</p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-gradient-to-r from-primary/12 via-[#7b8fff]/10 to-transparent px-4 py-3 text-xs text-foreground/75 shadow-inner shadow-primary/10">
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-r from-primary/12 via-primary/12 to-transparent px-4 py-3 text-xs text-foreground/75 shadow-inner shadow-primary/10">
           {t('dashboard.backendNote', {
             inLabel: 'in',
             outLabel: 'out',
-            nextType: nextType.toUpperCase(),
+            nextType: nextType?.toUpperCase?.() || 'IN',
           })}
         </div>
-
-        <Button
-          size="lg"
-          className="w-full rounded-full text-sm font-semibold shadow-[0_22px_60px_-28px_rgba(92,134,255,0.9)]"
-          onClick={onRegister}
-          disabled={clocking === nextType}
-        >
-          {clocking === nextType ? t('dashboard.registering') : t('dashboard.registerButton')} ({nextLabel})
-        </Button>
       </CardContent>
     </Card>
   )
