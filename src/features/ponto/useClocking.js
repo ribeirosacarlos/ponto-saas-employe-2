@@ -25,8 +25,9 @@ export function useClocking() {
     setLoadingEntries(true)
     setLastError(null)
     try {
-      const data = await listEntries()
-      setEntries(data.data || [])
+      const response = await listEntries()
+      const normalized = response?.data || response?.entries || []
+      setEntries(normalized)
       setLocalBreak(null)
     } catch (error) {
       const message = error.response?.data?.message || error.message || ''

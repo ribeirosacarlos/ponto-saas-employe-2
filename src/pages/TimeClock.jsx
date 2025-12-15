@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
+import { ArrowRight, Clock3, HelpCircle, LogOut, Menu, User, X } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -25,7 +25,7 @@ const statusTokens = {
   },
 }
 
-export default function TimeClock({ onContinueToDashboard }) {
+export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, onToggleSidebar = () => {} }) {
   const { t, i18n } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
@@ -214,13 +214,23 @@ export default function TimeClock({ onContinueToDashboard }) {
 
         <div className="relative z-10 space-y-10">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-muted-foreground">
-                {t('timeClock.greeting', { name: firstName })}
-              </p>
-              <div className="space-y-1">
-                <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
-                <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                aria-label={t('dashboardPage.header.toggleMenu')}
+                onClick={onToggleSidebar}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
+              >
+                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {t('timeClock.greeting', { name: firstName })}
+                </p>
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
+                  <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
+                </div>
               </div>
             </div>
             <div className="flex flex-col gap-2 lg:items-end">
