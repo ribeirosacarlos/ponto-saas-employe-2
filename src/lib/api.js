@@ -43,11 +43,41 @@ export async function clockRequest(type, coords = {}) {
   return data
 }
 
-export async function listEntries(page = 1) {
+export async function getEmployeeEntries({ from, to, page = 1, perPage = 20 } = {}) {
+  const params = {}
+  if (from) params.from = from
+  if (to) params.to = to
+
+  // Envia ambas as variantes para compatibilidade com o backend.
+  if (page) params.page = page
+  if (perPage) {
+    params.per_page = perPage
+    params.perPage = perPage
+  }
+
   const { data } = await api.get('/v1/employee/entries', {
-    params: { page },
+    params,
   })
-  return data
+
+  // TODO: align with API shape when backend is finalized
+  const entries = Array.isArray(data) ? data : data?.data || data?.entries || []
+  const meta =
+    data?.meta ||
+    (data && typeof data === 'object'
+      ? {
+          page: data.page || page,
+          perPage: data.per_page || data.perPage || perPage,
+          total: data.total,
+          lastPage: data.last_page || data.lastPage,
+        }
+      : null)
+
+  return { data: entries, meta }
+}
+
+export async function listEntries(page = 1) {
+  const { data, meta } = await getEmployeeEntries({ page })
+  return { data, meta }
 }
 
 export async function requestAdjustment(payload) {

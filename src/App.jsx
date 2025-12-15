@@ -1,54 +1,250 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { CalendarDays, Clock3, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
+import History from './pages/History.jsx'
 import { useAuthStore } from './store/useAuth.js'
+import { useToast } from './components/ui/use-toast'
+import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
+
+const PAGE_PATHS = {
+  login: '/',
+  timeClock: '/time-clock',
+  dashboard: '/dashboard',
+  history: '/history',
+}
+
+const resolvePageFromPath = (path) => {
+  if (!path) return 'login'
+  const normalized = path.replace(/\/+$/, '') || '/'
+  if (normalized === '/history' || normalized === '/time-entries') return 'history'
+  if (normalized === '/dashboard') return 'dashboard'
+  if (normalized === '/time-clock') return 'timeClock'
+  return 'login'
+}
 
 export default function App() {
   const token = useAuthStore((state) => state.token)
   const restoreSession = useAuthStore((state) => state.restoreSession)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
   const { theme } = useTheme()
-  const [currentPage, setCurrentPage] = useState('login')
+  const { toast } = useToast()
+  const { t } = useTranslation()
+  const [currentPage, setCurrentPage] = useState(() =>
+    typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
+  )
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const navigateTo = useCallback((page, replace = false) => {
+    const path = PAGE_PATHS[page] || '/'
+    const method = replace ? 'replaceState' : 'pushState'
+    if (typeof window !== 'undefined') {
+      window.history[method]({ page }, '', path)
+    }
+    setCurrentPage(page)
+  }, [])
 
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
 
   useEffect(() => {
-    if (token) {
-      setCurrentPage((prev) => (prev === 'dashboard' ? 'dashboard' : 'timeClock'))
-    } else {
-      setCurrentPage('login')
+    if (!token) {
+      navigateTo('login', true)
+      return
     }
+
+    const pageFromPath =
+      typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+    const nextPage = pageFromPath === 'login' ? 'timeClock' : pageFromPath
+    setCurrentPage(nextPage)
+    if (pageFromPath === 'login') {
+      navigateTo(nextPage, true)
+    }
+  }, [navigateTo, token])
+
+  useEffect(() => {
+    const handlePopstate = () => {
+      const pageFromPath =
+        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
+      if (!token) {
+        setCurrentPage('login')
+        return
+      }
+      setCurrentPage(pageFromPath === 'login' ? 'timeClock' : pageFromPath)
+    }
+
+    window.addEventListener('popstate', handlePopstate)
+    return () => window.removeEventListener('popstate', handlePopstate)
   }, [token])
 
-  const handleGoToDashboard = () => setCurrentPage('dashboard')
+  const handleGoToDashboard = () => navigateTo('dashboard')
+  const handleGoToHistory = () => navigateTo('history')
+  const handleGoToTimeClock = () => navigateTo('timeClock')
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarOpen((prev) => !prev)
+  }, [])
+  const handleProfile = () => {
+    toast({
+      title: t('dashboardPage.toasts.profile.title'),
+      description: t('dashboardPage.toasts.profile.description'),
+    })
+  }
+  const handleHelp = () => {
+    toast({
+      title: t('dashboardPage.toasts.help.title'),
+      description: t('dashboardPage.toasts.help.description'),
+    })
+  }
+  const handleLogout = async () => {
+    await logout()
+    toast({
+      title: t('toast.logout.title'),
+      description: t('toast.logout.description'),
+    })
+  }
+  const navItems = [
+    {
+      label: t('dashboardPage.nav.dashboard'),
+      icon: Home,
+      page: 'dashboard',
+      onClick: handleGoToDashboard,
+      badge: t('dashboardPage.badges.today'),
+    },
+    {
+      label: t('dashboardPage.nav.history'),
+      icon: ListChecks,
+      page: 'history',
+      onClick: handleGoToHistory,
+    },
+    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
+    {
+      label: t('dashboardPage.nav.registerPoint'),
+      icon: Clock3,
+      page: 'timeClock',
+      onClick: handleGoToTimeClock,
+    },
+    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
+    { label: t('dashboardPage.nav.team'), icon: Users },
+    { label: t('dashboardPage.nav.settings'), icon: Settings },
+  ]
 
   return (
     <div
       className={cn(
-        'relative min-h-screen overflow-hidden text-foreground',
+        'relative min-h-screen overflow-hidden bg-background text-foreground transition-colors duration-300',
         theme === 'dark'
-          ? 'bg-gradient-to-b from-[#050914] via-[#0a1224] to-background'
-          : 'bg-gradient-to-b from-[#f7f8ff] via-[#eef3ff] to-[#e5edff]',
+          ? 'bg-gradient-to-b from-[#060915] via-[#0d1629] to-background'
+          : 'bg-gradient-to-b from-primary/8 via-[#f3f5ff] to-background',
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-10%] top-[-8%] h-64 w-64 rounded-full bg-[#8b7bff]/18 blur-[110px]" />
-        <div className="absolute right-[-5%] top-1/4 h-72 w-72 rounded-full bg-[#5c86ff]/16 blur-[110px]" />
-        <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-[#9ad5ff]/12 blur-[120px]" />
+        <div className="absolute left-[-10%] top-[-8%] h-64 w-64 rounded-full bg-primary/16 blur-[120px] dark:bg-primary/24" />
+        <div className="absolute right-[-5%] top-1/4 h-72 w-72 rounded-full bg-sky-300/16 blur-[120px] dark:bg-sky-400/12" />
+        <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
       <div className="relative z-10">
         {token ? (
-          currentPage === 'dashboard' ? (
-            <Dashboard />
-          ) : (
-            <TimeClock onContinueToDashboard={handleGoToDashboard} />
-          )
+          <div className="min-h-screen flex flex-col md:flex-row">
+            {sidebarOpen && (
+              <button
+                className="fixed inset-0 z-30 bg-black/30 md:hidden"
+                aria-label={t('dashboardPage.header.closeMenu')}
+                onClick={() => setSidebarOpen(false)}
+                type="button"
+              />
+            )}
+            <aside
+              className={`fixed md:static inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 ${
+                sidebarOpen ? 'translate-x-0 md:translate-x-0 md:ml-0' : '-translate-x-full md:-translate-x-full md:-ml-64'
+              } md:flex`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+                    HR
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-muted-foreground">
+                      Synergy
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">HR Management</span>
+                  </div>
+                </div>
+              </div>
+
+              <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px] mt-8">
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = item.page ? currentPage === item.page : item.active
+                  return (
+                    <button
+                      key={item.label}
+                      className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
+                          : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
+                      }`}
+                      onClick={() => {
+                        item.onClick?.()
+                        setSidebarOpen(false)
+                      }}
+                      type="button"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge ? (
+                        <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </nav>
+
+              <div className="mt-auto w-full space-y-3">
+                <UserProfileDropdown user={user} onProfile={handleProfile} onHelp={handleHelp} onLogout={handleLogout} />
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
+                  <span>{t('dashboardPage.version.label')}</span>
+                  <span>{t('dashboardPage.version.product')}</span>
+                </div>
+              </div>
+            </aside>
+
+            <main className="flex-1 flex flex-col min-w-0">
+              {currentPage === 'dashboard' ? (
+                <Dashboard
+                  onOpenHistory={handleGoToHistory}
+                  sidebarOpen={sidebarOpen}
+                  onToggleSidebar={handleToggleSidebar}
+                />
+              ) : currentPage === 'history' ? (
+                <History
+                  onBackToDashboard={handleGoToDashboard}
+                  sidebarOpen={sidebarOpen}
+                  onToggleSidebar={handleToggleSidebar}
+                />
+              ) : (
+                <TimeClock
+                  onContinueToDashboard={handleGoToDashboard}
+                  sidebarOpen={sidebarOpen}
+                  onToggleSidebar={handleToggleSidebar}
+                />
+              )}
+            </main>
+          </div>
         ) : (
-          <Login />
+          <Login onGoToTimeClock={handleGoToTimeClock} />
         )}
       </div>
     </div>
