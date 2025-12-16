@@ -131,60 +131,45 @@ export default function Dashboard({ onOpenHistory, sidebarOpen = false, onToggle
     [capabilities],
   )
 
-  const handleDocumentAction = (item) => {
-    toast({
-      title: t('dashboardPage.toasts.documentAction.title'),
-      description: t('dashboardPage.toasts.documentAction.description', {
-        action: item.actionLabel || t('dashboardPage.toasts.documentAction.defaultAction'),
-        name: item.name,
-      }),
-    })
-  }
-
-  const handleViewAllDocuments = () => {
-    toast({
-      title: t('dashboardPage.toasts.documents.title'),
-      description: t('dashboardPage.toasts.documents.description'),
-    })
-  }
-
-  const handleViewAllTimeOff = () => {
-    toast({
-      title: t('dashboardPage.toasts.timeOff.title'),
-      description: t('dashboardPage.toasts.timeOff.description'),
-    })
-  }
-
-  const handleRequestVacation = () => {
-    toast({
-      title: t('dashboardPage.toasts.vacation.title'),
-      description: t('dashboardPage.toasts.vacation.description'),
-    })
-  }
-
-  const handleViewAllAnnouncements = () => {
-    toast({
-      title: t('dashboardPage.toasts.announcements.title'),
-      description: t('dashboardPage.toasts.announcements.description'),
-    })
-  }
-
   const cardProps = {
     timeTracking: { onOpenHistory },
     documents: {
       sections: documentSections,
-      onViewAll: handleViewAllDocuments,
-      onAction: handleDocumentAction,
+      onViewAll: () =>
+        toast({
+          title: t('dashboardPage.toasts.documents.title'),
+          description: t('dashboardPage.toasts.documents.description'),
+        }),
+      onAction: (item) =>
+        toast({
+          title: t('dashboardPage.toasts.documentAction.title'),
+          description: t('dashboardPage.toasts.documentAction.description', {
+            action: item.actionLabel || t('dashboardPage.toasts.documentAction.defaultAction'),
+            name: item.name,
+          }),
+        }),
       maxItemsPerSection: 1,
     },
     timeOff: {
       summary: timeOffSummary,
-      onRequest: handleRequestVacation,
-      onViewAll: handleViewAllTimeOff,
+      onRequest: () =>
+        toast({
+          title: t('dashboardPage.toasts.vacation.title'),
+          description: t('dashboardPage.toasts.vacation.description'),
+        }),
+      onViewAll: () =>
+        toast({
+          title: t('dashboardPage.toasts.timeOff.title'),
+          description: t('dashboardPage.toasts.timeOff.description'),
+        }),
     },
     announcements: {
       announcements,
-      onViewAll: handleViewAllAnnouncements,
+      onViewAll: () =>
+        toast({
+          title: t('dashboardPage.toasts.announcements.title'),
+          description: t('dashboardPage.toasts.announcements.description'),
+        }),
     },
   }
 

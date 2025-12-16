@@ -160,8 +160,8 @@ export default function App() {
               />
             )}
             <aside
-              className={`fixed md:static inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 ${
-                sidebarOpen ? 'translate-x-0 md:translate-x-0 md:ml-0' : '-translate-x-full md:-translate-x-full md:-ml-64'
+              className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 ${
+                sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full'
               } md:flex`}
             >
               <div className="flex items-center gap-3">
@@ -178,39 +178,41 @@ export default function App() {
                 </div>
               </div>
 
-              <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px] mt-8">
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = item.page ? currentPage === item.page : item.active
-                  return (
-                    <button
-                      key={item.label}
-                      className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
-                          : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
-                      }`}
-                      onClick={() => {
-                        item.onClick?.()
-                        setSidebarOpen(false)
-                      }}
-                      type="button"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge ? (
-                        <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
-                          {item.badge}
-                        </span>
-                      ) : null}
-                    </button>
-                  )
-                })}
-              </nav>
+              <div className="mt-8 flex flex-1 flex-col overflow-hidden">
+                <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px] overflow-y-auto pr-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = item.page ? currentPage === item.page : item.active
+                    return (
+                      <button
+                        key={item.label}
+                        className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
+                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
+                        }`}
+                        onClick={() => {
+                          item.onClick?.()
+                          setSidebarOpen(false)
+                        }}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge ? (
+                          <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </nav>
+              </div>
 
               <div className="mt-auto w-full space-y-3">
                 <UserProfileDropdown user={user} onProfile={handleProfile} onHelp={handleHelp} onLogout={handleLogout} />
@@ -221,7 +223,12 @@ export default function App() {
               </div>
             </aside>
 
-            <main className="flex-1 flex flex-col min-w-0">
+            <main
+              className={cn(
+                'flex-1 flex flex-col min-w-0 transition-all duration-300',
+                sidebarOpen ? 'md:ml-64' : 'md:ml-0',
+              )}
+            >
               {currentPage === 'dashboard' ? (
                 <Dashboard
                   onOpenHistory={handleGoToHistory}
