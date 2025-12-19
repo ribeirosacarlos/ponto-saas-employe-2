@@ -98,3 +98,14 @@ export async function startBreak(coords = {}) {
 export async function endBreak(coords = {}) {
   return breakRequest('end', coords)
 }
+
+export async function getWorkedToday() {
+  const { data } = await api.get('/v1/employee/worked-today')
+  const payload = data?.data || data || {}
+
+  return {
+    ...payload,
+    workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
+    workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
+  }
+}

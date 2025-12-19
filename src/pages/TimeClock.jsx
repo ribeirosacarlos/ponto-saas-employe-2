@@ -9,6 +9,7 @@ import { cn } from '../lib/utils'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { useClocking } from '../features/ponto/useClocking'
+import { getWorkedToday } from '../lib/api'
 
 const statusTokens = {
   idle: {
@@ -43,6 +44,7 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
   const [currentTime, setCurrentTime] = useState(new Date())
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
   const userMenuRef = useRef(null)
 
   useEffect(() => {
@@ -114,17 +116,53 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
       end,
     })
 
+  const formatMinutesToLabel = (minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
+    const totalMinutes = Math.max(0, Math.round(minutes))
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const mins = String(totalMinutes % 60).padStart(2, '0')
+    return `${hours}:${mins}`
+  }
+
+  useEffect(() => {
+    let active = true
+
+    const fetchWorkedToday = async () => {
+      if (!token) {
+        setWorkedTodayLabel('00:00')
+        return
+      }
+      try {
+        const data = await getWorkedToday()
+        console.log('[TimeClock] worked-today response:', data)
+        const minutes =
+          data?.workedMinutes ??
+          data?.worked_minutes ??
+          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        const label = formatMinutesToLabel(minutes)
+        console.log('[TimeClock] computed label:', { minutes, label })
+        if (!active) return
+        setWorkedTodayLabel(label)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load worked-today', error)
+        if (!active) return
+        setWorkedTodayLabel('00:00')
+      }
+    }
+
+    fetchWorkedToday()
+
+    return () => {
+      active = false
+    }
+  }, [token])
+
   const summaryStats = useMemo(
     () => [
       { label: t('timeClock.summary.planned'), value: '08:00', tone: 'text-foreground' },
       {
         label: t('timeClock.summary.recorded'),
-        value:
-          normalizedStatus === 'idle'
-            ? '00:00'
-            : normalizedStatus === 'working' || normalizedStatus === 'break'
-              ? '02:45'
-              : '08:00',
+        value: workedTodayLabel,
         tone:
           normalizedStatus === 'idle'
             ? 'text-muted-foreground'
@@ -329,7 +367,7 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
                     <span className="uppercase tracking-[0.18em] text-muted-foreground">
                       {t('timeClock.summary.todayBadge', 'Hoje')}
                     </span>
-                    <span className="text-lg font-semibold text-foreground">00:00</span>
+                    <span className="text-lg font-semibold text-foreground">{workedTodayLabel}</span>
                   </div>
                 </div>
               </div>

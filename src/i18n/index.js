@@ -63,7 +63,7 @@ const resources = {
         nowLabel: 'agora',
         requestAdjustment: 'Solicitar ajuste',
         hoursToday: 'Horas trabalhadas hoje',
-        hoursTodayHelper: 'Somatório simples das batidas de hoje.',
+        hoursTodayHelper: 'Horas calculadas pelo servidor com base nas batidas de hoje.',
         hourBank: 'Banco de horas',
         hourBankHelper: 'Valor estático até conectar ao endpoint.',
         backendNote:
@@ -597,7 +597,7 @@ const resources = {
         nowLabel: 'now',
         requestAdjustment: 'Request adjustment',
         hoursToday: 'Hours worked today',
-        hoursTodayHelper: "Simple sum of today's punches.",
+        hoursTodayHelper: "Server-calculated hours from today's punches.",
         hourBank: 'Time bank',
         hourBankHelper: 'Static value until the endpoint is connected.',
         backendNote:
@@ -1129,7 +1129,7 @@ const resources = {
         nowLabel: 'ahora',
         requestAdjustment: 'Solicitar ajuste',
         hoursToday: 'Horas trabajadas hoy',
-        hoursTodayHelper: 'Suma simple de las marcaciones de hoy.',
+        hoursTodayHelper: 'Horas calculadas por el servidor con las marcaciones de hoy.',
         hourBank: 'Banco de horas',
         hourBankHelper: 'Valor estático hasta conectar con el endpoint.',
         backendNote:
