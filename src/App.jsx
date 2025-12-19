@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
 import { useAuthStore } from './store/useAuth.js'
+import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
 import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
@@ -42,6 +43,15 @@ export default function App() {
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
+
+  const formatMinutesToLabel = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return t('dashboardPage.badges.today')
+    const totalMinutes = Math.max(0, Math.round(minutes))
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const mins = String(totalMinutes % 60).padStart(2, '0')
+    return `${hours}:${mins}`
+  }, [t])
 
   const navigateTo = useCallback((page, replace = false) => {
     const path = PAGE_PATHS[page] || '/'
@@ -97,6 +107,36 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [token])
 
+  useEffect(() => {
+    let active = true
+
+    const fetchWorkedToday = async () => {
+      if (!token) {
+        setTodayBadge(t('dashboardPage.badges.today'))
+        return
+      }
+      try {
+        const data = await getWorkedToday()
+        console.log('[App] /v1/employee/worked-today response:', data)
+        const minutes =
+          data?.workedMinutes ??
+          data?.worked_minutes ??
+          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        if (!active) return
+        setTodayBadge(formatMinutesToLabel(minutes))
+      } catch (error) {
+        console.error('[App] Failed to load worked-today', error)
+        if (!active) return
+        setTodayBadge(t('dashboardPage.badges.today'))
+      }
+    }
+
+    fetchWorkedToday()
+    return () => {
+      active = false
+    }
+  }, [formatMinutesToLabel, t, token])
+
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
   const handleGoToTimeClock = () => navigateTo('timeClock')
@@ -128,7 +168,7 @@ export default function App() {
       icon: Home,
       page: 'dashboard',
       onClick: handleGoToDashboard,
-      badge: t('dashboardPage.badges.today'),
+      badge: todayBadge,
     },
     {
       label: t('dashboardPage.nav.history'),
