@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, Clock3, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
+import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
@@ -13,6 +14,7 @@ import { cn } from './lib/utils'
 
 const PAGE_PATHS = {
   login: '/',
+  activateAccount: '/activate-account',
   timeClock: '/time-clock',
   dashboard: '/dashboard',
   history: '/history',
@@ -24,6 +26,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/history' || normalized === '/time-entries') return 'history'
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
+  if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
 
@@ -55,13 +58,22 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      const pageFromPath =
+        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
+
+      if (pageFromPath === 'activateAccount') {
+        setCurrentPage('activateAccount')
+        return
+      }
+
       navigateTo('login', true)
       return
     }
 
     const pageFromPath =
-      typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
-    const nextPage = pageFromPath === 'login' ? 'timeClock' : pageFromPath
+        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+    const nextPage =
+      pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
     setCurrentPage(nextPage)
     if (pageFromPath === 'login') {
       navigateTo(nextPage, true)
@@ -73,10 +85,12 @@ export default function App() {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
-        setCurrentPage('login')
+        setCurrentPage(pageFromPath === 'activateAccount' ? 'activateAccount' : 'login')
         return
       }
-      setCurrentPage(pageFromPath === 'login' ? 'timeClock' : pageFromPath)
+      setCurrentPage(
+        pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath,
+      )
     }
 
     window.addEventListener('popstate', handlePopstate)
@@ -250,6 +264,8 @@ export default function App() {
               )}
             </main>
           </div>
+        ) : currentPage === 'activateAccount' ? (
+          <ActivateAccount />
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}
