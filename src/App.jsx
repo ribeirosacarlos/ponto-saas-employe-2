@@ -124,6 +124,7 @@ export default function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
+  useEffect(() => {
     let active = true
 
     const fetchWorkedToday = async () => {
@@ -350,7 +351,7 @@ export default function App() {
                 </div>
               </div>
             </main>
-          </div>
+          </>
         ) : currentPage === 'activateAccount' ? (
           <ActivateAccount />
         ) : (
