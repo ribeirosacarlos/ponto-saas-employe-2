@@ -1,14 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Bell, FileText, GraduationCap, IdCard, Menu, Search, X } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
-import { LanguageSwitcher } from '../components/LanguageSwitcher'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
 import { DASHBOARD_CARDS } from './dashboardCards'
 
-export default function Dashboard({ onOpenHistory, sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function Dashboard({
+  onOpenHistory,
+  onOpenDocuments,
+  sidebarOpen = false,
+  onToggleSidebar = () => {},
+}) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
@@ -17,6 +20,21 @@ export default function Dashboard({ onOpenHistory, sidebarOpen = false, onToggle
     const label = new Date().toLocaleDateString(i18n.language, { day: '2-digit', month: 'long' })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }, [i18n.language])
+
+  const [currentTime, setCurrentTime] = useState(() => new Date())
+
+  useEffect(() => {
+    const update = () => setCurrentTime(new Date())
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const currentTimeLabel = currentTime.toLocaleTimeString(i18n.language, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
 
   const documentSections = useMemo(
     () => [
@@ -131,15 +149,22 @@ export default function Dashboard({ onOpenHistory, sidebarOpen = false, onToggle
     [capabilities],
   )
 
+  const handleViewAllDocuments = () => {
+    if (onOpenDocuments) {
+      onOpenDocuments()
+      return
+    }
+    toast({
+      title: t('dashboardPage.toasts.documents.title'),
+      description: t('dashboardPage.toasts.documents.description'),
+    })
+  }
+
   const cardProps = {
     timeTracking: { onOpenHistory },
     documents: {
       sections: documentSections,
-      onViewAll: () =>
-        toast({
-          title: t('dashboardPage.toasts.documents.title'),
-          description: t('dashboardPage.toasts.documents.description'),
-        }),
+      onViewAll: handleViewAllDocuments,
       onAction: (item) =>
         toast({
           title: t('dashboardPage.toasts.documentAction.title'),
@@ -174,48 +199,46 @@ export default function Dashboard({ onOpenHistory, sidebarOpen = false, onToggle
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-card/90 px-4 py-4 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-6 lg:px-8 sm:gap-4">
-        <div className="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-              onClick={onToggleSidebar}
-              aria-label={t('dashboardPage.header.toggleMenu')}
-              type="button"
-            >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-            <h1 className="text-base font-semibold tracking-tight sm:text-lg md:text-xl">{t('dashboardPage.title')}</h1>
-            <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2 py-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-              {t('dashboardPage.todayPill', { date: todayLabel })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={t('dashboardPage.searchPlaceholder')}
-                className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              />
+    <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
+      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
+          <div className="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
+                onClick={onToggleSidebar}
+                aria-label={t('dashboardPage.header.toggleMenu')}
+                type="button"
+              >
+                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+              <h1 className="text-base font-semibold tracking-tight sm:text-lg md:text-xl">{t('dashboardPage.title')}</h1>
+              <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2 py-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                {t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder={t('dashboardPage.searchPlaceholder')}
+                  className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition hover:bg-muted/80 hover:text-foreground sm:h-9 sm:w-9"
-            type="button"
-          >
-            <Bell className="h-4 w-4" />
-          </button>
-          <LanguageSwitcher className="hidden sm:block" />
-          <ThemeToggle />
-        </div>
-      </header>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition hover:bg-muted/80 hover:text-foreground sm:h-9 sm:w-9"
+              type="button"
+            >
+              <Bell className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 auto-rows-fr">
           {visibleCards.length === 0 ? (
             <div className="col-span-full rounded-2xl border border-border bg-card px-4 py-5 text-sm text-muted-foreground">

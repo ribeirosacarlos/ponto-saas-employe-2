@@ -6,8 +6,6 @@ import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
-import { ThemeToggle } from '../components/ThemeToggle'
-import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { useClocking } from '../features/ponto/useClocking'
 
 const statusTokens = {
@@ -234,10 +232,6 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
               </div>
             </div>
             <div className="flex flex-col gap-2 lg:items-end">
-              <div className="flex items-center justify-end gap-2">
-                <LanguageSwitcher />
-                <ThemeToggle />
-              </div>
               <div className="flex items-center gap-3">
                 <div className="text-right leading-tight">
                   <p className="text-sm font-semibold text-muted-foreground">{formattedDate}</p>

@@ -33,21 +33,26 @@ export function LanguageSwitcher({ className }) {
     setOpen(false)
   }
 
+  const currentLang = languages.find((lang) => lang.code === current) || languages[0]
+
   return (
     <div className={cn('relative', className)} ref={ref}>
       <Button
         variant="ghost"
-        size="icon"
-        className="h-10 w-10 rounded-full border border-border/70 bg-card/80 shadow-[0_12px_35px_-28px_rgba(92,134,255,0.55)] hover:-translate-y-0.5"
+        className="flex h-10 w-full max-w-[220px] items-center justify-between rounded-2xl border border-border/70 bg-background/80 px-3 text-[11px] font-semibold text-foreground shadow-[0_10px_30px_-22px_rgba(62,82,152,0.55)] transition-all hover:bg-background"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t('languageSwitcher.ariaLabel')}
         onClick={() => setOpen((prev) => !prev)}
+        type="button"
       >
-        <Languages className="h-4 w-4" />
+        <span>{currentLang.label}</span>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-background shadow-[0_8px_20px_-10px_rgba(0,0,0,0.55)]">
+          <Languages className="h-3.5 w-3.5" />
+        </span>
       </Button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-[0_24px_70px_-42px_rgba(92,134,255,0.55)] backdrop-blur-xl">
+        <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-[0_24px_70px_-42px_rgba(92,134,255,0.55)] backdrop-blur-xl">
           {languages.map((lang) => (
             <button
               key={lang.code}
@@ -57,10 +62,14 @@ export function LanguageSwitcher({ className }) {
               )}
               onClick={() => handleChange(lang.code)}
               aria-pressed={current === lang.code}
+              type="button"
             >
               {lang.label}
               {current === lang.code && (
-                <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary" aria-hidden />
+                <span
+                  className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary"
+                  aria-hidden
+                />
               )}
             </button>
           ))}

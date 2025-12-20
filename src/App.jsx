@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock3, Home, ListChecks, Settings, Users } from 'lucide-react'
+import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
+import Documents from './pages/Documents.jsx'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
@@ -9,6 +10,8 @@ import { useAuthStore } from './store/useAuth.js'
 import { useToast } from './components/ui/use-toast'
 import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 
 const PAGE_PATHS = {
@@ -16,6 +19,7 @@ const PAGE_PATHS = {
   timeClock: '/time-clock',
   dashboard: '/dashboard',
   history: '/history',
+  documents: '/documents',
 }
 
 const resolvePageFromPath = (path) => {
@@ -24,6 +28,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/history' || normalized === '/time-entries') return 'history'
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
+  if (normalized === '/documents') return 'documents'
   return 'login'
 }
 
@@ -83,12 +88,26 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [token])
 
+  useEffect(() => {
+    if (!sidebarOpen) return
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [sidebarOpen])
+
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
   const handleGoToTimeClock = () => navigateTo('timeClock')
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev)
   }, [])
+  const handleGoToDocuments = () => navigateTo('documents')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -108,6 +127,12 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
+  }
+
   const navItems = [
     {
       label: t('dashboardPage.nav.dashboard'),
@@ -121,6 +146,12 @@ export default function App() {
       icon: ListChecks,
       page: 'history',
       onClick: handleGoToHistory,
+    },
+    {
+      label: t('dashboardPage.nav.documents'),
+      icon: FileText,
+      page: 'documents',
+      onClick: handleGoToDocuments,
     },
     { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
     {
@@ -150,19 +181,21 @@ export default function App() {
       </div>
       <div className="relative z-10">
         {token ? (
-          <div className="min-h-screen flex flex-col md:flex-row">
-            {sidebarOpen && (
-              <button
-                className="fixed inset-0 z-30 bg-black/30 md:hidden"
-                aria-label={t('dashboardPage.header.closeMenu')}
-                onClick={() => setSidebarOpen(false)}
-                type="button"
-              />
-            )}
+          <>
+            <button
+              type="button"
+              aria-label={t('dashboardPage.header.closeMenu')}
+              className={cn(
+                'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 md:hidden',
+                sidebarOpen ? 'opacity-70 pointer-events-auto' : 'opacity-0 pointer-events-none',
+              )}
+              onClick={() => setSidebarOpen(false)}
+            />
             <aside
-              className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 ${
-                sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full'
-              } md:flex`}
+              className={cn(
+                'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300',
+                sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
+              )}
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-3">
@@ -193,7 +226,7 @@ export default function App() {
                         }`}
                         onClick={() => {
                           item.onClick?.()
-                          setSidebarOpen(false)
+                          closeSidebarOnMobile()
                         }}
                         type="button"
                       >
@@ -215,7 +248,16 @@ export default function App() {
               </div>
 
               <div className="mt-auto w-full space-y-3">
-                <UserProfileDropdown user={user} onProfile={handleProfile} onHelp={handleHelp} onLogout={handleLogout} />
+                <div className="space-y-2">
+                  <LanguageSwitcher className="w-full" />
+                  <ThemeToggle className="w-full" />
+                </div>
+                <UserProfileDropdown
+                  user={user}
+                  onProfile={handleProfile}
+                  onHelp={handleHelp}
+                  onLogout={handleLogout}
+                />
                 <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
                   <span>{t('dashboardPage.version.label')}</span>
                   <span>{t('dashboardPage.version.product')}</span>
@@ -225,31 +267,38 @@ export default function App() {
 
             <main
               className={cn(
-                'flex-1 flex flex-col min-w-0 transition-all duration-300',
+                'flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300',
                 sidebarOpen ? 'md:ml-64' : 'md:ml-0',
               )}
             >
-              {currentPage === 'dashboard' ? (
-                <Dashboard
-                  onOpenHistory={handleGoToHistory}
-                  sidebarOpen={sidebarOpen}
-                  onToggleSidebar={handleToggleSidebar}
-                />
-              ) : currentPage === 'history' ? (
-                <History
-                  onBackToDashboard={handleGoToDashboard}
-                  sidebarOpen={sidebarOpen}
-                  onToggleSidebar={handleToggleSidebar}
-                />
-              ) : (
-                <TimeClock
-                  onContinueToDashboard={handleGoToDashboard}
-                  sidebarOpen={sidebarOpen}
-                  onToggleSidebar={handleToggleSidebar}
-                />
-              )}
+              <div className="flex-1 min-h-0">
+                <div className="mx-auto w-full max-w-[1320px]">
+                  {currentPage === 'dashboard' ? (
+                  <Dashboard
+                    onOpenHistory={handleGoToHistory}
+                    onOpenDocuments={handleGoToDocuments}
+                    sidebarOpen={sidebarOpen}
+                    onToggleSidebar={handleToggleSidebar}
+                  />
+                  ) : currentPage === 'history' ? (
+                    <History
+                      onBackToDashboard={handleGoToDashboard}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  ) : currentPage === 'documents' ? (
+                    <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : (
+                    <TimeClock
+                      onContinueToDashboard={handleGoToDashboard}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  )}
+                </div>
+              </div>
             </main>
-          </div>
+          </>
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}
