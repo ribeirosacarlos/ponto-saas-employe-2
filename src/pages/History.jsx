@@ -21,8 +21,6 @@ import {
   X,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
-import { LanguageSwitcher } from '../components/LanguageSwitcher'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { useToast } from '../components/ui/use-toast'
 import { getEmployeeEntries, requestAdjustment } from '../lib/api'
 import { exportEntriesToCSV } from '../lib/exportEntries'
@@ -526,7 +524,20 @@ export default function History({ onBackToDashboard, sidebarOpen = false, onTogg
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-2 sm:gap-3">
+            <EntryAdjustmentModal
+              onSubmit={handleAdjustment}
+              isSubmitting={Boolean(submittingAdjustment)}
+              trigger={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full border-border bg-background/80 px-3 text-sm"
+                >
+                  {t('historyPage.adjustment.cta')}
+                </Button>
+              }
+            />
             <Button
               type="button"
               variant="outline"
@@ -545,31 +556,6 @@ export default function History({ onBackToDashboard, sidebarOpen = false, onTogg
               <FileText className="mr-2 h-4 w-4 text-primary" />
               {t('historyPage.export.pdfLabel')}
             </Button>
-            <EntryAdjustmentModal
-              onSubmit={handleAdjustment}
-              isSubmitting={Boolean(submittingAdjustment)}
-              trigger={
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-full border-border bg-background/80 px-3 text-sm"
-                >
-                  {t('historyPage.adjustment.cta')}
-                </Button>
-              }
-            />
-            <LanguageSwitcher className="hidden sm:block" />
-            <ThemeToggle />
-            {onBackToDashboard ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
-                onClick={onBackToDashboard}
-              >
-                {t('historyPage.actions.back')}
-              </Button>
-            ) : null}
           </div>
         </header>
 

@@ -26,6 +26,8 @@ const resources = {
       },
       themeToggle: {
         ariaLabel: 'Alternar tema',
+        lightLabel: 'Tema claro',
+        darkLabel: 'Tema escuro',
       },
       languageSwitcher: {
         ariaLabel: 'Alterar idioma',
@@ -224,6 +226,9 @@ const resources = {
         badges: {
           today: 'Hoje',
         },
+        labels: {
+          hoursLabel: 'Horas: {{time}}',
+        },
         header: {
           toggleMenu: 'Alternar menu lateral',
           closeMenu: 'Fechar menu',
@@ -232,8 +237,10 @@ const resources = {
         nav: {
           dashboard: 'Dashboard',
           history: 'Histórico',
+          documents: 'Documentos',
           calendar: 'Calendário',
           registerPoint: 'Registrar ponto',
+          timeOff: 'Folgas',
           projects: 'Projetos',
           team: 'Equipe',
           settings: 'Configurações',
@@ -242,7 +249,7 @@ const resources = {
           label: 'Versão 1.0',
           product: 'Synergy HR',
         },
-        todayPill: 'Hoje - {{date}}',
+        todayPill: '{{time}} Hoje - {{date}}',
         timeTracking: {
           tag: 'Controle de ponto',
           title: 'Histórico de ponto',
@@ -411,6 +418,107 @@ const resources = {
           viewAll: 'Ver tudo',
         },
       },
+      documentsPage: {
+        tag: 'Documentos',
+        title: 'Documentação do colaborador',
+        subtitle: 'Organize recibos, cursos e comprovantes em um único lugar.',
+        helper: {
+          between: 'Atualizado diariamente',
+          badge: 'Sincronizado com o RH',
+        },
+        actions: {
+          exportCsv: 'Exportar CSV',
+          exportPdf: 'Exportar PDF',
+          upload: 'Enviar documento',
+          view: 'Ver',
+          download: 'Baixar',
+          renew: 'Renovar',
+        },
+        filters: {
+          title: 'Filtros',
+          description: 'Refine a lista por tipo, status e período.',
+          tag: 'Dinâmico',
+          category: 'Tipo de documento',
+          status: 'Status',
+          segmented: {
+            all: 'Todos',
+            available: 'Disponíveis',
+            pending: 'Pendentes',
+            review: 'Em revisão',
+            expired: 'Vencidos',
+          },
+          range: 'Período',
+          rangeOptions: {
+            last30: 'Últimos 30 dias',
+            thisMonth: 'Este mês',
+            thisYear: 'Este ano',
+            custom: 'Personalizado',
+          },
+          reset: 'Redefinir',
+          apply: 'Aplicar filtros',
+        },
+        toasts: {
+          exportCsv: {
+            title: 'CSV pronto',
+            description: 'Os documentos visíveis serão incluídos.',
+          },
+          exportPdf: {
+            title: 'PDF pronto',
+            description: 'Baixe o PDF com a visão filtrada.',
+          },
+          upload: {
+            title: 'Documento enviado',
+            description: 'Será revisado pelo RH em breve.',
+          },
+          uploadReady: {
+            title: 'Upload pronto',
+            description: 'Arquivo pronto para envio.',
+          },
+          filter: {
+            title: 'Filtros aplicados',
+            description: 'A lista foi atualizada.',
+          },
+        },
+        upload: {
+          title: 'Envio rápido',
+          description: 'Arraste ou selecione um arquivo e escolha uma categoria.',
+          category: 'Categoria',
+          fileTypes: 'PDF • JPG',
+          dropActiveTitle: 'Solte os arquivos',
+          dropActiveDescription: 'Pronto! Clique em enviar para concluir.',
+          dropTitle: 'Arraste seu arquivo aqui',
+          dropDescription: 'Máx. 10MB • PDF, JPG ou PNG.',
+          browse: 'Escolher arquivo',
+          send: 'Enviar',
+          tip: 'Use nomes consistentes como "Folha - Nov/2025".',
+        },
+        table: {
+          label: 'Tabela',
+          title: 'Visão completa',
+          search: 'Buscar por nome, tipo ou status',
+          empty: 'Nenhum documento corresponde aos filtros.',
+          headers: {
+            document: 'Documento',
+            type: 'Tipo',
+            status: 'Status',
+            date: 'Data',
+            action: 'Ação',
+          },
+        },
+        status: {
+          available: 'Disponível',
+          pending: 'Pendente',
+          review: 'Em revisão',
+          expired: 'Vencido',
+        },
+        tabs: {
+          all: 'Todos',
+          payroll: 'Nóminas',
+          courses: 'Cursos',
+          personal: 'Pessoais',
+          others: 'Outros',
+        },
+      },
       historyPage: {
         badge: 'Histórico',
         subBadge: 'Colaborador: {{name}}',
@@ -560,6 +668,8 @@ const resources = {
       },
       themeToggle: {
         ariaLabel: 'Toggle theme',
+        lightLabel: 'Light theme',
+        darkLabel: 'Dark theme',
       },
       languageSwitcher: {
         ariaLabel: 'Change language',
@@ -757,6 +867,9 @@ const resources = {
         badges: {
           today: 'Today',
         },
+        labels: {
+          hoursLabel: 'Time: {{time}}',
+        },
         header: {
           toggleMenu: 'Toggle sidebar',
           closeMenu: 'Close menu',
@@ -765,7 +878,9 @@ const resources = {
         nav: {
           dashboard: 'Dashboard',
           history: 'History',
+          documents: 'Documents',
           calendar: 'Calendar',
+          registerPoint: 'Register point',
           timeOff: 'Time Off',
           projects: 'Projects',
           team: 'Team',
@@ -775,7 +890,7 @@ const resources = {
           label: 'Version 1.0',
           product: 'Synergy HR',
         },
-        todayPill: 'Today - {{date}}',
+        todayPill: '{{time}} Today - {{date}}',
         timeTracking: {
           tag: 'Time tracking',
           title: 'Punch history',
@@ -944,6 +1059,107 @@ const resources = {
           viewAll: 'View all',
         },
       },
+      documentsPage: {
+        tag: 'Documents',
+        title: 'Employee documentation',
+        subtitle: 'Keep payslips, trainings, and proofs in one place.',
+        helper: {
+          between: 'Updated in the last 30 days',
+          badge: 'Synced with HR',
+        },
+        actions: {
+          exportCsv: 'Export CSV',
+          exportPdf: 'Export PDF',
+          upload: 'Upload document',
+          view: 'View',
+          download: 'Download',
+          renew: 'Renew',
+        },
+        filters: {
+          title: 'Filters',
+          description: 'Filter by type, status, and period.',
+          tag: 'Dynamic',
+          category: 'Document type',
+          status: 'Status',
+          segmented: {
+            all: 'All',
+            available: 'Available',
+            pending: 'Pending',
+            review: 'In review',
+            expired: 'Expired',
+          },
+          range: 'Period',
+          rangeOptions: {
+            last30: 'Last 30 days',
+            thisMonth: 'This month',
+            thisYear: 'This year',
+            custom: 'Custom',
+          },
+          reset: 'Reset',
+          apply: 'Apply filters',
+        },
+        toasts: {
+          exportCsv: {
+            title: 'CSV ready',
+            description: 'All visible documents are included.',
+          },
+          exportPdf: {
+            title: 'PDF ready',
+            description: 'Download the filtered view as PDF.',
+          },
+          upload: {
+            title: 'Upload ready',
+            description: 'File queued. Send when ready.',
+          },
+          uploadReady: {
+            title: 'Upload ready',
+            description: 'File queued. Send when ready.',
+          },
+          filter: {
+            title: 'Filters applied',
+            description: 'The list is now up to date.',
+          },
+        },
+        upload: {
+          title: 'Quick upload',
+          description: 'Drag & drop or select a file and assign a category.',
+          category: 'Category',
+          fileTypes: 'PDF • JPG',
+          dropActiveTitle: 'Drop files to upload',
+          dropActiveDescription: 'Files received. Hit send to finish.',
+          dropTitle: 'Drag your file here',
+          dropDescription: 'Max 10MB • PDF, JPG, PNG.',
+          browse: 'Choose file',
+          send: 'Send',
+          tip: 'Use consistent names like "Payslip - Nov 2025".',
+        },
+        table: {
+          label: 'Table',
+          title: 'Full view',
+          search: 'Search by name, type, or status',
+          empty: 'No documents match the filters.',
+          headers: {
+            document: 'Document',
+            type: 'Type',
+            status: 'Status',
+            date: 'Date',
+            action: 'Action',
+          },
+        },
+        status: {
+          available: 'Available',
+          pending: 'Pending',
+          review: 'In review',
+          expired: 'Expired',
+        },
+        tabs: {
+          all: 'All',
+          payroll: 'Payroll',
+          courses: 'Courses',
+          personal: 'Personal',
+          others: 'Others',
+        },
+      },
       historyPage: {
         badge: 'History',
         subBadge: 'Employee: {{name}}',
@@ -1092,6 +1308,8 @@ const resources = {
       },
       themeToggle: {
         ariaLabel: 'Cambiar tema',
+        lightLabel: 'Tema claro',
+        darkLabel: 'Tema oscuro',
       },
       languageSwitcher: {
         ariaLabel: 'Cambiar idioma',
@@ -1290,6 +1508,9 @@ const resources = {
         badges: {
           today: 'Hoy',
         },
+        labels: {
+          hoursLabel: 'Horas: {{time}}',
+        },
         header: {
           toggleMenu: 'Alternar barra lateral',
           closeMenu: 'Cerrar menú',
@@ -1298,7 +1519,9 @@ const resources = {
         nav: {
           dashboard: 'Panel',
           history: 'Historial',
+          documents: 'Documentos',
           calendar: 'Calendario',
+          registerPoint: 'Registrar punto',
           timeOff: 'Ausencias',
           projects: 'Proyectos',
           team: 'Equipo',
@@ -1308,7 +1531,7 @@ const resources = {
           label: 'Versión 1.0',
           product: 'Synergy HR',
         },
-        todayPill: 'Hoy - {{date}}',
+        todayPill: '{{time}} Hoy - {{date}}',
         timeTracking: {
           tag: 'Control de horario',
           title: 'Historial de marcaciones',
@@ -1477,6 +1700,107 @@ const resources = {
           viewAll: 'Ver todo',
         },
       },
+      documentsPage: {
+        tag: 'Documentos',
+        title: 'Documentación del colaborador',
+        subtitle: 'Organiza nóminas, cursos y comprobantes en un mismo lugar.',
+        helper: {
+          between: 'Actualizado en los últimos 30 días',
+          badge: 'Sincronizado con RRHH',
+        },
+        actions: {
+          exportCsv: 'Exportar CSV',
+          exportPdf: 'Exportar PDF',
+          upload: 'Subir documento',
+          view: 'Ver',
+          download: 'Descargar',
+          renew: 'Renovar',
+        },
+        filters: {
+          title: 'Filtros',
+          description: 'Filtra por tipo, estado y período.',
+          tag: 'Dinámico',
+          category: 'Tipo de documento',
+          status: 'Estado',
+          segmented: {
+            all: 'Todos',
+            available: 'Disponibles',
+            pending: 'Pendientes',
+            review: 'En revisión',
+            expired: 'Vencidos',
+          },
+          range: 'Período',
+          rangeOptions: {
+            last30: 'Últimos 30 días',
+            thisMonth: 'Este mes',
+            thisYear: 'Este año',
+            custom: 'Personalizado',
+          },
+          reset: 'Reiniciar',
+          apply: 'Aplicar filtros',
+        },
+        toasts: {
+          exportCsv: {
+            title: 'CSV listo',
+            description: 'Se incluirán los documentos visibles.',
+          },
+          exportPdf: {
+            title: 'PDF listo',
+            description: 'Descarga la vista filtrada en PDF.',
+          },
+          upload: {
+            title: 'Carga lista',
+            description: 'Archivo recibido. Presiona enviar.',
+          },
+          uploadReady: {
+            title: 'Carga lista',
+            description: 'Archivo recibido. Presiona enviar.',
+          },
+          filter: {
+            title: 'Filtros aplicados',
+            description: 'La lista se actualizó.',
+          },
+        },
+        upload: {
+          title: 'Carga rápida',
+          description: 'Arrastra o selecciona un archivo y asigna una categoría.',
+          category: 'Categoría',
+          fileTypes: 'PDF • JPG',
+          dropActiveTitle: 'Suelta los archivos',
+          dropActiveDescription: 'Listo. Presiona enviar para terminar.',
+          dropTitle: 'Arrastra tu archivo aquí',
+          dropDescription: 'Máx. 10MB • PDF, JPG o PNG.',
+          browse: 'Elegir archivo',
+          send: 'Enviar',
+          tip: 'Usa nombres consistentes como "Nómina - Nov/2025".',
+        },
+        table: {
+          label: 'Tabla',
+          title: 'Vista completa',
+          search: 'Buscar por nombre, tipo o estado',
+          empty: 'Ningún documento coincide con los filtros.',
+          headers: {
+            document: 'Documento',
+            type: 'Tipo',
+            status: 'Estado',
+            date: 'Fecha',
+            action: 'Acción',
+          },
+        },
+        status: {
+          available: 'Disponible',
+          pending: 'Pendiente',
+          review: 'En revisión',
+          expired: 'Vencido',
+        },
+        tabs: {
+          all: 'Todos',
+          payroll: 'Nóminas',
+          courses: 'Cursos',
+          personal: 'Personales',
+          others: 'Otros',
+        },
+      },
       historyPage: {
         badge: 'Historial',
         subBadge: 'Colaborador: {{name}}',
@@ -1602,7 +1926,7 @@ const resources = {
       },
     },
   },
-}
+};
 
 i18n
   .use(LanguageDetector)
