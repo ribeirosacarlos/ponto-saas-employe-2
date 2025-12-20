@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
+import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
 import { useAuthStore } from './store/useAuth.js'
+import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
 import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
@@ -16,6 +18,7 @@ import { cn } from './lib/utils'
 
 const PAGE_PATHS = {
   login: '/',
+  activateAccount: '/activate-account',
   timeClock: '/time-clock',
   dashboard: '/dashboard',
   history: '/history',
@@ -29,6 +32,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
   if (normalized === '/documents') return 'documents'
+  if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
 
@@ -44,6 +48,15 @@ export default function App() {
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
+
+  const formatMinutesToLabel = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return t('dashboardPage.badges.today')
+    const totalMinutes = Math.max(0, Math.round(minutes))
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const mins = String(totalMinutes % 60).padStart(2, '0')
+    return `${hours}:${mins}`
+  }, [t])
 
   const navigateTo = useCallback((page, replace = false) => {
     const path = PAGE_PATHS[page] || '/'
@@ -60,13 +73,22 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      const pageFromPath =
+        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
+
+      if (pageFromPath === 'activateAccount') {
+        setCurrentPage('activateAccount')
+        return
+      }
+
       navigateTo('login', true)
       return
     }
 
     const pageFromPath =
-      typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
-    const nextPage = pageFromPath === 'login' ? 'timeClock' : pageFromPath
+        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+    const nextPage =
+      pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
     setCurrentPage(nextPage)
     if (pageFromPath === 'login') {
       navigateTo(nextPage, true)
@@ -78,10 +100,12 @@ export default function App() {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
-        setCurrentPage('login')
+        setCurrentPage(pageFromPath === 'activateAccount' ? 'activateAccount' : 'login')
         return
       }
-      setCurrentPage(pageFromPath === 'login' ? 'timeClock' : pageFromPath)
+      setCurrentPage(
+        pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath,
+      )
     }
 
     window.addEventListener('popstate', handlePopstate)
@@ -100,6 +124,34 @@ export default function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
+    let active = true
+
+    const fetchWorkedToday = async () => {
+      if (!token) {
+        setTodayBadge(t('dashboardPage.badges.today'))
+        return
+      }
+      try {
+        const data = await getWorkedToday()
+        console.log('[App] /v1/employee/worked-today response:', data)
+        const minutes =
+          data?.workedMinutes ??
+          data?.worked_minutes ??
+          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        if (!active) return
+        setTodayBadge(formatMinutesToLabel(minutes))
+      } catch (error) {
+        console.error('[App] Failed to load worked-today', error)
+        if (!active) return
+        setTodayBadge(t('dashboardPage.badges.today'))
+      }
+    }
+
+    fetchWorkedToday()
+    return () => {
+      active = false
+    }
+  }, [formatMinutesToLabel, t, token])
 
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
@@ -139,7 +191,7 @@ export default function App() {
       icon: Home,
       page: 'dashboard',
       onClick: handleGoToDashboard,
-      badge: t('dashboardPage.badges.today'),
+      badge: todayBadge,
     },
     {
       label: t('dashboardPage.nav.history'),
@@ -298,7 +350,9 @@ export default function App() {
                 </div>
               </div>
             </main>
-          </>
+          </div>
+        ) : currentPage === 'activateAccount' ? (
+          <ActivateAccount />
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}

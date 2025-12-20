@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
+import { getWorkedToday } from '../../lib/api'
+import { useAuthStore } from '../../store/useAuth'
 
 export function PunchSummaryCard({
   t,
@@ -15,7 +17,48 @@ export function PunchSummaryCard({
   sendingAdjustment,
   onAdjustment,
 }) {
+  const token = useAuthStore((state) => state.token)
   const [showDetails, setShowDetails] = useState(false)
+  const [workedTodayLabel, setWorkedTodayLabel] = useState(workedTime || '--:--')
+
+  const formatMinutesToLabel = (minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
+    const totalMinutes = Math.max(0, Math.round(minutes))
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const mins = String(totalMinutes % 60).padStart(2, '0')
+    return `${hours}:${mins}`
+  }
+
+  useEffect(() => {
+    let active = true
+
+    const fetchWorkedToday = async () => {
+      if (!token) {
+        setWorkedTodayLabel(workedTime || '--:--')
+        return
+      }
+      try {
+        const data = await getWorkedToday()
+        console.log('[PunchSummaryCard] worked-today response:', data)
+        const minutes =
+          data?.workedMinutes ??
+          data?.worked_minutes ??
+          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        if (!active) return
+        setWorkedTodayLabel(formatMinutesToLabel(minutes))
+      } catch (error) {
+        console.error('Failed to load worked-today summary', error)
+        if (!active) return
+        setWorkedTodayLabel(workedTime || '--:--')
+      }
+    }
+
+    fetchWorkedToday()
+
+    return () => {
+      active = false
+    }
+  }, [token, workedTime])
 
   return (
     <Card className="relative overflow-hidden bg-card/90">
@@ -114,7 +157,7 @@ export function PunchSummaryCard({
             <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               {t('dashboard.hoursToday')}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{workedTime}</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{workedTodayLabel}</p>
             <p className="text-[11px] text-muted-foreground">{t('dashboard.hoursTodayHelper')}</p>
           </div>
           <div className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-[0_18px_50px_-35px_rgba(92,134,255,0.35)]">
