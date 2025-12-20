@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
+import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { useToast } from './components/ui/use-toast'
-import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
-import { LanguageSwitcher } from './components/LanguageSwitcher'
-import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 
 const PAGE_PATHS = {
@@ -35,7 +32,6 @@ const resolvePageFromPath = (path) => {
 export default function App() {
   const token = useAuthStore((state) => state.token)
   const restoreSession = useAuthStore((state) => state.restoreSession)
-  const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const { theme } = useTheme()
   const { toast } = useToast()
@@ -127,43 +123,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-  const closeSidebarOnMobile = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setSidebarOpen(false)
-    }
-  }
-
-  const navItems = [
-    {
-      label: t('dashboardPage.nav.dashboard'),
-      icon: Home,
-      page: 'dashboard',
-      onClick: handleGoToDashboard,
-      badge: t('dashboardPage.badges.today'),
-    },
-    {
-      label: t('dashboardPage.nav.history'),
-      icon: ListChecks,
-      page: 'history',
-      onClick: handleGoToHistory,
-    },
-    {
-      label: t('dashboardPage.nav.documents'),
-      icon: FileText,
-      page: 'documents',
-      onClick: handleGoToDocuments,
-    },
-    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
-    {
-      label: t('dashboardPage.nav.registerPoint'),
-      icon: Clock3,
-      page: 'timeClock',
-      onClick: handleGoToTimeClock,
-    },
-    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
-    { label: t('dashboardPage.nav.team'), icon: Users },
-    { label: t('dashboardPage.nav.settings'), icon: Settings },
-  ]
 
   return (
     <div
@@ -191,79 +150,15 @@ export default function App() {
               )}
               onClick={() => setSidebarOpen(false)}
             />
-            <aside
-              className={cn(
-                'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300',
-                sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-                    HR
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-muted-foreground">
-                      Synergy
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">HR Management</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex flex-1 flex-col overflow-hidden">
-                <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px] overflow-y-auto pr-1">
-                  {navItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = item.page ? currentPage === item.page : item.active
-                    return (
-                      <button
-                        key={item.label}
-                        className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
-                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
-                        }`}
-                        onClick={() => {
-                          item.onClick?.()
-                          closeSidebarOnMobile()
-                        }}
-                        type="button"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span>{item.label}</span>
-                        </div>
-                        {item.badge ? (
-                          <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </button>
-                    )
-                  })}
-                </nav>
-              </div>
-
-              <div className="mt-auto w-full space-y-3">
-                <div className="space-y-2">
-                  <LanguageSwitcher className="w-full" />
-                  <ThemeToggle className="w-full" />
-                </div>
-                <UserProfileDropdown
-                  user={user}
-                  onProfile={handleProfile}
-                  onHelp={handleHelp}
-                  onLogout={handleLogout}
-                />
-                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
-                  <span>{t('dashboardPage.version.label')}</span>
-                  <span>{t('dashboardPage.version.product')}</span>
-                </div>
-              </div>
-            </aside>
+            <AppSidebar
+              sidebarOpen={sidebarOpen}
+              currentPage={currentPage}
+              onNavigate={navigateTo}
+              onClose={() => setSidebarOpen(false)}
+              onProfile={handleProfile}
+              onHelp={handleHelp}
+              onLogout={handleLogout}
+            />
 
             <main
               className={cn(
