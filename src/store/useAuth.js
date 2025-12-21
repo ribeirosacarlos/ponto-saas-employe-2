@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { api, loginRequest, logoutRequest } from '../lib/api'
-import i18n from '../i18n/index.js'
+import i18n from '../i18n/i18n.js'
 
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
