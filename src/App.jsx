@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
+import Employees from './pages/Employees.jsx'
 import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
@@ -23,6 +24,7 @@ const PAGE_PATHS = {
   dashboard: '/dashboard',
   history: '/history',
   documents: '/documents',
+  employees: '/employees',
 }
 
 const resolvePageFromPath = (path) => {
@@ -32,6 +34,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
   if (normalized === '/documents') return 'documents'
+  if (normalized === '/employees') return 'employees'
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
@@ -161,6 +164,7 @@ export default function App() {
     setSidebarOpen((prev) => !prev)
   }, [])
   const handleGoToDocuments = () => navigateTo('documents')
+  const handleGoToEmployees = () => navigateTo('employees')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -205,6 +209,12 @@ export default function App() {
       icon: FileText,
       page: 'documents',
       onClick: handleGoToDocuments,
+    },
+    {
+      label: t('dashboardPage.nav.employees'),
+      icon: Users,
+      page: 'employees',
+      onClick: handleGoToEmployees,
     },
     { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
     {
@@ -341,6 +351,8 @@ export default function App() {
                     />
                   ) : currentPage === 'documents' ? (
                     <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'employees' ? (
+                    <Employees sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : (
                     <TimeClock
                       onContinueToDashboard={handleGoToDashboard}
