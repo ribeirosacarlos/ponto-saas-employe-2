@@ -1,7 +1,9 @@
 const ROLE_CAPABILITIES = {
-  admin: ['admin', 'area_manager', 'employee'],
-  area_manager: ['area_manager', 'employee'],
   employee: ['employee'],
+  area_manager: ['area_manager', 'employee'],
+  manager: ['manager', 'area_manager', 'employee'],
+  admin: ['admin', 'area_manager', 'employee'],
+  super_admin: ['super_admin', 'admin', 'area_manager', 'employee'],
 }
 
 function normalizeRoles(roles) {
@@ -25,7 +27,6 @@ export function getCapabilitiesFromRoles(roles) {
 
 export function canRenderCard(capabilities, requires) {
   if (!requires || requires.public) return true
-  if (capabilities?.includes('admin')) return true
 
   const userCaps = new Set(capabilities || [])
 
