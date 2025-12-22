@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import Employees from './pages/Employees.jsx'
@@ -11,7 +12,10 @@ import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
+import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 
 const PAGE_PATHS = {
@@ -39,6 +43,7 @@ const resolvePageFromPath = (path) => {
 export default function App() {
   const token = useAuthStore((state) => state.token)
   const restoreSession = useAuthStore((state) => state.restoreSession)
+  const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const { theme } = useTheme()
   const { toast } = useToast()
@@ -180,8 +185,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-<<<<<<< HEAD
-=======
   const closeSidebarOnMobile = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setSidebarOpen(false)
@@ -225,7 +228,6 @@ export default function App() {
     { label: t('dashboardPage.nav.team'), icon: Users },
     { label: t('dashboardPage.nav.settings'), icon: Settings },
   ]
-
 
   return (
     <div

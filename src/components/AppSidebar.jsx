@@ -50,7 +50,12 @@ export function AppSidebar({
       requires: { anyOf: ['employee'] },
     },
     { label: t('dashboardPage.nav.projects'), icon: ListChecks, requires: { anyOf: ['area_manager'] } },
-    { label: t('dashboardPage.nav.team'), icon: Users, requires: { anyOf: ['area_manager'] } },
+    {
+      label: t('dashboardPage.nav.team'),
+      icon: Users,
+      page: 'employees',
+      requires: { anyOf: ['area_manager'] }
+    },
     { label: t('dashboardPage.nav.settings'), icon: Settings, requires: { anyOf: ['admin'] } },
   ]
 
