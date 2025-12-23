@@ -50,7 +50,12 @@ export function AppSidebar({
       requires: { anyOf: ['employee'] },
     },
     { label: t('dashboardPage.nav.projects'), icon: ListChecks, requires: { anyOf: ['area_manager'] } },
-    { label: t('dashboardPage.nav.team'), icon: Users, requires: { anyOf: ['area_manager'] } },
+    {
+      label: t('dashboardPage.nav.equipo'),
+      icon: Users,
+      page: 'equipo',
+      requires: { anyOf: ['admin'] },
+    },
     { label: t('dashboardPage.nav.settings'), icon: Settings, requires: { anyOf: ['admin'] } },
   ]
 
@@ -123,9 +128,9 @@ export function AppSidebar({
       </div>
 
       <div className="mt-auto w-full space-y-3">
-        <div className="space-y-2">
-          <LanguageSwitcher className="w-full" />
-          <ThemeToggle className="w-full" />
+        <div className="flex w-full items-center gap-2">
+          <LanguageSwitcher iconOnly />
+          <ThemeToggle iconOnly />
         </div>
         <UserProfileDropdown user={user} onProfile={onProfile} onHelp={onHelp} onLogout={onLogout} />
         <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">

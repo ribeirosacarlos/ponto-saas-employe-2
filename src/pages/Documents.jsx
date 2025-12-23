@@ -299,7 +299,7 @@ export default function Documents({ sidebarOpen = false, onToggleSidebar = () =>
                     >
                       <Upload className="h-5 w-5" />
                     </div>
-                    <div className="flex-1 space-y-1 text-xs text-muted-foreground">
+                    <div className="flex-1 space-y-2 text-xs text-muted-foreground">
                       <strong className="block text-sm text-foreground">{dropTitle}</strong>
                       <p>{dropDescription}</p>
                       {hasFiles && selectedFiles.length > 0 ? (
@@ -307,40 +307,38 @@ export default function Documents({ sidebarOpen = false, onToggleSidebar = () =>
                           {selectedFiles[0].name}
                         </p>
                       ) : null}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="w-full rounded-full border border-border/60 px-5 py-3 text-[13px] font-semibold text-foreground"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        fileInputRef.current?.click()
-                      }}
-                    >
-                      {t('documentsPage.upload.browse')}
-                    </Button>
-                    {hasFiles && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="w-full rounded-full border-emerald-200 bg-emerald-50 px-5 py-3 text-[13px] font-semibold text-emerald-700 shadow-[0_10px_25px_-18px_rgba(16,185,129,0.95)]"
+                        className="mt-2 w-full rounded-full border border-border/60 px-6 py-4 text-sm font-semibold text-foreground sm:w-auto"
                         onClick={(event) => {
                           event.stopPropagation()
-                          toast({
-                            title: t('documentsPage.toasts.uploadReady.title'),
-                            description: t('documentsPage.toasts.uploadReady.description'),
-                          })
-                          setSelectedFiles([])
+                          fileInputRef.current?.click()
                         }}
                       >
-                        {t('documentsPage.upload.send')}
+                        {t('documentsPage.upload.browse')}
                       </Button>
-                    )}
+                    </div>
                   </div>
+                  {hasFiles && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full rounded-full border-emerald-200 bg-emerald-50 px-5 py-3 text-[13px] font-semibold text-emerald-700 shadow-[0_10px_25px_-18px_rgba(16,185,129,0.95)] sm:w-auto"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        toast({
+                          title: t('documentsPage.toasts.uploadReady.title'),
+                          description: t('documentsPage.toasts.uploadReady.description'),
+                        })
+                        setSelectedFiles([])
+                      }}
+                    >
+                      {t('documentsPage.upload.send')}
+                    </Button>
+                  )}
                   <p className="text-[11px] text-muted-foreground">{t('documentsPage.upload.tip')}</p>
                 </div>
               </div>

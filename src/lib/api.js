@@ -109,3 +109,72 @@ export async function getWorkedToday() {
     workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
   }
 }
+
+export async function listEmployees(page = 1) {
+  const params = {}
+  if (page) params.page = page
+
+  const { data } = await api.get('/v1/admin/employees', { params })
+  const payload = data?.data ?? data
+  const employees = Array.isArray(payload) ? payload : payload?.data || payload?.employees || []
+  const meta =
+    data?.meta ||
+    payload?.meta ||
+    (data && typeof data === 'object'
+      ? {
+          page: data.page ?? page,
+          perPage: data.per_page ?? data.perPage,
+          total: data.total,
+          lastPage: data.last_page ?? data.lastPage,
+        }
+      : null)
+
+  return { data: employees, meta }
+}
+
+export async function createEmployee(payload) {
+  const { data } = await api.post('/v1/admin/employees', payload)
+  return data?.data ?? data
+}
+
+export async function getEmployee(id) {
+  const { data } = await api.get(`/v1/admin/employees/${id}`)
+  return data?.data ?? data
+}
+
+export async function updateEmployee(id, payload) {
+  const { data } = await api.put(`/v1/admin/employees/${id}`, payload)
+  return data?.data ?? data
+}
+
+export async function deleteEmployee(id) {
+  const { data } = await api.delete(`/v1/admin/employees/${id}`)
+  return data?.data ?? data
+}
+
+export async function assignEmployeeShift(id, payload) {
+  const { data } = await api.post(`/v1/admin/employees/${id}/shift`, payload)
+  return data?.data ?? data
+}
+
+export async function listShifts(page = 1) {
+  const params = {}
+  if (page) params.page = page
+
+  const { data } = await api.get('/v1/admin/shifts', { params })
+  const payload = data?.data ?? data
+  const shifts = Array.isArray(payload) ? payload : payload?.data || payload?.shifts || []
+  const meta =
+    data?.meta ||
+    payload?.meta ||
+    (data && typeof data === 'object'
+      ? {
+          page: data.page ?? page,
+          perPage: data.per_page ?? data.perPage,
+          total: data.total,
+          lastPage: data.last_page ?? data.lastPage,
+        }
+      : null)
+
+  return { data: shifts, meta }
+}

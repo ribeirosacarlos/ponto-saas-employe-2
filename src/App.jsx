@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
@@ -6,12 +6,14 @@ import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
+import Equipo from './pages/Equipo.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
+import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
 
 const PAGE_PATHS = {
   login: '/',
@@ -20,6 +22,11 @@ const PAGE_PATHS = {
   dashboard: '/dashboard',
   history: '/history',
   documents: '/documents',
+  equipo: '/equipo',
+}
+
+const PAGE_GUARDS = {
+  equipo: { anyOf: ['admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -29,6 +36,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
   if (normalized === '/documents') return 'documents'
+  if (normalized === '/equipo') return 'equipo'
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
@@ -37,9 +45,11 @@ export default function App() {
   const token = useAuthStore((state) => state.token)
   const restoreSession = useAuthStore((state) => state.restoreSession)
   const logout = useAuthStore((state) => state.logout)
+  const roles = useAuthStore((state) => state.roles)
   const { theme } = useTheme()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const [currentPage, setCurrentPage] = useState(() =>
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
@@ -54,14 +64,23 @@ export default function App() {
     return `${hours}:${mins}`
   }, [t])
 
-  const navigateTo = useCallback((page, replace = false) => {
-    const path = PAGE_PATHS[page] || '/'
-    const method = replace ? 'replaceState' : 'pushState'
-    if (typeof window !== 'undefined') {
-      window.history[method]({ page }, '', path)
-    }
-    setCurrentPage(page)
-  }, [])
+  const canAccessPage = useCallback(
+    (page) => canRenderCard(capabilities, PAGE_GUARDS[page]),
+    [capabilities],
+  )
+
+  const navigateTo = useCallback(
+    (page, replace = false) => {
+      const allowedPage = canAccessPage(page) ? page : 'dashboard'
+      const path = PAGE_PATHS[allowedPage] || '/'
+      const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
+      if (typeof window !== 'undefined') {
+        window.history[method]({ page: allowedPage }, '', path)
+      }
+      setCurrentPage(allowedPage)
+    },
+    [canAccessPage],
+  )
 
   useEffect(() => {
     restoreSession()
@@ -82,14 +101,16 @@ export default function App() {
     }
 
     const pageFromPath =
-        typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+      typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
     const nextPage =
       pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
-    setCurrentPage(nextPage)
-    if (pageFromPath === 'login') {
-      navigateTo(nextPage, true)
+    const allowedPage = canAccessPage(nextPage) ? nextPage : 'dashboard'
+    if (pageFromPath === 'login' || allowedPage !== pageFromPath) {
+      navigateTo(allowedPage, true)
+      return
     }
-  }, [navigateTo, token])
+    setCurrentPage(allowedPage)
+  }, [canAccessPage, navigateTo, token])
 
   useEffect(() => {
     const handlePopstate = () => {
@@ -99,14 +120,18 @@ export default function App() {
         setCurrentPage(pageFromPath === 'activateAccount' ? 'activateAccount' : 'login')
         return
       }
-      setCurrentPage(
-        pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath,
-      )
+      const resolvedPage =
+        pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
+      if (!canAccessPage(resolvedPage)) {
+        navigateTo('dashboard', true)
+        return
+      }
+      setCurrentPage(resolvedPage)
     }
 
     window.addEventListener('popstate', handlePopstate)
     return () => window.removeEventListener('popstate', handlePopstate)
-  }, [token])
+  }, [canAccessPage, navigateTo, token])
 
   useEffect(() => {
     if (!sidebarOpen) return
@@ -120,6 +145,8 @@ export default function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
+
+  useEffect(() => {
     let active = true
 
     const fetchWorkedToday = async () => {
@@ -175,46 +202,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-<<<<<<< HEAD
-=======
-  const closeSidebarOnMobile = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setSidebarOpen(false)
-    }
-  }
-
-  const navItems = [
-    {
-      label: t('dashboardPage.nav.dashboard'),
-      icon: Home,
-      page: 'dashboard',
-      onClick: handleGoToDashboard,
-      badge: todayBadge,
-    },
-    {
-      label: t('dashboardPage.nav.history'),
-      icon: ListChecks,
-      page: 'history',
-      onClick: handleGoToHistory,
-    },
-    {
-      label: t('dashboardPage.nav.documents'),
-      icon: FileText,
-      page: 'documents',
-      onClick: handleGoToDocuments,
-    },
-    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
-    {
-      label: t('dashboardPage.nav.registerPoint'),
-      icon: Clock3,
-      page: 'timeClock',
-      onClick: handleGoToTimeClock,
-    },
-    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
-    { label: t('dashboardPage.nav.team'), icon: Users },
-    { label: t('dashboardPage.nav.settings'), icon: Settings },
-  ]
-
 
   return (
     <div
@@ -261,12 +248,12 @@ export default function App() {
               <div className="flex-1 min-h-0">
                 <div className="mx-auto w-full max-w-[1320px]">
                   {currentPage === 'dashboard' ? (
-                  <Dashboard
-                    onOpenHistory={handleGoToHistory}
-                    onOpenDocuments={handleGoToDocuments}
-                    sidebarOpen={sidebarOpen}
-                    onToggleSidebar={handleToggleSidebar}
-                  />
+                    <Dashboard
+                      onOpenHistory={handleGoToHistory}
+                      onOpenDocuments={handleGoToDocuments}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
                   ) : currentPage === 'history' ? (
                     <History
                       onBackToDashboard={handleGoToDashboard}
@@ -275,6 +262,8 @@ export default function App() {
                     />
                   ) : currentPage === 'documents' ? (
                     <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'equipo' ? (
+                    <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : (
                     <TimeClock
                       onContinueToDashboard={handleGoToDashboard}
@@ -285,7 +274,7 @@ export default function App() {
                 </div>
               </div>
             </main>
-          </div>
+          </>
         ) : currentPage === 'activateAccount' ? (
           <ActivateAccount />
         ) : (
