@@ -51,10 +51,17 @@ export function AppSidebar({
     },
     { label: t('dashboardPage.nav.projects'), icon: ListChecks, requires: { anyOf: ['area_manager'] } },
     {
+<<<<<<< HEAD
       label: t('dashboardPage.nav.equipo'),
       icon: Users,
       page: 'equipo',
       requires: { anyOf: ['admin'] },
+=======
+      label: t('dashboardPage.nav.team'),
+      icon: Users,
+      page: 'employees',
+      requires: { anyOf: ['area_manager'] }
+>>>>>>> origin/main
     },
     { label: t('dashboardPage.nav.settings'), icon: Settings, requires: { anyOf: ['admin'] } },
   ]

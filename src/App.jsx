@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
+import Employees from './pages/Employees.jsx'
 import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
 import TimeClock from './pages/TimeClock.jsx'
@@ -11,7 +13,10 @@ import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
+import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
 
@@ -22,11 +27,15 @@ const PAGE_PATHS = {
   dashboard: '/dashboard',
   history: '/history',
   documents: '/documents',
+<<<<<<< HEAD
   equipo: '/equipo',
 }
 
 const PAGE_GUARDS = {
   equipo: { anyOf: ['admin'] },
+=======
+  employees: '/employees',
+>>>>>>> origin/main
 }
 
 const resolvePageFromPath = (path) => {
@@ -36,7 +45,11 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
   if (normalized === '/documents') return 'documents'
+<<<<<<< HEAD
   if (normalized === '/equipo') return 'equipo'
+=======
+  if (normalized === '/employees') return 'employees'
+>>>>>>> origin/main
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
@@ -44,6 +57,7 @@ const resolvePageFromPath = (path) => {
 export default function App() {
   const token = useAuthStore((state) => state.token)
   const restoreSession = useAuthStore((state) => state.restoreSession)
+  const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const roles = useAuthStore((state) => state.roles)
   const { theme } = useTheme()
@@ -145,7 +159,10 @@ export default function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
   useEffect(() => {
     let active = true
 
@@ -183,6 +200,7 @@ export default function App() {
     setSidebarOpen((prev) => !prev)
   }, [])
   const handleGoToDocuments = () => navigateTo('documents')
+  const handleGoToEmployees = () => navigateTo('employees')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -202,6 +220,52 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
+<<<<<<< HEAD
+=======
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
+  }
+
+  const navItems = [
+    {
+      label: t('dashboardPage.nav.dashboard'),
+      icon: Home,
+      page: 'dashboard',
+      onClick: handleGoToDashboard,
+      badge: todayBadge,
+    },
+    {
+      label: t('dashboardPage.nav.history'),
+      icon: ListChecks,
+      page: 'history',
+      onClick: handleGoToHistory,
+    },
+    {
+      label: t('dashboardPage.nav.documents'),
+      icon: FileText,
+      page: 'documents',
+      onClick: handleGoToDocuments,
+    },
+    {
+      label: t('dashboardPage.nav.employees'),
+      icon: Users,
+      page: 'employees',
+      onClick: handleGoToEmployees,
+    },
+    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
+    {
+      label: t('dashboardPage.nav.registerPoint'),
+      icon: Clock3,
+      page: 'timeClock',
+      onClick: handleGoToTimeClock,
+    },
+    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
+    { label: t('dashboardPage.nav.team'), icon: Users },
+    { label: t('dashboardPage.nav.settings'), icon: Settings },
+  ]
+>>>>>>> origin/main
 
   return (
     <div
@@ -262,8 +326,13 @@ export default function App() {
                     />
                   ) : currentPage === 'documents' ? (
                     <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+<<<<<<< HEAD
                   ) : currentPage === 'equipo' ? (
                     <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+=======
+                  ) : currentPage === 'employees' ? (
+                    <Employees sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+>>>>>>> origin/main
                   ) : (
                     <TimeClock
                       onContinueToDashboard={handleGoToDashboard}

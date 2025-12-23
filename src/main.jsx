@@ -5,7 +5,7 @@ import './index.css'
 import { ThemeProvider } from './providers/ThemeProvider.jsx'
 import { ToastProvider } from './components/ui/use-toast.jsx'
 import { Toaster } from './components/ui/toaster.jsx'
-import './i18n/index.js'
+import './i18n/i18n.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

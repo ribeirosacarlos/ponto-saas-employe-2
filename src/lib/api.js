@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/services/api.js (ou onde você estiver usando)
 
 import axios from 'axios'
@@ -178,3 +179,7 @@ export async function listShifts(page = 1) {
 
   return { data: shifts, meta }
 }
+=======
+export { api } from '../services/http/api'
+export * from '../services'
+>>>>>>> origin/main

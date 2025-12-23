@@ -57,3 +57,8 @@ export const DialogDescription = ({ className, ...props }) => (
   />
 )
 DialogDescription.displayName = DialogPrimitive.Description.displayName
+
+export const DialogFooter = ({ className, ...props }) => (
+  <div className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
+)
+DialogFooter.displayName = 'DialogFooter'
