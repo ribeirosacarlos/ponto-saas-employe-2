@@ -239,6 +239,7 @@ const es = {
         timeOff: 'Ausencias',
         projects: 'Proyectos',
         team: 'Equipo',
+        equipo: 'Empleados',
         settings: 'Configuración',
       },
       version: {
@@ -620,7 +621,134 @@ const es = {
         overnight: 'Noche (22:00 - 06:00)',
       },
     },
-    historyPage: {
+    equipoPage: {
+      tag: 'Admin',
+      title: 'Equipo',
+      subtitle: 'Gestion de colaboradores',
+      searchPlaceholder: 'Buscar por nombre o correo',
+      table: {
+        label: 'Colaboradores',
+        title: 'Gestion de colaboradores',
+        count: '{{count}} colaboradores',
+        emptyTitle: 'No se encontraron colaboradores',
+        emptyDescription: 'Prueba otra busqueda o crea un nuevo colaborador.',
+        emptyName: 'Nombre no disponible',
+        emptyEmail: 'Correo no disponible',
+        emptyDate: 'Sin fecha',
+        headers: {
+          name: 'Nombre',
+          email: 'Correo',
+          role: 'Rol',
+          createdAt: 'Creado en',
+          actions: 'Acciones',
+        },
+      },
+      badges: {
+        shiftAssigned: 'Jornada asignada',
+      },
+      pagination: {
+        page: 'Pagina {{page}}',
+        pageOf: 'Pagina {{page}} de {{total}}',
+        previous: 'Anterior',
+        next: 'Siguiente',
+      },
+      actions: {
+        create: 'Nuevo colaborador',
+        save: 'Guardar',
+        creating: 'Creando...',
+        updating: 'Guardando...',
+        edit: 'Editar',
+        assignShift: 'Asignar jornada',
+        assign: 'Asignar',
+        assigning: 'Asignando...',
+        deactivate: 'Dar de baja',
+        deactivating: 'Eliminando...',
+        retry: 'Reintentar',
+      },
+      form: {
+        nameLabel: 'Nombre',
+        emailLabel: 'Correo',
+        roleLabel: 'Rol',
+        shiftLabel: 'Jornada',
+        shiftPlaceholder: 'Selecciona una jornada',
+        passwordLabel: 'Contrasena (opcional)',
+        passwordPlaceholder: 'Define una nueva contrasena',
+        startDateLabel: 'Fecha de inicio',
+      },
+      modals: {
+        createTitle: 'Nuevo colaborador',
+        createDescription: 'Crea un colaborador y envia la invitacion.',
+        editTitle: 'Editar colaborador',
+        editDescription: 'Actualiza los datos del colaborador.',
+        assignTitle: 'Asignar jornada',
+        assignDescription: 'Selecciona la jornada y la fecha de inicio.',
+        deleteTitle: 'Dar de baja',
+        deleteDescription: 'Quieres remover a {{name}} del equipo?',
+      },
+      roles: {
+        admin: 'Admin',
+        manager: 'Manager',
+        area_manager: 'Manager de area',
+        employee: 'Colaborador',
+        unknown: 'No informado',
+      },
+      shifts: {
+        loading: 'Cargando jornadas...',
+        empty: 'No hay jornadas disponibles',
+        unnamed: 'Jornada sin nombre',
+      },
+      toasts: {
+        loadError: {
+          title: 'Error al cargar colaboradores',
+        },
+        shiftsError: {
+          title: 'Error al cargar jornadas',
+          description: 'No se pudo cargar las jornadas.',
+        },
+        createSuccess: {
+          title: 'Colaborador creado',
+          description: 'Invitacion enviada con exito.',
+        },
+        createError: {
+          title: 'Error al crear colaborador',
+          description: 'No se pudo crear el colaborador.',
+        },
+        detailsError: {
+          title: 'Error al cargar colaborador',
+          description: 'No se pudo cargar los datos.',
+        },
+        updateSuccess: {
+          title: 'Colaborador actualizado',
+          description: 'Datos actualizados con exito.',
+        },
+        updateError: {
+          title: 'Error al actualizar colaborador',
+          description: 'No se pudo actualizar los datos.',
+        },
+        deleteSuccess: {
+          title: 'Colaborador eliminado',
+          description: 'Colaborador eliminado con exito.',
+        },
+        deleteError: {
+          title: 'Error al eliminar colaborador',
+          description: 'No se pudo eliminar el colaborador.',
+        },
+        assignSuccess: {
+          title: 'Jornada asignada',
+          description: 'Jornada asignada con exito.',
+        },
+        assignError: {
+          title: 'Error al asignar jornada',
+          description: 'No se pudo asignar la jornada.',
+        },
+      },
+      states: {
+        errorTitle: 'Error al cargar colaboradores',
+        errorDescription: 'No se pudo cargar los colaboradores.',
+        noPermissionTitle: 'Sin permiso',
+        noPermissionDescription: 'No tienes acceso a esta pagina.',
+      },
+    },    historyPage: {
       badge: 'Historial',
       subBadge: 'Colaborador: {{name}}',
       title: 'Historial de marcaciones',
@@ -747,3 +875,4 @@ const es = {
 }
 
 export default es
+
