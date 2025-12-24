@@ -51,17 +51,10 @@ export function AppSidebar({
     },
     { label: t('dashboardPage.nav.projects'), icon: ListChecks, requires: { anyOf: ['area_manager'] } },
     {
-<<<<<<< HEAD
       label: t('dashboardPage.nav.equipo'),
       icon: Users,
       page: 'equipo',
       requires: { anyOf: ['admin'] },
-=======
-      label: t('dashboardPage.nav.team'),
-      icon: Users,
-      page: 'employees',
-      requires: { anyOf: ['area_manager'] }
->>>>>>> origin/main
     },
     { label: t('dashboardPage.nav.settings'), icon: Settings, requires: { anyOf: ['admin'] } },
   ]
@@ -83,7 +76,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300',
+        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-[#f7f7f9] px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 dark:bg-card/95 md:bg-card/95',
         sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
       )}
     >

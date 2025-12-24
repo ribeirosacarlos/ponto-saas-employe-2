@@ -27,15 +27,14 @@ const PAGE_PATHS = {
   dashboard: '/dashboard',
   history: '/history',
   documents: '/documents',
-<<<<<<< HEAD
+
   equipo: '/equipo',
+  employees: '/employees',
 }
 
 const PAGE_GUARDS = {
   equipo: { anyOf: ['admin'] },
-=======
-  employees: '/employees',
->>>>>>> origin/main
+  employees: { anyOf: ['area_manager'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -45,11 +44,10 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/dashboard') return 'dashboard'
   if (normalized === '/time-clock') return 'timeClock'
   if (normalized === '/documents') return 'documents'
-<<<<<<< HEAD
   if (normalized === '/equipo') return 'equipo'
-=======
+
   if (normalized === '/employees') return 'employees'
->>>>>>> origin/main
+
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
 }
@@ -159,10 +157,7 @@ export default function App() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
   useEffect(() => {
     let active = true
 
@@ -220,8 +215,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-<<<<<<< HEAD
-=======
   const closeSidebarOnMobile = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setSidebarOpen(false)
@@ -265,7 +258,7 @@ export default function App() {
     { label: t('dashboardPage.nav.team'), icon: Users },
     { label: t('dashboardPage.nav.settings'), icon: Settings },
   ]
->>>>>>> origin/main
+
 
   return (
     <div
@@ -326,13 +319,13 @@ export default function App() {
                     />
                   ) : currentPage === 'documents' ? (
                     <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-<<<<<<< HEAD
+
                   ) : currentPage === 'equipo' ? (
                     <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-=======
+
                   ) : currentPage === 'employees' ? (
                     <Employees sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
->>>>>>> origin/main
+
                   ) : (
                     <TimeClock
                       onContinueToDashboard={handleGoToDashboard}

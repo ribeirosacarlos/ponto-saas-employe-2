@@ -239,6 +239,7 @@ const en = {
         timeOff: 'Time Off',
         projects: 'Projects',
         team: 'Team',
+        equipo: 'Employees',
         settings: 'Settings',
       },
       version: {
@@ -620,7 +621,134 @@ const en = {
         overnight: 'Overnight (22:00 - 06:00)',
       },
     },
-    historyPage: {
+    equipoPage: {
+      tag: 'Admin',
+      title: 'Team',
+      subtitle: 'Employee management',
+      searchPlaceholder: 'Search by name or email',
+      table: {
+        label: 'Employees',
+        title: 'Employee management',
+        count: '{{count}} people',
+        emptyTitle: 'No employees found',
+        emptyDescription: 'Try a different search or add a new employee.',
+        emptyName: 'Name unavailable',
+        emptyEmail: 'Email unavailable',
+        emptyDate: 'No date',
+        headers: {
+          name: 'Name',
+          email: 'Email',
+          role: 'Role',
+          createdAt: 'Created at',
+          actions: 'Actions',
+        },
+      },
+      badges: {
+        shiftAssigned: 'Shift assigned',
+      },
+      pagination: {
+        page: 'Page {{page}}',
+        pageOf: 'Page {{page}} of {{total}}',
+        previous: 'Previous',
+        next: 'Next',
+      },
+      actions: {
+        create: 'New employee',
+        save: 'Save',
+        creating: 'Creating...',
+        updating: 'Saving...',
+        edit: 'Edit',
+        assignShift: 'Assign shift',
+        assign: 'Assign',
+        assigning: 'Assigning...',
+        deactivate: 'Deactivate',
+        deactivating: 'Removing...',
+        retry: 'Try again',
+      },
+      form: {
+        nameLabel: 'Name',
+        emailLabel: 'Email',
+        roleLabel: 'Role',
+        shiftLabel: 'Shift',
+        shiftPlaceholder: 'Select a shift',
+        passwordLabel: 'Password (optional)',
+        passwordPlaceholder: 'Set a new password',
+        startDateLabel: 'Start date',
+      },
+      modals: {
+        createTitle: 'New employee',
+        createDescription: 'Create a new employee and send an invite.',
+        editTitle: 'Edit employee',
+        editDescription: 'Update employee details.',
+        assignTitle: 'Assign shift',
+        assignDescription: 'Choose a shift and start date.',
+        deleteTitle: 'Deactivate employee',
+        deleteDescription: 'Remove {{name}} from the team?',
+      },
+      roles: {
+        admin: 'Admin',
+        manager: 'Manager',
+        area_manager: 'Area manager',
+        employee: 'Employee',
+        unknown: 'Unknown',
+      },
+      shifts: {
+        loading: 'Loading shifts...',
+        empty: 'No shifts available',
+        unnamed: 'Unnamed shift',
+      },
+      toasts: {
+        loadError: {
+          title: 'Failed to load employees',
+        },
+        shiftsError: {
+          title: 'Failed to load shifts',
+          description: 'We could not load shifts.',
+        },
+        createSuccess: {
+          title: 'Employee created',
+          description: 'Invite sent successfully.',
+        },
+        createError: {
+          title: 'Failed to create employee',
+          description: 'We could not create the employee.',
+        },
+        detailsError: {
+          title: 'Failed to load employee',
+          description: 'We could not load the employee details.',
+        },
+        updateSuccess: {
+          title: 'Employee updated',
+          description: 'Details updated successfully.',
+        },
+        updateError: {
+          title: 'Failed to update employee',
+          description: 'We could not update the employee.',
+        },
+        deleteSuccess: {
+          title: 'Employee removed',
+          description: 'Employee removed successfully.',
+        },
+        deleteError: {
+          title: 'Failed to remove employee',
+          description: 'We could not remove the employee.',
+        },
+        assignSuccess: {
+          title: 'Shift assigned',
+          description: 'Shift assigned successfully.',
+        },
+        assignError: {
+          title: 'Failed to assign shift',
+          description: 'We could not assign the shift.',
+        },
+      },
+      states: {
+        errorTitle: 'Failed to load employees',
+        errorDescription: 'We could not load employees.',
+        noPermissionTitle: 'Access denied',
+        noPermissionDescription: 'You do not have access to this page.',
+      },
+    },    historyPage: {
       badge: 'History',
       subBadge: 'Employee: {{name}}',
       title: 'Time entry history',
@@ -669,3 +797,4 @@ const en = {
 }
 
 export default en
+

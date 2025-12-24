@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-// src/services/api.js (ou onde você estiver usando)
-
-import axios from 'axios'
+﻿import axios from 'axios'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -11,7 +8,6 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
 })
 
-// Interceptor pra anexar o Bearer token em todas as requisições autenticadas
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token')
   if (token) {
@@ -49,7 +45,7 @@ export async function getEmployeeEntries({ from, to, page = 1, perPage = 20 } = 
   if (from) params.from = from
   if (to) params.to = to
 
-  // Envia ambas as variantes para compatibilidade com o backend.
+  // Send both variants to support older API versions.
   if (page) params.page = page
   if (perPage) {
     params.per_page = perPage
@@ -60,7 +56,6 @@ export async function getEmployeeEntries({ from, to, page = 1, perPage = 20 } = 
     params,
   })
 
-  // TODO: align with API shape when backend is finalized
   const entries = Array.isArray(data) ? data : data?.data || data?.entries || []
   const meta =
     data?.meta ||
@@ -179,7 +174,3 @@ export async function listShifts(page = 1) {
 
   return { data: shifts, meta }
 }
-=======
-export { api } from '../services/http/api'
-export * from '../services'
->>>>>>> origin/main
