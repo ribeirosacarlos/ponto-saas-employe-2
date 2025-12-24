@@ -1,20 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, FileText, GraduationCap, IdCard, Menu, Search, X } from 'lucide-react'
+import { AlertTriangle, Bell, FileText, GraduationCap, IdCard, Menu, Search, X } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
 import { DASHBOARD_CARDS } from './dashboardCards'
+import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 
 export default function Dashboard({
   onOpenHistory,
   onOpenDocuments,
+  onOpenVacations,
+  onOpenAnnouncements,
   sidebarOpen = false,
   onToggleSidebar = () => {},
 }) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
+  const { isAbsentToday, absenceToday } = useAbsenceStatus()
 
   const todayLabel = useMemo(() => {
     const label = new Date().toLocaleDateString(i18n.language, { day: '2-digit', month: 'long' })
@@ -35,6 +39,42 @@ export default function Dashboard({
     second: '2-digit',
     hour12: false,
   })
+
+  const formatAbsenceDate = (value) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return date.toLocaleDateString(i18n.language, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  const absencePeriodLabel = useMemo(() => {
+    if (!absenceToday) return ''
+    const start = absenceToday.startDate || absenceToday.start_date || absenceToday.date
+    const end = absenceToday.endDate || absenceToday.end_date || absenceToday.date
+    if (!start && !end) return ''
+    if (start && end && start !== end) {
+      return `${formatAbsenceDate(start)} - ${formatAbsenceDate(end)}`
+    }
+    return formatAbsenceDate(start || end)
+  }, [absenceToday, i18n.language])
+
+  const absenceTypeLabel =
+    absenceToday?.type_label ||
+    absenceToday?.typeLabel ||
+    absenceToday?.type ||
+    absenceToday?.category ||
+    absenceToday?.kind ||
+    t('dashboardPage.absence.typeFallback', 'Ausencia')
+
+  const absenceComment =
+    absenceToday?.comment ||
+    absenceToday?.notes ||
+    absenceToday?.justification ||
+    t('dashboardPage.absence.commentFallback', 'Sem justificativa informada.')
 
   const documentSections = useMemo(
     () => [
@@ -182,19 +222,27 @@ export default function Dashboard({
           title: t('dashboardPage.toasts.vacation.title'),
           description: t('dashboardPage.toasts.vacation.description'),
         }),
-      onViewAll: () =>
-        toast({
-          title: t('dashboardPage.toasts.timeOff.title'),
-          description: t('dashboardPage.toasts.timeOff.description'),
-        }),
+      onViewAll: () => {
+        if (onOpenVacations) {
+          onOpenVacations()
+          return
+        }
+        if (typeof window !== 'undefined') {
+          window.location.href = '/vacations'
+        }
+      },
     },
     announcements: {
       announcements,
-      onViewAll: () =>
-        toast({
-          title: t('dashboardPage.toasts.announcements.title'),
-          description: t('dashboardPage.toasts.announcements.description'),
-        }),
+      onViewAll: () => {
+        if (onOpenAnnouncements) {
+          onOpenAnnouncements()
+          return
+        }
+        if (typeof window !== 'undefined') {
+          window.location.href = '/announcements'
+        }
+      },
     },
   }
 
@@ -238,6 +286,35 @@ export default function Dashboard({
             </button>
           </div>
         </header>
+
+        {isAbsentToday ? (
+          <section className="rounded-[22px] border border-rose-200/70 bg-rose-500/10 px-5 py-4 shadow-[0_18px_50px_-36px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
+                  <AlertTriangle className="h-5 w-5" />
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-rose-700 dark:text-rose-100">
+                    {t('dashboardPage.absence.bannerTitle', 'Ausencia registrada para hoje:')}{' '}
+                    {absenceTypeLabel}
+                  </p>
+                  {absencePeriodLabel ? (
+                    <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                      {t('dashboardPage.absence.periodLabel', 'Periodo:')} {absencePeriodLabel}
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                    {t('dashboardPage.absence.reasonLabel', 'Motivo:')} {absenceComment}
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-rose-200/70 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-600 dark:border-rose-400/30 dark:text-rose-100">
+                {t('dashboardPage.absence.badge', 'Bloqueio de ponto ativo')}
+              </span>
+            </div>
+          </section>
+        ) : null}
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 auto-rows-fr">
           {visibleCards.length === 0 ? (

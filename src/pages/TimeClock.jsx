@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, Clock3, HelpCircle, LogOut, Menu, User, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, Menu, User, X } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { useClocking } from '../features/ponto/useClocking'
 import { getWorkedToday } from '../lib/api'
+import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
+import { canClockIn } from '../lib/canClockIn'
 
 const statusTokens = {
   idle: {
@@ -39,6 +41,7 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
     lastWorkEntry,
     lastError,
   } = useClocking()
+  const { isAbsentToday, absenceToday } = useAbsenceStatus()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -122,6 +125,44 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
     return `${hours}:${mins}`
   }
 
+  const formatAbsenceDate = (value) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return date.toLocaleDateString(i18n.language, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  const absencePeriodLabel = useMemo(() => {
+    if (!absenceToday) return ''
+    const start = absenceToday.startDate || absenceToday.start_date || absenceToday.date
+    const end = absenceToday.endDate || absenceToday.end_date || absenceToday.date
+    if (!start && !end) return ''
+    if (start && end && start !== end) {
+      return `${formatAbsenceDate(start)} - ${formatAbsenceDate(end)}`
+    }
+    return formatAbsenceDate(start || end)
+  }, [absenceToday, i18n.language])
+
+  const absenceTypeLabel =
+    absenceToday?.type_label ||
+    absenceToday?.typeLabel ||
+    absenceToday?.type ||
+    absenceToday?.category ||
+    absenceToday?.kind ||
+    t('timeClock.absence.typeFallback', 'Ausencia')
+
+  const absenceComment =
+    absenceToday?.comment ||
+    absenceToday?.notes ||
+    absenceToday?.justification ||
+    t('timeClock.absence.commentFallback', 'Sem justificativa informada.')
+
+  const isClockBlocked = !canClockIn({ isAbsentToday })
+
   useEffect(() => {
     let active = true
 
@@ -204,6 +245,17 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
   }
 
   const handlePrimaryAction = async () => {
+    if (isClockBlocked) {
+      toast({
+        title: t('timeClock.absence.blockTitle', 'Registro bloqueado'),
+        description: t(
+          'timeClock.absence.blockDescription',
+          'Voce esta em ausencia hoje e nao pode registrar o ponto.',
+        ),
+        variant: 'error',
+      })
+      return
+    }
     await registerClock(mainActionType)
   }
 
@@ -344,6 +396,35 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
 
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5 rounded-[26px] border border-border/80 bg-card/95 p-6 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.45)]">
+              {isAbsentToday ? (
+                <div className="rounded-2xl border border-rose-200/70 bg-rose-500/10 p-4 shadow-[0_16px_40px_-30px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
+                      <AlertTriangle className="h-5 w-5" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-rose-700 dark:text-rose-100">
+                        {t('timeClock.absence.bannerTitle', 'Voce esta em ausencia hoje:')}{' '}
+                        {absenceTypeLabel}
+                      </p>
+                      {absencePeriodLabel ? (
+                        <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                          {t('timeClock.absence.periodLabel', 'Periodo:')} {absencePeriodLabel}
+                        </p>
+                      ) : null}
+                      <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                        {t('timeClock.absence.reasonLabel', 'Motivo:')} {absenceComment}
+                      </p>
+                      <p className="text-xs font-semibold text-rose-700 dark:text-rose-100">
+                        {t(
+                          'timeClock.absence.blockedLabel',
+                          'Voce esta bloqueado para registrar o ponto.',
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
@@ -381,7 +462,7 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Button
-                  disabled={primaryLoading || loadingEntries}
+                  disabled={primaryLoading || loadingEntries || isClockBlocked}
                   onClick={handlePrimaryAction}
                   className="h-12 w-full rounded-full shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
                 >

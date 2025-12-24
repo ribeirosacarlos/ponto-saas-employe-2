@@ -78,6 +78,23 @@ const en = {
       role: 'Role',
       roleValue: 'Employee',
     },
+    sidebar: {
+      sections: {
+        workspace: 'Workspace',
+        admin: 'Administration',
+      },
+      items: {
+        dashboard: 'Dashboard',
+        history: 'History',
+        documents: 'Documents',
+        announcements: 'Announcements',
+        clock: 'Register point',
+        projects: 'Projects',
+        team: 'Team',
+        settings: 'Settings',
+        calendar: 'Calendar',
+      },
+    },
     toast: {
       sessionExpired: {
         title: 'Session expired',
@@ -415,6 +432,67 @@ const en = {
         viewAll: 'View all',
       },
     },
+    announcementsPage: {
+      tag: 'Company',
+      title: 'Announcements',
+      subtitle: 'Updates shared by Admin and Area Manager.',
+      helper: {
+        updated: 'Synced with HR',
+        pendingBadge: '{{count}} pending',
+      },
+      actions: {
+        refresh: 'Refresh',
+        retry: 'Try again',
+        confirm: 'Confirm view',
+        confirming: 'Confirming...',
+      },
+      filters: {
+        title: 'Filters',
+        subtitle: 'Filter announcements by status.',
+        tabs: {
+          all: 'All',
+          pending: 'Pending',
+          seen: 'Seen',
+        },
+      },
+      sort: {
+        label: 'Sort',
+        recent: 'Most recent',
+      },
+      labels: {
+        sender: 'Sender: {{sender}}',
+        sentAt: 'Sent on {{date}} at {{time}}',
+        sentAtDateOnly: 'Sent on {{date}}',
+        sentAtFallback: 'Send date unavailable',
+      },
+      status: {
+        pending: 'Pending',
+        seen: 'Seen',
+        seenAt: 'Seen on {{date}} at {{time}}',
+        seenAtDateOnly: 'Seen on {{date}}',
+      },
+      states: {
+        empty: 'No announcements found.',
+        emptyPending: 'No pending announcements.',
+        error: 'Unable to load announcements.',
+        detailError: 'Unable to load announcement details.',
+      },
+      modal: {
+        title: 'Announcement details',
+        description: 'Review the full message shared by the team.',
+      },
+      toasts: {
+        markError: {
+          title: 'Confirmation failed',
+          description: 'Unable to register the view. Please try again.',
+        },
+      },
+      sender: {
+        admin: 'Admin',
+        areaManager: 'Area Manager',
+        default: 'Team',
+      },
+    },
     documentsPage: {
       tag: 'Documents',
       title: 'Employee documentation',
@@ -654,6 +732,7 @@ const en = {
       },
       actions: {
         create: 'New employee',
+        refresh: 'Refresh',
         save: 'Save',
         creating: 'Creating...',
         updating: 'Saving...',
@@ -686,6 +765,7 @@ const en = {
         deleteDescription: 'Remove {{name}} from the team?',
       },
       roles: {
+        all: 'All roles',
         admin: 'Admin',
         manager: 'Manager',
         area_manager: 'Area manager',
