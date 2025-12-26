@@ -11,7 +11,11 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
+<<<<<<< HEAD
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
+=======
+import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
+>>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -32,6 +36,7 @@ const PAGE_PATHS = {
   documents: '/documents',
   vacations: '/vacations',
   adminVacations: '/admin/vacations',
+  adminAnnouncements: '/admin/announcements',
 
   equipo: '/equipo',
   announcements: '/announcements',
@@ -43,7 +48,11 @@ const PAGE_GUARDS = {
   vacations: { anyOf: ['employee'] },
   announcements: { anyOf: ['employee'] },
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+<<<<<<< HEAD
   platformCompanies: { anyOf: ['super_admin'] },
+=======
+  adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+>>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
 }
 
 const resolvePageFromPath = (path) => {
@@ -55,6 +64,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/documents') return 'documents'
   if (normalized === '/vacations') return 'vacations'
   if (normalized === '/admin/vacations') return 'adminVacations'
+  if (normalized === '/admin/announcements') return 'adminAnnouncements'
   if (normalized === '/equipo') return 'equipo'
   if (normalized === '/announcements') return 'announcements'
   if (normalized === '/platform/companies') return 'platformCompanies'
@@ -290,6 +300,7 @@ export default function App() {
               )}
             >
               <div className="flex-1 min-h-0">
+<<<<<<< HEAD
                 {currentPage === 'dashboard' ? (
                   <Dashboard
                     onOpenHistory={handleGoToHistory}
@@ -318,6 +329,47 @@ export default function App() {
                     onContinueToDashboard={handleGoToDashboard}
                   />
                 )}
+=======
+                <div className="mx-auto w-full max-w-[1320px]">
+                  {currentPage === 'dashboard' ? (
+                    <Dashboard
+                      onOpenHistory={handleGoToHistory}
+                      onOpenDocuments={handleGoToDocuments}
+                      onOpenVacations={handleGoToVacations}
+                      onOpenAnnouncements={handleGoToAnnouncements}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  ) : currentPage === 'history' ? (
+                    <History
+                      onBackToDashboard={handleGoToDashboard}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  ) : currentPage === 'documents' ? (
+                    <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'vacations' ? (
+                    <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'adminVacations' ? (
+                    <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'adminAnnouncements' ? (
+                    <AdminAnnouncements
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  ) : currentPage === 'announcements' ? (
+                    <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'equipo' ? (
+                    <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : (
+                    <TimeClock
+                      onContinueToDashboard={handleGoToDashboard}
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
+                  )}
+                </div>
+>>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
               </div>
             </main>
           </>
