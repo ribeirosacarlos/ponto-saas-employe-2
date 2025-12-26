@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, CheckCircle2, EyeOff, Menu, RefreshCcw, X } from 'lucide-react'
+import { Bell, CheckCircle2, EyeOff, RefreshCcw } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 } from '../components/ui/dialog'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { PageContainer } from '../components/ui/PageContainer'
 import {
   getAnnouncement,
   listAnnouncements,
@@ -77,7 +78,7 @@ const getSortValue = (value) => {
   return Number.isNaN(ts) ? 0 : ts
 }
 
-export default function Announcements({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function Announcements() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const fallbackAnnouncements = useMemo(() => buildFallbackAnnouncements(t), [t])
@@ -278,20 +279,11 @@ export default function Announcements({ sidebarOpen = false, onToggleSidebar = (
         <div className="absolute bottom-[-10%] right-[-6%] h-72 w-72 rounded-full bg-indigo-200/18 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6">
+      <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-3">
-                  <button
-                    type="button"
-                    aria-label={t('dashboardPage.header.toggleMenu')}
-                    onClick={onToggleSidebar}
-                    className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
-                  >
-                    {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                  </button>
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                       <Bell className="h-6 w-6" />
@@ -445,8 +437,7 @@ export default function Announcements({ sidebarOpen = false, onToggleSidebar = (
               ))
             )}
           </section>
-        </div>
-      </div>
+      </PageContainer>
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-2xl">

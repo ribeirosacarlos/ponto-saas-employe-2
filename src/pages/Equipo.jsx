@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Menu, Pencil, Plus, RefreshCcw, Search, Trash2, Users, X } from 'lucide-react'
+import { CalendarCheck, Pencil, Plus, RefreshCcw, Search, Trash2, Users } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { useToast } from '../components/ui/use-toast'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
@@ -44,7 +45,7 @@ const buildAssignForm = (employee = {}) => ({
 })
 
 
-export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function Equipo() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const roles = useAuthStore((state) => state.roles)
@@ -333,32 +334,24 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
   if (!hasManagementAccess) {
     return (
       <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
-        <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+        <PageContainer className="py-5 sm:py-6">
           <div className="rounded-2xl border border-border/70 bg-card px-5 py-6 text-sm text-muted-foreground">
             <p className="text-base font-semibold text-foreground">
               {t('equipoPage.states.noPermissionTitle')}
             </p>
             <p className="mt-1">{t('equipoPage.states.noPermissionDescription')}</p>
           </div>
-        </div>
+        </PageContainer>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
-      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+      <PageContainer className="py-5 sm:py-6 space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
           <div className="flex-1 min-w-[240px] max-w-full sm:max-w-xl flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-                onClick={onToggleSidebar}
-                aria-label={t('dashboardPage.header.toggleMenu')}
-                type="button"
-              >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                 <Users className="h-5 w-5" />
               </span>
@@ -676,7 +669,7 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
             ) : null}
           </div>
         </section>
-      </div>
+      </PageContainer>
       <Dialog
         open={createOpen}
         onOpenChange={(open) => {

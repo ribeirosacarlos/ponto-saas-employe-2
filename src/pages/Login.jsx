@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/useAuth'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { PageContainer } from '../components/ui/PageContainer'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -37,14 +38,15 @@ export default function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground transition-colors duration-300">
+    <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="pointer-events-none absolute inset-0 opacity-80">
         <div className="absolute left-[-10%] top-10 h-48 w-48 rounded-full bg-primary/14 blur-[120px] dark:bg-primary/22" />
         <div className="absolute right-[-12%] top-1/4 h-56 w-56 rounded-full bg-sky-200/30 blur-[130px] dark:bg-sky-400/14" />
         <div className="absolute bottom-[-15%] left-1/4 h-56 w-56 rounded-full bg-indigo-100/25 blur-[140px] dark:bg-indigo-600/12" />
       </div>
 
-      <div className="relative w-full max-w-md">
+      <PageContainer className="relative z-10 flex min-h-screen items-center justify-center py-10">
+        <div className="w-full max-w-md">
         <div className="mb-6 flex justify-end gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
@@ -147,7 +149,8 @@ export default function Login() {
           </div>
           <ShieldCheck className="h-4 w-4 text-primary" />
         </div>
-      </div>
+        </div>
+      </PageContainer>
     </div>
   )
 }

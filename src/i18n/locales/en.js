@@ -91,6 +91,7 @@ const en = {
         clock: 'Register point',
         projects: 'Projects',
         team: 'Team',
+        platformCompanies: 'Companies',
         settings: 'Settings',
         calendar: 'Calendar',
       },

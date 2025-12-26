@@ -41,7 +41,7 @@ export function AnnouncementsCard({ announcements, onViewAll }) {
   const items = announcements?.length ? announcements : fallbackAnnouncements
 
   return (
-    <section className="flex h-full flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
+    <section className="flex flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
       <header className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-2xl bg-muted text-muted-foreground text-xs sm:h-8 sm:w-8 sm:text-sm">

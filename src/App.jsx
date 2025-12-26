@@ -11,6 +11,7 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
+import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
@@ -36,6 +37,7 @@ const PAGE_PATHS = {
 
   equipo: '/equipo',
   announcements: '/announcements',
+  platformCompanies: '/platform/companies',
 }
 
 const PAGE_GUARDS = {
@@ -44,6 +46,7 @@ const PAGE_GUARDS = {
   announcements: { anyOf: ['employee'] },
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  platformCompanies: { anyOf: ['super_admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -58,6 +61,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/admin/announcements') return 'adminAnnouncements'
   if (normalized === '/equipo') return 'equipo'
   if (normalized === '/announcements') return 'announcements'
+  if (normalized === '/platform/companies') return 'platformCompanies'
 
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
@@ -156,18 +160,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [canAccessPage, navigateTo, token])
 
-  useEffect(() => {
-    if (!sidebarOpen) return
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setSidebarOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [sidebarOpen])
 
   useEffect(() => {
     let active = true
@@ -227,11 +219,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-  const closeSidebarOnMobile = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setSidebarOpen(false)
-    }
-  }
 
   const navItems = [
     {
@@ -283,20 +270,18 @@ export default function App() {
       <div className="relative z-10">
         {token ? (
           <>
-            <button
-              type="button"
-              aria-label={t('dashboardPage.header.closeMenu')}
+            <div
+              aria-hidden="true"
               className={cn(
                 'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 md:hidden',
                 sidebarOpen ? 'opacity-70 pointer-events-auto' : 'opacity-0 pointer-events-none',
               )}
-              onClick={() => setSidebarOpen(false)}
             />
             <AppSidebar
               sidebarOpen={sidebarOpen}
               currentPage={currentPage}
               onNavigate={navigateTo}
-              onClose={() => setSidebarOpen(false)}
+              onToggle={handleToggleSidebar}
               onProfile={handleProfile}
               onHelp={handleHelp}
               onLogout={handleLogout}
@@ -336,6 +321,8 @@ export default function App() {
                       sidebarOpen={sidebarOpen}
                       onToggleSidebar={handleToggleSidebar}
                     />
+                  ) : currentPage === 'platformCompanies' ? (
+                    <PlatformCompanies />
                   ) : currentPage === 'announcements' ? (
                     <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : currentPage === 'equipo' ? (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addYears, differenceInCalendarDays, format, parseISO, subMonths } from 'date-fns'
-import { CalendarDays, CalendarRange, Loader2, Menu, Plane, X } from 'lucide-react'
+import { CalendarDays, CalendarRange, Loader2, Plane } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -16,6 +16,7 @@ import {
 } from '../components/ui/dialog'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { PageContainer } from '../components/ui/PageContainer'
 import {
   cancelEmployeeVacation,
   getEmployeeVacationBalance,
@@ -60,7 +61,7 @@ const normalizeAbsence = (absence = {}, index = 0) => ({
   endDate: absence.end_date ?? absence.endDate ?? absence.date ?? absence.day ?? '',
 })
 
-export default function Vacations({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function Vacations() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
 
@@ -289,19 +290,10 @@ export default function Vacations({ sidebarOpen = false, onToggleSidebar = () =>
         <div className="absolute bottom-[-18%] left-[20%] h-72 w-72 rounded-full bg-indigo-300/16 blur-[120px] dark:bg-indigo-500/14" />
       </div>
 
-      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6">
+      <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  aria-label={t('dashboardPage.header.toggleMenu')}
-                  onClick={onToggleSidebar}
-                  className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                     <Plane className="h-6 w-6" />
@@ -625,8 +617,7 @@ export default function Vacations({ sidebarOpen = false, onToggleSidebar = () =>
               </div>
             </div>
           </section>
-        </div>
-      </div>
+      </PageContainer>
 
       <Dialog
         open={requestOpen}

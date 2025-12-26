@@ -91,6 +91,7 @@ const es = {
         clock: 'Registrar punto',
         projects: 'Proyectos',
         team: 'Equipo',
+        platformCompanies: 'Empresas',
         settings: 'Configuración',
         calendar: 'Calendario',
       },

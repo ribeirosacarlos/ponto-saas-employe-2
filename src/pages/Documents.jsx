@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, Eye, FileText, Menu, RotateCcw, Upload, X } from 'lucide-react'
+import { Download, Eye, FileText, RotateCcw, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { PageContainer } from '../components/ui/PageContainer'
 
 const DOCUMENTS = [
   {
@@ -83,7 +84,7 @@ const formatDate = (value, locale) =>
     year: 'numeric',
   })
 
-export default function Documents({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function Documents() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const [filters, setFilters] = useState({
@@ -152,69 +153,60 @@ export default function Documents({ sidebarOpen = false, onToggleSidebar = () =>
         <div className="absolute bottom-[-12%] right-[-10%] h-72 w-72 rounded-full bg-indigo-200/20 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6">
-          <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex flex-col gap-3">
+      <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
+        <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-3">
                 <div className="flex items-start gap-3">
-                  <button
-                    type="button"
-                    aria-label={t('dashboardPage.header.toggleMenu')}
-                    onClick={onToggleSidebar}
-                    className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
-                  >
-                    {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                  </button>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                      <FileText className="h-6 w-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                        {t('documentsPage.tag')}
-                      </p>
-                      <h1 className="text-2xl font-semibold leading-tight">{t('documentsPage.title')}</h1>
-                      <p className="text-sm text-muted-foreground">{t('documentsPage.subtitle')}</p>
-                    </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                      {t('documentsPage.tag')}
+                    </p>
+                    <h1 className="text-2xl font-semibold leading-tight">{t('documentsPage.title')}</h1>
+                    <p className="text-sm text-muted-foreground">{t('documentsPage.subtitle')}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <span className="rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground">
-                    {t('documentsPage.helper.between')}
-                  </span>
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary">
-                    {t('documentsPage.helper.badge')}
-                  </span>
-                </div>
               </div>
-
-              <div className="flex flex-wrap items-center justify-start gap-3 lg:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleHeroAction('exportCsv')}
-                  className="rounded-full border-border bg-background/80 px-4 text-sm font-semibold"
-                >
-                  <Download className="mr-2 h-4 w-4 text-primary" />
-                  {t('documentsPage.actions.exportCsv')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleHeroAction('exportPdf')}
-                  className="rounded-full border-border bg-background/80 px-4 text-sm font-semibold"
-                >
-                  <FileText className="mr-2 h-4 w-4 text-primary" />
-                  {t('documentsPage.actions.exportPdf')}
-                </Button>
+              <div className="flex flex-wrap gap-3">
+                <span className="rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground">
+                  {t('documentsPage.helper.between')}
+                </span>
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary">
+                  {t('documentsPage.helper.badge')}
+                </span>
               </div>
             </div>
-          </header>
 
-          <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
+            <div className="flex flex-wrap items-center justify-start gap-3 lg:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleHeroAction('exportCsv')}
+                className="rounded-full border-border bg-background/80 px-4 text-sm font-semibold"
+              >
+                <Download className="mr-2 h-4 w-4 text-primary" />
+                {t('documentsPage.actions.exportCsv')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleHeroAction('exportPdf')}
+                className="rounded-full border-border bg-background/80 px-4 text-sm font-semibold"
+              >
+                <FileText className="mr-2 h-4 w-4 text-primary" />
+                {t('documentsPage.actions.exportPdf')}
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
           <div className="space-y-4">
             <div className="rounded-3xl border border-border/80 bg-card/90 p-4 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
               <div className="flex flex-col gap-3">
@@ -544,8 +536,7 @@ export default function Documents({ sidebarOpen = false, onToggleSidebar = () =>
               </div>
             </div>
           </section>
-        </div>
-      </div>
+      </PageContainer>
     </div>
   )
 }
