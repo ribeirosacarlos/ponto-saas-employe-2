@@ -11,6 +11,7 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
+import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -31,6 +32,7 @@ const PAGE_PATHS = {
   documents: '/documents',
   vacations: '/vacations',
   adminVacations: '/admin/vacations',
+  adminAnnouncements: '/admin/announcements',
 
   equipo: '/equipo',
   announcements: '/announcements',
@@ -41,6 +43,7 @@ const PAGE_GUARDS = {
   vacations: { anyOf: ['employee'] },
   announcements: { anyOf: ['employee'] },
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -52,6 +55,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/documents') return 'documents'
   if (normalized === '/vacations') return 'vacations'
   if (normalized === '/admin/vacations') return 'adminVacations'
+  if (normalized === '/admin/announcements') return 'adminAnnouncements'
   if (normalized === '/equipo') return 'equipo'
   if (normalized === '/announcements') return 'announcements'
 
@@ -327,6 +331,11 @@ export default function App() {
                     <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : currentPage === 'adminVacations' ? (
                     <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+                  ) : currentPage === 'adminAnnouncements' ? (
+                    <AdminAnnouncements
+                      sidebarOpen={sidebarOpen}
+                      onToggleSidebar={handleToggleSidebar}
+                    />
                   ) : currentPage === 'announcements' ? (
                     <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : currentPage === 'equipo' ? (

@@ -85,6 +85,15 @@ const NAV_ITEMS = [
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
+    id: 'adminAnnouncements',
+    labelKey: 'sidebar.items.announcements',
+    icon: Bell,
+    page: 'adminAnnouncements',
+    path: '/admin/announcements',
+    group: 'admin',
+    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+  {
     id: 'team',
     labelKey: 'sidebar.items.team',
     icon: Users,

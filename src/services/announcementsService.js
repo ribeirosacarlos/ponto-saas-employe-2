@@ -1,12 +1,29 @@
-import { api } from './http/api'
+import {
+  getEmployeeAnnouncement,
+  getEmployeeAnnouncementsPendingCount,
+  listEmployeeAnnouncements,
+  markEmployeeAnnouncementSeen,
+  listAdminAnnouncements as listAdminAnnouncementsApi,
+  createAdminAnnouncement as createAdminAnnouncementApi,
+  getAdminAnnouncement as getAdminAnnouncementApi,
+  updateAdminAnnouncement as updateAdminAnnouncementApi,
+  patchAdminAnnouncement as patchAdminAnnouncementApi,
+  deleteAdminAnnouncement as deleteAdminAnnouncementApi,
+} from './modules/announcements'
 
 export const ANNOUNCEMENT_ENDPOINTS = {
-  // TODO: wire real announcement endpoints from the backend.
   employee: {
-    list: null,
-    detail: null,
-    markSeen: null,
-    pendingCount: null,
+    list: '/v1/employee/announcements',
+    detail: (id) => `/v1/employee/announcements/${id}`,
+    markSeen: (id) => `/v1/employee/announcements/${id}/seen`,
+    pendingCount: '/v1/employee/announcements/pending-count',
+  },
+  admin: {
+    list: '/v1/admin/announcements',
+    detail: (id) => `/v1/admin/announcements/${id}`,
+    create: '/v1/admin/announcements',
+    update: (id) => `/v1/admin/announcements/${id}`,
+    remove: (id) => `/v1/admin/announcements/${id}`,
   },
 }
 
@@ -36,7 +53,7 @@ const DEFAULT_MOCK_ANNOUNCEMENTS = [
   },
 ]
 
-const normalizeListResponse = (data) => {
+const normalizeListResponse = (data, fallbackPage = 1) => {
   const payload = data?.data ?? data
   const items = Array.isArray(payload)
     ? payload
@@ -47,8 +64,15 @@ const normalizeListResponse = (data) => {
         : Array.isArray(payload?.items)
           ? payload.items
           : []
+  const metaSource = data?.meta || payload?.meta || data || {}
+  const meta = {
+    currentPage: metaSource.current_page ?? metaSource.currentPage ?? metaSource.page ?? fallbackPage,
+    perPage: metaSource.per_page ?? metaSource.perPage,
+    total: metaSource.total,
+    lastPage: metaSource.last_page ?? metaSource.lastPage,
+  }
 
-  return { items }
+  return { items, meta }
 }
 
 const normalizeText = (value) => (value ? String(value).replace(/\s+/g, ' ').trim() : '')
@@ -58,13 +82,6 @@ const buildSummary = (value, limit = 160) => {
   if (!normalized) return ''
   if (normalized.length <= limit) return normalized
   return `${normalized.slice(0, limit - 3)}...`
-}
-
-const resolveEndpoint = (endpoint, id) => {
-  if (!endpoint) return null
-  if (typeof endpoint === 'function') return endpoint(id)
-  if (!id) return endpoint
-  return endpoint.replace(':id', id)
 }
 
 export const normalizeAnnouncement = (announcement = {}, index = 0) => {
@@ -155,45 +172,43 @@ export const normalizeAnnouncement = (announcement = {}, index = 0) => {
 }
 
 export const isAnnouncementsServiceConfigured = () =>
-  Object.values(ANNOUNCEMENT_ENDPOINTS.employee).some(Boolean)
+  Object.values(ANNOUNCEMENT_ENDPOINTS.employee).some(Boolean) ||
+  Object.values(ANNOUNCEMENT_ENDPOINTS.admin).some(Boolean)
 
-export async function listAnnouncements({ fallback } = {}) {
+export async function listAnnouncements({ fallback, from, to, status, page, perPage } = {}) {
   if (!ANNOUNCEMENT_ENDPOINTS.employee.list) {
     warnOnce('announcements-list', '[announcementsService] Missing list endpoint.')
     const items = fallback?.length ? fallback : DEFAULT_MOCK_ANNOUNCEMENTS
     return items.map(normalizeAnnouncement)
   }
 
-  const { data } = await api.get(ANNOUNCEMENT_ENDPOINTS.employee.list)
-  const { items } = normalizeListResponse(data)
+  const response = await listEmployeeAnnouncements({ from, to, status, page, perPage })
+  const { items } = normalizeListResponse(response)
   return items.map(normalizeAnnouncement)
 }
 
 export async function getAnnouncement(id, { fallback } = {}) {
   if (!id) return null
-  const endpoint = resolveEndpoint(ANNOUNCEMENT_ENDPOINTS.employee.detail, id)
-  if (!endpoint) {
+  if (!ANNOUNCEMENT_ENDPOINTS.employee.detail) {
     warnOnce('announcements-detail', '[announcementsService] Missing detail endpoint.')
     const items = fallback?.length ? fallback : DEFAULT_MOCK_ANNOUNCEMENTS
     const match = items.find((item) => String(item.id) === String(id))
     return match ? normalizeAnnouncement(match) : null
   }
 
-  const { data } = await api.get(endpoint)
-  return normalizeAnnouncement(data?.data ?? data)
+  const data = await getEmployeeAnnouncement(id)
+  return normalizeAnnouncement(data)
 }
 
 export async function markAnnouncementSeen(id) {
   if (!id) return null
-  const endpoint = resolveEndpoint(ANNOUNCEMENT_ENDPOINTS.employee.markSeen, id)
-  if (!endpoint) {
+  if (!ANNOUNCEMENT_ENDPOINTS.employee.markSeen) {
     warnOnce('announcements-seen', '[announcementsService] Missing mark-seen endpoint.')
     const now = new Date().toISOString()
     return { id, seen_at: now, seenAt: now }
   }
 
-  const { data } = await api.post(endpoint)
-  return data?.data ?? data
+  return markEmployeeAnnouncementSeen(id)
 }
 
 export async function listPendingCount() {
@@ -202,6 +217,62 @@ export async function listPendingCount() {
     return null
   }
 
-  const { data } = await api.get(ANNOUNCEMENT_ENDPOINTS.employee.pendingCount)
-  return data?.data ?? data
+  return getEmployeeAnnouncementsPendingCount()
+}
+
+export async function listAdminAnnouncements({ from, to, type, query, page, perPage } = {}) {
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.list) {
+    warnOnce('admin-announcements-list', '[announcementsService] Missing admin list endpoint.')
+    return { data: [], meta: null }
+  }
+
+  const response = await listAdminAnnouncementsApi({ from, to, type, query, page, perPage })
+  const { items, meta } = normalizeListResponse(response)
+  return { data: items.map(normalizeAnnouncement), meta }
+}
+
+export async function createAdminAnnouncement(payload = {}) {
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.create) {
+    warnOnce('admin-announcements-create', '[announcementsService] Missing admin create endpoint.')
+    return null
+  }
+  return createAdminAnnouncementApi(payload)
+}
+
+export async function getAdminAnnouncement(id) {
+  if (!id) return null
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.detail) {
+    warnOnce('admin-announcements-detail', '[announcementsService] Missing admin detail endpoint.')
+    return null
+  }
+
+  const data = await getAdminAnnouncementApi(id)
+  return normalizeAnnouncement(data)
+}
+
+export async function updateAdminAnnouncement(id, payload = {}) {
+  if (!id) return null
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.update) {
+    warnOnce('admin-announcements-update', '[announcementsService] Missing admin update endpoint.')
+    return null
+  }
+  return updateAdminAnnouncementApi(id, payload)
+}
+
+export async function patchAdminAnnouncement(id, payload = {}) {
+  if (!id) return null
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.update) {
+    warnOnce('admin-announcements-patch', '[announcementsService] Missing admin patch endpoint.')
+    return null
+  }
+  return patchAdminAnnouncementApi(id, payload)
+}
+
+export async function deleteAdminAnnouncement(id) {
+  if (!id) return null
+  if (!ANNOUNCEMENT_ENDPOINTS.admin.remove) {
+    warnOnce('admin-announcements-remove', '[announcementsService] Missing admin remove endpoint.')
+    return null
+  }
+  return deleteAdminAnnouncementApi(id)
 }

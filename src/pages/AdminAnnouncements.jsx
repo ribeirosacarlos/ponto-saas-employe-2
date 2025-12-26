@@ -1,0 +1,292 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Bell, RefreshCcw, Send } from 'lucide-react'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Textarea } from '../components/ui/textarea'
+import { useToast } from '../components/ui/use-toast'
+import { normalizeAnnouncement } from '../services/announcementsService'
+import {
+  createAdminAnnouncement,
+  listAdminAnnouncements,
+} from '../services/announcementsService'
+import { cn } from '../lib/utils'
+
+const TYPE_OPTIONS = [
+  { value: 'general', label: 'Geral' },
+  { value: 'holiday', label: 'Feriado' },
+  { value: 'vacation', label: 'Férias' },
+  { value: 'tip', label: 'Dica' },
+]
+
+const defaultForm = {
+  title: '',
+  summary: '',
+  body: '',
+  type: 'general',
+  sent_at: '',
+}
+
+export default function AdminAnnouncements({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+  const { toast } = useToast()
+  const [form, setForm] = useState(defaultForm)
+  const [submitting, setSubmitting] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState('')
+  const [announcements, setAnnouncements] = useState([])
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const loadAnnouncements = useCallback(async () => {
+    setListLoading(true)
+    setListError('')
+    try {
+      const { data } = await listAdminAnnouncements({ page: 1, perPage: 20 })
+      setAnnouncements(data || [])
+    } catch (error) {
+      console.error('[AdminAnnouncements] list error', error)
+      setListError('Não foi possível carregar os comunicados.')
+    } finally {
+      setListLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadAnnouncements()
+  }, [loadAnnouncements])
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    if (!form.title) {
+      toast({ title: 'Informe o título', description: 'O título é obrigatório.' })
+      return
+    }
+    setSubmitting(true)
+    try {
+      const payload = {
+        title: form.title,
+        summary: form.summary || null,
+        body: form.body || null,
+        type: form.type || null,
+      }
+      if (form.sent_at) {
+        const date = new Date(form.sent_at)
+        payload.sent_at = Number.isNaN(date.getTime()) ? form.sent_at : date.toISOString()
+      }
+      const created = await createAdminAnnouncement(payload)
+      toast({ title: 'Comunicado criado', description: 'Novo comunicado cadastrado com sucesso.' })
+      setForm(defaultForm)
+      setAnnouncements((prev) => [normalizeAnnouncement(created, 0), ...prev])
+    } catch (error) {
+      console.error('[AdminAnnouncements] create error', error)
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível criar o comunicado. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const listContent = useMemo(() => {
+    if (listLoading) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={`admin-announcement-skel-${index}`}
+              className="animate-pulse rounded-2xl border border-border/70 bg-card/80 px-4 py-4"
+            >
+              <div className="h-3 w-1/2 rounded-full bg-muted/80" />
+              <div className="mt-2 h-3 w-full rounded-full bg-muted/60" />
+              <div className="mt-2 h-3 w-2/3 rounded-full bg-muted/50" />
+            </div>
+          ))}
+        </div>
+      )
+    }
+    if (listError) {
+      return (
+        <div className="rounded-2xl border border-rose-200/70 bg-rose-50/70 px-4 py-4 text-sm text-rose-700">
+          {listError}
+          <div className="mt-3">
+            <Button size="sm" variant="outline" onClick={loadAnnouncements}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      )
+    }
+    if (!announcements.length) {
+      return (
+        <div className="rounded-2xl border border-border/70 bg-card/90 px-4 py-5 text-sm text-muted-foreground">
+          Nenhum comunicado cadastrado ainda.
+        </div>
+      )
+    }
+    return (
+      <div className="space-y-3">
+        {announcements.map((announcement, index) => {
+          const tone =
+            announcement.status === 'seen'
+              ? 'border-emerald-200/80 bg-emerald-500/10 text-emerald-700'
+              : 'border-amber-200/80 bg-amber-500/10 text-amber-700'
+          return (
+            <div
+              key={announcement.id || `announcement-${index}`}
+              className="rounded-2xl border border-border/70 bg-card/90 px-4 py-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">{announcement.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {announcement.summary || announcement.body}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{announcement.type || 'general'}</span>
+                    {announcement.sentAt ? (
+                      <>
+                        <span className="text-muted-foreground/50">•</span>
+                        <span>Enviado: {announcement.sentAt}</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm',
+                    tone,
+                  )}
+                >
+                  {announcement.status === 'seen' ? 'Lido' : 'Pendente'}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }, [announcements, listError, listLoading, loadAnnouncements])
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="absolute left-[-6%] top-[-8%] h-64 w-64 rounded-full bg-primary/16 blur-[120px]" />
+        <div className="absolute right-[-8%] top-1/4 h-72 w-72 rounded-full bg-sky-300/18 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+          <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  aria-label="Alternar menu"
+                  onClick={onToggleSidebar}
+                  className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
+                >
+                  <Bell className="h-5 w-5" />
+                </button>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                    Administração
+                  </p>
+                  <h1 className="text-2xl font-semibold leading-tight">Comunicados</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Crie e acompanhe comunicados enviados aos colaboradores.
+                  </p>
+                </div>
+              </div>
+
+              <Button type="button" variant="outline" size="sm" onClick={loadAnnouncements}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Atualizar lista
+              </Button>
+            </div>
+          </header>
+
+          <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="rounded-[24px] border border-border/80 bg-card/90 p-5 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
+              <h2 className="text-lg font-semibold">Novo comunicado</h2>
+              <p className="text-sm text-muted-foreground">
+                Defina o conteúdo e tipo do comunicado. O título é obrigatório.
+              </p>
+              <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Título*</label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) => handleChange('title', e.target.value)}
+                    placeholder="Ex: Atualização de políticas"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Resumo</label>
+                  <Input
+                    value={form.summary}
+                    onChange={(e) => handleChange('summary', e.target.value)}
+                    placeholder="Opcional"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Conteúdo</label>
+                  <Textarea
+                    value={form.body}
+                    onChange={(e) => handleChange('body', e.target.value)}
+                    placeholder="Texto do comunicado"
+                    rows={5}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Tipo</label>
+                    <select
+                      value={form.type}
+                      onChange={(e) => handleChange('type', e.target.value)}
+                      className="h-12 w-full rounded-xl border border-border/80 bg-background/80 px-4 text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                      {TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Enviar em</label>
+                    <Input
+                      type="datetime-local"
+                      value={form.sent_at}
+                      onChange={(e) => handleChange('sent_at', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={submitting}>
+                    <Send className="mr-2 h-4 w-4" />
+                    {submitting ? 'Salvando...' : 'Criar comunicado'}
+                  </Button>
+                </div>
+              </form>
+            </section>
+
+            <section className="rounded-[24px] border border-border/80 bg-card/90 p-5 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Comunicados recentes</h2>
+                <span className="text-[11px] font-semibold text-muted-foreground">
+                  {announcements.length} itens
+                </span>
+              </div>
+              <div className="mt-4">{listContent}</div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
