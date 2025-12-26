@@ -89,14 +89,6 @@ const NAV_ITEMS = [
   },
   {
 
-    id: 'platformCompanies',
-    labelKey: 'sidebar.items.platformCompanies',
-    icon: Building2,
-    page: 'platformCompanies',
-    path: '/platform/companies',
-    group: 'admin',
-    requires: { anyOf: ['super_admin'] },
-
     id: 'adminAnnouncements',
     labelKey: 'sidebar.items.announcements',
     icon: Bell,
@@ -105,6 +97,15 @@ const NAV_ITEMS = [
     group: 'admin',
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
 
+  },
+  {
+    id: 'platformCompanies',
+    labelKey: 'sidebar.items.platformCompanies',
+    icon: Building2,
+    page: 'platformCompanies',
+    path: '/platform/companies',
+    group: 'admin',
+    requires: { anyOf: ['super_admin'] },
   },
   {
     id: 'team',

@@ -11,11 +11,8 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
-<<<<<<< HEAD
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
-=======
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
->>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -48,11 +45,8 @@ const PAGE_GUARDS = {
   vacations: { anyOf: ['employee'] },
   announcements: { anyOf: ['employee'] },
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-<<<<<<< HEAD
-  platformCompanies: { anyOf: ['super_admin'] },
-=======
   adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
->>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
+  platformCompanies: { anyOf: ['super_admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -300,36 +294,6 @@ export default function App() {
               )}
             >
               <div className="flex-1 min-h-0">
-<<<<<<< HEAD
-                {currentPage === 'dashboard' ? (
-                  <Dashboard
-                    onOpenHistory={handleGoToHistory}
-                    onOpenDocuments={handleGoToDocuments}
-                    onOpenVacations={handleGoToVacations}
-                    onOpenAnnouncements={handleGoToAnnouncements}
-                  />
-                ) : currentPage === 'history' ? (
-                  <History
-                    onBackToDashboard={handleGoToDashboard}
-                  />
-                ) : currentPage === 'documents' ? (
-                  <Documents />
-                ) : currentPage === 'vacations' ? (
-                  <Vacations />
-                ) : currentPage === 'adminVacations' ? (
-                  <AdminVacations />
-                ) : currentPage === 'announcements' ? (
-                  <Announcements />
-                ) : currentPage === 'platformCompanies' ? (
-                  <PlatformCompanies />
-                ) : currentPage === 'equipo' ? (
-                  <Equipo />
-                ) : (
-                  <TimeClock
-                    onContinueToDashboard={handleGoToDashboard}
-                  />
-                )}
-=======
                 <div className="mx-auto w-full max-w-[1320px]">
                   {currentPage === 'dashboard' ? (
                     <Dashboard
@@ -357,6 +321,8 @@ export default function App() {
                       sidebarOpen={sidebarOpen}
                       onToggleSidebar={handleToggleSidebar}
                     />
+                  ) : currentPage === 'platformCompanies' ? (
+                    <PlatformCompanies />
                   ) : currentPage === 'announcements' ? (
                     <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : currentPage === 'equipo' ? (
@@ -369,7 +335,6 @@ export default function App() {
                     />
                   )}
                 </div>
->>>>>>> 40fe9103dfcf8bd83894c8af9146089432eb6873
               </div>
             </main>
           </>
