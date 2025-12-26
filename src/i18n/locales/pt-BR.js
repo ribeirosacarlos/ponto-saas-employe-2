@@ -78,6 +78,23 @@ const ptBR = {
       role: 'Papel',
       roleValue: 'Funcionário',
     },
+    sidebar: {
+      sections: {
+        workspace: 'Área de trabalho',
+        admin: 'Administração',
+      },
+      items: {
+        dashboard: 'Dashboard',
+        history: 'Histórico',
+        documents: 'Documentos',
+        announcements: 'Comunicados',
+        clock: 'Registrar ponto',
+        projects: 'Projetos',
+        team: 'Equipe',
+        settings: 'Configurações',
+        calendar: 'Calendário',
+      },
+    },
     toast: {
       sessionExpired: {
         title: 'Sessão expirada',
@@ -415,6 +432,67 @@ const ptBR = {
         viewAll: 'Ver tudo',
       },
     },
+    announcementsPage: {
+      tag: 'Empresa',
+      title: 'Comunicados',
+      subtitle: 'Mensagens enviadas pelo Admin e Area Manager.',
+      helper: {
+        updated: 'Atualizado pelo RH',
+        pendingBadge: '{{count}} pendentes',
+      },
+      actions: {
+        refresh: 'Atualizar',
+        retry: 'Tentar novamente',
+        confirm: 'Confirmar visualização',
+        confirming: 'Confirmando...',
+      },
+      filters: {
+        title: 'Filtros',
+        subtitle: 'Selecione o status dos comunicados.',
+        tabs: {
+          all: 'Todos',
+          pending: 'Pendentes',
+          seen: 'Vistos',
+        },
+      },
+      sort: {
+        label: 'Ordenação',
+        recent: 'Recentes',
+      },
+      labels: {
+        sender: 'Remetente: {{sender}}',
+        sentAt: 'Enviado em {{date}} às {{time}}',
+        sentAtDateOnly: 'Enviado em {{date}}',
+        sentAtFallback: 'Data de envio indisponível',
+      },
+      status: {
+        pending: 'Pendente',
+        seen: 'Visto',
+        seenAt: 'Visto em {{date}} às {{time}}',
+        seenAtDateOnly: 'Visto em {{date}}',
+      },
+      states: {
+        empty: 'Nenhum comunicado encontrado.',
+        emptyPending: 'Nenhum comunicado pendente.',
+        error: 'Não foi possível carregar os comunicados.',
+        detailError: 'Não foi possível carregar o detalhe do comunicado.',
+      },
+      modal: {
+        title: 'Detalhes do comunicado',
+        description: 'Confira o conteúdo completo enviado pelo time.',
+      },
+      toasts: {
+        markError: {
+          title: 'Erro ao confirmar',
+          description: 'Não foi possível registrar a visualização. Tente novamente.',
+        },
+      },
+      sender: {
+        admin: 'Admin',
+        areaManager: 'Area Manager',
+        default: 'Equipe',
+      },
+    },
     documentsPage: {
       tag: 'Documentos',
       title: 'Documentação do colaborador',
@@ -654,6 +732,7 @@ const ptBR = {
       },
       actions: {
         create: 'Novo colaborador',
+        refresh: 'Atualizar',
         save: 'Salvar',
         creating: 'Criando...',
         updating: 'Salvando...',
@@ -686,6 +765,7 @@ const ptBR = {
         deleteDescription: 'Deseja remover {{name}} do quadro?',
       },
       roles: {
+        all: 'Todos os papéis',
         admin: 'Admin',
         manager: 'Gestor',
         area_manager: 'Gestor de area',

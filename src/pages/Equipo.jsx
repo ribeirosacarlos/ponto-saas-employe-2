@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Menu, Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react'
+import { CalendarCheck, Menu, Pencil, Plus, RefreshCcw, Search, Trash2, Users, X } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -15,17 +15,12 @@ import {
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
+import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
 import {
-  assignEmployeeShift,
-  createEmployee,
-  deleteEmployee,
   getEmployee,
-  listEmployees,
-  listShifts,
-  updateEmployee,
 } from '../lib/api'
 
-const ADMIN_REQUIRES = { anyOf: ['admin'] }
+const MANAGEMENT_REQUIRES = { anyOf: ['area_manager'] }
 const ROLE_OPTIONS = ['admin', 'manager', 'area_manager', 'employee']
 
 const buildCreateForm = () => ({
@@ -40,87 +35,38 @@ const buildEditForm = (employee = {}) => ({
   email: employee.email || '',
   role: employee.role || 'employee',
   password: '',
-  shift_id: employee.shiftId || '',
+  shift_id: employee.shift_id ?? employee.shiftId ?? '',
 })
 
 const buildAssignForm = (employee = {}) => ({
-  shift_id: employee.shiftId || '',
+  shift_id: employee.shift_id ?? employee.shiftId ?? '',
   start_date: new Date().toISOString().slice(0, 10),
 })
 
-const normalizeEmployee = (employee, index = 0) => {
-  const id =
-    employee?.id ??
-    employee?.uuid ??
-    employee?.employee_id ??
-    employee?.user_id ??
-    employee?.email ??
-    `employee-${index}`
-
-  return {
-    id,
-    name: employee?.name ?? employee?.full_name ?? employee?.fullName ?? employee?.profile?.name ?? '',
-    email: employee?.email ?? employee?.profile?.email ?? employee?.user?.email ?? '',
-    role: employee?.role ?? employee?.role_name ?? employee?.profile?.role ?? '',
-    createdAt:
-      employee?.created_at ??
-      employee?.createdAt ??
-      employee?.created ??
-      employee?.inserted_at ??
-      '',
-    shiftId: employee?.shift_id ?? employee?.shiftId ?? employee?.shift?.id ?? '',
-    shiftName:
-      employee?.shift?.name ??
-      employee?.shift?.title ??
-      employee?.shift_name ??
-      employee?.shiftLabel ??
-      '',
-    raw: employee,
-  }
-}
-
-const normalizeShift = (shift, index = 0) => ({
-  id: shift?.id ?? shift?.uuid ?? shift?.shift_id ?? shift?.code ?? `shift-${index}`,
-  name: shift?.name ?? shift?.title ?? shift?.label ?? '',
-})
 
 export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {} }) {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const roles = useAuthStore((state) => state.roles)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
-  const hasAdminAccess = useMemo(
-    () => canRenderCard(capabilities, ADMIN_REQUIRES),
+  const hasManagementAccess = useMemo(
+    () => canRenderCard(capabilities, MANAGEMENT_REQUIRES),
     [capabilities],
   )
 
-  const [employees, setEmployees] = useState([])
-  const [meta, setMeta] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-
-  const [shifts, setShifts] = useState([])
-  const [shiftsLoading, setShiftsLoading] = useState(false)
-
   const [createOpen, setCreateOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
   const [createForm, setCreateForm] = useState(buildCreateForm)
 
   const [editOpen, setEditOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
-  const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState(buildEditForm)
   const [selectedEmployee, setSelectedEmployee] = useState(null)
 
   const [assignOpen, setAssignOpen] = useState(false)
-  const [assigning, setAssigning] = useState(false)
   const [assignForm, setAssignForm] = useState(buildAssignForm)
   const [assignEmployee, setAssignEmployee] = useState(null)
 
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [deleting, setDeleting] = useState(false)
 
   const roleOptions = useMemo(
     () =>
@@ -130,51 +76,27 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       })),
     [t],
   )
+  const roleFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: t('equipoPage.roles.all') },
+      ...roleOptions,
+    ],
+    [roleOptions, t],
+  )
 
-  const fetchEmployees = useCallback(
-    async (targetPage) => {
-      setLoading(true)
-      setError('')
-      try {
-        const { data, meta: responseMeta } = await listEmployees(targetPage)
-        const normalized = (data || []).map((item, index) => normalizeEmployee(item, index))
-        setEmployees(normalized)
-        setMeta(responseMeta || null)
-      } catch (err) {
-        const message =
-          err?.response?.data?.message || err?.message || t('equipoPage.states.errorDescription')
-        setError(message)
-        toast({
-          title: t('equipoPage.toasts.loadError.title'),
-          description: message,
-          variant: 'error',
-        })
-      } finally {
-        setLoading(false)
-      }
+  const handleListError = useCallback(
+    (message) => {
+      toast({
+        title: t('equipoPage.toasts.loadError.title'),
+        description: message,
+        variant: 'error',
+      })
     },
     [t, toast],
   )
 
-  const refreshEmployees = useCallback(
-    async (targetPage) => {
-      if (page === targetPage) {
-        await fetchEmployees(targetPage)
-      } else {
-        setPage(targetPage)
-      }
-    },
-    [fetchEmployees, page],
-  )
-
-  const ensureShifts = useCallback(async () => {
-    if (shiftsLoading || shifts.length) return
-    setShiftsLoading(true)
-    try {
-      const { data } = await listShifts(1)
-      const normalized = (data || []).map((item, index) => normalizeShift(item, index))
-      setShifts(normalized.filter((item) => item.id))
-    } catch (err) {
+  const handleShiftsError = useCallback(
+    (err) => {
       toast({
         title: t('equipoPage.toasts.shiftsError.title'),
         description:
@@ -183,15 +105,36 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
           t('equipoPage.toasts.shiftsError.description'),
         variant: 'error',
       })
-    } finally {
-      setShiftsLoading(false)
-    }
-  }, [shifts.length, shiftsLoading, t, toast])
+    },
+    [t, toast],
+  )
 
-  useEffect(() => {
-    if (!hasAdminAccess) return
-    fetchEmployees(page)
-  }, [fetchEmployees, hasAdminAccess, page])
+  const {
+    employees,
+    filteredEmployees,
+    filters,
+    setFilters,
+    page,
+    setPage,
+    loading,
+    error,
+    shifts,
+    shiftsLoading,
+    mutationLoading,
+    totalPages,
+    canGoNext,
+    refreshEmployees,
+    ensureShifts,
+    createEmployeeEntry,
+    updateEmployeeEntry,
+    deleteEmployeeEntry,
+    assignShiftEntry,
+  } = useEmployeesManagement({
+    t,
+    enabled: hasManagementAccess,
+    onListError: handleListError,
+    onShiftsError: handleShiftsError,
+  })
 
   useEffect(() => {
     if (createOpen || editOpen || assignOpen) {
@@ -204,30 +147,6 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       setCreateForm(buildCreateForm())
     }
   }, [createOpen])
-
-  const filteredEmployees = useMemo(() => {
-    if (!search) return employees
-    const query = search.toLowerCase()
-    return employees.filter((employee) => {
-      const haystack = `${employee.name} ${employee.email}`.toLowerCase()
-      return haystack.includes(query)
-    })
-  }, [employees, search])
-
-  const totalPages = useMemo(() => {
-    const lastPage = meta?.lastPage || meta?.last_page
-    if (lastPage) return lastPage
-    const total = meta?.total
-    const perPage = meta?.perPage || meta?.per_page
-    if (total && perPage) return Math.ceil(total / perPage)
-    return null
-  }, [meta])
-
-  const canGoNext = useMemo(() => {
-    if (meta?.next_page_url || meta?.has_more) return true
-    if (totalPages) return page < totalPages
-    return false
-  }, [meta, page, totalPages])
 
   const formatRole = (role) => {
     if (!role) return t('equipoPage.roles.unknown')
@@ -247,18 +166,17 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
 
   const handleCreateSubmit = async (event) => {
     event.preventDefault()
-    setCreating(true)
-    try {
-      const payload = {
-        name: createForm.name.trim(),
-        email: createForm.email.trim(),
-        role: createForm.role,
-      }
-      if (createForm.shift_id) {
-        payload.shift_id = createForm.shift_id
-      }
+    const payload = {
+      name: createForm.name.trim(),
+      email: createForm.email.trim(),
+      role: createForm.role,
+    }
+    if (createForm.shift_id) {
+      payload.shift_id = createForm.shift_id
+    }
 
-      await createEmployee(payload)
+    const result = await createEmployeeEntry(payload)
+    if (result.ok) {
       toast({
         title: t('equipoPage.toasts.createSuccess.title'),
         description: t('equipoPage.toasts.createSuccess.description'),
@@ -266,19 +184,20 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       })
       setCreateOpen(false)
       setCreateForm(buildCreateForm())
-      await refreshEmployees(1)
-    } catch (err) {
-      toast({
-        title: t('equipoPage.toasts.createError.title'),
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          t('equipoPage.toasts.createError.description'),
-        variant: 'error',
-      })
-    } finally {
-      setCreating(false)
+      if (page === 1) {
+        await refreshEmployees(1)
+      } else {
+        setPage(1)
+      }
+      return
     }
+
+    const emailError = result.error?.response?.data?.errors?.email?.[0]
+    toast({
+      title: t('equipoPage.toasts.createError.title'),
+      description: emailError || t('equipoPage.toasts.createError.description'),
+      variant: 'error',
+    })
   }
 
   const handleEditOpen = async (employee) => {
@@ -311,21 +230,20 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
   const handleEditSubmit = async (event) => {
     event.preventDefault()
     if (!selectedEmployee?.id) return
-    setEditing(true)
-    try {
-      const payload = {
-        name: editForm.name.trim(),
-        email: editForm.email.trim(),
-        role: editForm.role,
-      }
-      if (editForm.password) {
-        payload.password = editForm.password
-      }
-      if (editForm.shift_id) {
-        payload.shift_id = editForm.shift_id
-      }
+    const payload = {
+      name: editForm.name.trim(),
+      email: editForm.email.trim(),
+      role: editForm.role,
+    }
+    if (editForm.password) {
+      payload.password = editForm.password
+    }
+    if (editForm.shift_id) {
+      payload.shift_id = editForm.shift_id
+    }
 
-      await updateEmployee(selectedEmployee.id, payload)
+    const result = await updateEmployeeEntry(selectedEmployee.id, payload)
+    if (result.ok) {
       toast({
         title: t('equipoPage.toasts.updateSuccess.title'),
         description: t('equipoPage.toasts.updateSuccess.description'),
@@ -335,25 +253,21 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       setSelectedEmployee(null)
       setEditForm(buildEditForm())
       await refreshEmployees(page)
-    } catch (err) {
-      toast({
-        title: t('equipoPage.toasts.updateError.title'),
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          t('equipoPage.toasts.updateError.description'),
-        variant: 'error',
-      })
-    } finally {
-      setEditing(false)
+      return
     }
+
+    const emailError = result.error?.response?.data?.errors?.email?.[0]
+    toast({
+      title: t('equipoPage.toasts.updateError.title'),
+      description: emailError || t('equipoPage.toasts.updateError.description'),
+      variant: 'error',
+    })
   }
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget?.id) return
-    setDeleting(true)
-    try {
-      await deleteEmployee(deleteTarget.id)
+    const result = await deleteEmployeeEntry(deleteTarget.id)
+    if (result.ok) {
       toast({
         title: t('equipoPage.toasts.deleteSuccess.title'),
         description: t('equipoPage.toasts.deleteSuccess.description'),
@@ -362,18 +276,17 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       setDeleteTarget(null)
       const targetPage = page > 1 && employees.length === 1 ? page - 1 : page
       await refreshEmployees(targetPage)
-    } catch (err) {
-      toast({
-        title: t('equipoPage.toasts.deleteError.title'),
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          t('equipoPage.toasts.deleteError.description'),
-        variant: 'error',
-      })
-    } finally {
-      setDeleting(false)
+      return
     }
+
+    toast({
+      title: t('equipoPage.toasts.deleteError.title'),
+      description:
+        result.error?.response?.data?.message ||
+        result.error?.message ||
+        t('equipoPage.toasts.deleteError.description'),
+      variant: 'error',
+    })
   }
 
   const handleAssignOpen = (employee) => {
@@ -386,15 +299,15 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
   const handleAssignSubmit = async (event) => {
     event.preventDefault()
     if (!assignEmployee?.id) return
-    setAssigning(true)
-    try {
-      const payload = {
-        shift_id: assignForm.shift_id,
-      }
-      if (assignForm.start_date) {
-        payload.start_date = assignForm.start_date
-      }
-      await assignEmployeeShift(assignEmployee.id, payload)
+    const payload = {
+      shift_id: assignForm.shift_id,
+    }
+    if (assignForm.start_date) {
+      payload.start_date = assignForm.start_date
+    }
+
+    const result = await assignShiftEntry(assignEmployee.id, payload)
+    if (result.ok) {
       toast({
         title: t('equipoPage.toasts.assignSuccess.title'),
         description: t('equipoPage.toasts.assignSuccess.description'),
@@ -404,21 +317,20 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
       setAssignEmployee(null)
       setAssignForm(buildAssignForm())
       await refreshEmployees(page)
-    } catch (err) {
-      toast({
-        title: t('equipoPage.toasts.assignError.title'),
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          t('equipoPage.toasts.assignError.description'),
-        variant: 'error',
-      })
-    } finally {
-      setAssigning(false)
+      return
     }
+
+    toast({
+      title: t('equipoPage.toasts.assignError.title'),
+      description:
+        result.error?.response?.data?.message ||
+        result.error?.message ||
+        t('equipoPage.toasts.assignError.description'),
+      variant: 'error',
+    })
   }
 
-  if (!hasAdminAccess) {
+  if (!hasManagementAccess) {
     return (
       <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
         <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
@@ -460,21 +372,49 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                 <p className="text-sm text-muted-foreground">{t('equipoPage.subtitle')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-[220px] flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={t('equipoPage.searchPlaceholder')}
                   className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  value={filters.search}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, search: event.target.value }))
+                  }
                 />
+              </div>
+              <div className="min-w-[180px] flex items-center rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+                <select
+                  aria-label={t('equipoPage.form.roleLabel')}
+                  value={filters.role}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, role: event.target.value }))
+                  }
+                  className="w-full bg-transparent text-foreground outline-none"
+                >
+                  {roleFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full px-4"
+              onClick={() => refreshEmployees(page)}
+            >
+              <RefreshCcw className="h-4 w-4" />
+              {t('equipoPage.actions.refresh')}
+            </Button>
             <Button
               type="button"
               size="sm"
@@ -526,7 +466,7 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                   size="sm"
                   variant="outline"
                   className="mt-3 rounded-full px-3 text-xs"
-                  onClick={() => fetchEmployees(page)}
+                  onClick={() => refreshEmployees(page)}
                 >
                   {t('equipoPage.actions.retry')}
                 </Button>
@@ -552,7 +492,8 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
               <>
                 <div className="space-y-3 md:hidden">
                   {filteredEmployees.map((employee) => {
-                    const isBusy = deleting || editing || assigning
+                    const isBusy =
+                      mutationLoading.delete || mutationLoading.edit || mutationLoading.shift
                     const isDisabled = !employee.id || isBusy
                     return (
                       <div
@@ -631,7 +572,8 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                     </thead>
                     <tbody>
                       {filteredEmployees.map((employee) => {
-                        const isBusy = deleting || editing || assigning
+                        const isBusy =
+                          mutationLoading.delete || mutationLoading.edit || mutationLoading.shift
                         const isDisabled = !employee.id || isBusy
                         return (
                           <tr
@@ -821,8 +763,8 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                   {t('common.actions.cancel')}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={creating} className="min-w-[140px]">
-                {creating ? t('equipoPage.actions.creating') : t('equipoPage.actions.save')}
+              <Button type="submit" disabled={mutationLoading.create} className="min-w-[140px]">
+                {mutationLoading.create ? t('equipoPage.actions.creating') : t('equipoPage.actions.save')}
               </Button>
             </div>
           </form>
@@ -935,8 +877,12 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                   {t('common.actions.cancel')}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={editing || editLoading} className="min-w-[140px]">
-                {editing ? t('equipoPage.actions.updating') : t('equipoPage.actions.save')}
+              <Button
+                type="submit"
+                disabled={mutationLoading.edit || editLoading}
+                className="min-w-[140px]"
+              >
+                {mutationLoading.edit ? t('equipoPage.actions.updating') : t('equipoPage.actions.save')}
               </Button>
             </div>
           </form>
@@ -1008,8 +954,8 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                   {t('common.actions.cancel')}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={assigning} className="min-w-[140px]">
-                {assigning ? t('equipoPage.actions.assigning') : t('equipoPage.actions.assign')}
+              <Button type="submit" disabled={mutationLoading.shift} className="min-w-[140px]">
+                {mutationLoading.shift ? t('equipoPage.actions.assigning') : t('equipoPage.actions.assign')}
               </Button>
             </div>
           </form>
@@ -1037,8 +983,15 @@ export default function Equipo({ sidebarOpen = false, onToggleSidebar = () => {}
                 {t('common.actions.cancel')}
               </Button>
             </DialogClose>
-            <Button type="button" variant="destructive" disabled={deleting} onClick={handleDeleteConfirm}>
-              {deleting ? t('equipoPage.actions.deactivating') : t('equipoPage.actions.deactivate')}
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={mutationLoading.delete}
+              onClick={handleDeleteConfirm}
+            >
+              {mutationLoading.delete
+                ? t('equipoPage.actions.deactivating')
+                : t('equipoPage.actions.deactivate')}
             </Button>
           </div>
         </DialogContent>

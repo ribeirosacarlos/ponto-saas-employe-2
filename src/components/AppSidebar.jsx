@@ -1,12 +1,118 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock3, FileText, Home, ListChecks, Settings, Users } from 'lucide-react'
+import {
+  Bell,
+  ChevronDown,
+  Clock3,
+  FileText,
+  Home,
+  ListChecks,
+  Plane,
+  Settings,
+  Users,
+} from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { cn } from '../lib/utils'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { ThemeToggle } from './ThemeToggle'
 import { UserProfileDropdown } from './UserProfileDropdown'
+
+const NAV_ITEMS = [
+  {
+    id: 'dashboard',
+    labelKey: 'sidebar.items.dashboard',
+    icon: Home,
+    page: 'dashboard',
+    path: '/dashboard',
+    group: 'workspace',
+    badgeKey: 'dashboardPage.badges.today',
+    requires: { public: true },
+  },
+  {
+    id: 'history',
+    labelKey: 'sidebar.items.history',
+    icon: ListChecks,
+    page: 'history',
+    path: '/history',
+    group: 'workspace',
+    requires: { public: true },
+  },
+  {
+    id: 'documents',
+    labelKey: 'sidebar.items.documents',
+    icon: FileText,
+    page: 'documents',
+    path: '/documents',
+    group: 'workspace',
+    requires: { public: true },
+  },
+  {
+    id: 'announcements',
+    labelKey: 'sidebar.items.announcements',
+    icon: Bell,
+    page: 'announcements',
+    path: '/announcements',
+    group: 'workspace',
+    requires: { anyOf: ['employee'] },
+  },
+  {
+    id: 'vacations',
+    labelKey: 'dashboardPage.timeOff.title',
+    icon: Plane,
+    page: 'vacations',
+    path: '/vacations',
+    group: 'workspace',
+    requires: { anyOf: ['employee'] },
+  },
+  {
+    id: 'clock',
+    labelKey: 'sidebar.items.clock',
+    icon: Clock3,
+    page: 'timeClock',
+    path: '/time-clock',
+    group: 'workspace',
+    variant: 'cta',
+    requires: { public: true },
+  },
+  {
+    id: 'adminVacations',
+    labelKey: 'dashboardPage.timeOff.title',
+    icon: Plane,
+    page: 'adminVacations',
+    path: '/admin/vacations',
+    group: 'admin',
+    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+  {
+    id: 'team',
+    labelKey: 'sidebar.items.team',
+    icon: Users,
+    page: 'equipo',
+    path: '/equipo',
+    group: 'admin',
+    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+  {
+    id: 'settings',
+    labelKey: 'sidebar.items.settings',
+    icon: Settings,
+    path: '/settings',
+    group: 'admin',
+    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+]
+
+const WORKSPACE_STORAGE_KEY = 'sidebar_group_workspace_open'
+const ADMIN_STORAGE_KEY = 'sidebar_group_admin_open'
+
+const readStoredGroupState = (key, defaultOpen) => {
+  if (typeof window === 'undefined') return defaultOpen
+  const stored = window.localStorage.getItem(key)
+  if (stored === '1') return true
+  if (stored === '0') return false
+  return defaultOpen
+}
 
 export function AppSidebar({
   sidebarOpen = true,
@@ -21,45 +127,16 @@ export function AppSidebar({
   const user = useAuthStore((state) => state.user)
   const { t } = useTranslation()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
-
-  const navItems = [
-    {
-      label: t('dashboardPage.nav.dashboard'),
-      icon: Home,
-      page: 'dashboard',
-      badge: t('dashboardPage.badges.today'),
-      requires: { anyOf: ['employee'] },
-    },
-    {
-      label: t('dashboardPage.nav.history'),
-      icon: ListChecks,
-      page: 'history',
-      requires: { anyOf: ['employee'] },
-    },
-    {
-      label: t('dashboardPage.nav.documents'),
-      icon: FileText,
-      page: 'documents',
-      requires: { anyOf: ['employee'] },
-    },
-    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays, requires: { anyOf: ['employee'] } },
-    {
-      label: t('dashboardPage.nav.registerPoint'),
-      icon: Clock3,
-      page: 'timeClock',
-      requires: { anyOf: ['employee'] },
-    },
-    { label: t('dashboardPage.nav.projects'), icon: ListChecks, requires: { anyOf: ['area_manager'] } },
-    {
-      label: t('dashboardPage.nav.equipo'),
-      icon: Users,
-      page: 'equipo',
-      requires: { anyOf: ['admin'] },
-    },
-    { label: t('dashboardPage.nav.settings'), icon: Settings, requires: { anyOf: ['admin'] } },
-  ]
-
-  const visibleNavItems = navItems.filter((item) => canRenderCard(capabilities, item.requires))
+  const [workspaceOpen, setWorkspaceOpen] = useState(() =>
+    readStoredGroupState(WORKSPACE_STORAGE_KEY, true),
+  )
+  const [adminOpen, setAdminOpen] = useState(() => readStoredGroupState(ADMIN_STORAGE_KEY, true))
+  const visibleNavItems = useMemo(
+    () => NAV_ITEMS.filter((item) => canRenderCard(capabilities, item.requires)),
+    [capabilities],
+  )
+  const workspaceItems = visibleNavItems.filter((item) => item.group === 'workspace')
+  const adminItems = visibleNavItems.filter((item) => item.group === 'admin')
 
   const handleItemClick = (item) => {
     if (item.onClick) {
@@ -72,6 +149,16 @@ export function AppSidebar({
       onClose?.()
     }
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceOpen ? '1' : '0')
+  }, [workspaceOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(ADMIN_STORAGE_KEY, adminOpen ? '1' : '0')
+  }, [adminOpen])
 
   return (
     <aside
@@ -95,35 +182,147 @@ export function AppSidebar({
       </div>
 
       <div className="mt-8 flex flex-1 flex-col overflow-hidden">
-        <nav className="flex-1 space-y-1 text-[12px] lg:text-[13px] overflow-y-auto pr-1">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon
-            const isActive = item.page ? currentPage === item.page : item.active
-            return (
+        <nav className="flex-1 space-y-5 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setWorkspaceOpen((prev) => !prev)}
+              aria-expanded={workspaceOpen}
+              aria-controls="sidebar-group-workspace"
+              className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+            >
+              <span>{t('sidebar.sections.workspace')}</span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  workspaceOpen ? 'rotate-0' : '-rotate-90',
+                )}
+              />
+            </button>
+            <div
+              id="sidebar-group-workspace"
+              aria-hidden={!workspaceOpen}
+              className={cn(
+                'overflow-hidden transition-[max-height,opacity] duration-200',
+                workspaceOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
+              )}
+            >
+              <div className="space-y-1 pt-1">
+                {workspaceItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = item.page ? currentPage === item.page : item.active
+                  const isCta = item.variant === 'cta'
+                  const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
+                  return (
+                    <button
+                      key={item.id}
+                      className={cn(
+                        'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
+                        isCta
+                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_16px_40px_-26px_rgba(62,82,152,0.6)] hover:bg-primary/90'
+                          : isActive
+                            ? 'bg-primary/15 text-primary font-semibold'
+                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
+                      )}
+                      onClick={() => handleItemClick(item)}
+                      type="button"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
+                            isCta
+                              ? 'border-white/20 bg-white/15 text-primary-foreground'
+                              : isActive
+                                ? 'border-primary/20 bg-primary/10 text-primary'
+                                : 'border-border bg-muted text-foreground',
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span>{t(item.labelKey)}</span>
+                      </div>
+                      {badgeLabel ? (
+                        <span
+                          className={cn(
+                            'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px]',
+                            isCta
+                              ? 'border border-white/20 bg-white/15 text-primary-foreground'
+                              : 'border border-primary/20 bg-primary/15 text-primary',
+                          )}
+                        >
+                          {badgeLabel}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {adminItems.length > 0 ? (
+            <div className="space-y-2">
+              <div className="mx-2 h-px bg-border/60" />
               <button
-                key={item.label}
-                className={`w-full flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_40px_-24px_rgba(62,82,152,0.55)]'
-                    : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
-                }`}
-                onClick={() => handleItemClick(item)}
                 type="button"
+                onClick={() => setAdminOpen((prev) => !prev)}
+                aria-expanded={adminOpen}
+                aria-controls="sidebar-group-admin"
+                className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span>{item.label}</span>
-                </div>
-                {item.badge ? (
-                  <span className="rounded-full border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] lg:text-[11px] text-primary-foreground/90">
-                    {item.badge}
-                  </span>
-                ) : null}
+                <span>{t('sidebar.sections.admin')}</span>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-transform duration-200',
+                    adminOpen ? 'rotate-0' : '-rotate-90',
+                  )}
+                />
               </button>
-            )
-          })}
+              <div
+                id="sidebar-group-admin"
+                aria-hidden={!adminOpen}
+                className={cn(
+                  'overflow-hidden transition-[max-height,opacity] duration-200',
+                  adminOpen ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
+                )}
+              >
+                <div className="space-y-1 pt-1">
+                  {adminItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = item.page ? currentPage === item.page : item.active
+                    return (
+                      <button
+                        key={item.id}
+                        className={cn(
+                          'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
+                          isActive
+                            ? 'bg-primary/15 text-primary font-semibold'
+                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
+                        )}
+                        onClick={() => handleItemClick(item)}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
+                              isActive
+                                ? 'border-primary/20 bg-primary/10 text-primary'
+                                : 'border-border bg-muted text-foreground',
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span>{t(item.labelKey)}</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </nav>
       </div>
 
