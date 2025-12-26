@@ -23,6 +23,15 @@ import { UserProfileDropdown } from './UserProfileDropdown'
 
 const NAV_ITEMS = [
   {
+    id: 'clock',
+    labelKey: 'sidebar.items.clock',
+    icon: Clock3,
+    page: 'timeClock',
+    path: '/time-clock',
+    group: 'workspace',
+    requires: { public: true },
+  },
+  {
     id: 'dashboard',
     labelKey: 'sidebar.items.dashboard',
     icon: Home,
@@ -67,16 +76,6 @@ const NAV_ITEMS = [
     path: '/vacations',
     group: 'workspace',
     requires: { anyOf: ['employee'] },
-  },
-  {
-    id: 'clock',
-    labelKey: 'sidebar.items.clock',
-    icon: Clock3,
-    page: 'timeClock',
-    path: '/time-clock',
-    group: 'workspace',
-    variant: 'cta',
-    requires: { public: true },
   },
   {
     id: 'adminVacations',
