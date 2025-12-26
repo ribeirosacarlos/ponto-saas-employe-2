@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, Menu, User, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useClocking } from '../features/ponto/useClocking'
 import { getWorkedToday } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
@@ -26,7 +27,7 @@ const statusTokens = {
   },
 }
 
-export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function TimeClock({ onContinueToDashboard }) {
   const { t, i18n } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
@@ -292,7 +293,7 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
   }, [])
 
   return (
-    <div className="container flex min-h-screen items-center justify-center px-4 py-10">
+    <PageContainer className="flex min-h-screen items-center justify-center py-10">
       <div className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-border/80 bg-gradient-to-br from-background/95 via-card/95 to-background/95 p-8 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-0 opacity-90">
           <div className="absolute left-[-14%] top-[-18%] h-72 w-72 rounded-full bg-primary/18 blur-[120px]" />
@@ -303,14 +304,6 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
         <div className="relative z-10 space-y-10">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-3">
-              <button
-                type="button"
-                aria-label={t('dashboardPage.header.toggleMenu')}
-                onClick={onToggleSidebar}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-              >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-muted-foreground">
                   {t('timeClock.greeting', { name: firstName })}
@@ -543,6 +536,6 @@ export default function TimeClock({ onContinueToDashboard, sidebarOpen = false, 
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

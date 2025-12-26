@@ -91,6 +91,7 @@ const ptBR = {
         clock: 'Registrar ponto',
         projects: 'Projetos',
         team: 'Equipe',
+        platformCompanies: 'Empresas',
         settings: 'Configurações',
         calendar: 'Calendário',
       },

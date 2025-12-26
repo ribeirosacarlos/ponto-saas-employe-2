@@ -16,9 +16,7 @@ import {
   Filter,
   FileText,
   History as HistoryIcon,
-  Menu,
   RefreshCcw,
-  X,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
@@ -28,6 +26,7 @@ import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 import { useAuthStore } from '../store/useAuth'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { PageContainer } from '../components/ui/PageContainer'
 
 const PAGE_SIZE = 20
 
@@ -135,7 +134,7 @@ function summarizeDay(entries = []) {
   }
 }
 
-export default function History({ onBackToDashboard, sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function History({ onBackToDashboard }) {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const user = useAuthStore((state) => state.user)
@@ -497,17 +496,9 @@ export default function History({ onBackToDashboard, sidebarOpen = false, onTogg
         <div className="absolute bottom-[-18%] left-[20%] h-72 w-72 rounded-full bg-indigo-300/16 blur-[120px] dark:bg-indigo-500/14" />
       </div>
 
-      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <header className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
+      <PageContainer className="relative z-10 py-6 lg:py-8">
+        <header className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
-            <button
-              type="button"
-              aria-label={t('dashboardPage.header.toggleMenu')}
-              onClick={onToggleSidebar}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-            >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner shadow-primary/20">
               <HistoryIcon className="h-5 w-5" />
             </span>
@@ -771,7 +762,7 @@ export default function History({ onBackToDashboard, sidebarOpen = false, onTogg
             ) : null}
           </section>
         </div>
-      </div>
+      </PageContainer>
     </div>
   )
 }

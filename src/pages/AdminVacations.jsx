@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
-  Menu,
   Plane,
   PlusCircle,
   UserCheck,
@@ -29,6 +28,7 @@ import {
 } from '../components/ui/dialog'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { PageContainer } from '../components/ui/PageContainer'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useAdminVacations } from '../features/adminVacations/useAdminVacations'
@@ -154,7 +154,7 @@ const getVacationMeta = (vacations = []) => {
   return { vacationStatus, isOnVacation, hasRejectedRequest }
 }
 
-export default function AdminVacations({ sidebarOpen = false, onToggleSidebar = () => {} }) {
+export default function AdminVacations() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const roles = useAuthStore((state) => state.roles)
@@ -475,7 +475,7 @@ export default function AdminVacations({ sidebarOpen = false, onToggleSidebar = 
   if (!hasAccess) {
     return (
       <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
-        <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+        <PageContainer className="py-5 sm:py-6">
           <div className="rounded-2xl border border-border/70 bg-card px-5 py-6 text-sm text-muted-foreground">
             <p className="text-base font-semibold text-foreground">
               {t('equipoPage.states.noPermissionTitle')}
@@ -484,25 +484,17 @@ export default function AdminVacations({ sidebarOpen = false, onToggleSidebar = 
               {t('equipoPage.states.noPermissionDescription', 'Voce nao tem permissao para acessar.')}
             </p>
           </div>
-        </div>
+        </PageContainer>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
-      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+      <PageContainer className="py-5 sm:py-6 space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
           <div className="flex-1 min-w-[240px] max-w-full sm:max-w-xl flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-                onClick={onToggleSidebar}
-                aria-label={t('dashboardPage.header.toggleMenu')}
-                type="button"
-              >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                 <Plane className="h-5 w-5" />
               </span>
@@ -615,34 +607,36 @@ export default function AdminVacations({ sidebarOpen = false, onToggleSidebar = 
                       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                         <UserCheck className="h-5 w-5" />
                       </span>
-                      <div>
-                        <p className="text-sm font-semibold">
-                          {employee.name || t('equipoPage.table.emptyName', 'Colaborador')}
-                        </p>
+                      <div className="min-w-0">
+                        <div className="flex items-start gap-2">
+                          <p className="text-sm font-semibold">
+                            {employee.name || t('equipoPage.table.emptyName', 'Colaborador')}
+                          </p>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full"
+                            aria-expanded={isOpen}
+                            aria-controls={`admin-vacations-card-${employee.id}`}
+                            aria-label={
+                              isOpen
+                                ? t('vacationsPage.actions.collapseCard', 'Recolher')
+                                : t('vacationsPage.actions.expandCard', 'Expandir')
+                            }
+                            onClick={() =>
+                              setOpenCards((prev) => ({ ...prev, [employee.id]: !isOpen }))
+                            }
+                          >
+                            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        </div>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {employee.email || employee.id}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="rounded-full"
-                        aria-expanded={isOpen}
-                        aria-controls={`admin-vacations-card-${employee.id}`}
-                        aria-label={
-                          isOpen
-                            ? t('vacationsPage.actions.collapseCard', 'Recolher')
-                            : t('vacationsPage.actions.expandCard', 'Expandir')
-                        }
-                        onClick={() =>
-                          setOpenCards((prev) => ({ ...prev, [employee.id]: !isOpen }))
-                        }
-                      >
-                        {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
                       <Button
                         type="button"
                         size="sm"
@@ -863,7 +857,7 @@ export default function AdminVacations({ sidebarOpen = false, onToggleSidebar = 
             })}
           </section>
         ) : null}
-      </div>
+      </PageContainer>
 
       <Dialog
         open={Boolean(approvalTarget)}

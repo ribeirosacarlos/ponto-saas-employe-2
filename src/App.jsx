@@ -11,6 +11,7 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
+import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -34,6 +35,7 @@ const PAGE_PATHS = {
 
   equipo: '/equipo',
   announcements: '/announcements',
+  platformCompanies: '/platform/companies',
 }
 
 const PAGE_GUARDS = {
@@ -41,6 +43,7 @@ const PAGE_GUARDS = {
   vacations: { anyOf: ['employee'] },
   announcements: { anyOf: ['employee'] },
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  platformCompanies: { anyOf: ['super_admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -54,6 +57,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/admin/vacations') return 'adminVacations'
   if (normalized === '/equipo') return 'equipo'
   if (normalized === '/announcements') return 'announcements'
+  if (normalized === '/platform/companies') return 'platformCompanies'
 
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
@@ -152,18 +156,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [canAccessPage, navigateTo, token])
 
-  useEffect(() => {
-    if (!sidebarOpen) return
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setSidebarOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [sidebarOpen])
 
   useEffect(() => {
     let active = true
@@ -223,11 +215,6 @@ export default function App() {
       description: t('toast.logout.description'),
     })
   }
-  const closeSidebarOnMobile = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setSidebarOpen(false)
-    }
-  }
 
   const navItems = [
     {
@@ -279,20 +266,18 @@ export default function App() {
       <div className="relative z-10">
         {token ? (
           <>
-            <button
-              type="button"
-              aria-label={t('dashboardPage.header.closeMenu')}
+            <div
+              aria-hidden="true"
               className={cn(
                 'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 md:hidden',
                 sidebarOpen ? 'opacity-70 pointer-events-auto' : 'opacity-0 pointer-events-none',
               )}
-              onClick={() => setSidebarOpen(false)}
             />
             <AppSidebar
               sidebarOpen={sidebarOpen}
               currentPage={currentPage}
               onNavigate={navigateTo}
-              onClose={() => setSidebarOpen(false)}
+              onToggle={handleToggleSidebar}
               onProfile={handleProfile}
               onHelp={handleHelp}
               onLogout={handleLogout}
@@ -305,40 +290,34 @@ export default function App() {
               )}
             >
               <div className="flex-1 min-h-0">
-                <div className="mx-auto w-full max-w-[1320px]">
-                  {currentPage === 'dashboard' ? (
-                    <Dashboard
-                      onOpenHistory={handleGoToHistory}
-                      onOpenDocuments={handleGoToDocuments}
-                      onOpenVacations={handleGoToVacations}
-                      onOpenAnnouncements={handleGoToAnnouncements}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'history' ? (
-                    <History
-                      onBackToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'documents' ? (
-                    <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'vacations' ? (
-                    <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'adminVacations' ? (
-                    <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'announcements' ? (
-                    <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'equipo' ? (
-                    <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : (
-                    <TimeClock
-                      onContinueToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  )}
-                </div>
+                {currentPage === 'dashboard' ? (
+                  <Dashboard
+                    onOpenHistory={handleGoToHistory}
+                    onOpenDocuments={handleGoToDocuments}
+                    onOpenVacations={handleGoToVacations}
+                    onOpenAnnouncements={handleGoToAnnouncements}
+                  />
+                ) : currentPage === 'history' ? (
+                  <History
+                    onBackToDashboard={handleGoToDashboard}
+                  />
+                ) : currentPage === 'documents' ? (
+                  <Documents />
+                ) : currentPage === 'vacations' ? (
+                  <Vacations />
+                ) : currentPage === 'adminVacations' ? (
+                  <AdminVacations />
+                ) : currentPage === 'announcements' ? (
+                  <Announcements />
+                ) : currentPage === 'platformCompanies' ? (
+                  <PlatformCompanies />
+                ) : currentPage === 'equipo' ? (
+                  <Equipo />
+                ) : (
+                  <TimeClock
+                    onContinueToDashboard={handleGoToDashboard}
+                  />
+                )}
               </div>
             </main>
           </>

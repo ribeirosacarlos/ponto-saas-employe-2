@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Bell,
+  Building2,
   ChevronDown,
   Clock3,
   FileText,
   Home,
   ListChecks,
+  Menu,
   Plane,
   Settings,
   Users,
+  X,
 } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
@@ -85,6 +88,15 @@ const NAV_ITEMS = [
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
+    id: 'platformCompanies',
+    labelKey: 'sidebar.items.platformCompanies',
+    icon: Building2,
+    page: 'platformCompanies',
+    path: '/platform/companies',
+    group: 'admin',
+    requires: { anyOf: ['super_admin'] },
+  },
+  {
     id: 'team',
     labelKey: 'sidebar.items.team',
     icon: Users,
@@ -118,10 +130,10 @@ export function AppSidebar({
   sidebarOpen = true,
   currentPage,
   onNavigate,
-  onClose,
   onProfile,
   onHelp,
   onLogout,
+  onToggle = () => {},
 }) {
   const roles = useAuthStore((state) => state.roles)
   const user = useAuthStore((state) => state.user)
@@ -145,9 +157,6 @@ export function AppSidebar({
       onNavigate(item.page)
     }
 
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      onClose?.()
-    }
   }
 
   useEffect(() => {
@@ -161,12 +170,26 @@ export function AppSidebar({
   }, [adminOpen])
 
   return (
-    <aside
-      className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-[#f7f7f9] px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 dark:bg-card/95 md:bg-card/95',
-        sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
-      )}
-    >
+    <>
+      <button
+        type="button"
+        aria-label={t('dashboardPage.header.toggleMenu')}
+        onClick={onToggle}
+        className={cn(
+          'fixed right-4 top-4 z-[60] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 sm:right-6 sm:top-6 md:right-auto',
+          sidebarOpen
+            ? 'md:left-[calc(16rem+max(2rem,calc((100vw-16rem-1320px)/2+2rem)))]'
+            : 'md:left-[max(2rem,calc((100vw-1320px)/2+2rem))]',
+        )}
+      >
+        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-[#f7f7f9] px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 dark:bg-card/95 md:bg-card/95',
+          sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
+        )}
+      >
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
@@ -337,6 +360,7 @@ export function AppSidebar({
           <span>{t('dashboardPage.version.product')}</span>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

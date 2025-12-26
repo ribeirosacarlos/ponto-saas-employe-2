@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Bell, FileText, GraduationCap, IdCard, Menu, Search, X } from 'lucide-react'
+import { AlertTriangle, Bell, FileText, GraduationCap, IdCard, Search } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
 import { DASHBOARD_CARDS } from './dashboardCards'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
+import { PageContainer } from '../components/ui/PageContainer'
 
 export default function Dashboard({
   onOpenHistory,
   onOpenDocuments,
   onOpenVacations,
   onOpenAnnouncements,
-  sidebarOpen = false,
-  onToggleSidebar = () => {},
 }) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
@@ -248,18 +247,10 @@ export default function Dashboard({
 
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
-      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+      <PageContainer className="py-5 sm:py-6 space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
           <div className="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 md:h-10 md:w-10"
-                onClick={onToggleSidebar}
-                aria-label={t('dashboardPage.header.toggleMenu')}
-                type="button"
-              >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
               <h1 className="text-base font-semibold tracking-tight sm:text-lg md:text-xl">{t('dashboardPage.title')}</h1>
               <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2 py-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
                 {t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
@@ -329,7 +320,7 @@ export default function Dashboard({
             })
           )}
         </div>
-      </div>
+      </PageContainer>
     </div>
   )
 }
