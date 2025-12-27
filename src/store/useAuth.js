@@ -55,8 +55,13 @@ export const useAuthStore = create((set, get) => ({
       set({ user, token, roles })
       return data
     } catch (error) {
+      const status = error.response?.status
+      const friendlyUnauthorized = status === 401 ? i18n.t('auth.errors.unauthorized') : null
       const message =
-        error.message || error.response?.data?.message || i18n.t('auth.errors.loginFailed')
+        friendlyUnauthorized ||
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t('auth.errors.loginFailed')
       set({ error: message })
       throw new Error(message)
     } finally {

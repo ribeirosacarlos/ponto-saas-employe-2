@@ -163,6 +163,10 @@ const en = {
       sessionCopy: 'Secure session - HR Dashboard',
       uiCredits: 'iOS-inspired UI - Synergy HR',
       footerBadge: 'GH',
+      error: {
+        title: 'Authentication failed',
+        description: 'Invalid credentials. Please check and try again.',
+      },
     },
     activateAccount: {
       title: 'Activate account',
@@ -239,6 +243,18 @@ const en = {
       },
       breakError: 'Could not register break',
       breakErrorDescription: 'Try again in a moment.',
+      openEntryWarning: {
+        title: 'Open time entry',
+        description: 'You have an open punch that must be closed to regularize your day.',
+        nextAction: 'Next action: {{action}}',
+      },
+      nextActions: {
+        clock_in: 'Clock in',
+        clock_out: 'Clock out',
+        break_start: 'Start break',
+        break_end: 'End break',
+        default: 'Register punch',
+      },
     },
     dashboardPage: {
       title: 'Dashboard',
@@ -880,6 +896,14 @@ const en = {
         timeFallback: '--:--',
       },
     },
+    auth: {
+      errors: {
+        tokenMissing: 'Token not returned by API',
+        loginFailed: 'Unable to log in. Check your credentials.',
+        unauthorized: 'Invalid credentials. Please check and try again.',
+      },
+    },
+
   },
 }
 

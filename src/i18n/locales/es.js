@@ -163,6 +163,10 @@ const es = {
       sessionCopy: 'Sesión segura - HR Dashboard',
       uiCredits: 'UI inspirada en iOS - Synergy HR',
       footerBadge: 'GH',
+      error: {
+        title: 'Error de autenticación',
+        description: 'Credenciales inválidas. Revísalas e inténtalo de nuevo.',
+      },
     },
     activateAccount: {
       title: 'Activar cuenta',
@@ -239,6 +243,18 @@ const es = {
       },
       breakError: 'No se pudo registrar el intervalo',
       breakErrorDescription: 'Inténtalo nuevamente en un momento.',
+      openEntryWarning: {
+        title: 'Punto abierto',
+        description: 'Tienes un registro abierto que debe cerrarse para regularizar tu día.',
+        nextAction: 'Próxima acción: {{action}}',
+      },
+      nextActions: {
+        clock_in: 'Registrar entrada',
+        clock_out: 'Registrar salida',
+        break_start: 'Iniciar pausa',
+        break_end: 'Terminar pausa',
+        default: 'Registrar punto',
+      },
     },
     dashboardPage: {
       title: 'Panel',
@@ -956,6 +972,7 @@ const es = {
       errors: {
         tokenMissing: 'Token no devuelto por la API',
         loginFailed: 'No fue posible iniciar sesión. Verifica las credenciales.',
+        unauthorized: 'Credenciales inválidas. Revísalas e inténtalo de nuevo.',
       },
     },
   },

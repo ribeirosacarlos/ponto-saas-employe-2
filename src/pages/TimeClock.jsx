@@ -8,7 +8,7 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useClocking } from '../features/ponto/useClocking'
-import { getWorkedToday } from '../lib/api'
+import { getWorkedToday, getOpenTimeEntryStatus } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
@@ -50,6 +50,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
   const [recentEntries, setRecentEntries] = useState([])
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
+  const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const userMenuRef = useRef(null)
 
   useEffect(() => {
@@ -181,6 +182,37 @@ export default function TimeClock({ onContinueToDashboard }) {
       active = false
     }
   }, [token])
+
+  useEffect(() => {
+    let active = true
+    const fetchOpenStatus = async () => {
+      if (!token) {
+        setOpenEntryStatus(null)
+        return
+      }
+      try {
+        const status = await getOpenTimeEntryStatus()
+        if (!active) return
+        setOpenEntryStatus(status)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load open-status', error)
+      }
+    }
+    fetchOpenStatus()
+    return () => {
+      active = false
+    }
+  }, [token])
+
+  const openEntryNextAction = useMemo(() => {
+    const nextActionKey = openEntryStatus?.next_action
+    if (!nextActionKey) return null
+    return t(`timeClock.nextActions.${nextActionKey}`, {
+      defaultValue: t('timeClock.nextActions.default'),
+    })
+  }, [openEntryStatus?.next_action, t])
+
+  const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
 
   const summaryStats = useMemo(
     () => [
@@ -345,16 +377,16 @@ export default function TimeClock({ onContinueToDashboard }) {
         <div className="relative z-10 space-y-10">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-3">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {t('timeClock.greeting', { name: firstName })}
-                </p>
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
-                  <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
-                </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-muted-foreground">
+                {t('timeClock.greeting', { name: firstName })}
+              </p>
+              <div className="space-y-1">
+                <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
               </div>
             </div>
+          </div>
             <div className="flex flex-col gap-2 lg:items-end">
               <div className="flex items-center gap-3">
                 <div className="text-right leading-tight">
@@ -455,6 +487,33 @@ export default function TimeClock({ onContinueToDashboard }) {
                           'Voce esta bloqueado para registrar o ponto.',
                         )}
                       </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {hasOpenEntry ? (
+                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/90 p-4 shadow-[0_16px_40px_-32px_rgba(251,191,36,0.35)] dark:border-amber-500/40 dark:bg-amber-500/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
+                      <AlertTriangle className="h-5 w-5" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                        {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
+                      </p>
+                      <p className="text-xs text-amber-800/90 dark:text-amber-50/90">
+                        {t(
+                          'timeClock.openEntryWarning.description',
+                          'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+                        )}
+                      </p>
+                      {openEntryNextAction ? (
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                          {t('timeClock.openEntryWarning.nextAction', {
+                            action: openEntryNextAction,
+                          })}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>

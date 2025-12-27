@@ -163,6 +163,10 @@ const ptBR = {
       sessionCopy: 'Sessão segura - HR Dashboard',
       uiCredits: 'UI inspirada no iOS - Synergy HR',
       footerBadge: 'GH',
+      error: {
+        title: 'Erro ao autenticar',
+        description: 'Credenciais inválidas. Confira e tente novamente.',
+      },
     },
     activateAccount: {
       title: 'Ativar conta',
@@ -239,6 +243,18 @@ const ptBR = {
       },
       breakError: 'Erro ao registrar intervalo',
       breakErrorDescription: 'Tente novamente em instantes.',
+      openEntryWarning: {
+        title: 'Ponto em aberto',
+        description: 'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+        nextAction: 'Próxima ação: {{action}}',
+      },
+      nextActions: {
+        clock_in: 'Registrar entrada',
+        clock_out: 'Registrar saída',
+        break_start: 'Iniciar intervalo',
+        break_end: 'Encerrar intervalo',
+        default: 'Registrar ponto',
+      },
     },
     dashboardPage: {
       title: 'Dashboard',
@@ -956,6 +972,7 @@ const ptBR = {
       errors: {
         tokenMissing: 'Token não retornado pela API',
         loginFailed: 'Não foi possível fazer login. Verifique as credenciais.',
+        unauthorized: 'Credenciais inválidas. Confira e tente novamente.',
       },
     },
   },
