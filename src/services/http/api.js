@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { attachForbiddenInterceptor } from '../../lib/http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -15,3 +16,5 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+attachForbiddenInterceptor(api)

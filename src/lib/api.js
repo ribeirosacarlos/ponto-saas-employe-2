@@ -1,4 +1,5 @@
 ﻿import axios from 'axios'
+import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -15,6 +16,8 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+attachForbiddenInterceptor(api)
 
 export async function loginRequest(email, password) {
   const { data } = await api.post('/v1/auth/login', { email, password })

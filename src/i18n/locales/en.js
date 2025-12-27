@@ -28,6 +28,12 @@ const en = {
     languageSwitcher: {
       ariaLabel: 'Change language',
     },
+    errors: {
+      forbidden: {
+        title: 'Access denied',
+        description: 'You do not have permission to perform this action.',
+      },
+    },
     types: {
       in: 'Clock-in',
       out: 'Clock-out',

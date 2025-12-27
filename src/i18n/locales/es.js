@@ -28,6 +28,12 @@ const es = {
     languageSwitcher: {
       ariaLabel: 'Cambiar idioma',
     },
+    errors: {
+      forbidden: {
+        title: 'Sin permiso',
+        description: 'No tienes permiso para realizar esta accion.',
+      },
+    },
     types: {
       in: 'Entrada',
       out: 'Salida',

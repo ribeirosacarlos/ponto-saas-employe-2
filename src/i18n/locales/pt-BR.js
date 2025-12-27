@@ -28,6 +28,12 @@ const ptBR = {
     languageSwitcher: {
       ariaLabel: 'Alterar idioma',
     },
+    errors: {
+      forbidden: {
+        title: 'Sem permissao',
+        description: 'Voce nao tem permissao para realizar esta acao.',
+      },
+    },
     types: {
       in: 'Entrada',
       out: 'Saída',
