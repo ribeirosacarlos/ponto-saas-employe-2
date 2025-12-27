@@ -23,24 +23,32 @@ jobs:
 
       - name: Build (Vite)
         run: npm run build
-
+        
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-      - name: Add server to known_hosts (auto)
+      - name: Ensure known_hosts (best effort)
         run: |
-          ssh-keyscan -T 10 -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+          set +e
+          ssh-keyscan -T 20 -p 22 -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+          echo "ssh-keyscan exit code: $?"
+          set -e
 
-      - name: Test SSH
+      - name: Test SSH (shows real error)
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "whoami && pwd"
+          ssh -p 22 -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o BatchMode=yes \
+            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "whoami && pwd"
 
       - name: Deploy dist/ to public_html via rsync
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/id_ed25519" \
+            -e "ssh -p 22 -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             dist/ \
             ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}
+
