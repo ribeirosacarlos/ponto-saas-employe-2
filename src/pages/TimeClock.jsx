@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
@@ -11,6 +11,7 @@ import { useClocking } from '../features/ponto/useClocking'
 import { getWorkedToday } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
+import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 
 const statusTokens = {
   idle: {
@@ -47,6 +48,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
+  const [recentEntries, setRecentEntries] = useState([])
+  const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const userMenuRef = useRef(null)
 
   useEffect(() => {
@@ -99,24 +102,6 @@ export default function TimeClock({ onContinueToDashboard }) {
         time: format(new Date(lastWorkEntry.clocked_at), 'HH:mm'),
       })
     : t('timeClock.lastRecord.placeholder')
-
-  const formatRecentDay = (offset = 0) => {
-    const date = new Date()
-    date.setDate(date.getDate() - offset)
-    return date.toLocaleDateString(i18n.language, {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'short',
-    })
-  }
-
-  const formatRecentInterval = (start, end) =>
-    t('timeClock.recent.interval', {
-      entryLabel: t('timeClock.recent.entryLabel'),
-      exitLabel: t('timeClock.recent.exitLabel'),
-      start,
-      end,
-    })
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -210,32 +195,88 @@ export default function TimeClock({ onContinueToDashboard }) {
       },
       { label: t('timeClock.summary.bank'), value: '+02:15', tone: 'text-emerald-500 dark:text-emerald-300' },
     ],
-    [normalizedStatus, t],
+    [normalizedStatus, t, workedTodayLabel],
   )
 
-  const recentEntries = useMemo(
-    () => [
-      {
-        day: formatRecentDay(1),
-        interval: formatRecentInterval('09:02', '17:36'),
-        value: '08:34',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(2),
-        interval: formatRecentInterval('09:11', '17:21'),
-        value: '08:10',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(3),
-        interval: formatRecentInterval('08:59', '16:45'),
-        value: '07:46',
-        tone: 'text-amber-500 dark:text-amber-300',
-      },
-    ],
+  const normalizeEntryList = useCallback(
+    (items = []) => {
+      const sorted = [...items]
+        .filter((entry) => entry?.clocked_at)
+        .sort((a, b) => new Date(b.clocked_at).getTime() - new Date(a.clocked_at).getTime())
+
+      return sorted.slice(0, 5).map((entry) => {
+        const date = new Date(entry.clocked_at)
+        const day = date.toLocaleDateString(i18n.language, {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'short',
+        })
+        const timeLabel = format(date, 'HH:mm')
+        const typeKey =
+          entry.type === 'in'
+            ? 'in'
+            : entry.type === 'out'
+              ? 'out'
+              : entry.type === 'break_start'
+                ? 'breakStart'
+                : entry.type === 'break_end'
+                  ? 'breakEnd'
+                  : entry.type
+        const typeLabel =
+          t(`types.${typeKey}`) ||
+          (typeKey === 'breakStart'
+            ? t('timeClock.recent.breakStart', 'Início do intervalo')
+            : typeKey === 'breakEnd'
+              ? t('timeClock.recent.breakEnd', 'Fim do intervalo')
+              : entry.type)
+        const tone =
+          entry.type === 'in'
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : entry.type === 'out'
+              ? 'text-amber-500 dark:text-amber-300'
+              : 'text-muted-foreground'
+
+        return {
+          id: entry.id || `${entry.clocked_at}-${entry.type}`,
+          day,
+          interval: `${typeLabel} • ${timeLabel}`,
+          value: entry.source || entry.type,
+          tone,
+        }
+      })
+    },
     [i18n.language, t],
   )
+
+  useEffect(() => {
+    let active = true
+
+    const fetchRecentEntries = async () => {
+      if (!token) {
+        setRecentEntries([])
+        return
+      }
+
+      setRecentEntriesLoading(true)
+      try {
+        const { data } = await listEmployeeEntries(1)
+        if (!active) return
+        const normalized = Array.isArray(data) ? data : data?.data || []
+        setRecentEntries(normalizeEntryList(normalized))
+      } catch (error) {
+        console.error('[TimeClock] Failed to load recent entries', error)
+        if (!active) return
+        setRecentEntries([])
+      } finally {
+        if (active) setRecentEntriesLoading(false)
+      }
+    }
+
+    fetchRecentEntries()
+    return () => {
+      active = false
+    }
+  }, [normalizeEntryList, token])
 
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
@@ -506,18 +547,28 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {recentEntries.map((entry) => (
-                    <div
-                      key={entry.day + entry.value}
-                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold">{entry.day}</p>
-                        <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                  {recentEntriesLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('common.loading', 'Carregando registros...')}
+                    </p>
+                  ) : recentEntries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
+                    </p>
+                  ) : (
+                    recentEntries.map((entry) => (
+                      <div
+                        key={entry.id || entry.day + entry.value}
+                        className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold">{entry.day}</p>
+                          <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                        </div>
+                        <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
                       </div>
-                      <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
