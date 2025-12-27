@@ -29,6 +29,7 @@ const NAV_ITEMS = [
     page: 'timeClock',
     path: '/time-clock',
     group: 'workspace',
+    variant: 'cta',
     requires: { public: true },
   },
   {
@@ -87,7 +88,6 @@ const NAV_ITEMS = [
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
-
     id: 'adminAnnouncements',
     labelKey: 'sidebar.items.announcements',
     icon: Bell,
@@ -95,7 +95,6 @@ const NAV_ITEMS = [
     path: '/admin/announcements',
     group: 'admin',
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-
   },
   {
     id: 'platformCompanies',
@@ -167,6 +166,9 @@ export function AppSidebar({
       onNavigate(item.page)
     }
 
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      onToggle?.()
+    }
   }
 
   useEffect(() => {
@@ -196,180 +198,175 @@ export function AppSidebar({
       </button>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-[#f7f7f9] px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 dark:bg-card/95 md:bg-card/95',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-4 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-transform duration-300 dark:bg-card',
           sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
         )}
       >
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+        <div className="flex items-center gap-2.5 px-1 py-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
             HR
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-muted-foreground">
+            <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
               Synergy
             </span>
-            <span className="text-[11px] text-muted-foreground">HR Management</span>
+            <span className="text-[10px] text-muted-foreground">HR Management</span>
           </div>
         </div>
-      </div>
 
-      <div className="mt-8 flex flex-1 flex-col overflow-hidden">
-        <nav className="flex-1 space-y-5 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setWorkspaceOpen((prev) => !prev)}
-              aria-expanded={workspaceOpen}
-              aria-controls="sidebar-group-workspace"
-              className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
-            >
-              <span>{t('sidebar.sections.workspace')}</span>
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 transition-transform duration-200',
-                  workspaceOpen ? 'rotate-0' : '-rotate-90',
-                )}
-              />
-            </button>
-            <div
-              id="sidebar-group-workspace"
-              aria-hidden={!workspaceOpen}
-              className={cn(
-                'overflow-hidden transition-[max-height,opacity] duration-200',
-                workspaceOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
-              )}
-            >
-              <div className="space-y-1 pt-1">
-                {workspaceItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = item.page ? currentPage === item.page : item.active
-                  const isCta = item.variant === 'cta'
-                  const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
-                  return (
-                    <button
-                      key={item.id}
-                      className={cn(
-                        'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
-                        isCta
-                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_16px_40px_-26px_rgba(62,82,152,0.6)] hover:bg-primary/90'
-                          : isActive
-                            ? 'bg-primary/15 text-primary font-semibold'
-                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
-                      )}
-                      onClick={() => handleItemClick(item)}
-                      type="button"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
-                            isCta
-                              ? 'border-white/20 bg-white/15 text-primary-foreground'
-                              : isActive
-                                ? 'border-primary/20 bg-primary/10 text-primary'
-                                : 'border-border bg-muted text-foreground',
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <span>{t(item.labelKey)}</span>
-                      </div>
-                      {badgeLabel ? (
-                        <span
-                          className={cn(
-                            'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px]',
-                            isCta
-                              ? 'border border-white/20 bg-white/15 text-primary-foreground'
-                              : 'border border-primary/20 bg-primary/15 text-primary',
-                          )}
-                        >
-                          {badgeLabel}
-                        </span>
-                      ) : null}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {adminItems.length > 0 ? (
+        <div className="mt-8 flex flex-1 flex-col overflow-hidden">
+          <nav className="flex-1 space-y-4 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
             <div className="space-y-2">
-              <div className="mx-2 h-px bg-border/60" />
               <button
                 type="button"
-                onClick={() => setAdminOpen((prev) => !prev)}
-                aria-expanded={adminOpen}
-                aria-controls="sidebar-group-admin"
+                onClick={() => setWorkspaceOpen((prev) => !prev)}
+                aria-expanded={workspaceOpen}
+                aria-controls="sidebar-group-workspace"
                 className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
               >
-                <span>{t('sidebar.sections.admin')}</span>
+                <span>{t('sidebar.sections.workspace')}</span>
                 <ChevronDown
                   className={cn(
                     'h-4 w-4 transition-transform duration-200',
-                    adminOpen ? 'rotate-0' : '-rotate-90',
+                    workspaceOpen ? 'rotate-0' : '-rotate-90',
                   )}
                 />
               </button>
               <div
-                id="sidebar-group-admin"
-                aria-hidden={!adminOpen}
+                id="sidebar-group-workspace"
+                aria-hidden={!workspaceOpen}
                 className={cn(
                   'overflow-hidden transition-[max-height,opacity] duration-200',
-                  adminOpen ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
+                  workspaceOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
                 )}
               >
                 <div className="space-y-1 pt-1">
-                  {adminItems.map((item) => {
+                  {workspaceItems.map((item) => {
                     const Icon = item.icon
                     const isActive = item.page ? currentPage === item.page : item.active
+                    const isCta = item.variant === 'cta'
+                    const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
                     return (
                       <button
                         key={item.id}
                         className={cn(
-                          'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
-                          isActive
-                            ? 'bg-primary/15 text-primary font-semibold'
-                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
+                          'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
+                          isCta
+                            ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
+                            : isActive
+                              ? 'bg-primary/12 text-primary font-semibold'
+                              : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                         )}
                         onClick={() => handleItemClick(item)}
                         type="button"
                       >
                         <div className="flex items-center gap-1.5">
-                          <span
+                          <Icon
                             className={cn(
-                              'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
-                              isActive
-                                ? 'border-primary/20 bg-primary/10 text-primary'
-                                : 'border-border bg-muted text-foreground',
+                              'h-4 w-4 shrink-0 transition-colors',
+                              isCta
+                                ? 'text-primary-foreground'
+                                : isActive
+                                  ? 'text-primary'
+                                  : 'text-foreground/70 group-hover:text-foreground',
                             )}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </span>
+                          />
                           <span>{t(item.labelKey)}</span>
                         </div>
+                        {badgeLabel ? (
+                          <span
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px] transition-colors',
+                              isCta
+                                ? 'border border-white/20 bg-white/15 text-primary-foreground'
+                                : 'border border-primary/20 bg-primary/15 text-primary',
+                            )}
+                          >
+                            {badgeLabel}
+                          </span>
+                        ) : null}
                       </button>
                     )
                   })}
                 </div>
               </div>
             </div>
-          ) : null}
-        </nav>
-      </div>
 
-      <div className="mt-auto w-full space-y-3">
-        <div className="flex w-full items-center gap-2">
-          <LanguageSwitcher iconOnly />
-          <ThemeToggle iconOnly />
+            {adminItems.length > 0 ? (
+              <div className="space-y-2">
+                <div className="mx-2 h-px bg-border/60" />
+                <button
+                  type="button"
+                  onClick={() => setAdminOpen((prev) => !prev)}
+                  aria-expanded={adminOpen}
+                  aria-controls="sidebar-group-admin"
+                  className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+                >
+                  <span>{t('sidebar.sections.admin')}</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform duration-200',
+                      adminOpen ? 'rotate-0' : '-rotate-90',
+                    )}
+                  />
+                </button>
+                <div
+                  id="sidebar-group-admin"
+                  aria-hidden={!adminOpen}
+                  className={cn(
+                    'overflow-hidden transition-[max-height,opacity] duration-200',
+                    adminOpen ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
+                  )}
+                >
+                  <div className="space-y-1 pt-1">
+                    {adminItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = item.page ? currentPage === item.page : item.active
+                      return (
+                        <button
+                          key={item.id}
+                          className={cn(
+                            'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
+                            isActive
+                              ? 'bg-primary/12 text-primary font-semibold'
+                              : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
+                          )}
+                          onClick={() => handleItemClick(item)}
+                          type="button"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Icon
+                              className={cn(
+                                'h-4 w-4 shrink-0 transition-colors',
+                                isActive
+                                  ? 'text-primary'
+                                  : 'text-foreground/70 group-hover:text-foreground',
+                              )}
+                            />
+                            <span>{t(item.labelKey)}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </nav>
         </div>
-        <UserProfileDropdown user={user} onProfile={onProfile} onHelp={onHelp} onLogout={onLogout} />
-        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
-          <span>{t('dashboardPage.version.label')}</span>
-          <span>{t('dashboardPage.version.product')}</span>
+
+        <div className="mt-auto w-full space-y-2.5">
+          <div className="flex w-full items-center gap-2">
+            <LanguageSwitcher iconOnly />
+            <ThemeToggle iconOnly />
+          </div>
+          <UserProfileDropdown
+            user={user}
+            onProfile={onProfile}
+            onHelp={onHelp}
+            onLogout={onLogout}
+          />
         </div>
-      </div>
       </aside>
     </>
   )
