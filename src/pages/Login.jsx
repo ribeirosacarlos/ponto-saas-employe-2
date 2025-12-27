@@ -16,6 +16,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const login = useAuthStore((state) => state.login)
   const loading = useAuthStore((state) => state.loading)
+  const authError = useAuthStore((state) => state.error)
   const { toast } = useToast()
   const { t } = useTranslation()
 
@@ -69,6 +70,15 @@ export default function Login() {
             <h1 className="text-[22px] font-semibold leading-tight">{t('login.title')}</h1>
             <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
           </div>
+
+          {authError ? (
+            <div className="mb-4 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm text-rose-700 shadow-[0_14px_42px_-30px_rgba(244,63,94,0.45)] dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
+              <p className="font-semibold">{t('login.error.title', 'Erro ao autenticar')}</p>
+              <p className="text-xs text-rose-600/90 dark:text-rose-50/80">
+                {authError || t('login.error.description', 'Credenciais inválidas. Confira e tente novamente.')}
+              </p>
+            </div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

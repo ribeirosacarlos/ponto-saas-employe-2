@@ -1,9 +1,8 @@
 import { api } from '../http/api'
 
 export async function listEmployees(page = 1, filters = {}) {
-  const params = { page }
-  if (filters.search) params.search = filters.search
-  if (filters.role && filters.role !== 'all') params.role = filters.role
+  const params = {}
+  if (page) params.page = page
 
   const { data } = await api.get('/v1/admin/employees', { params })
 
@@ -13,7 +12,7 @@ export async function listEmployees(page = 1, filters = {}) {
       ? data.employees
       : Array.isArray(data)
         ? data
-        : []
+      : []
 
   const metaSource = data?.meta || data || {}
   const meta = {

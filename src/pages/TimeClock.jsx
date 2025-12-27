@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
@@ -8,9 +8,10 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useClocking } from '../features/ponto/useClocking'
-import { getWorkedToday } from '../lib/api'
+import { getWorkedToday, getOpenTimeEntryStatus } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
+import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 
 const statusTokens = {
   idle: {
@@ -47,6 +48,9 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
+  const [recentEntries, setRecentEntries] = useState([])
+  const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
+  const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const userMenuRef = useRef(null)
 
   useEffect(() => {
@@ -99,24 +103,6 @@ export default function TimeClock({ onContinueToDashboard }) {
         time: format(new Date(lastWorkEntry.clocked_at), 'HH:mm'),
       })
     : t('timeClock.lastRecord.placeholder')
-
-  const formatRecentDay = (offset = 0) => {
-    const date = new Date()
-    date.setDate(date.getDate() - offset)
-    return date.toLocaleDateString(i18n.language, {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'short',
-    })
-  }
-
-  const formatRecentInterval = (start, end) =>
-    t('timeClock.recent.interval', {
-      entryLabel: t('timeClock.recent.entryLabel'),
-      exitLabel: t('timeClock.recent.exitLabel'),
-      start,
-      end,
-    })
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -197,6 +183,37 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
   }, [token])
 
+  useEffect(() => {
+    let active = true
+    const fetchOpenStatus = async () => {
+      if (!token) {
+        setOpenEntryStatus(null)
+        return
+      }
+      try {
+        const status = await getOpenTimeEntryStatus()
+        if (!active) return
+        setOpenEntryStatus(status)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load open-status', error)
+      }
+    }
+    fetchOpenStatus()
+    return () => {
+      active = false
+    }
+  }, [token])
+
+  const openEntryNextAction = useMemo(() => {
+    const nextActionKey = openEntryStatus?.next_action
+    if (!nextActionKey) return null
+    return t(`timeClock.nextActions.${nextActionKey}`, {
+      defaultValue: t('timeClock.nextActions.default'),
+    })
+  }, [openEntryStatus?.next_action, t])
+
+  const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
+
   const summaryStats = useMemo(
     () => [
       { label: t('timeClock.summary.planned'), value: '08:00', tone: 'text-foreground' },
@@ -210,32 +227,88 @@ export default function TimeClock({ onContinueToDashboard }) {
       },
       { label: t('timeClock.summary.bank'), value: '+02:15', tone: 'text-emerald-500 dark:text-emerald-300' },
     ],
-    [normalizedStatus, t],
+    [normalizedStatus, t, workedTodayLabel],
   )
 
-  const recentEntries = useMemo(
-    () => [
-      {
-        day: formatRecentDay(1),
-        interval: formatRecentInterval('09:02', '17:36'),
-        value: '08:34',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(2),
-        interval: formatRecentInterval('09:11', '17:21'),
-        value: '08:10',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(3),
-        interval: formatRecentInterval('08:59', '16:45'),
-        value: '07:46',
-        tone: 'text-amber-500 dark:text-amber-300',
-      },
-    ],
+  const normalizeEntryList = useCallback(
+    (items = []) => {
+      const sorted = [...items]
+        .filter((entry) => entry?.clocked_at)
+        .sort((a, b) => new Date(b.clocked_at).getTime() - new Date(a.clocked_at).getTime())
+
+      return sorted.slice(0, 5).map((entry) => {
+        const date = new Date(entry.clocked_at)
+        const day = date.toLocaleDateString(i18n.language, {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'short',
+        })
+        const timeLabel = format(date, 'HH:mm')
+        const typeKey =
+          entry.type === 'in'
+            ? 'in'
+            : entry.type === 'out'
+              ? 'out'
+              : entry.type === 'break_start'
+                ? 'breakStart'
+                : entry.type === 'break_end'
+                  ? 'breakEnd'
+                  : entry.type
+        const typeLabel =
+          t(`types.${typeKey}`) ||
+          (typeKey === 'breakStart'
+            ? t('timeClock.recent.breakStart', 'Início do intervalo')
+            : typeKey === 'breakEnd'
+              ? t('timeClock.recent.breakEnd', 'Fim do intervalo')
+              : entry.type)
+        const tone =
+          entry.type === 'in'
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : entry.type === 'out'
+              ? 'text-amber-500 dark:text-amber-300'
+              : 'text-muted-foreground'
+
+        return {
+          id: entry.id || `${entry.clocked_at}-${entry.type}`,
+          day,
+          interval: `${typeLabel} • ${timeLabel}`,
+          value: entry.source || entry.type,
+          tone,
+        }
+      })
+    },
     [i18n.language, t],
   )
+
+  useEffect(() => {
+    let active = true
+
+    const fetchRecentEntries = async () => {
+      if (!token) {
+        setRecentEntries([])
+        return
+      }
+
+      setRecentEntriesLoading(true)
+      try {
+        const { data } = await listEmployeeEntries(1)
+        if (!active) return
+        const normalized = Array.isArray(data) ? data : data?.data || []
+        setRecentEntries(normalizeEntryList(normalized))
+      } catch (error) {
+        console.error('[TimeClock] Failed to load recent entries', error)
+        if (!active) return
+        setRecentEntries([])
+      } finally {
+        if (active) setRecentEntriesLoading(false)
+      }
+    }
+
+    fetchRecentEntries()
+    return () => {
+      active = false
+    }
+  }, [normalizeEntryList, token])
 
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
@@ -304,16 +377,16 @@ export default function TimeClock({ onContinueToDashboard }) {
         <div className="relative z-10 space-y-10">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-3">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {t('timeClock.greeting', { name: firstName })}
-                </p>
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
-                  <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
-                </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-muted-foreground">
+                {t('timeClock.greeting', { name: firstName })}
+              </p>
+              <div className="space-y-1">
+                <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
               </div>
             </div>
+          </div>
             <div className="flex flex-col gap-2 lg:items-end">
               <div className="flex items-center gap-3">
                 <div className="text-right leading-tight">
@@ -418,6 +491,33 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </div>
                 </div>
               ) : null}
+              {hasOpenEntry ? (
+                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/90 p-4 shadow-[0_16px_40px_-32px_rgba(251,191,36,0.35)] dark:border-amber-500/40 dark:bg-amber-500/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
+                      <AlertTriangle className="h-5 w-5" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                        {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
+                      </p>
+                      <p className="text-xs text-amber-800/90 dark:text-amber-50/90">
+                        {t(
+                          'timeClock.openEntryWarning.description',
+                          'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+                        )}
+                      </p>
+                      {openEntryNextAction ? (
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                          {t('timeClock.openEntryWarning.nextAction', {
+                            action: openEntryNextAction,
+                          })}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
@@ -506,18 +606,28 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {recentEntries.map((entry) => (
-                    <div
-                      key={entry.day + entry.value}
-                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold">{entry.day}</p>
-                        <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                  {recentEntriesLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('common.loading', 'Carregando registros...')}
+                    </p>
+                  ) : recentEntries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
+                    </p>
+                  ) : (
+                    recentEntries.map((entry) => (
+                      <div
+                        key={entry.id || entry.day + entry.value}
+                        className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold">{entry.day}</p>
+                          <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                        </div>
+                        <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
                       </div>
-                      <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
