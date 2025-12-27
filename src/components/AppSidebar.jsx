@@ -172,26 +172,24 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-[#f7f7f9] px-5 py-6 text-foreground shadow-[0_24px_70px_-42px_rgba(62,82,152,0.35)] backdrop-blur-xl transition-transform duration-300 dark:bg-card/95 md:bg-card/95',
+        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-4 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-transform duration-300 dark:bg-card',
         sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
       )}
     >
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-            HR
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-muted-foreground">
-              Synergy
-            </span>
-            <span className="text-[11px] text-muted-foreground">HR Management</span>
-          </div>
+      <div className="flex items-center gap-2.5 px-1 py-1">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+          HR
+        </div>
+        <div className="flex flex-col leading-tight">
+          <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
+            Synergy
+          </span>
+          <span className="text-[10px] text-muted-foreground">HR Management</span>
         </div>
       </div>
 
       <div className="mt-8 flex flex-1 flex-col overflow-hidden">
-        <nav className="flex-1 space-y-5 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
+        <nav className="flex-1 space-y-4 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
           <div className="space-y-2">
             <button
               type="button"
@@ -226,35 +224,33 @@ export function AppSidebar({
                     <button
                       key={item.id}
                       className={cn(
-                        'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
+                        'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
                         isCta
-                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_16px_40px_-26px_rgba(62,82,152,0.6)] hover:bg-primary/90'
+                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
                           : isActive
-                            ? 'bg-primary/15 text-primary font-semibold'
-                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
+                            ? 'bg-primary/12 text-primary font-semibold'
+                            : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                       )}
                       onClick={() => handleItemClick(item)}
                       type="button"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span
+                        <Icon
                           className={cn(
-                            'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
+                            'h-4 w-4 shrink-0 transition-colors',
                             isCta
-                              ? 'border-white/20 bg-white/15 text-primary-foreground'
+                              ? 'text-primary-foreground'
                               : isActive
-                                ? 'border-primary/20 bg-primary/10 text-primary'
-                                : 'border-border bg-muted text-foreground',
+                                ? 'text-primary'
+                                : 'text-foreground/70 group-hover:text-foreground',
                           )}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
+                        />
                         <span>{t(item.labelKey)}</span>
                       </div>
                       {badgeLabel ? (
                         <span
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px]',
+                            'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px] transition-colors',
                             isCta
                               ? 'border border-white/20 bg-white/15 text-primary-foreground'
                               : 'border border-primary/20 bg-primary/15 text-primary',
@@ -304,25 +300,23 @@ export function AppSidebar({
                       <button
                         key={item.id}
                         className={cn(
-                          'group flex w-full min-h-[36px] items-center justify-between rounded-xl px-2.5 py-1.5 text-left transition-colors',
+                          'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
                           isActive
-                            ? 'bg-primary/15 text-primary font-semibold'
-                            : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground',
+                            ? 'bg-primary/12 text-primary font-semibold'
+                            : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                         )}
                         onClick={() => handleItemClick(item)}
                         type="button"
                       >
                         <div className="flex items-center gap-1.5">
-                          <span
+                          <Icon
                             className={cn(
-                              'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
+                              'h-4 w-4 shrink-0 transition-colors',
                               isActive
-                                ? 'border-primary/20 bg-primary/10 text-primary'
-                                : 'border-border bg-muted text-foreground',
+                                ? 'text-primary'
+                                : 'text-foreground/70 group-hover:text-foreground',
                             )}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </span>
+                          />
                           <span>{t(item.labelKey)}</span>
                         </div>
                       </button>
@@ -335,16 +329,12 @@ export function AppSidebar({
         </nav>
       </div>
 
-      <div className="mt-auto w-full space-y-3">
+      <div className="mt-auto w-full space-y-2.5">
         <div className="flex w-full items-center gap-2">
           <LanguageSwitcher iconOnly />
           <ThemeToggle iconOnly />
         </div>
         <UserProfileDropdown user={user} onProfile={onProfile} onHelp={onHelp} onLogout={onLogout} />
-        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/70 px-3 py-2 text-[10px] lg:text-[11px] text-muted-foreground">
-          <span>{t('dashboardPage.version.label')}</span>
-          <span>{t('dashboardPage.version.product')}</span>
-        </div>
       </div>
     </aside>
   )
