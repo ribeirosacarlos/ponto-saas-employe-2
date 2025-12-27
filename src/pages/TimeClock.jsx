@@ -293,8 +293,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [])
 
   return (
-    <PageContainer className="flex min-h-screen items-center justify-center py-10">
-      <div className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-border/80 bg-gradient-to-br from-background/95 via-card/95 to-background/95 p-8 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl">
+    <PageContainer className="min-h-screen py-6 sm:py-8 lg:py-10">
+      <div className="relative w-full overflow-hidden rounded-[32px] border border-border/80 bg-gradient-to-br from-background/95 via-card/95 to-background/95 p-6 sm:p-8 lg:p-10 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-0 opacity-90">
           <div className="absolute left-[-14%] top-[-18%] h-72 w-72 rounded-full bg-primary/18 blur-[120px]" />
           <div className="absolute right-[-18%] top-[10%] h-80 w-80 rounded-full bg-primary/16 blur-[120px]" />

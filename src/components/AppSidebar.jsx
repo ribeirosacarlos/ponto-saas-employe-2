@@ -8,11 +8,9 @@ import {
   FileText,
   Home,
   ListChecks,
-  Menu,
   Plane,
   Settings,
   Users,
-  X,
 } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
@@ -182,26 +180,12 @@ export function AppSidebar({
   }, [adminOpen])
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label={t('dashboardPage.header.toggleMenu')}
-        onClick={onToggle}
-        className={cn(
-          'fixed right-4 top-4 z-[60] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 sm:right-6 sm:top-6 md:right-auto',
-          sidebarOpen
-            ? 'md:left-[calc(16rem+max(2rem,calc((100vw-16rem-1320px)/2+2rem)))]'
-            : 'md:left-[max(2rem,calc((100vw-1320px)/2+2rem))]',
-        )}
-      >
-        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-4 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-transform duration-300 dark:bg-card',
-          sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
-        )}
-      >
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-4 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-transform duration-300 dark:bg-card',
+        sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
+      )}
+    >
         <div className="flex items-center gap-2.5 px-1 py-1">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
             HR
@@ -214,7 +198,7 @@ export function AppSidebar({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-1 flex-col overflow-hidden">
+        <div className="mt-4 flex flex-1 flex-col overflow-hidden">
           <nav className="flex-1 space-y-4 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
             <div className="space-y-2">
               <button
@@ -368,6 +352,5 @@ export function AppSidebar({
           />
         </div>
       </aside>
-    </>
   )
 }
