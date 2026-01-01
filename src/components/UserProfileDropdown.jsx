@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { CircleHelp, LogOut, MoreHorizontal, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { ThemeToggle } from './ThemeToggle'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
-export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, className }) {
+export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, className, collapsed = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -32,13 +34,19 @@ export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, classNa
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center gap-2 rounded-full border border-border bg-muted/80 px-2.5 py-1.5 text-left text-[12px] font-semibold text-foreground shadow-[0_14px_32px_-28px_rgba(0,0,0,0.35)] transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-background"
+        title={displayName}
+        className={cn(
+          'flex w-full items-center gap-2 rounded-full border border-border bg-muted/80 px-2.5 py-1.5 text-left text-[12px] font-semibold text-foreground shadow-[0_14px_32px_-28px_rgba(0,0,0,0.35)] transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-background',
+          collapsed ? 'justify-center px-2' : '',
+        )}
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground shadow-inner shadow-primary/30">
           {initials || 'EU'}
         </div>
-        <span className="min-w-0 flex-1 truncate">{displayName}</span>
-        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+        <span className={cn('min-w-0 flex-1 truncate', collapsed ? 'sr-only' : 'block')}>
+          {displayName}
+        </span>
+        {collapsed ? null : <MoreHorizontal className="h-4 w-4 text-muted-foreground" />}
       </button>
 
       {open && (
@@ -70,6 +78,10 @@ export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, classNa
               </span>
               <span>Solicitar ajuda</span>
             </button>
+            <div className="mt-1 space-y-1 rounded-xl bg-muted/50 p-2">
+              <ThemeToggle iconOnly={false} className="w-full" />
+              <LanguageSwitcher iconOnly={false} className="w-full" />
+            </div>
             <button
               type="button"
               onClick={() => {

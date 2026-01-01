@@ -89,6 +89,12 @@ const en = {
         workspace: 'Workspace',
         admin: 'Administration',
       },
+      actions: {
+        expand: 'Expand sidebar',
+        collapse: 'Collapse sidebar',
+        language: 'Language',
+        theme: 'Theme',
+      },
       items: {
         dashboard: 'Dashboard',
         history: 'History',

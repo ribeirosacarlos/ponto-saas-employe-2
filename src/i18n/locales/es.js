@@ -89,6 +89,12 @@ const es = {
         workspace: 'Área de trabajo',
         admin: 'Administración',
       },
+      actions: {
+        expand: 'Expandir barra lateral',
+        collapse: 'Colapsar barra lateral',
+        language: 'Idioma',
+        theme: 'Tema',
+      },
       items: {
         dashboard: 'Panel',
         history: 'Historial',
