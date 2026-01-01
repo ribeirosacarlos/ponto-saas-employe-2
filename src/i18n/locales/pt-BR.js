@@ -89,6 +89,12 @@ const ptBR = {
         workspace: 'Área de trabalho',
         admin: 'Administração',
       },
+      actions: {
+        expand: 'Expandir barra lateral',
+        collapse: 'Recolher barra lateral',
+        language: 'Idioma',
+        theme: 'Tema',
+      },
       items: {
         dashboard: 'Dashboard',
         history: 'Histórico',

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock3, FileText, Home, ListChecks, Menu, Settings, Users, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import ActivateAccount from './pages/ActivateAccount'
@@ -18,57 +18,18 @@ import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
-import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
-import { LanguageSwitcher } from './components/LanguageSwitcher'
-import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
+import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
 
-const PAGE_PATHS = {
-  login: '/',
-  activateAccount: '/activate-account',
-  timeClock: '/time-clock',
-  dashboard: '/dashboard',
-  history: '/history',
-  documents: '/documents',
-  vacations: '/vacations',
-  adminVacations: '/admin/vacations',
-  adminAnnouncements: '/admin/announcements',
-  platformBillingPlans: '/platform/billing/plans',
-
-  equipo: '/equipo',
-  announcements: '/announcements',
-  platformCompanies: '/platform/companies',
-}
-
-const PAGE_GUARDS = {
-  equipo: { anyOf: ['area_manager'] },
-  vacations: { anyOf: ['employee'] },
-  announcements: { anyOf: ['employee'] },
-  adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-  adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-  platformCompanies: { anyOf: ['super_admin'] },
-  platformBillingPlans: { anyOf: ['super_admin'] },
-}
-
-const resolvePageFromPath = (path) => {
-  if (!path) return 'login'
-  const normalized = path.replace(/\/+$/, '') || '/'
-  if (normalized === '/history' || normalized === '/time-entries') return 'history'
-  if (normalized === '/dashboard') return 'dashboard'
-  if (normalized === '/time-clock') return 'timeClock'
-  if (normalized === '/documents') return 'documents'
-  if (normalized === '/vacations') return 'vacations'
-  if (normalized === '/admin/vacations') return 'adminVacations'
-  if (normalized === '/admin/announcements') return 'adminAnnouncements'
-  if (normalized === '/equipo') return 'equipo'
-  if (normalized === '/announcements') return 'announcements'
-  if (normalized === '/platform/companies') return 'platformCompanies'
-  if (normalized === '/platform/billing/plans') return 'platformBillingPlans'
-
-  if (normalized === '/activate-account') return 'activateAccount'
-  return 'login'
+const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
+const getInitialSidebarCollapsed = () => {
+  if (typeof window === 'undefined') return false
+  const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+  if (stored === '1') return true
+  if (stored === '0') return false
+  return false
 }
 
 export default function App() {
@@ -85,6 +46,7 @@ export default function App() {
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
 
   const formatMinutesToLabel = useCallback((minutes) => {
@@ -96,13 +58,14 @@ export default function App() {
   }, [t])
 
   const canAccessPage = useCallback(
-    (page) => canRenderCard(capabilities, PAGE_GUARDS[page]),
+    (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
     [capabilities],
   )
 
   const navigateTo = useCallback(
     (page, replace = false) => {
-      const allowedPage = canAccessPage(page) ? page : 'dashboard'
+      const targetPage = ROUTES[page] ? page : 'dashboard'
+      const allowedPage = canAccessPage(targetPage) ? targetPage : 'dashboard'
       const path = PAGE_PATHS[allowedPage] || '/'
       const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
       if (typeof window !== 'undefined') {
@@ -224,37 +187,58 @@ export default function App() {
     })
   }
 
-  const navItems = [
-    {
-      label: t('dashboardPage.nav.dashboard'),
-      icon: Home,
-      page: 'dashboard',
-      onClick: handleGoToDashboard,
-      badge: todayBadge,
-    },
-    {
-      label: t('dashboardPage.nav.history'),
-      icon: ListChecks,
-      page: 'history',
-      onClick: handleGoToHistory,
-    },
-    {
-      label: t('dashboardPage.nav.documents'),
-      icon: FileText,
-      page: 'documents',
-      onClick: handleGoToDocuments,
-    },
-    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
-    {
-      label: t('dashboardPage.nav.registerPoint'),
-      icon: Clock3,
-      page: 'timeClock',
-      onClick: handleGoToTimeClock,
-    },
-    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
-    { label: t('dashboardPage.nav.team'), icon: Users },
-    { label: t('dashboardPage.nav.settings'), icon: Settings },
-  ]
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            onOpenHistory={handleGoToHistory}
+            onOpenDocuments={handleGoToDocuments}
+            onOpenVacations={handleGoToVacations}
+            onOpenAnnouncements={handleGoToAnnouncements}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+      case 'history':
+        return (
+          <History
+            onBackToDashboard={handleGoToDashboard}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+      case 'documents':
+        return <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'vacations':
+        return <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminVacations':
+        return <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminAnnouncements':
+        return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'platformBillingPlans':
+        return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'platformCompanies':
+        return <PlatformCompanies />
+      case 'announcements':
+        return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'equipo':
+        return <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      default:
+        return (
+          <TimeClock
+            onContinueToDashboard={handleGoToDashboard}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
 
 
   return (
@@ -285,6 +269,8 @@ export default function App() {
               sidebarOpen={sidebarOpen}
               currentPage={currentPage}
               onNavigate={navigateTo}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
               onToggle={handleToggleSidebar}
               onProfile={handleProfile}
               onHelp={handleHelp}
@@ -294,62 +280,12 @@ export default function App() {
             <main
               className={cn(
                 'relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300',
-                sidebarOpen ? 'md:ml-64' : 'md:ml-0',
+                sidebarOpen ? (sidebarCollapsed ? 'md:ml-16' : 'md:ml-64') : 'md:ml-0',
               )}
             >
-              <div className="absolute left-0 top-4 z-30 w-full px-3 sm:top-6 sm:px-4 lg:px-6 flex">
-                <button
-                  type="button"
-                  aria-label={t('dashboardPage.header.toggleMenu')}
-                  onClick={handleToggleSidebar}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground shadow-sm transition hover:bg-muted/80"
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-              </div>
               <div className="flex-1 min-h-0">
                 <div className="w-full">
-                  {currentPage === 'dashboard' ? (
-                    <Dashboard
-                      onOpenHistory={handleGoToHistory}
-                      onOpenDocuments={handleGoToDocuments}
-                      onOpenVacations={handleGoToVacations}
-                      onOpenAnnouncements={handleGoToAnnouncements}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'history' ? (
-                    <History
-                      onBackToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'documents' ? (
-                    <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'vacations' ? (
-                    <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'adminVacations' ? (
-                    <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'adminAnnouncements' ? (
-                    <AdminAnnouncements
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'platformBillingPlans' ? (
-                    <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'platformCompanies' ? (
-                    <PlatformCompanies />
-                  ) : currentPage === 'announcements' ? (
-                    <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'equipo' ? (
-                    <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : (
-                    <TimeClock
-                      onContinueToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  )}
+                  {renderCurrentPage()}
                 </div>
               </div>
             </main>

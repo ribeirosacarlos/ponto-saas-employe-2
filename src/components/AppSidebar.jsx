@@ -12,15 +12,37 @@ import {
   Settings,
   BadgePercent,
   Users,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { cn } from '../lib/utils'
-import { LanguageSwitcher } from './LanguageSwitcher'
-import { ThemeToggle } from './ThemeToggle'
 import { UserProfileDropdown } from './UserProfileDropdown'
+import { ROUTES } from '../routes/config'
 
-const NAV_ITEMS = [
+const SidebarTooltip = ({ label, children, collapsed, offset = 'translate-x-2' }) => {
+  if (!collapsed) return children
+
+  return (
+    <div className="group relative">
+      {children}
+      <div
+        role="tooltip"
+        className={cn(
+          'pointer-events-none absolute left-full top-1/2 z-40 -translate-y-1/2 opacity-0 transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+          offset,
+        )}
+      >
+        <div className="rounded-full border border-border/80 bg-card px-3 py-1 text-[12px] text-foreground shadow-md">
+          {label}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const BASE_NAV_ITEMS = [
   {
     id: 'clock',
     labelKey: 'sidebar.items.clock',
@@ -36,91 +58,71 @@ const NAV_ITEMS = [
     labelKey: 'sidebar.items.dashboard',
     icon: Home,
     page: 'dashboard',
-    path: '/dashboard',
     group: 'workspace',
     badgeKey: 'dashboardPage.badges.today',
-    requires: { public: true },
   },
   {
     id: 'history',
     labelKey: 'sidebar.items.history',
     icon: ListChecks,
     page: 'history',
-    path: '/history',
     group: 'workspace',
-    requires: { public: true },
   },
   {
     id: 'documents',
     labelKey: 'sidebar.items.documents',
     icon: FileText,
     page: 'documents',
-    path: '/documents',
     group: 'workspace',
-    requires: { public: true },
   },
   {
     id: 'announcements',
     labelKey: 'sidebar.items.announcements',
     icon: Bell,
     page: 'announcements',
-    path: '/announcements',
     group: 'workspace',
-    requires: { anyOf: ['employee'] },
   },
   {
     id: 'vacations',
     labelKey: 'dashboardPage.timeOff.title',
     icon: Plane,
     page: 'vacations',
-    path: '/vacations',
     group: 'workspace',
-    requires: { anyOf: ['employee'] },
   },
   {
     id: 'adminVacations',
     labelKey: 'dashboardPage.timeOff.title',
     icon: Plane,
     page: 'adminVacations',
-    path: '/admin/vacations',
     group: 'admin',
-    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
     id: 'adminAnnouncements',
     labelKey: 'sidebar.items.announcements',
     icon: Bell,
     page: 'adminAnnouncements',
-    path: '/admin/announcements',
     group: 'admin',
-    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
     id: 'platformCompanies',
     labelKey: 'sidebar.items.platformCompanies',
     icon: Building2,
     page: 'platformCompanies',
-    path: '/platform/companies',
     group: 'admin',
-    requires: { anyOf: ['super_admin'] },
   },
   {
     id: 'platformBillingPlans',
     labelKey: 'sidebar.items.platformBillingPlans',
     icon: BadgePercent,
     page: 'platformBillingPlans',
-    path: '/platform/billing/plans',
     group: 'admin',
-    requires: { anyOf: ['super_admin'] },
   },
   {
     id: 'team',
     labelKey: 'sidebar.items.team',
     icon: Users,
     page: 'equipo',
-    path: '/equipo',
     group: 'admin',
-    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   {
     id: 'settings',
@@ -151,21 +153,40 @@ export function AppSidebar({
   onHelp,
   onLogout,
   onToggle = () => {},
+  collapsed = false,
+  onToggleCollapse = () => {},
 }) {
   const roles = useAuthStore((state) => state.roles)
   const user = useAuthStore((state) => state.user)
   const { t } = useTranslation()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const navItems = useMemo(
+    () =>
+      BASE_NAV_ITEMS.map((item) => {
+        const route = item.page ? ROUTES[item.page] : undefined
+        return {
+          ...item,
+          path: route?.path ?? item.path,
+          requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
+        }
+      }),
+    [],
+  )
   const [workspaceOpen, setWorkspaceOpen] = useState(() =>
     readStoredGroupState(WORKSPACE_STORAGE_KEY, true),
   )
   const [adminOpen, setAdminOpen] = useState(() => readStoredGroupState(ADMIN_STORAGE_KEY, true))
+  const workspaceExpanded = collapsed ? true : workspaceOpen
+  const adminExpanded = collapsed ? true : adminOpen
   const visibleNavItems = useMemo(
-    () => NAV_ITEMS.filter((item) => canRenderCard(capabilities, item.requires)),
-    [capabilities],
+    () => navItems.filter((item) => canRenderCard(capabilities, item.requires)),
+    [capabilities, navItems],
   )
   const workspaceItems = visibleNavItems.filter((item) => item.group === 'workspace')
   const adminItems = visibleNavItems.filter((item) => item.group === 'admin')
+  const collapseLabel = collapsed
+    ? t('sidebar.actions.expand', { defaultValue: 'Expand sidebar' })
+    : t('sidebar.actions.collapse', { defaultValue: 'Collapse sidebar' })
 
   const handleItemClick = (item) => {
     if (item.onClick) {
@@ -192,46 +213,77 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-card/95 px-4 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-transform duration-300 dark:bg-card',
+        'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border/70 bg-card/95 py-5 text-foreground shadow-xl shadow-black/5 backdrop-blur-xl transition-all duration-300 dark:bg-card',
+        collapsed ? 'w-20 px-2 md:w-16 md:px-2' : 'w-64 px-4 md:w-64 md:px-4',
         sidebarOpen ? 'translate-x-0 md:translate-x-0' : '-translate-x-full md:-translate-x-full',
       )}
     >
-        <div className="flex items-center gap-2.5 px-1 py-1">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-            HR
+        <div
+          className={cn(
+            'group relative flex items-center px-1 pt-1 pb-3',
+            collapsed ? 'justify-center gap-1' : 'justify-between gap-2.5',
+          )}
+        >
+          <div
+            className={cn(
+              'flex items-center gap-2 select-none pointer-events-none transition-opacity duration-150',
+              collapsed ? 'group-hover:opacity-0' : '',
+            )}
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+              HR
+            </div>
+            <div className={cn('flex flex-col leading-tight', collapsed ? 'hidden' : 'flex')}>
+              <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
+                Synergy
+              </span>
+              <span className="text-[10px] text-muted-foreground">HR Management</span>
+            </div>
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
-              Synergy
-            </span>
-            <span className="text-[10px] text-muted-foreground">HR Management</span>
-          </div>
+          <SidebarTooltip collapsed={collapsed} label={collapseLabel}>
+            <button
+              type="button"
+              aria-label={collapseLabel}
+              onClick={onToggleCollapse}
+              className={cn(
+                'absolute right-1.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-foreground transition hover:bg-muted',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                collapsed ? 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto' : '',
+              )}
+            >
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
+          </SidebarTooltip>
         </div>
 
-        <div className="mt-4 flex flex-1 flex-col overflow-hidden">
+        <div className="mt-3 flex flex-1 flex-col overflow-hidden">
           <nav className="flex-1 space-y-4 overflow-y-auto pr-1 text-[12px] lg:text-[13px]">
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setWorkspaceOpen((prev) => !prev)}
-                aria-expanded={workspaceOpen}
-                aria-controls="sidebar-group-workspace"
-                className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
-              >
-                <span>{t('sidebar.sections.workspace')}</span>
-                <ChevronDown
-                  className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    workspaceOpen ? 'rotate-0' : '-rotate-90',
-                  )}
-                />
-              </button>
+              {collapsed ? (
+                <div className="mx-2 h-px bg-border/60" aria-hidden="true" />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceOpen((prev) => !prev)}
+                  aria-expanded={workspaceOpen}
+                  aria-controls="sidebar-group-workspace"
+                  className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+                >
+                  <span>{t('sidebar.sections.workspace')}</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform duration-200',
+                      workspaceOpen ? 'rotate-0' : '-rotate-90',
+                    )}
+                  />
+                </button>
+              )}
               <div
                 id="sidebar-group-workspace"
-                aria-hidden={!workspaceOpen}
+                aria-hidden={!workspaceExpanded}
                 className={cn(
                   'overflow-hidden transition-[max-height,opacity] duration-200',
-                  workspaceOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
+                  workspaceExpanded ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
                 )}
               >
                 <div className="space-y-1 pt-1">
@@ -241,45 +293,48 @@ export function AppSidebar({
                     const isCta = item.variant === 'cta'
                     const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
                     return (
-                      <button
-                        key={item.id}
-                        className={cn(
-                          'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
-                          isCta
-                            ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
-                            : isActive
-                              ? 'bg-primary/12 text-primary font-semibold'
-                              : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
-                        )}
-                        onClick={() => handleItemClick(item)}
-                        type="button"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Icon
-                            className={cn(
-                              'h-4 w-4 shrink-0 transition-colors',
-                              isCta
-                                ? 'text-primary-foreground'
-                                : isActive
-                                  ? 'text-primary'
-                                  : 'text-foreground/70 group-hover:text-foreground',
-                            )}
-                          />
-                          <span>{t(item.labelKey)}</span>
-                        </div>
-                        {badgeLabel ? (
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px] transition-colors',
-                              isCta
-                                ? 'border border-white/20 bg-white/15 text-primary-foreground'
-                                : 'border border-primary/20 bg-primary/15 text-primary',
-                            )}
-                          >
-                            {badgeLabel}
-                          </span>
-                        ) : null}
-                      </button>
+                      <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
+                        <button
+                          aria-label={t(item.labelKey)}
+                          className={cn(
+                            'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
+                            collapsed ? 'justify-center px-2' : 'justify-between px-3',
+                            isCta
+                              ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
+                              : isActive
+                                ? 'bg-primary/12 text-primary font-semibold'
+                                : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
+                          )}
+                          onClick={() => handleItemClick(item)}
+                          type="button"
+                        >
+                          <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
+                            <Icon
+                              className={cn(
+                                'h-4 w-4 shrink-0 transition-colors',
+                                isCta
+                                  ? 'text-primary-foreground'
+                                  : isActive
+                                    ? 'text-primary'
+                                    : 'text-foreground/70 group-hover:text-foreground',
+                              )}
+                            />
+                            <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
+                          </div>
+                          {!collapsed && badgeLabel ? (
+                            <span
+                              className={cn(
+                                'rounded-full px-2 py-0.5 text-[10px] lg:text-[11px] transition-colors',
+                                isCta
+                                  ? 'border border-white/20 bg-white/15 text-primary-foreground'
+                                  : 'border border-primary/20 bg-primary/15 text-primary',
+                              )}
+                            >
+                              {badgeLabel}
+                            </span>
+                          ) : null}
+                        </button>
+                      </SidebarTooltip>
                     )
                   })}
                 </div>
@@ -289,27 +344,29 @@ export function AppSidebar({
             {adminItems.length > 0 ? (
               <div className="space-y-2">
                 <div className="mx-2 h-px bg-border/60" />
-                <button
-                  type="button"
-                  onClick={() => setAdminOpen((prev) => !prev)}
-                  aria-expanded={adminOpen}
-                  aria-controls="sidebar-group-admin"
-                  className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
-                >
-                  <span>{t('sidebar.sections.admin')}</span>
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 transition-transform duration-200',
-                      adminOpen ? 'rotate-0' : '-rotate-90',
-                    )}
-                  />
-                </button>
+                {collapsed ? null : (
+                  <button
+                    type="button"
+                    onClick={() => setAdminOpen((prev) => !prev)}
+                    aria-expanded={adminOpen}
+                    aria-controls="sidebar-group-admin"
+                    className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+                  >
+                    <span>{t('sidebar.sections.admin')}</span>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 transition-transform duration-200',
+                        adminOpen ? 'rotate-0' : '-rotate-90',
+                      )}
+                    />
+                  </button>
+                )}
                 <div
                   id="sidebar-group-admin"
-                  aria-hidden={!adminOpen}
+                  aria-hidden={!adminExpanded}
                   className={cn(
                     'overflow-hidden transition-[max-height,opacity] duration-200',
-                    adminOpen ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
+                    adminExpanded ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
                   )}
                 >
                   <div className="space-y-1 pt-1">
@@ -317,29 +374,32 @@ export function AppSidebar({
                       const Icon = item.icon
                       const isActive = item.page ? currentPage === item.page : item.active
                       return (
-                        <button
-                          key={item.id}
-                          className={cn(
-                            'group flex w-full min-h-[34px] items-center justify-between rounded-full px-3 py-2 text-left transition-colors duration-150',
-                            isActive
-                              ? 'bg-primary/12 text-primary font-semibold'
-                              : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
-                          )}
-                          onClick={() => handleItemClick(item)}
-                          type="button"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Icon
-                              className={cn(
-                                'h-4 w-4 shrink-0 transition-colors',
-                                isActive
-                                  ? 'text-primary'
-                                  : 'text-foreground/70 group-hover:text-foreground',
-                              )}
-                            />
-                            <span>{t(item.labelKey)}</span>
-                          </div>
-                        </button>
+                        <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
+                          <button
+                            aria-label={t(item.labelKey)}
+                            className={cn(
+                              'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
+                              collapsed ? 'justify-center px-2' : 'justify-between px-3',
+                              isActive
+                                ? 'bg-primary/12 text-primary font-semibold'
+                                : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
+                            )}
+                            onClick={() => handleItemClick(item)}
+                            type="button"
+                          >
+                            <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
+                              <Icon
+                                className={cn(
+                                  'h-4 w-4 shrink-0 transition-colors',
+                                  isActive
+                                    ? 'text-primary'
+                                    : 'text-foreground/70 group-hover:text-foreground',
+                                )}
+                              />
+                              <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
+                            </div>
+                          </button>
+                        </SidebarTooltip>
                       )
                     })}
                   </div>
@@ -349,16 +409,13 @@ export function AppSidebar({
           </nav>
         </div>
 
-        <div className="mt-auto w-full space-y-2.5">
-          <div className="flex w-full items-center gap-2">
-            <LanguageSwitcher iconOnly />
-            <ThemeToggle iconOnly />
-          </div>
+        <div className="mt-auto w-full">
           <UserProfileDropdown
             user={user}
             onProfile={onProfile}
             onHelp={onHelp}
             onLogout={onLogout}
+            collapsed={collapsed}
           />
         </div>
       </aside>
