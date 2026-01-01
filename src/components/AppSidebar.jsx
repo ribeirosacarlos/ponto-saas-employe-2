@@ -10,6 +10,7 @@ import {
   ListChecks,
   Plane,
   Settings,
+  BadgePercent,
   Users,
 } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
@@ -100,6 +101,15 @@ const NAV_ITEMS = [
     icon: Building2,
     page: 'platformCompanies',
     path: '/platform/companies',
+    group: 'admin',
+    requires: { anyOf: ['super_admin'] },
+  },
+  {
+    id: 'platformBillingPlans',
+    labelKey: 'sidebar.items.platformBillingPlans',
+    icon: BadgePercent,
+    page: 'platformBillingPlans',
+    path: '/platform/billing/plans',
     group: 'admin',
     requires: { anyOf: ['super_admin'] },
   },

@@ -98,6 +98,7 @@ const ptBR = {
         projects: 'Projetos',
         team: 'Equipe',
         platformCompanies: 'Empresas',
+        platformBillingPlans: 'Planos (Billing)',
         settings: 'Configurações',
         calendar: 'Calendário',
       },
