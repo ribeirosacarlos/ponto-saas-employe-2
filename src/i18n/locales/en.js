@@ -98,6 +98,7 @@ const en = {
         projects: 'Projects',
         team: 'Team',
         platformCompanies: 'Companies',
+        platformBillingPlans: 'Billing plans',
         settings: 'Settings',
         calendar: 'Calendar',
       },

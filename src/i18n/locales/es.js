@@ -98,6 +98,7 @@ const es = {
         projects: 'Proyectos',
         team: 'Equipo',
         platformCompanies: 'Empresas',
+        platformBillingPlans: 'Planes (Billing)',
         settings: 'Configuración',
         calendar: 'Calendario',
       },

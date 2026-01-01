@@ -13,6 +13,7 @@ import AdminVacations from './pages/AdminVacations.jsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
+import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -34,6 +35,7 @@ const PAGE_PATHS = {
   vacations: '/vacations',
   adminVacations: '/admin/vacations',
   adminAnnouncements: '/admin/announcements',
+  platformBillingPlans: '/platform/billing/plans',
 
   equipo: '/equipo',
   announcements: '/announcements',
@@ -47,6 +49,7 @@ const PAGE_GUARDS = {
   adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   platformCompanies: { anyOf: ['super_admin'] },
+  platformBillingPlans: { anyOf: ['super_admin'] },
 }
 
 const resolvePageFromPath = (path) => {
@@ -62,6 +65,7 @@ const resolvePageFromPath = (path) => {
   if (normalized === '/equipo') return 'equipo'
   if (normalized === '/announcements') return 'announcements'
   if (normalized === '/platform/companies') return 'platformCompanies'
+  if (normalized === '/platform/billing/plans') return 'platformBillingPlans'
 
   if (normalized === '/activate-account') return 'activateAccount'
   return 'login'
@@ -331,6 +335,8 @@ export default function App() {
                       sidebarOpen={sidebarOpen}
                       onToggleSidebar={handleToggleSidebar}
                     />
+                  ) : currentPage === 'platformBillingPlans' ? (
+                    <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
                   ) : currentPage === 'platformCompanies' ? (
                     <PlatformCompanies />
                   ) : currentPage === 'announcements' ? (

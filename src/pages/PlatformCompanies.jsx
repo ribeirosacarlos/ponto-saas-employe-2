@@ -32,6 +32,11 @@ import { cn } from '../lib/utils'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { getCompany } from '../services/platformCompaniesService'
+import {
+  getCompanySubscription,
+  listBillingPlans,
+  updateCompanySubscription,
+} from '../services/platformBillingService'
 import { useCompanies } from '../features/platform/useCompanies'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['super_admin'] }
@@ -55,10 +60,16 @@ const buildCompanyForm = (company = {}) => ({
 
 const buildRegisterForm = () => ({
   companyName: '',
-  companyDomain: '',
+  companyDocument: '',
+  companyEmail: '',
+  companyPhone: '',
+  companyAddress: '',
+  companyCity: '',
+  companyState: '',
   adminName: '',
   adminEmail: '',
   adminPassword: '',
+  adminPasswordConfirmation: '',
 })
 
 const compactObject = (value) => {
@@ -81,29 +92,46 @@ const buildCompanyPayload = (form) => {
 
 const buildRegisterPayload = (form) => {
   const companyName = form?.companyName?.trim()
-  const companyDomain = form?.companyDomain?.trim()
+  const companyDocument = form?.companyDocument?.trim()
+  const companyEmail = form?.companyEmail?.trim()
+  const companyPhone = form?.companyPhone?.trim()
+  const companyAddress = form?.companyAddress?.trim()
+  const companyCity = form?.companyCity?.trim()
+  const companyState = form?.companyState?.trim()
   const adminName = form?.adminName?.trim()
   const adminEmail = form?.adminEmail?.trim()
   const adminPassword = form?.adminPassword || ''
+  const adminPasswordConfirmation = form?.adminPasswordConfirmation || ''
 
   const payload = compactObject({
     company_name: companyName || undefined,
-    company_domain: companyDomain || undefined,
+    company_document: companyDocument || undefined,
+    company_email: companyEmail || undefined,
+    company_phone: companyPhone || undefined,
+    company_address: companyAddress || undefined,
+    company_city: companyCity || undefined,
+    company_state: companyState || undefined,
     admin_name: adminName || undefined,
     admin_email: adminEmail || undefined,
     admin_password: adminPassword || undefined,
+    admin_password_confirmation: adminPasswordConfirmation || undefined,
     name: companyName || undefined,
-    domain: companyDomain || undefined,
   })
 
   const company = compactObject({
     name: companyName || undefined,
-    domain: companyDomain || undefined,
+    document: companyDocument || undefined,
+    email: companyEmail || undefined,
+    phone: companyPhone || undefined,
+    address: companyAddress || undefined,
+    city: companyCity || undefined,
+    state: companyState || undefined,
   })
   const admin = compactObject({
     name: adminName || undefined,
     email: adminEmail || undefined,
     password: adminPassword || undefined,
+    password_confirmation: adminPasswordConfirmation || undefined,
   })
 
   if (Object.keys(company).length) payload.company = company
@@ -145,6 +173,7 @@ export default function PlatformCompanies() {
   const [createForm, setCreateForm] = useState(buildCompanyForm)
   const [registerOpen, setRegisterOpen] = useState(false)
   const [registerForm, setRegisterForm] = useState(buildRegisterForm)
+  const [registerStep, setRegisterStep] = useState(1)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState(buildCompanyForm)
   const [editCompany, setEditCompany] = useState(null)
@@ -154,6 +183,13 @@ export default function PlatformCompanies() {
   const [detailsRaw, setDetailsRaw] = useState(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState('')
+  const [billingPlans, setBillingPlans] = useState([])
+  const [billingPlansLoading, setBillingPlansLoading] = useState(false)
+  const [billingError, setBillingError] = useState('')
+  const [subscription, setSubscription] = useState(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  const [subscriptionUpdating, setSubscriptionUpdating] = useState(false)
+  const [subscriptionForm, setSubscriptionForm] = useState({ planId: '' })
   const [confirmAction, setConfirmAction] = useState(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
@@ -171,6 +207,9 @@ export default function PlatformCompanies() {
     })
     return totals
   }, [companies])
+
+  const isSamePlanSelection =
+    (subscription?.plan?.id || '') === (subscriptionForm.planId || '')
 
   const statusOptions = useMemo(
     () => [
@@ -191,6 +230,51 @@ export default function PlatformCompanies() {
       month: 'short',
       year: 'numeric',
     })
+  }
+
+  const formatPlanPrice = (plan) => {
+    if (!plan) return '--'
+    const amount = plan.priceCents ?? plan.price_cents
+    if (amount === undefined || amount === null) return '--'
+    const currency = plan.currency || 'BRL'
+    const formatted = (Number(amount) / 100 || 0).toLocaleString(i18n.language, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+    })
+    const intervalRaw = plan.billingInterval || plan.billing_interval || ''
+    if (!intervalRaw || intervalRaw === 'one_time') return formatted
+    const intervalLabel =
+      intervalRaw === 'month'
+        ? t('platformCompanies.billing.month', 'mês')
+        : intervalRaw === 'year'
+          ? t('platformCompanies.billing.year', 'ano')
+          : intervalRaw
+    return `${formatted}/${intervalLabel}`
+  }
+
+  const subscriptionStatusStyles = {
+    trialing: 'border-amber-200/70 bg-amber-500/10 text-amber-700',
+    active: 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
+    past_due: 'border-rose-200/70 bg-rose-500/10 text-rose-600',
+    canceled: 'border-slate-200/70 bg-slate-500/10 text-slate-700',
+  }
+
+  const renderSubscriptionStatusPill = (status) => {
+    if (!status) return null
+    const labelMap = {
+      trialing: t('platformCompanies.billing.trialing', 'Em teste'),
+      active: t('platformCompanies.billing.active', 'Ativa'),
+      past_due: t('platformCompanies.billing.pastDue', 'Em atraso'),
+      canceled: t('platformCompanies.billing.canceled', 'Cancelada'),
+    }
+    const label = labelMap[status] || status
+    const style = subscriptionStatusStyles[status] || 'border-border/60 bg-muted/70 text-muted-foreground'
+    return (
+      <span className={cn('rounded-full border px-2.5 py-1 text-[11px] font-semibold', style)}>
+        {label}
+      </span>
+    )
   }
 
   const renderStatusPill = (status) => {
@@ -272,6 +356,10 @@ export default function PlatformCompanies() {
 
   const handleRegisterSubmit = async (event) => {
     event.preventDefault()
+    if (registerStep < 2) {
+      setRegisterStep(2)
+      return
+    }
     const payload = buildRegisterPayload(registerForm)
     const result = await registerCompanyEntry(payload)
     if (result.ok) {
@@ -282,6 +370,7 @@ export default function PlatformCompanies() {
       })
       setRegisterOpen(false)
       setRegisterForm(buildRegisterForm())
+      setRegisterStep(1)
       await refreshCompanies()
       return
     }
@@ -356,16 +445,84 @@ export default function PlatformCompanies() {
     setDetailsOpen(true)
     setDetailsLoading(true)
     setDetailsError('')
+    setBillingError('')
+    setBillingPlans([])
+    setBillingPlansLoading(true)
+    setSubscription(null)
+    setSubscriptionForm({ planId: '' })
+    setSubscriptionLoading(true)
     try {
-      const detail = await getCompany(company.id)
-      setDetailsCompany(detail)
-      setDetailsRaw(detail?.raw ?? null)
+      const [detailResult, plansResult, subscriptionResult] = await Promise.allSettled([
+        getCompany(company.id),
+        listBillingPlans(),
+        getCompanySubscription(company.id),
+      ])
+
+      if (detailResult.status === 'fulfilled') {
+        const detail = detailResult.value
+        setDetailsCompany(detail)
+        setDetailsRaw(detail?.raw ?? null)
+      } else {
+        throw detailResult.reason
+      }
+
+      if (plansResult.status === 'fulfilled') {
+        const plansPayload =
+          plansResult.value?.data || plansResult.value?.items || plansResult.value || []
+        setBillingPlans(Array.isArray(plansPayload) ? plansPayload : [])
+      } else {
+        setBillingError(
+          plansResult.reason?.response?.data?.message ||
+            plansResult.reason?.message ||
+            'Nao foi possivel carregar os planos.',
+        )
+      }
+
+      if (subscriptionResult.status === 'fulfilled') {
+        const sub = subscriptionResult.value
+        setSubscription(sub)
+        setSubscriptionForm({ planId: sub?.plan?.id || '' })
+      } else {
+        setBillingError((prev) => {
+          const message =
+            subscriptionResult.reason?.response?.data?.message ||
+            subscriptionResult.reason?.message ||
+            'Nao foi possivel carregar a assinatura.'
+          return prev ? `${prev} ${message}` : message
+        })
+      }
     } catch (err) {
       setDetailsError(
         err?.response?.data?.message || err?.message || 'Nao foi possivel carregar os dados.',
       )
     } finally {
       setDetailsLoading(false)
+      setBillingPlansLoading(false)
+      setSubscriptionLoading(false)
+    }
+  }
+
+  const handleSubscriptionSave = async () => {
+    if (!detailsCompany?.id) return
+    setSubscriptionUpdating(true)
+    setBillingError('')
+    try {
+      const payload = { plan_id: subscriptionForm.planId || null }
+      const result = await updateCompanySubscription(detailsCompany.id, payload)
+      setSubscription(result)
+      setSubscriptionForm({ planId: result?.plan?.id || '' })
+      toast({
+        title: 'Plano atualizado',
+        description: 'Assinatura ajustada com sucesso.',
+        variant: 'success',
+      })
+      await refreshCompanies()
+    } catch (err) {
+      setBillingError(
+        err?.response?.data?.message || err?.message || 'Nao foi possivel atualizar o plano.',
+      )
+    } finally {
+      setSubscriptionUpdating(false)
     }
   }
 
@@ -936,10 +1093,13 @@ export default function PlatformCompanies() {
         open={registerOpen}
         onOpenChange={(open) => {
           setRegisterOpen(open)
-          if (!open) setRegisterForm(buildRegisterForm())
+          if (!open) {
+            setRegisterForm(buildRegisterForm())
+            setRegisterStep(1)
+          }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {t('platformCompanies.modals.registerTitle', 'Registrar empresa + admin')}
@@ -953,91 +1113,235 @@ export default function PlatformCompanies() {
           </DialogHeader>
 
           <form className="space-y-4 pt-2" onSubmit={handleRegisterSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="register-company-name">
-                {t('platformCompanies.form.companyNameLabel', 'Nome da empresa')}
-              </Label>
-              <Input
-                id="register-company-name"
-                name="company_name"
-                value={registerForm.companyName}
-                onChange={(event) =>
-                  setRegisterForm((prev) => ({ ...prev, companyName: event.target.value }))
-                }
-                required
-              />
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{t('platformCompanies.form.stepIndicatorLabel', 'Passo')}</span>
+              <span>
+                {registerStep}/2 -{' '}
+                {registerStep === 1
+                  ? t('platformCompanies.form.companyDataLabel', 'Dados da empresa')
+                  : t('platformCompanies.form.adminDataLabel', 'Dados do admin')}
+              </span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-company-domain">
-                {t('platformCompanies.form.companyDomainLabel', 'Dominio')}
-              </Label>
-              <Input
-                id="register-company-domain"
-                name="company_domain"
-                value={registerForm.companyDomain}
-                onChange={(event) =>
-                  setRegisterForm((prev) => ({ ...prev, companyDomain: event.target.value }))
-                }
-                placeholder={t('platformCompanies.form.domainPlaceholder', 'empresa.com')}
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="register-admin-name">
-                  {t('platformCompanies.form.adminNameLabel', 'Nome do admin')}
-                </Label>
-                <Input
-                  id="register-admin-name"
-                  name="admin_name"
-                  value={registerForm.adminName}
-                  onChange={(event) =>
-                    setRegisterForm((prev) => ({ ...prev, adminName: event.target.value }))
-                  }
-                  required
-                />
+
+            {registerStep === 1 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-company-name">
+                    {t('platformCompanies.form.companyNameLabel', 'Nome da empresa')}
+                  </Label>
+                  <Input
+                    id="register-company-name"
+                    name="company_name"
+                    value={registerForm.companyName}
+                    onChange={(event) =>
+                      setRegisterForm((prev) => ({ ...prev, companyName: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-document">
+                      {t('platformCompanies.form.companyDocumentLabel', 'Documento (CNPJ/CPF)')}
+                    </Label>
+                    <Input
+                      id="register-company-document"
+                      name="company_document"
+                      value={registerForm.companyDocument}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({
+                          ...prev,
+                          companyDocument: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-email">
+                      {t('platformCompanies.form.companyEmailLabel', 'E-mail da empresa')}
+                    </Label>
+                    <Input
+                      id="register-company-email"
+                      name="company_email"
+                      type="email"
+                      value={registerForm.companyEmail}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, companyEmail: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-phone">
+                      {t('platformCompanies.form.companyPhoneLabel', 'Telefone da empresa')}
+                    </Label>
+                    <Input
+                      id="register-company-phone"
+                      name="company_phone"
+                      type="tel"
+                      value={registerForm.companyPhone}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, companyPhone: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-address">
+                      {t('platformCompanies.form.companyAddressLabel', 'Endereco')}
+                    </Label>
+                    <Input
+                      id="register-company-address"
+                      name="company_address"
+                      value={registerForm.companyAddress}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, companyAddress: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-city">
+                      {t('platformCompanies.form.companyCityLabel', 'Cidade')}
+                    </Label>
+                    <Input
+                      id="register-company-city"
+                      name="company_city"
+                      value={registerForm.companyCity}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, companyCity: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-company-state">
+                      {t('platformCompanies.form.companyStateLabel', 'Estado')}
+                    </Label>
+                    <Input
+                      id="register-company-state"
+                      name="company_state"
+                      value={registerForm.companyState}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, companyState: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-admin-email">
-                  {t('platformCompanies.form.adminEmailLabel', 'E-mail do admin')}
-                </Label>
-                <Input
-                  id="register-admin-email"
-                  name="admin_email"
-                  type="email"
-                  value={registerForm.adminEmail}
-                  onChange={(event) =>
-                    setRegisterForm((prev) => ({ ...prev, adminEmail: event.target.value }))
-                  }
-                  required
-                />
+            )}
+
+            {registerStep === 2 && (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-admin-name">
+                      {t('platformCompanies.form.adminNameLabel', 'Nome do admin')}
+                    </Label>
+                    <Input
+                      id="register-admin-name"
+                      name="admin_name"
+                      value={registerForm.adminName}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, adminName: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-admin-email">
+                      {t('platformCompanies.form.adminEmailLabel', 'E-mail do admin')}
+                    </Label>
+                    <Input
+                      id="register-admin-email"
+                      name="admin_email"
+                      type="email"
+                      value={registerForm.adminEmail}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, adminEmail: event.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-admin-password">
+                    {t('platformCompanies.form.adminPasswordLabel', 'Senha do admin')}
+                  </Label>
+                  <Input
+                    id="register-admin-password"
+                    name="admin_password"
+                    type="password"
+                    value={registerForm.adminPassword}
+                    onChange={(event) =>
+                      setRegisterForm((prev) => ({ ...prev, adminPassword: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-admin-password-confirmation">
+                    {t(
+                      'platformCompanies.form.adminPasswordConfirmationLabel',
+                      'Confirma??o da senha do admin',
+                    )}
+                  </Label>
+                  <Input
+                    id="register-admin-password-confirmation"
+                    name="admin_password_confirmation"
+                    type="password"
+                    value={registerForm.adminPasswordConfirmation}
+                    onChange={(event) =>
+                      setRegisterForm((prev) => ({
+                        ...prev,
+                        adminPasswordConfirmation: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-admin-password">
-                {t('platformCompanies.form.adminPasswordLabel', 'Senha do admin')}
-              </Label>
-              <Input
-                id="register-admin-password"
-                name="admin_password"
-                type="password"
-                value={registerForm.adminPassword}
-                onChange={(event) =>
-                  setRegisterForm((prev) => ({ ...prev, adminPassword: event.target.value }))
-                }
-                required
-              />
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            )}
+
+            <div className="flex items-center justify-between gap-3 pt-2">
               <DialogClose asChild>
                 <Button type="button" variant="ghost">
                   {t('common.actions.cancel', 'Cancelar')}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={mutationLoading.register} className="min-w-[180px]">
-                {mutationLoading.register
-                  ? t('platformCompanies.actions.registering', 'Registrando...')
-                  : t('platformCompanies.actions.register', 'Registrar empresa + admin')}
-              </Button>
+              <div className="flex items-center gap-3">
+                {registerStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRegisterStep((prev) => Math.max(1, prev - 1))}
+                    disabled={mutationLoading.register}
+                  >
+                    {t('common.actions.back', 'Voltar')}
+                  </Button>
+                )}
+                {registerStep < 2 ? (
+                  <Button type="button" onClick={() => setRegisterStep(2)} className="min-w-[140px]">
+                    {t('platformCompanies.actions.continue', 'Continuar')}
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={mutationLoading.register}
+                    className="min-w-[180px]"
+                  >
+                    {mutationLoading.register
+                      ? t('platformCompanies.actions.registering', 'Registrando...')
+                      : t('platformCompanies.actions.register', 'Registrar empresa + admin')}
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         </DialogContent>
@@ -1124,10 +1428,17 @@ export default function PlatformCompanies() {
             setDetailsCompany(null)
             setDetailsRaw(null)
             setDetailsError('')
+            setBillingPlans([])
+            setBillingPlansLoading(false)
+            setBillingError('')
+            setSubscription(null)
+            setSubscriptionLoading(false)
+            setSubscriptionUpdating(false)
+            setSubscriptionForm({ planId: '' })
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>{t('platformCompanies.modals.detailsTitle', 'Detalhes da empresa')}</DialogTitle>
             <DialogDescription>
@@ -1189,6 +1500,76 @@ export default function PlatformCompanies() {
                   <p className="mt-2 text-sm font-semibold text-foreground">
                     {detailsCompany?.id || '--'}
                   </p>
+                </div>
+
+                <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                        {t('platformCompanies.billing.subscriptionTitle', 'Plano / assinatura')}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        {subscription?.plan?.name || t('platformCompanies.billing.noPlan', 'Sem plano')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {billingPlansLoading || subscriptionLoading
+                          ? t('platformCompanies.billing.loading', 'Carregando...')
+                          : subscription?.plan
+                            ? formatPlanPrice(subscription.plan)
+                            : t('platformCompanies.billing.selectPlan', 'Selecione um plano')}
+                      </p>
+                    </div>
+                    {!subscriptionLoading && renderSubscriptionStatusPill(subscription?.status)}
+                  </div>
+
+                  {billingError ? (
+                    <p className="mt-3 rounded-xl border border-rose-200/70 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
+                      {billingError}
+                    </p>
+                  ) : null}
+
+                  {billingPlansLoading || subscriptionLoading ? (
+                    <div className="mt-4 space-y-2">
+                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-[2fr_1fr] sm:items-end">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-plan-select">
+                          {t('platformCompanies.billing.planSelectLabel', 'Plano da empresa')}
+                        </Label>
+                        <select
+                          id="company-plan-select"
+                          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={subscriptionForm.planId}
+                          onChange={(event) =>
+                            setSubscriptionForm((prev) => ({ ...prev, planId: event.target.value }))
+                          }
+                          disabled={subscriptionUpdating}
+                        >
+                          <option value="">
+                            {t('platformCompanies.billing.noPlanOption', 'Sem plano')}
+                          </option>
+                          {billingPlans.map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.name} — {formatPlanPrice(plan)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button
+                        type="button"
+                        className="min-w-[140px]"
+                        onClick={handleSubscriptionSave}
+                        disabled={subscriptionUpdating || isSamePlanSelection}
+                      >
+                        {subscriptionUpdating
+                          ? t('platformCompanies.actions.saving', 'Salvando...')
+                          : t('platformCompanies.actions.save', 'Salvar')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
