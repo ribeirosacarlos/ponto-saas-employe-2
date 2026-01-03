@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import {
@@ -20,8 +20,8 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
-    type: entry?.type || '',
-    desiredTime: '',
+    date: '',
+    correctedTime: '',
     reason: '',
   })
 
@@ -29,29 +29,14 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
   const formattedDate = dateValue ? format(new Date(dateValue), 'yyyy-MM-dd') : ''
   const formattedTime = dateValue ? format(new Date(dateValue), 'HH:mm') : ''
 
-  const typeOptions = useMemo(() => {
-    const base = [
-      { value: 'in', label: t('types.in') },
-      { value: 'out', label: t('types.out') },
-      { value: 'break_start', label: t('historyPage.adjustment.types.breakStart') },
-      { value: 'break_end', label: t('historyPage.adjustment.types.breakEnd') },
-    ]
-    const existing = entry?.type
-      ? [{ value: entry.type, label: entry.type }].filter(
-          (option) => !base.find((item) => item.value === option.value),
-        )
-      : []
-    return [...existing, ...base]
-  }, [entry?.type, t])
-
   useEffect(() => {
     if (!open) return
     setForm((prev) => ({
       ...prev,
-      type: entry?.type || prev.type || 'in',
-      desiredTime: formattedTime,
+      date: formattedDate || prev.date || '',
+      correctedTime: formattedTime || prev.correctedTime || '',
     }))
-  }, [entry?.type, formattedTime, open])
+  }, [formattedDate, formattedTime, open])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -60,22 +45,24 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    const correctedDateTime =
+      form.date && form.correctedTime
+        ? `${form.date} ${form.correctedTime.length === 5 ? `${form.correctedTime}:00` : form.correctedTime}`
+        : ''
+
+    if (!correctedDateTime) return
+
     const payload = {
-      entry_id: entry?.id,
-      date: formattedDate,
-      type: form.type || entry?.type,
-      desired_time: form.desiredTime,
+      corrected_time: correctedDateTime,
       reason: form.reason,
-      original_time: dateValue,
-      notes: entry?.notes,
-      status: entry?.status,
-      // TODO: align with API shape when backend contract is available
+      ...(dateValue ? { original_time: dateValue } : {}),
     }
 
     await onSubmit?.(payload, () => setOpen(false), () =>
       setForm({
-        type: entry?.type || '',
-        desiredTime: '',
+        date: formattedDate || '',
+        correctedTime: '',
         reason: '',
       }),
     )
@@ -97,45 +84,36 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
         <form className="space-y-4 pt-2" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>{t('historyPage.adjustment.date')}</Label>
-              <Input value={formattedDate} readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('historyPage.adjustment.originalTime')}</Label>
-              <Input value={formattedTime} readOnly />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="type">{t('historyPage.adjustment.type')}</Label>
-              <select
-                id="type"
-                name="type"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                value={form.type}
-                onChange={handleChange}
-              >
-                {typeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="desiredTime">{t('historyPage.adjustment.desiredTime')}</Label>
+              <Label htmlFor="date">{t('historyPage.adjustment.date')}</Label>
               <Input
-                id="desiredTime"
-                name="desiredTime"
+                id="date"
+                name="date"
+                type="date"
+                required
+                value={form.date}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="correctedTime">{t('historyPage.adjustment.desiredTime')}</Label>
+              <Input
+                id="correctedTime"
+                name="correctedTime"
                 type="time"
                 required
-                value={form.desiredTime}
+                value={form.correctedTime}
                 onChange={handleChange}
               />
             </div>
           </div>
+
+          {formattedDate || formattedTime ? (
+            <div className="space-y-2">
+              <Label>{t('historyPage.adjustment.originalTime')}</Label>
+              <Input value={[formattedDate, formattedTime].filter(Boolean).join(' ')} readOnly />
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="reason">{t('historyPage.adjustment.reason')}</Label>
