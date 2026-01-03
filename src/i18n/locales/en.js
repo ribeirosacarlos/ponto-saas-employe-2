@@ -107,6 +107,70 @@ const en = {
         platformBillingPlans: 'Billing plans',
         settings: 'Settings',
         calendar: 'Calendar',
+        shifts: 'Shifts',
+      },
+    },
+    adminShiftsPage: {
+      title: 'Work shifts',
+      subtitle: 'Configure standard or flexible shifts and breaks for the whole company.',
+      actions: {
+        refresh: 'Refresh',
+        create: 'New shift',
+      },
+      states: {
+        noPermission: 'You do not have permission to manage shifts.',
+        emptyTitle: 'No shifts created yet',
+        emptyDescription: 'Create standard or flexible shifts to organize your team schedule.',
+      },
+      dialog: {
+        createTitle: 'New work shift',
+        editTitle: 'Edit work shift',
+        description: 'Set schedule, break and whether this shift is default or flexible.',
+        deleteDescription:
+          'This action will remove the shift "{{name}}". Employees linked to it will need reassignment.',
+        deleteConfirm: 'Delete shift',
+        selectedFallback: 'Shift',
+      },
+      form: {
+        name: 'Shift name',
+        namePlaceholder: 'e.g. Standard shift (Mon-Fri)',
+        default: 'Default shift',
+        flexible: 'Flexible',
+        daysHelper: 'Adjust all 7 days of the week',
+        dayWorking: 'Set schedule and break',
+        dayOff: 'Day off',
+        dayActive: 'Active day',
+        startLabel: 'Start',
+        endLabel: 'End',
+        breakStartLabel: 'Break start',
+        breakEndLabel: 'Break end',
+        breakMinutesLabel: 'Break duration (min)',
+      },
+      toasts: {
+        nameRequired: {
+          title: 'Enter a shift name',
+          description: 'Provide a name to identify this shift.',
+        },
+        created: {
+          title: 'Shift created',
+          description: 'New shift available for assignments.',
+        },
+        updated: {
+          title: 'Shift updated',
+          description: 'Changes have been saved.',
+        },
+        saveError: {
+          title: 'Save error',
+          description: 'We could not save this shift. Try again.',
+        },
+        deleted: {
+          title: 'Shift removed',
+          description: 'The shift "{{name}}" has been deleted.',
+        },
+        deleteError: {
+          title: 'Delete error',
+          description: 'We could not remove this shift now.',
+        },
       },
     },
     toast: {

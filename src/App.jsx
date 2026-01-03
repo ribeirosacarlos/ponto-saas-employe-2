@@ -14,6 +14,7 @@ import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
+import AdminShifts from './pages/AdminShifts.jsx'
 import { AppSidebar } from './components/AppSidebar.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
@@ -214,6 +215,8 @@ export default function App() {
         return <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminVacations':
         return <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminShifts':
+        return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
         return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformBillingPlans':
