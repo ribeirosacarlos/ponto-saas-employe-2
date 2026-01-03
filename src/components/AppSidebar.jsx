@@ -14,6 +14,7 @@ import {
   Users,
   PanelLeftOpen,
   PanelLeftClose,
+  CalendarClock,
 } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
@@ -94,6 +95,13 @@ const BASE_NAV_ITEMS = [
     labelKey: 'dashboardPage.timeOff.title',
     icon: Plane,
     page: 'adminVacations',
+    group: 'admin',
+  },
+  {
+    id: 'adminShifts',
+    labelKey: 'sidebar.items.shifts',
+    icon: CalendarClock,
+    page: 'adminShifts',
     group: 'admin',
   },
   {

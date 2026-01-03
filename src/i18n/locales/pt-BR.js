@@ -107,6 +107,70 @@ const ptBR = {
         platformBillingPlans: 'Planos (Billing)',
         settings: 'Configurações',
         calendar: 'Calendário',
+        shifts: 'Jornadas',
+      },
+    },
+    adminShiftsPage: {
+      title: 'Jornadas de trabalho',
+      subtitle: 'Configure jornadas padrão, intervalos e turnos flexíveis para toda a empresa.',
+      actions: {
+        refresh: 'Atualizar',
+        create: 'Nova jornada',
+      },
+      states: {
+        noPermission: 'Você não tem permissão para gerenciar jornadas.',
+        emptyTitle: 'Nenhuma jornada cadastrada',
+        emptyDescription: 'Crie turnos padrão ou flexíveis para organizar a escala da equipe.',
+      },
+      dialog: {
+        createTitle: 'Nova jornada de trabalho',
+        editTitle: 'Editar jornada de trabalho',
+        description: 'Defina horários, intervalo e se a jornada será padrão ou flexível.',
+        deleteDescription:
+          'Esta ação removerá a jornada "{{name}}". Os colaboradores associados precisarão ser reatribuídos.',
+        deleteConfirm: 'Excluir jornada',
+        selectedFallback: 'Jornada',
+      },
+      form: {
+        name: 'Nome da jornada',
+        namePlaceholder: 'Ex.: Jornada padrão (Seg-Sex)',
+        default: 'Jornada padrão',
+        flexible: 'Flexível',
+        daysHelper: 'Ajuste todos os 7 dias da semana',
+        dayWorking: 'Defina horário e intervalo',
+        dayOff: 'Dia de folga',
+        dayActive: 'Dia ativo',
+        startLabel: 'Início',
+        endLabel: 'Fim',
+        breakStartLabel: 'Início intervalo',
+        breakEndLabel: 'Fim intervalo',
+        breakMinutesLabel: 'Duração intervalo (min)',
+      },
+      toasts: {
+        nameRequired: {
+          title: 'Informe o nome da jornada',
+          description: 'Defina um nome para identificar esta jornada.',
+        },
+        created: {
+          title: 'Jornada criada',
+          description: 'Nova jornada disponível para atribuições.',
+        },
+        updated: {
+          title: 'Jornada atualizada',
+          description: 'As alterações foram salvas.',
+        },
+        saveError: {
+          title: 'Erro ao salvar',
+          description: 'Não conseguimos salvar a jornada. Tente novamente.',
+        },
+        deleted: {
+          title: 'Jornada removida',
+          description: 'A jornada "{{name}}" foi excluída.',
+        },
+        deleteError: {
+          title: 'Erro ao excluir',
+          description: 'Não conseguimos remover esta jornada agora.',
+        },
       },
     },
     toast: {
@@ -770,7 +834,7 @@ const ptBR = {
         assignShift: 'Atribuir jornada',
         assign: 'Atribuir',
         assigning: 'Atribuindo...',
-        deactivate: 'Dar de baja',
+        deactivate: 'Desativar',
         deactivating: 'Removendo...',
         retry: 'Tentar novamente',
       },
@@ -791,7 +855,7 @@ const ptBR = {
         editDescription: 'Atualize os dados do colaborador.',
         assignTitle: 'Atribuir jornada',
         assignDescription: 'Defina a jornada e a data de inicio.',
-        deleteTitle: 'Dar de baja',
+        deleteTitle: 'Remover colaborador',
         deleteDescription: 'Deseja remover {{name}} do quadro?',
       },
       roles: {

@@ -107,6 +107,70 @@ const es = {
         platformBillingPlans: 'Planes (Billing)',
         settings: 'Configuración',
         calendar: 'Calendario',
+        shifts: 'Jornadas',
+      },
+    },
+    adminShiftsPage: {
+      title: 'Jornadas de trabajo',
+      subtitle: 'Configura turnos estándar o flexibles y los descansos de toda la empresa.',
+      actions: {
+        refresh: 'Actualizar',
+        create: 'Nueva jornada',
+      },
+      states: {
+        noPermission: 'No tienes permiso para gestionar jornadas.',
+        emptyTitle: 'Aún no hay jornadas creadas',
+        emptyDescription: 'Crea turnos estándar o flexibles para organizar el calendario del equipo.',
+      },
+      dialog: {
+        createTitle: 'Nueva jornada de trabajo',
+        editTitle: 'Editar jornada de trabajo',
+        description: 'Define horario, descanso y si la jornada será predeterminada o flexible.',
+        deleteDescription:
+          'Esta acción eliminará la jornada "{{name}}". Los colaboradores vinculados deberán reasignarse.',
+        deleteConfirm: 'Eliminar jornada',
+        selectedFallback: 'Jornada',
+      },
+      form: {
+        name: 'Nombre de la jornada',
+        namePlaceholder: 'Ej.: Jornada estándar (Lun-Vie)',
+        default: 'Jornada predeterminada',
+        flexible: 'Flexible',
+        daysHelper: 'Ajusta los 7 días de la semana',
+        dayWorking: 'Define horario y descanso',
+        dayOff: 'Día libre',
+        dayActive: 'Día activo',
+        startLabel: 'Inicio',
+        endLabel: 'Fin',
+        breakStartLabel: 'Inicio descanso',
+        breakEndLabel: 'Fin descanso',
+        breakMinutesLabel: 'Duración descanso (min)',
+      },
+      toasts: {
+        nameRequired: {
+          title: 'Ingresa el nombre de la jornada',
+          description: 'Asigna un nombre para identificar esta jornada.',
+        },
+        created: {
+          title: 'Jornada creada',
+          description: 'Nueva jornada disponible para asignaciones.',
+        },
+        updated: {
+          title: 'Jornada actualizada',
+          description: 'Los cambios fueron guardados.',
+        },
+        saveError: {
+          title: 'Error al guardar',
+          description: 'No pudimos guardar la jornada. Intenta nuevamente.',
+        },
+        deleted: {
+          title: 'Jornada eliminada',
+          description: 'La jornada "{{name}}" ha sido eliminada.',
+        },
+        deleteError: {
+          title: 'Error al eliminar',
+          description: 'No pudimos remover esta jornada ahora.',
+        },
       },
     },
     toast: {
