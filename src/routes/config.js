@@ -10,6 +10,10 @@ export const ROUTES = {
     path: '/admin/vacations',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  adminShifts: {
+    path: '/admin/shifts',
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
   adminAnnouncements: {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
