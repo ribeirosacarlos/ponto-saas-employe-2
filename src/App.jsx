@@ -287,7 +287,7 @@ export default function App() {
               )}
             >
               <div className="flex-1 min-h-0">
-                <div className="w-full">
+                <div className="mx-auto w-full max-w-[1320px]">
                   {renderCurrentPage()}
                 </div>
               </div>
