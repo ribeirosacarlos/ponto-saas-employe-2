@@ -1,26 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Bell,
-  Building2,
-  ChevronDown,
-  Clock3,
-  FileText,
-  Home,
-  ListChecks,
-  Plane,
-  Settings,
-  BadgePercent,
-  Users,
-  PanelLeftOpen,
-  PanelLeftClose,
-  CalendarClock,
-} from 'lucide-react'
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { cn } from '../lib/utils'
 import { UserProfileDropdown } from './UserProfileDropdown'
 import { ROUTES } from '../routes/config'
+import { NAV_ITEMS } from '../config/nav.config'
 
 const SidebarTooltip = ({ label, children, collapsed, offset = 'translate-x-2' }) => {
   if (!collapsed) return children
@@ -42,105 +28,6 @@ const SidebarTooltip = ({ label, children, collapsed, offset = 'translate-x-2' }
     </div>
   )
 }
-
-const BASE_NAV_ITEMS = [
-  {
-    id: 'clock',
-    labelKey: 'sidebar.items.clock',
-    icon: Clock3,
-    page: 'timeClock',
-    path: '/time-clock',
-    group: 'workspace',
-    variant: 'cta',
-    requires: { public: true },
-  },
-  {
-    id: 'dashboard',
-    labelKey: 'sidebar.items.dashboard',
-    icon: Home,
-    page: 'dashboard',
-    group: 'workspace',
-    badgeKey: 'dashboardPage.badges.today',
-  },
-  {
-    id: 'history',
-    labelKey: 'sidebar.items.history',
-    icon: ListChecks,
-    page: 'history',
-    group: 'workspace',
-  },
-  {
-    id: 'documents',
-    labelKey: 'sidebar.items.documents',
-    icon: FileText,
-    page: 'documents',
-    group: 'workspace',
-  },
-  {
-    id: 'announcements',
-    labelKey: 'sidebar.items.announcements',
-    icon: Bell,
-    page: 'announcements',
-    group: 'workspace',
-  },
-  {
-    id: 'vacations',
-    labelKey: 'dashboardPage.timeOff.title',
-    icon: Plane,
-    page: 'vacations',
-    group: 'workspace',
-  },
-  {
-    id: 'adminVacations',
-    labelKey: 'dashboardPage.timeOff.title',
-    icon: Plane,
-    page: 'adminVacations',
-    group: 'admin',
-  },
-  {
-    id: 'adminShifts',
-    labelKey: 'sidebar.items.shifts',
-    icon: CalendarClock,
-    page: 'adminShifts',
-    group: 'admin',
-  },
-  {
-    id: 'adminAnnouncements',
-    labelKey: 'sidebar.items.announcements',
-    icon: Bell,
-    page: 'adminAnnouncements',
-    group: 'admin',
-  },
-  {
-    id: 'platformCompanies',
-    labelKey: 'sidebar.items.platformCompanies',
-    icon: Building2,
-    page: 'platformCompanies',
-    group: 'admin',
-  },
-  {
-    id: 'platformBillingPlans',
-    labelKey: 'sidebar.items.platformBillingPlans',
-    icon: BadgePercent,
-    page: 'platformBillingPlans',
-    group: 'admin',
-  },
-  {
-    id: 'team',
-    labelKey: 'sidebar.items.team',
-    icon: Users,
-    page: 'equipo',
-    group: 'admin',
-  },
-  {
-    id: 'settings',
-    labelKey: 'sidebar.items.settings',
-    icon: Settings,
-    path: '/settings',
-    group: 'admin',
-    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-  },
-]
 
 const WORKSPACE_STORAGE_KEY = 'sidebar_group_workspace_open'
 const ADMIN_STORAGE_KEY = 'sidebar_group_admin_open'
@@ -170,7 +57,7 @@ export function AppSidebar({
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const navItems = useMemo(
     () =>
-      BASE_NAV_ITEMS.map((item) => {
+      NAV_ITEMS.map((item) => {
         const route = item.page ? ROUTES[item.page] : undefined
         return {
           ...item,

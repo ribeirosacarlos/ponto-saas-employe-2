@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Menu, X } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import ActivateAccount from './pages/ActivateAccount'
@@ -15,7 +15,9 @@ import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
-import { AppSidebar } from './components/AppSidebar.jsx'
+import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
+import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
+import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
@@ -23,6 +25,8 @@ import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
 import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
+import { NAV_ITEMS } from './config/nav.config'
+import { useIsMobile } from './hooks/useMediaQuery'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const getInitialSidebarCollapsed = () => {
@@ -43,10 +47,13 @@ export default function App() {
   const { toast } = useToast()
   const { t } = useTranslation()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  )
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
 
@@ -57,6 +64,36 @@ export default function App() {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }, [t])
+
+  const allNavItems = useMemo(
+    () =>
+      NAV_ITEMS.map((item) => {
+        const route = item.page ? ROUTES[item.page] : undefined
+        return {
+          ...item,
+          badge: item.id === 'dashboard' ? todayBadge : item.badge,
+          badgeKey: item.id === 'dashboard' ? undefined : item.badgeKey,
+          path: route?.path ?? item.path,
+          requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
+        }
+      }).filter((item) => canRenderCard(capabilities, item.requires)),
+    [capabilities, todayBadge],
+  )
+
+  const desktopNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInDesktop !== false),
+    [allNavItems],
+  )
+
+  const drawerNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInDrawer !== false),
+    [allNavItems],
+  )
+
+  const bottomNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInBottomNav),
+    [allNavItems],
+  )
 
   const canAccessPage = useCallback(
     (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
@@ -73,13 +110,24 @@ export default function App() {
         window.history[method]({ page: allowedPage }, '', path)
       }
       setCurrentPage(allowedPage)
+      if (isMobile) {
+        setSidebarOpen(false)
+      }
     },
-    [canAccessPage],
+    [canAccessPage, isMobile],
   )
 
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    } else {
+      setSidebarOpen(true)
+    }
+  }, [isMobile])
 
   useEffect(() => {
     if (!token) {
@@ -127,6 +175,12 @@ export default function App() {
     window.addEventListener('popstate', handlePopstate)
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [canAccessPage, navigateTo, token])
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }, [currentPage, isMobile])
 
 
   useEffect(() => {
@@ -261,37 +315,84 @@ export default function App() {
       <div className="relative z-10">
         {token ? (
           <>
-            <div
-              aria-hidden="true"
-              className={cn(
-                'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 md:hidden',
-                sidebarOpen ? 'opacity-70 pointer-events-auto' : 'opacity-0 pointer-events-none',
-              )}
-            />
-            <AppSidebar
-              sidebarOpen={sidebarOpen}
-              currentPage={currentPage}
-              onNavigate={navigateTo}
-              collapsed={sidebarCollapsed}
-              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-              onToggle={handleToggleSidebar}
-              onProfile={handleProfile}
-              onHelp={handleHelp}
-              onLogout={handleLogout}
-            />
+            {!isMobile ? (
+              <DesktopSidebar
+                open={sidebarOpen}
+                collapsed={sidebarCollapsed}
+                navItems={desktopNavItems}
+                currentPage={currentPage}
+                onNavigate={navigateTo}
+                user={user}
+                onProfile={handleProfile}
+                onHelp={handleHelp}
+                onLogout={handleLogout}
+                onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+              />
+            ) : (
+              <MobileSidebarDrawer
+                open={sidebarOpen}
+                onOpenChange={setSidebarOpen}
+                navItems={drawerNavItems}
+                currentPage={currentPage}
+                user={user}
+                onNavigate={navigateTo}
+                onProfile={handleProfile}
+                onHelp={handleHelp}
+                onLogout={handleLogout}
+              />
+            )}
 
             <main
               className={cn(
-                'relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300',
-                sidebarOpen ? (sidebarCollapsed ? 'md:ml-16' : 'md:ml-64') : 'md:ml-0',
+                'relative flex-1 flex min-h-screen flex-col min-w-0 pb-24 md:pb-0 transition-all duration-300',
+                !isMobile && sidebarOpen
+                  ? sidebarCollapsed
+                    ? 'md:ml-16'
+                    : 'md:ml-64'
+                  : 'md:ml-0',
               )}
+              style={
+                isMobile
+                  ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }
+                  : undefined
+              }
             >
+              {isMobile ? (
+                <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
+                  <button
+                    type="button"
+                    aria-label={t('sidebar.actions.openMenu', { defaultValue: 'Open menu' })}
+                    onClick={() => setSidebarOpen(true)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-muted text-foreground transition hover:bg-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
+                      HR
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
+                        Synergy
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">HR Management</span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               <div className="flex-1 min-h-0">
                 <div className="mx-auto w-full max-w-[1320px]">
                   {renderCurrentPage()}
                 </div>
               </div>
             </main>
+            {isMobile ? (
+              <BottomNavigation
+                items={bottomNavItems}
+                currentPage={currentPage}
+                onNavigate={navigateTo}
+              />
+            ) : null}
           </>
         ) : currentPage === 'activateAccount' ? (
           <ActivateAccount />
