@@ -21,7 +21,7 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
       aria-label={t('sidebar.sections.workspace')}
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)' }}
     >
-      <div className="mx-auto flex max-w-[1320px] items-center justify-between px-4 py-2">
+      <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-2 px-4 py-2">
         {items.map((item) => {
           const Icon = item.icon
           const isActive = currentPage === item.page
@@ -43,7 +43,7 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
               type="button"
               aria-label={t(item.labelKey)}
               onClick={() => handleSelect(item)}
-              className="flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-1 text-[11px] font-medium"
+              className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-1 text-[11px] font-medium"
             >
               <span
                 className={cn(
@@ -57,7 +57,14 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
               >
                 <Icon className={cn('h-[20px] w-[20px]', iconColor)} />
               </span>
-              <span className={cn('leading-tight', labelColor)}>{t(item.labelKey)}</span>
+              <span
+                className={cn(
+                  'leading-tight text-ellipsis whitespace-nowrap overflow-hidden',
+                  labelColor,
+                )}
+              >
+                {t(item.labelKey)}
+              </span>
             </button>
           )
         })}
