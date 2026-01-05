@@ -7,6 +7,7 @@ import { cn } from '../lib/utils'
 import { UserProfileDropdown } from './UserProfileDropdown'
 import { ROUTES } from '../routes/config'
 import { NAV_ITEMS } from '../config/nav.config'
+import { BrandSignature } from './BrandSignature'
 
 const SidebarTooltip = ({ label, children, collapsed, offset = 'translate-x-2' }) => {
   if (!collapsed) return children
@@ -114,27 +115,12 @@ export function AppSidebar({
       )}
     >
         <div
-          className={cn(
-            'group relative flex items-center px-1 pt-1 pb-3',
-            collapsed ? 'justify-center gap-1' : 'justify-between gap-2.5',
-          )}
-        >
-          <div
-            className={cn(
-              'flex items-center gap-2 select-none pointer-events-none transition-opacity duration-150',
-              collapsed ? 'group-hover:opacity-0' : '',
-            )}
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-              HR
-            </div>
-            <div className={cn('flex flex-col leading-tight', collapsed ? 'hidden' : 'flex')}>
-              <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
-                Synergy
-              </span>
-              <span className="text-[10px] text-muted-foreground">HR Management</span>
-            </div>
-          </div>
+        className={cn(
+          'group relative flex items-center px-1 pt-1 pb-3',
+          collapsed ? 'justify-center gap-1' : 'justify-between gap-2.5',
+        )}
+      >
+          <BrandSignature collapsed={collapsed} />
           <SidebarTooltip collapsed={collapsed} label={collapseLabel}>
             <button
               type="button"

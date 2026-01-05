@@ -4,20 +4,7 @@ import { X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { SidebarNavContent } from './SidebarNavContent'
 import { UserProfileDropdown } from '../UserProfileDropdown'
-
-const SidebarBrand = () => (
-  <div className="flex items-center gap-2">
-    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-      HR
-    </div>
-    <div className="flex flex-col leading-tight">
-      <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
-        Synergy
-      </span>
-      <span className="text-[10px] text-muted-foreground">HR Management</span>
-    </div>
-  </div>
-)
+import { BrandSignature } from '../BrandSignature'
 
 export function MobileSidebarDrawer({
   open,
@@ -47,7 +34,7 @@ export function MobileSidebarDrawer({
           )}
         >
           <div className="flex items-center justify-between pb-4">
-            <SidebarBrand />
+            <BrandSignature />
             <DialogPrimitive.Close
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               aria-label={t('common.actions.close', { defaultValue: 'Close' })}

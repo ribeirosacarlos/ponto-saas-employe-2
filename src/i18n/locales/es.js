@@ -2,7 +2,7 @@
 const es = {
   translation: {
     common: {
-      brand: 'Ponto SaaS',
+      brand: 'Jornafy',
       brandSubtitle: 'Jornada segura y alineada con la ley laboral',
       connectedBadge: 'Conectado al backend',
       realtime: 'En vivo',
@@ -19,6 +19,11 @@ const es = {
         es: 'ES',
       },
       sourceFallback: 'web',
+    },
+    branding: {
+      name: 'Jornafy',
+      subtitle: 'Gestión de tiempo y asistencia',
+      logoAlt: 'Logotipo de Jornafy',
     },
     themeToggle: {
       ariaLabel: 'Cambiar tema',
@@ -215,9 +220,9 @@ const es = {
     },
     login: {
       brand: {
-        badge: 'HR',
-        title: 'Synergy',
-        subtitle: 'HR Management',
+        badge: 'JF',
+        title: 'Jornafy',
+        subtitle: 'Gestión de tiempo',
       },
       title: 'Entrar en la cuenta',
       subtitle: 'Accede al panel de gestión con seguridad.',
@@ -231,9 +236,8 @@ const es = {
       forgotPassword: 'Olvidé mi contraseña',
       submit: 'Entrar',
       submitting: 'Iniciando sesión...',
-      sessionCopy: 'Sesión segura - HR Dashboard',
-      uiCredits: 'UI inspirada en iOS - Synergy HR',
-      footerBadge: 'GH',
+      sessionCopy: 'Sesión segura - Jornafy',
+      footerBadge: 'JF',
       error: {
         title: 'Error de autenticación',
         description: 'Credenciales inválidas. Revísalas e inténtalo de nuevo.',
@@ -355,7 +359,7 @@ const es = {
       },
       version: {
         label: 'Versión 1.0',
-        product: 'Synergy HR',
+        product: 'Jornafy',
       },
       todayPill: '{{time}} Hoy - {{date}}',
       timeTracking: {

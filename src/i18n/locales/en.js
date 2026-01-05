@@ -2,7 +2,7 @@
 const en = {
   translation: {
     common: {
-      brand: 'Ponto SaaS',
+      brand: 'Jornafy',
       brandSubtitle: 'Secure journeys aligned with labor law',
       connectedBadge: 'Connected to backend',
       realtime: 'Live',
@@ -19,6 +19,11 @@ const en = {
         es: 'ES',
       },
       sourceFallback: 'web',
+    },
+    branding: {
+      name: 'Jornafy',
+      subtitle: 'Time & attendance platform',
+      logoAlt: 'Jornafy logo',
     },
     themeToggle: {
       ariaLabel: 'Toggle theme',
@@ -215,9 +220,9 @@ const en = {
     },
     login: {
       brand: {
-        badge: 'HR',
-        title: 'Synergy',
-        subtitle: 'HR Management',
+        badge: 'JF',
+        title: 'Jornafy',
+        subtitle: 'Time & attendance',
       },
       title: 'Sign in to your account',
       subtitle: 'Access the management panel securely.',
@@ -231,9 +236,8 @@ const en = {
       forgotPassword: 'Forgot password',
       submit: 'Sign in',
       submitting: 'Signing in...',
-      sessionCopy: 'Secure session - HR Dashboard',
-      uiCredits: 'iOS-inspired UI - Synergy HR',
-      footerBadge: 'GH',
+      sessionCopy: 'Secure session - Jornafy',
+      footerBadge: 'JF',
       error: {
         title: 'Authentication failed',
         description: 'Invalid credentials. Please check and try again.',
@@ -355,7 +359,7 @@ const en = {
       },
       version: {
         label: 'Version 1.0',
-        product: 'Synergy HR',
+        product: 'Jornafy',
       },
       todayPill: '{{time}} Today - {{date}}',
       timeTracking: {
@@ -463,7 +467,7 @@ const en = {
           security: {
             title: 'Security policy refreshed',
             body: 'Review the new password and MFA guide by month-end.',
-            sentAt: 'Sent on Aug 10 - 09:15 - HR',
+            sentAt: 'Sent on Aug 10 - 09:15 - Jornafy',
             viewedAt: 'Seen on Aug 10 at 10:02',
           },
         },
@@ -531,7 +535,7 @@ const en = {
       title: 'Announcements',
       subtitle: 'Updates shared by Admin and Area Manager.',
       helper: {
-        updated: 'Synced with HR',
+        updated: 'Synced with Jornafy',
         pendingBadge: '{{count}} pending',
       },
       actions: {
@@ -593,7 +597,7 @@ const en = {
       subtitle: 'Keep payslips, trainings, and proofs in one place.',
       helper: {
         between: 'Updated in the last 30 days',
-        badge: 'Synced with HR',
+        badge: 'Synced with Jornafy',
       },
       actions: {
         exportCsv: 'Export CSV',

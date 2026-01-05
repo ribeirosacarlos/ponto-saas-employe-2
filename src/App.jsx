@@ -18,6 +18,7 @@ import AdminShifts from './pages/AdminShifts.jsx'
 import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
+import { BrandSignature } from './components/BrandSignature.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './lib/api'
 import { useToast } from './components/ui/use-toast'
@@ -367,17 +368,7 @@ export default function App() {
                   >
                     <Menu className="h-5 w-5" />
                   </button>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-                      HR
-                    </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
-                        Synergy
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">HR Management</span>
-                    </div>
-                  </div>
+                  <BrandSignature />
                 </div>
               ) : null}
               <div className="flex-1 min-h-0">

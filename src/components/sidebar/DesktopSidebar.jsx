@@ -3,25 +3,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { SidebarNavContent } from './SidebarNavContent'
 import { UserProfileDropdown } from '../UserProfileDropdown'
-
-const SidebarBrand = ({ collapsed }) => (
-  <div
-    className={cn(
-      'flex items-center gap-2 select-none pointer-events-none transition-opacity duration-150',
-      collapsed ? 'group-hover:opacity-0' : '',
-    )}
-  >
-    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold tracking-tight text-primary-foreground shadow-inner shadow-primary/35">
-      HR
-    </div>
-    <div className={cn('flex flex-col leading-tight', collapsed ? 'hidden' : 'flex')}>
-      <span className="text-[9px] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
-        Synergy
-      </span>
-      <span className="text-[10px] text-muted-foreground">HR Management</span>
-    </div>
-  </div>
-)
+import { BrandSignature } from '../BrandSignature'
 
 export function DesktopSidebar({
   open = true,
@@ -56,7 +38,7 @@ export function DesktopSidebar({
           collapsed ? 'justify-center gap-1' : 'justify-between gap-2.5',
         )}
       >
-        <SidebarBrand collapsed={collapsed} />
+        <BrandSignature collapsed={collapsed} />
         <button
           type="button"
           aria-label={collapseLabel}
