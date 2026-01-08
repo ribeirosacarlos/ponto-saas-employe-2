@@ -515,7 +515,17 @@ export default function History({ onBackToDashboard }) {
             </div>
           </div>
 
-          <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-2 sm:gap-3">
+          <div
+            className="
+              -mx-4 px-4
+              flex items-center gap-2
+              overflow-x-auto
+              whitespace-nowrap
+              sm:mx-0 sm:px-0
+              sm:justify-end
+              scrollbar-hide
+            "
+          >
             <EntryAdjustmentModal
               onSubmit={handleAdjustment}
               isSubmitting={Boolean(submittingAdjustment)}
@@ -550,8 +560,8 @@ export default function History({ onBackToDashboard }) {
           </div>
         </header>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-[320px_1fr]">
-          <section className="space-y-4">
+        <div class="mt-5 grid gap-5 lg:grid-cols-[320px_1fr] min-w-0">
+          <section className="space-y-4 min-w-0">
             <div className="rounded-2xl border border-border/80 bg-card/95 p-4 shadow-[0_20px_60px_-48px_rgba(62,82,152,0.35)]">
               <div className="flex items-center gap-2">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -619,7 +629,7 @@ export default function History({ onBackToDashboard }) {
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section className="space-y-4 min-w-0">
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((item) => (
