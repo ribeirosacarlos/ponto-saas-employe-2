@@ -33,6 +33,15 @@ export async function logoutRequest() {
   return data
 }
 
+export async function meRequest() {
+  const { data } = await api.get('/v1/auth/me')
+  const payload = data?.data || data || {}
+  return {
+    user: payload.user || payload,
+    roles: payload.roles || [],
+  }
+}
+
 export async function clockRequest(type, coords = {}) {
   const allowedTypes = ['in', 'out']
   if (!allowedTypes.includes(type)) {

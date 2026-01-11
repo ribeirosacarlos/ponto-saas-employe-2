@@ -1,6 +1,9 @@
 export const ROUTES = {
   login: { path: '/', isPublic: true },
   activateAccount: { path: '/activate-account', isPublic: true },
+  companyMissing: { path: '/company/missing' },
+  subscribe: { path: '/billing/subscribe' },
+  forbidden: { path: '/forbidden' },
   timeClock: { path: '/time-clock' },
   dashboard: { path: '/dashboard' },
   history: { path: '/history', aliases: ['/time-entries'] },
@@ -12,6 +15,10 @@ export const ROUTES = {
   },
   adminShifts: {
     path: '/admin/shifts',
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+  adminAdjustments: {
+    path: '/admin/adjustments',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   adminAnnouncements: {

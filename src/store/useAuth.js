@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api, loginRequest, logoutRequest } from '../lib/api'
+import { emitAccessClear } from '../lib/accessDenied'
 import i18n from '../i18n/i18n.js'
 
 const TOKEN_KEY = 'auth_token'
@@ -53,6 +54,7 @@ export const useAuthStore = create((set, get) => ({
       localStorage.setItem(USER_KEY, JSON.stringify(user || null))
       localStorage.setItem(ROLES_KEY, JSON.stringify(roles))
       set({ user, token, roles })
+      emitAccessClear()
       return data
     } catch (error) {
       const status = error.response?.status
@@ -82,7 +84,14 @@ export const useAuthStore = create((set, get) => ({
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
       localStorage.removeItem(ROLES_KEY)
+      emitAccessClear()
       set({ user: null, token: null, roles: [], loading: false })
     }
+  },
+  syncProfile: (user, roles = []) => {
+    if (!user) return
+    localStorage.setItem(USER_KEY, JSON.stringify(user || null))
+    localStorage.setItem(ROLES_KEY, JSON.stringify(roles || []))
+    set({ user, roles })
   },
 }))

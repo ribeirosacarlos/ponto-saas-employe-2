@@ -10,17 +10,21 @@ import History from './pages/History.jsx'
 import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
+import AdminAdjustments from './pages/AdminAdjustments.jsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
+import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
+import SubscribePage from './pages/SubscribePage.jsx'
+import ForbiddenPage from './pages/ForbiddenPage.jsx'
 import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { useAuthStore } from './store/useAuth.js'
-import { getWorkedToday } from './lib/api'
+import { getWorkedToday, meRequest } from './lib/api'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
@@ -28,6 +32,8 @@ import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
 import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
 import { NAV_ITEMS } from './config/nav.config'
 import { useIsMobile } from './hooks/useMediaQuery'
+import { useAccess } from './providers/AccessProvider.jsx'
+import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const getInitialSidebarCollapsed = () => {
@@ -44,9 +50,11 @@ export default function App() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const roles = useAuthStore((state) => state.roles)
+  const syncProfile = useAuthStore((state) => state.syncProfile)
   const { theme } = useTheme()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const { accessDeniedReason, lastDeniedMessage, clearAccessDenied } = useAccess()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
@@ -102,10 +110,11 @@ export default function App() {
   )
 
   const navigateTo = useCallback(
-    (page, replace = false) => {
+    (page, replace = false, options = {}) => {
       const targetPage = ROUTES[page] ? page : 'dashboard'
       const allowedPage = canAccessPage(targetPage) ? targetPage : 'dashboard'
-      const path = PAGE_PATHS[allowedPage] || '/'
+      const basePath = options.pathOverride || PAGE_PATHS[allowedPage] || '/'
+      const path = options.search ? `${basePath}${options.search}` : basePath
       const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
       if (typeof window !== 'undefined') {
         window.history[method]({ page: allowedPage }, '', path)
@@ -132,6 +141,7 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      clearAccessDenied()
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
 
@@ -154,7 +164,7 @@ export default function App() {
       return
     }
     setCurrentPage(allowedPage)
-  }, [canAccessPage, navigateTo, token])
+  }, [canAccessPage, clearAccessDenied, navigateTo, token])
 
   useEffect(() => {
     const handlePopstate = () => {
@@ -187,8 +197,50 @@ export default function App() {
   useEffect(() => {
     let active = true
 
+    const bootstrapAccess = async () => {
+      if (!token) return
+      try {
+        const profile = await meRequest()
+        if (!active) return
+        if (profile?.user) {
+          syncProfile(profile.user, profile.roles || [])
+        }
+        clearAccessDenied()
+      } catch (error) {
+        if (!active) return
+        const status = error?.response?.status
+        if (status === 401) {
+          toast({
+            title: t('toast.sessionExpired.title'),
+            description: error.response?.data?.message || t('toast.sessionExpired.description'),
+            variant: 'error',
+          })
+          await logout()
+        }
+      }
+    }
+
+    bootstrapAccess()
+    return () => {
+      active = false
+    }
+  }, [clearAccessDenied, logout, syncProfile, t, toast, token])
+
+  useEffect(() => {
+    if (!token || !accessDeniedReason) return
+    const redirect = getAccessRedirect(accessDeniedReason)
+    if (!redirect?.page) return
+    if (ROUTES[currentPage]?.isPublic) return
+    if (currentPage === redirect.page) return
+
+    navigateTo(redirect.page, true, { search: redirect.search })
+  }, [accessDeniedReason, currentPage, navigateTo, token])
+
+  useEffect(() => {
+    let active = true
+
     const fetchWorkedToday = async () => {
-      if (!token) {
+      if (!token || accessDeniedReason) {
         setTodayBadge(t('dashboardPage.badges.today'))
         return
       }
@@ -212,7 +264,7 @@ export default function App() {
     return () => {
       active = false
     }
-  }, [formatMinutesToLabel, t, token])
+  }, [accessDeniedReason, formatMinutesToLabel, t, token])
 
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
@@ -243,6 +295,47 @@ export default function App() {
     })
   }
 
+  const handleRetryAccess = useCallback(async () => {
+    try {
+      const profile = await meRequest()
+      if (profile?.user) {
+        syncProfile(profile.user, profile.roles || [])
+      }
+      clearAccessDenied()
+      navigateTo('dashboard', true)
+    } catch (error) {
+      const status = error?.response?.status
+      if (status === 401) {
+        toast({
+          title: t('toast.sessionExpired.title'),
+          description: error.response?.data?.message || t('toast.sessionExpired.description'),
+          variant: 'error',
+        })
+        await logout()
+      }
+    }
+  }, [clearAccessDenied, logout, navigateTo, syncProfile, t, toast])
+
+  const handleStartCheckout = useCallback((plan) => {
+    const redirect = getAccessRedirect(ACCESS_DENIED_REASONS.SUBSCRIPTION_REQUIRED)
+    const baseUrl =
+      import.meta.env?.VITE_BILLING_CHECKOUT_URL ||
+      `${redirect.path}${redirect.search || ''}`
+    const planParam = plan?.slug || plan?.id
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(baseUrl, window.location.origin)
+        if (planParam) url.searchParams.set('plan', planParam)
+        window.location.href = url.toString()
+        return
+      } catch (err) {
+      }
+      const separator = baseUrl.includes('?') ? '&' : '?'
+      const fallbackUrl = planParam ? `${baseUrl}${separator}plan=${planParam}` : baseUrl
+      window.location.href = fallbackUrl
+    }
+  }, [])
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
@@ -270,6 +363,8 @@ export default function App() {
         return <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminVacations':
         return <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminAdjustments':
+        return <AdminAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminShifts':
         return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
@@ -282,6 +377,28 @@ export default function App() {
         return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'equipo':
         return <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'companyMissing':
+        return (
+          <CompanyMissingPage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+          />
+        )
+      case 'subscribe':
+        return (
+          <SubscribePage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+            onStartCheckout={handleStartCheckout}
+          />
+        )
+      case 'forbidden':
+        return (
+          <ForbiddenPage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+          />
+        )
       default:
         return (
           <TimeClock
