@@ -4,7 +4,7 @@ import { normalizePlan, normalizeSubscription } from './platformBillingService'
 const PUBLIC_ENDPOINT = '/v1/public/plans'
 const AUTH_ENDPOINT = '/v1/billing/plans'
 const FALLBACK_ENDPOINT = '/v1/platform/billing/plans'
-const CHECKOUT_ENDPOINT = '/v1/billing/checkout-session'
+const CHECKOUT_ENDPOINT = '/v1/public/billing/checkout-session'
 const COMPANY_SUBSCRIPTION_ENDPOINT = '/v1/platform/billing/companies'
 
 export async function listActivePlans() {
@@ -28,11 +28,19 @@ export function normalizePlanInterval(plan) {
   return plan?.billingInterval || plan?.billing_interval || 'month'
 }
 
-export async function createCheckoutSession({ planId, planSlug, interval }) {
-  const payload = {}
+export async function createCheckoutSession({ planId, planSlug, interval, companyId, companyHoneypot }) {
+  if (!companyId) {
+    throw new Error('Company id is required')
+  }
+
+  const payload = {
+    company_id: companyId,
+  }
+
   if (planId) payload.plan_id = planId
   if (planSlug) payload.plan_slug = planSlug
   if (interval) payload.billing_interval = interval
+  if (companyHoneypot) payload.company_honeypot = companyHoneypot
 
   const { data } = await api.post(CHECKOUT_ENDPOINT, payload)
   const url =

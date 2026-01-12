@@ -9,18 +9,20 @@ import { PlanCard } from '../components/billing/PlanCard'
 import { createCheckoutSession, normalizePlanInterval } from '../services/billingService'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { useAuthStore } from '../store/useAuth'
 
 const INTERVALS = [
   { key: 'monthly', labelKey: 'access.subscription.monthly' },
   { key: 'yearly', labelKey: 'access.subscription.yearly' },
 ]
 
-export default function SubscribePage({ message, onRetry, onStartCheckout }) {
+export default function SubscribePage({ message, onRetry }) {
   const { t } = useTranslation()
   const lastReason = restoreLastReason()
   const { toast } = useToast()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState(() => restoreLastPlanSelection()?.id || '')
+  const user = useAuthStore((state) => state.user)
   const {
     plans,
     loading,
@@ -33,6 +35,16 @@ export default function SubscribePage({ message, onRetry, onStartCheckout }) {
   } = useBillingPlans({ reason: lastReason || 'trial_or_subscription' })
 
   const handleCheckout = useCallback(async (plan) => {
+    const companyId = user?.company_id || user?.companyId || user?.company?.id || null
+    if (!companyId) {
+      toast({
+        title: t('access.subscription.checkoutErrorTitle', 'Nao foi possivel iniciar o checkout'),
+        description: t('access.subscription.companyMissing', 'Empresa nao encontrada. Entre novamente e tente de novo.'),
+        variant: 'error',
+      })
+      return
+    }
+
     const targetPlan = plan || plans.find((item) => item.id === selectedPlanId) || plans[0]
     if (!targetPlan) return
     setCheckoutLoading(true)
@@ -41,15 +53,11 @@ export default function SubscribePage({ message, onRetry, onStartCheckout }) {
 
     try {
       const interval = normalizePlanInterval(targetPlan)
-      if (typeof onStartCheckout === 'function') {
-        onStartCheckout(targetPlan)
-        setCheckoutLoading(false)
-        return
-      }
       const url = await createCheckoutSession({
         planId: targetPlan.id,
         planSlug: targetPlan.slug,
         interval,
+        companyId,
       })
       window.location.href = url
     } catch (err) {
@@ -65,7 +73,7 @@ export default function SubscribePage({ message, onRetry, onStartCheckout }) {
     } finally {
       setCheckoutLoading(false)
     }
-  }, [onStartCheckout, persistPlanSelection, plans, selectedPlanId, t, toast])
+  }, [persistPlanSelection, plans, selectedPlanId, t, toast, user])
 
   const handleRetry = () => {
     if (typeof onRetry === 'function') onRetry()

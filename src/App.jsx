@@ -317,26 +317,6 @@ export default function App() {
     }
   }, [clearAccessDenied, logout, navigateTo, syncProfile, t, toast])
 
-  const handleStartCheckout = useCallback((plan) => {
-    const redirect = getAccessRedirect(ACCESS_DENIED_REASONS.SUBSCRIPTION_REQUIRED)
-    const baseUrl =
-      import.meta.env?.VITE_BILLING_CHECKOUT_URL ||
-      `${redirect.path}${redirect.search || ''}`
-    const planParam = plan?.slug || plan?.id
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(baseUrl, window.location.origin)
-        if (planParam) url.searchParams.set('plan', planParam)
-        window.location.href = url.toString()
-        return
-      } catch (err) {
-      }
-      const separator = baseUrl.includes('?') ? '&' : '?'
-      const fallbackUrl = planParam ? `${baseUrl}${separator}plan=${planParam}` : baseUrl
-      window.location.href = fallbackUrl
-    }
-  }, [])
-
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
@@ -392,7 +372,6 @@ export default function App() {
           <SubscribePage
             message={lastDeniedMessage}
             onRetry={handleRetryAccess}
-            onStartCheckout={handleStartCheckout}
           />
         )
       case 'forbidden':
