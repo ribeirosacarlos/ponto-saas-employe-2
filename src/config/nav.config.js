@@ -144,6 +144,7 @@ export const NAV_ITEMS = [
     id: 'settings',
     labelKey: 'sidebar.items.settings',
     icon: Settings,
+    page: 'settings',
     path: '/settings',
     group: 'admin',
     requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },

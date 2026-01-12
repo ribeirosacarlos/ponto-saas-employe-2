@@ -1,0 +1,508 @@
+import { useMemo } from 'react'
+import {
+  AlertCircle,
+  BadgeCheck,
+  Building2,
+  CreditCard,
+  Link as LinkIcon,
+  LockKeyhole,
+  Radar,
+  ShieldCheck,
+  SlidersHorizontal,
+  Users,
+} from 'lucide-react'
+import { PageContainer } from '../components/ui/PageContainer'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { SettingsSummaryCards } from '../components/settings/SettingsSummaryCards'
+import { useSettingsOverview } from '../hooks/useSettingsOverview'
+import { cn } from '../lib/utils'
+
+const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+const STATUS_TONES = {
+  active: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/70 dark:text-emerald-100',
+  past_due: 'bg-amber-500/12 text-amber-700 border-amber-200/70 dark:text-amber-100',
+  trialing: 'bg-sky-500/12 text-sky-700 border-sky-200/70 dark:text-sky-100',
+  canceled: 'bg-rose-500/12 text-rose-700 border-rose-200/70 dark:text-rose-100',
+  default: 'bg-muted text-foreground border-border/70',
+}
+
+const valueOrPlaceholder = (value) => {
+  if (value === null || value === undefined || value === '') return '—'
+  return value
+}
+
+const formatBooleanValue = (value) => {
+  if (value === true) return 'Sim'
+  if (value === false) return 'Não'
+  return 'Não informado'
+}
+
+const formatDateTime = (value) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const formatPrice = (plan) => {
+  if (!plan?.price_cents) return '—'
+  const formatter = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: plan.currency || 'BRL',
+    minimumFractionDigits: 2,
+  })
+  const intervalLabel =
+    plan.billing_interval === 'year'
+      ? 'ano'
+      : plan.billing_interval === 'one_time'
+        ? 'única vez'
+        : 'mês'
+  return `${formatter.format(plan.price_cents / 100)} / ${intervalLabel}`
+}
+
+const StatusBadge = ({ status, label }) => {
+  if (!status && !label) return <span className="text-sm text-muted-foreground">—</span>
+  const key = String(status || '').toLowerCase()
+  const tone = STATUS_TONES[key] || STATUS_TONES.default
+  return (
+    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold', tone)}>
+      <BadgeCheck className="h-3.5 w-3.5" />
+      {label || status}
+    </span>
+  )
+}
+
+const SectionCard = ({ icon: Icon, title, description, children, className }) => (
+  <Card className={cn('border border-border/80 bg-card/90', className)}>
+    <CardHeader className="flex flex-row items-start gap-3">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      </div>
+    </CardHeader>
+    <CardContent className="space-y-4">{children}</CardContent>
+  </Card>
+)
+
+const KeyValue = ({ label, value, helper }) => (
+  <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+    <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+    <p className="text-sm font-semibold text-foreground">{valueOrPlaceholder(value)}</p>
+    {helper ? <p className="text-[11px] text-muted-foreground">{helper}</p> : null}
+  </div>
+)
+
+const LimitsList = ({ limits }) => {
+  if (!limits || typeof limits !== 'object') return null
+  const entries = Object.entries(limits)
+  if (!entries.length) return null
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Limites do plano</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {entries.map(([key, value]) => (
+          <KeyValue key={key} label={key} value={value} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const WorkdayDays = ({ days }) => {
+  if (!Array.isArray(days) || !days.length) return <p className="text-sm text-muted-foreground">Nenhuma jornada padrão configurada.</p>
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dias da jornada</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {days.map((day) => {
+          const weekdayLabel = WEEKDAY_LABELS[Number(day.weekday) - 1] || `Dia ${day.weekday}`
+          const interval =
+            day.start_time && day.end_time
+              ? `${day.start_time} - ${day.end_time}`
+              : 'Horário não definido'
+          return (
+            <div key={`${day.weekday}-${day.start_time}-${day.end_time}`} className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+              <p className="text-sm font-semibold text-foreground">{weekdayLabel}</p>
+              <p className="text-[12px] text-muted-foreground">{interval}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {day.is_working_day ? 'Dia de trabalho' : 'Folga'} {day.break_expected ? '• Intervalo esperado' : ''}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const SettingsSkeleton = () => (
+  <div className="space-y-4">
+    <div className="h-20 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, idx) => (
+        <div key={`summary-skel-${idx}`} className="h-28 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
+      ))}
+    </div>
+    <div className="grid gap-4 lg:grid-cols-2">
+      {Array.from({ length: 6 }).map((_, idx) => (
+        <div key={`section-skel-${idx}`} className="h-64 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
+      ))}
+    </div>
+  </div>
+)
+
+const EmptyState = ({ onRetry }) => (
+  <Card className="border border-border/80 bg-card/90">
+    <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+      <AlertCircle className="h-10 w-10 text-muted-foreground" />
+      <p className="text-sm text-muted-foreground">
+        Nenhuma informação de configurações foi retornada. Tente recarregar ou confirme suas permissões.
+      </p>
+      <Button type="button" onClick={onRetry}>
+        Tentar novamente
+      </Button>
+    </CardContent>
+  </Card>
+)
+
+const BillingCard = ({ billing, links }) => {
+  const plan = billing?.plan
+  const subscription = billing?.subscription
+
+  return (
+    <SectionCard
+      icon={CreditCard}
+      title="Plano e Assinatura"
+      description="Visão completa do plano, status de cobrança e IDs Stripe."
+    >
+      <div className="grid gap-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <KeyValue label="Nome do plano" value={plan?.name} helper={plan?.slug ? `Slug: ${plan.slug}` : null} />
+          <KeyValue label="Preço" value={formatPrice(plan)} helper={plan?.currency ? `Moeda: ${plan.currency}` : null} />
+          <KeyValue label="Ciclo" value={plan?.billing_interval || '—'} />
+          <KeyValue label="Limites" value={plan?.limits ? 'Personalizados' : 'Nenhum limite informado'} />
+        </div>
+
+        {plan?.limits ? <LimitsList limits={plan.limits} /> : null}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Assinatura</p>
+            <StatusBadge status={subscription?.status || subscription?.subscription_status} label={subscription?.status_label} />
+            <KeyValue label="Status label" value={subscription?.status_label} />
+            <KeyValue label="Status da assinatura" value={subscription?.subscription_status} />
+            <KeyValue label="Próxima ação" value={subscription?.next_action} />
+            <KeyValue label="Dias de trial restantes" value={subscription?.trial_days_remaining} />
+            <KeyValue label="Dias até faturamento" value={subscription?.billing_days_remaining} />
+            <KeyValue label="Stripe Customer ID" value={subscription?.stripe_customer_id} />
+            <KeyValue label="Stripe Subscription ID" value={subscription?.stripe_subscription_id} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Datas e períodos</p>
+            <KeyValue label="Trial termina em" value={formatDateTime(subscription?.trial_ends_at)} helper={subscription?.trial_days_remaining !== null && subscription?.trial_days_remaining !== undefined ? `${subscription.trial_days_remaining} dias restantes` : null} />
+            <KeyValue label="Próximo ciclo" value={formatDateTime(subscription?.current_period_end)} helper={subscription?.billing_days_remaining !== null && subscription?.billing_days_remaining !== undefined ? `${subscription.billing_days_remaining} dias até faturamento` : null} />
+            <KeyValue label="Término da assinatura" value={formatDateTime(subscription?.subscription_ends_at)} />
+            <KeyValue label="Cancelar ao fim do período" value={formatBooleanValue(subscription?.cancel_at_period_end)} />
+            <KeyValue label="Cancelada em" value={formatDateTime(subscription?.canceled_at)} />
+          </div>
+        </div>
+
+        {links ? (
+          <div className="flex flex-wrap gap-2">
+            <InlineActionLink label="Checkout" url={links.checkout_url} />
+            <InlineActionLink label="Portal do cliente" url={links.customer_portal_url} />
+          </div>
+        ) : null}
+      </div>
+    </SectionCard>
+  )
+}
+
+const InlineActionLink = ({ label, url }) => {
+  if (!url) return null
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-[12px] text-foreground">
+      <LinkIcon className="h-3.5 w-3.5" />
+      <a href={url} target="_blank" rel="noreferrer" className="underline decoration-primary/70 decoration-2 underline-offset-2">
+        {label}
+      </a>
+    </span>
+  )
+}
+
+const CompanyCard = ({ company }) => (
+  <SectionCard
+    icon={Building2}
+    title="Empresa"
+    description="Informações gerais da organização autenticada."
+  >
+    <div className="grid gap-2 sm:grid-cols-2">
+      <KeyValue label="Nome" value={company?.name} />
+      <KeyValue label="Fuso horário" value={company?.timezone} />
+      <KeyValue label="País" value={company?.country} />
+      <KeyValue label="Locale" value={company?.locale} />
+      <KeyValue label="Criada em" value={formatDateTime(company?.created_at)} />
+    </div>
+  </SectionCard>
+)
+
+const UsageCard = ({ usage }) => {
+  const employees = usage?.employees || {}
+  const hasLimit = employees.limit !== null && employees.limit !== undefined
+  const percent = hasLimit ? Math.min(100, Math.round((employees.current / (employees.limit || 1)) * 100)) : null
+  return (
+    <SectionCard
+      icon={Users}
+      title="Uso e Limites"
+      description="Acompanhamento de colaboradores cadastrados."
+    >
+      <div className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <KeyValue label="Colaboradores atuais" value={employees.current} />
+          <KeyValue label="Limite contratado" value={hasLimit ? employees.limit : 'Sem limite definido'} />
+          <KeyValue label="Acima do limite" value={formatBooleanValue(employees.over_limit)} />
+        </div>
+        {percent !== null ? (
+          <div>
+            <div className="h-2 w-full rounded-full bg-muted/60">
+              <div className={cn('h-2 rounded-full transition-all', employees.over_limit ? 'bg-amber-500' : 'bg-primary')} style={{ width: `${percent}%` }} />
+            </div>
+            <p className="mt-1 text-[12px] text-muted-foreground">{percent}% da capacidade de colaboradores.</p>
+          </div>
+        ) : null}
+      </div>
+    </SectionCard>
+  )
+}
+
+const WorkdayCard = ({ workday }) => {
+  const defaultShift = workday?.default_shift
+  return (
+    <SectionCard
+      icon={SlidersHorizontal}
+      title="Jornada e Regras"
+      description="Configurações de jornada padrão, tolerância e controles."
+    >
+      <div className="grid gap-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <KeyValue label="Tolerância (min)" value={workday?.tolerance_minutes} />
+          <KeyValue label="Arredondamento (min)" value={workday?.rounding_minutes} />
+          <KeyValue label="Geolocalização" value={formatBooleanValue(workday?.geolocation_enabled)} />
+          <KeyValue label="Exigir foto" value={formatBooleanValue(workday?.require_photo)} />
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Jornada padrão</p>
+          {defaultShift ? (
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+              <p className="text-sm font-semibold text-foreground">{defaultShift.name}</p>
+              <p className="text-[12px] text-muted-foreground">
+                {defaultShift.start_time && defaultShift.end_time
+                  ? `${defaultShift.start_time} - ${defaultShift.end_time}`
+                  : 'Horário não definido'}
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <KeyValue label="ID da jornada" value={defaultShift.id} />
+                <KeyValue label="Início" value={defaultShift.start_time} />
+                <KeyValue label="Fim" value={defaultShift.end_time} />
+              </div>
+              <WorkdayDays days={defaultShift.days} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhuma jornada padrão configurada.</p>
+          )}
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
+const SecurityComplianceCard = ({ security, compliance }) => (
+  <SectionCard
+    icon={ShieldCheck}
+    title="Segurança e Conformidade"
+    description="Preferências de segurança, retenção e exportação de dados."
+  >
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Segurança</p>
+        <KeyValue label="2FA habilitado" value={formatBooleanValue(security?.two_factor_enabled)} />
+        <KeyValue label="Último login" value={formatDateTime(security?.last_login_at)} />
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Compliance</p>
+        <KeyValue label="Retenção de logs (dias)" value={compliance?.log_retention_days} />
+        <KeyValue label="Exportação habilitada" value={formatBooleanValue(compliance?.export_enabled)} />
+      </div>
+    </div>
+  </SectionCard>
+)
+
+const FlagsCard = ({ flags }) => {
+  if (!flags) return null
+  return (
+    <SectionCard
+      icon={Radar}
+      title="Sinalizadores"
+      description="Status operacionais para a conta e acesso."
+    >
+      <div className="grid gap-2 sm:grid-cols-2">
+        <KeyValue label="Pode acessar o sistema" value={formatBooleanValue(flags.can_access_system)} />
+        <KeyValue label="Conta em teste" value={formatBooleanValue(flags.is_trial)} />
+        <KeyValue label="Teste ativo" value={formatBooleanValue(flags.is_trial_active)} />
+        <KeyValue label="Assinatura ativa" value={formatBooleanValue(flags.is_subscription_active)} />
+        <KeyValue label="Requer ação" value={formatBooleanValue(flags.requires_action)} />
+      </div>
+    </SectionCard>
+  )
+}
+
+const ActionsCard = ({ links, onDefaultSubscribe }) => {
+  const hasPortal = Boolean(links?.customer_portal_url)
+  const hasCheckout = Boolean(links?.checkout_url)
+
+  const handleOpen = (url) => {
+    if (!url) return
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  return (
+    <SectionCard
+      icon={LockKeyhole}
+      title="Ações"
+      description="Atalhos diretos para resolver pendências de billing ou gerenciamento."
+      className="lg:col-span-2"
+    >
+      <div className="flex flex-wrap gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => (hasPortal ? handleOpen(links.customer_portal_url) : onDefaultSubscribe())}
+        >
+          Portal do cliente
+        </Button>
+        <Button
+          type="button"
+          onClick={() => (hasCheckout ? handleOpen(links.checkout_url) : onDefaultSubscribe())}
+        >
+          {hasCheckout ? 'Regularizar / Assinar' : 'Assinar / Regularizar'}
+        </Button>
+        {links?.checkout_url ? (
+          <InlineActionLink label="Checkout URL" url={links.checkout_url} />
+        ) : null}
+        {links?.customer_portal_url ? (
+          <InlineActionLink label="Portal URL" url={links.customer_portal_url} />
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <KeyValue label="checkout_url" value={links?.checkout_url} />
+        <KeyValue label="customer_portal_url" value={links?.customer_portal_url} />
+      </div>
+    </SectionCard>
+  )
+}
+
+export default function SettingsPage() {
+  const { data, isLoading, error, reload } = useSettingsOverview()
+  const overview = data || {}
+
+  const hasData = useMemo(
+    () =>
+      Boolean(
+        overview?.billing ||
+          overview?.company ||
+          overview?.workday ||
+          overview?.security ||
+          overview?.usage ||
+          overview?.flags ||
+          overview?.links ||
+          overview?.compliance,
+      ),
+    [overview],
+  )
+
+  const handleDefaultSubscribe = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/billing/subscribe'
+    }
+  }
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-10%] top-[-8%] h-64 w-64 rounded-full bg-primary/12 blur-[120px]" />
+        <div className="absolute right-[-5%] top-1/4 h-72 w-72 rounded-full bg-sky-300/12 blur-[120px]" />
+        <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px]" />
+      </div>
+
+      <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
+        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Configurações</p>
+                <h1 className="text-2xl font-semibold leading-tight">Visão geral da conta</h1>
+                <p className="text-sm text-muted-foreground">
+                  Tudo que a UI precisa: plano, empresa, jornadas, segurança, limites e ações.
+                </p>
+              </div>
+            </div>
+            {error ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" onClick={reload}>
+              Recarregar
+            </Button>
+            <Button type="button" onClick={handleDefaultSubscribe}>
+              Assinar / Regularizar
+            </Button>
+          </div>
+        </header>
+
+        {isLoading ? (
+          <SettingsSkeleton />
+        ) : !hasData ? (
+          <EmptyState onRetry={reload} />
+        ) : (
+          <>
+            <SettingsSummaryCards
+              billing={overview.billing}
+              flags={overview.flags}
+              usage={overview.usage}
+            />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <BillingCard billing={overview.billing} links={overview.links} />
+              <CompanyCard company={overview.company} />
+              <UsageCard usage={overview.usage} />
+              <WorkdayCard workday={overview.workday} />
+              <SecurityComplianceCard security={overview.security} compliance={overview.compliance} />
+              <FlagsCard flags={overview.flags} />
+              <ActionsCard links={overview.links} onDefaultSubscribe={handleDefaultSubscribe} />
+            </div>
+          </>
+        )}
+      </PageContainer>
+    </div>
+  )
+}

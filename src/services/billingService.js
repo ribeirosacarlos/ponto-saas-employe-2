@@ -1,10 +1,11 @@
 import { api } from './http/api'
-import { normalizePlan } from './platformBillingService'
+import { normalizePlan, normalizeSubscription } from './platformBillingService'
 
 const PUBLIC_ENDPOINT = '/v1/public/plans'
 const AUTH_ENDPOINT = '/v1/billing/plans'
 const FALLBACK_ENDPOINT = '/v1/platform/billing/plans'
 const CHECKOUT_ENDPOINT = '/v1/billing/checkout-session'
+const COMPANY_SUBSCRIPTION_ENDPOINT = '/v1/platform/billing/companies'
 
 export async function listActivePlans() {
   const endpoints = [PUBLIC_ENDPOINT, AUTH_ENDPOINT, FALLBACK_ENDPOINT]
@@ -46,4 +47,11 @@ export async function createCheckoutSession({ planId, planSlug, interval }) {
     throw error
   }
   return url
+}
+
+export async function getCurrentCompanySubscription(companyId) {
+  if (!companyId) throw new Error('Company id is required')
+  const { data } = await api.get(`${COMPANY_SUBSCRIPTION_ENDPOINT}/${companyId}/subscription`)
+  const payload = data?.data ?? data
+  return normalizeSubscription(payload)
 }

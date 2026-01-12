@@ -39,6 +39,56 @@ const es = {
         description: 'No tienes permiso para realizar esta accion.',
       },
     },
+
+    settingsPage: {
+      badge: 'Admin',
+      title: 'Configuracion',
+      subtitle: 'Plan actual y preferencias esenciales del espacio.',
+      loading: 'Cargando...',
+      errors: {
+        noCompany: 'No hay empresa vinculada al usuario.',
+        load: 'No se pudo cargar la suscripcion actual.',
+        forbidden: 'Tu perfil no tiene acceso a los datos de suscripcion.',
+      },
+      tabs: {
+        plan: 'Plan',
+        preferences: 'Preferencias',
+      },
+      plan: {
+        title: 'Plan actual',
+        unknown: 'Plan desconocido',
+        empty: 'Sin informacion de plan.',
+        statusLabel: 'Estado: {{status}}',
+        trialEnds: 'Trial hasta {{date}}',
+        renews: 'Renueva el {{date}}',
+      },
+      security: {
+        title: 'Seguridad',
+        heading: 'Cuentas y accesos',
+        mfa: 'Autenticacion de dos factores',
+        mfaHint: 'Requerir MFA para admins y managers.',
+        sessions: 'Sesiones activas',
+        sessionsHint: 'Revoca sesiones sospechosas o expiradas.',
+      },
+      preferences: {
+        notifications: 'Alertas',
+        title: 'Notificaciones y alertas',
+        email: 'Alertas por correo',
+        emailHint: 'Recibe notificaciones operativas y de facturacion.',
+        reminders: 'Recordatorios de fichaje',
+        remindersHint: 'Recordar marcajes e intervalos a los colaboradores.',
+        reports: 'Reportes automaticos',
+        reportsHint: 'Enviar resumen semanal de jornadas a managers.',
+        critical: 'Seguridad',
+        criticalTitle: 'Acceso administrativo',
+        criticalDescription: 'Gestiona quien administra billing, planes y ajustes sensibles.',
+      },
+      actions: {
+        manage: 'Gestionar',
+        view: 'Ver',
+        manageAccess: 'Gestionar accesos',
+      },
+    },
     access: {
       shared: {
         retry: 'Intentar de nuevo',

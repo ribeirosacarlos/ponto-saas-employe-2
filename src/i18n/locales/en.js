@@ -39,6 +39,56 @@ const en = {
         description: 'You do not have permission to perform this action.',
       },
     },
+
+    settingsPage: {
+      badge: 'Admin',
+      title: 'Settings',
+      subtitle: 'Current plan and essential workspace preferences.',
+      loading: 'Loading...',
+      errors: {
+        noCompany: 'No company linked to the user.',
+        load: 'Could not load current subscription.',
+        forbidden: 'Your profile does not have access to subscription data.',
+      },
+      tabs: {
+        plan: 'Plan',
+        preferences: 'Preferences',
+      },
+      plan: {
+        title: 'Current plan',
+        unknown: 'Unknown plan',
+        empty: 'No plan information available.',
+        statusLabel: 'Status: {{status}}',
+        trialEnds: 'Trial until {{date}}',
+        renews: 'Renews on {{date}}',
+      },
+      security: {
+        title: 'Security',
+        heading: 'Accounts and access',
+        mfa: 'Two-factor authentication',
+        mfaHint: 'Require MFA for admins and managers.',
+        sessions: 'Active sessions',
+        sessionsHint: 'Revoke suspicious or expired sessions.',
+      },
+      preferences: {
+        notifications: 'Alerts',
+        title: 'Notifications and alerts',
+        email: 'Email alerts',
+        emailHint: 'Receive operational and billing notifications.',
+        reminders: 'Time tracking reminders',
+        remindersHint: 'Remind collaborators about punches and breaks.',
+        reports: 'Automatic reports',
+        reportsHint: 'Send weekly timesheet summaries to managers.',
+        critical: 'Security',
+        criticalTitle: 'Admin access',
+        criticalDescription: 'Manage who can administer billing, plans, and sensitive settings.',
+      },
+      actions: {
+        manage: 'Manage',
+        view: 'View',
+        manageAccess: 'Manage access',
+      },
+    },
     access: {
       shared: {
         retry: 'Try again',

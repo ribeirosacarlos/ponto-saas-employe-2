@@ -25,6 +25,10 @@ export const ROUTES = {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  settings: {
+    path: '/settings',
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
   platformBillingPlans: {
     path: '/platform/billing/plans',
     guard: { anyOf: ['super_admin'] },

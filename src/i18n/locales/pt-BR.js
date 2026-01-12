@@ -39,6 +39,56 @@ const ptBR = {
         description: 'Voce nao tem permissao para realizar esta acao.',
       },
     },
+
+    settingsPage: {
+      badge: 'Admin',
+      title: 'Configuracoes',
+      subtitle: 'Plano atual e preferencias essenciais da empresa.',
+      loading: 'Carregando...',
+      errors: {
+        noCompany: 'Nenhuma empresa vinculada ao usuario.',
+        load: 'Nao foi possivel carregar a assinatura atual.',
+        forbidden: 'Seu perfil nao possui acesso a dados de assinatura.',
+      },
+      tabs: {
+        plan: 'Plano',
+        preferences: 'Preferencias',
+      },
+      plan: {
+        title: 'Plano atual',
+        unknown: 'Plano desconhecido',
+        empty: 'Nenhuma informacao de plano encontrada.',
+        statusLabel: 'Status: {{status}}',
+        trialEnds: 'Trial ate {{date}}',
+        renews: 'Renova em {{date}}',
+      },
+      security: {
+        title: 'Seguranca',
+        heading: 'Contas e acessos',
+        mfa: 'Autenticacao de dois fatores',
+        mfaHint: 'Exigir MFA para admins e gestores.',
+        sessions: 'Sessoes ativas',
+        sessionsHint: 'Revogue sessoes suspeitas ou expirada.',
+      },
+      preferences: {
+        notifications: 'Alertas',
+        title: 'Notificacoes e alertas',
+        email: 'Avisos por e-mail',
+        emailHint: 'Receber notificacoes operacionais e de cobranca.',
+        reminders: 'Lembretes de ponto',
+        remindersHint: 'Alertar colaboradores sobre batidas e intervalos.',
+        reports: 'Relatorios automaticos',
+        reportsHint: 'Enviar resumo semanal de jornadas para gestores.',
+        critical: 'Seguranca',
+        criticalTitle: 'Acesso administrativo',
+        criticalDescription: 'Gerencie quem pode administrar billing, planos e configuracoes sensiveis.',
+      },
+      actions: {
+        manage: 'Gerenciar',
+        view: 'Ver',
+        manageAccess: 'Gerenciar acessos',
+      },
+    },
     access: {
       shared: {
         retry: 'Tentar novamente',

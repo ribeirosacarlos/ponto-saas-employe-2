@@ -16,6 +16,7 @@ import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
 import SubscribePage from './pages/SubscribePage.jsx'
 import ForbiddenPage from './pages/ForbiddenPage.jsx'
@@ -377,6 +378,8 @@ export default function App() {
         return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'equipo':
         return <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'settings':
+        return <SettingsPage />
       case 'companyMissing':
         return (
           <CompanyMissingPage
