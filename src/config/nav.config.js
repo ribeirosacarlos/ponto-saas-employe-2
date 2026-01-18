@@ -114,6 +114,16 @@ export const NAV_ITEMS = [
     showInDesktop: true,
   },
   {
+    id: 'closeTimesheet',
+    labelKey: 'sidebar.items.closeTimesheet',
+    icon: FileText,
+    page: 'closeTimesheet',
+    group: 'admin',
+    requires: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+    showInDrawer: true,
+    showInDesktop: true,
+  },
+  {
     id: 'platformCompanies',
     labelKey: 'sidebar.items.platformCompanies',
     icon: Building2,

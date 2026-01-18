@@ -12,6 +12,7 @@ import { getWorkedToday, getOpenTimeEntryStatus } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
+import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 
 const statusTokens = {
   idle: {
@@ -48,6 +49,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
+  const [overtimeMinutes, setOvertimeMinutes] = useState(null)
+  const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [recentEntries, setRecentEntries] = useState([])
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
@@ -80,6 +83,15 @@ export default function TimeClock({ onContinueToDashboard }) {
     user?.email?.split('@')[0] ||
     t('dashboard.fallbackName')
 
+  const employeeId = useMemo(
+    () =>
+      user?.employee_id ||
+      user?.employeeId ||
+      user?.employee?.id ||
+      user?.id,
+    [user],
+  )
+
   const normalizedStatus = clockStatus || 'idle'
 
   const statusTitle = t(`timeClock.status.title.${normalizedStatus}`)
@@ -97,10 +109,25 @@ export default function TimeClock({ onContinueToDashboard }) {
     month: 'long',
   })
 
+  const formatClockedTime = useCallback(
+    (value) => {
+      if (!value) return '--:--'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return String(value)
+      return date.toLocaleTimeString(i18n.language, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
+      })
+    },
+    [i18n.language],
+  )
+
   const lastRecordLabel = lastWorkEntry
     ? t('timeClock.lastRecord.label', {
         type: t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`),
-        time: format(new Date(lastWorkEntry.clocked_at), 'HH:mm'),
+        time: formatClockedTime(lastWorkEntry.clocked_at),
       })
     : t('timeClock.lastRecord.placeholder')
 
@@ -111,6 +138,23 @@ export default function TimeClock({ onContinueToDashboard }) {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }
+
+  const formatBalanceToLabel = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
+    const rounded = Math.round(minutes)
+    const sign = rounded > 0 ? '+' : rounded < 0 ? '-' : ''
+    const absolute = Math.abs(rounded)
+    const hours = String(Math.floor(absolute / 60)).padStart(2, '0')
+    const mins = String(absolute % 60).padStart(2, '0')
+    return `${sign}${hours}:${mins}`
+  }, [])
+
+  const getBalanceTone = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return 'text-muted-foreground'
+    if (minutes > 0) return 'text-emerald-500 dark:text-emerald-300'
+    if (minutes < 0) return 'text-rose-500 dark:text-rose-300'
+    return 'text-foreground'
+  }, [])
 
   const formatAbsenceDate = (value) => {
     if (!value) return ''
@@ -204,6 +248,81 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
   }, [token])
 
+  useEffect(() => {
+    let active = true
+
+    const fetchOvertimeBalance = async () => {
+      if (!token || !employeeId) {
+        if (active) {
+          setOvertimeMinutes(null)
+          setOvertimeLoading(false)
+        }
+        return
+      }
+
+      setOvertimeLoading(true)
+      try {
+        const today = new Date()
+        const from = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
+        const to = format(today, 'yyyy-MM-dd')
+        const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
+
+        const parseNumber = (value) => {
+          if (value === null || value === undefined) return null
+          const parsed = Number(value)
+          return Number.isFinite(parsed) ? parsed : null
+        }
+
+        let minutes =
+          parseNumber(balance?.balanceMinutes ?? balance?.balance_minutes) ??
+          parseNumber(balance?.totalMinutes ?? balance?.total_minutes) ??
+          parseNumber(balance?.minutesBalance ?? balance?.minutes_balance) ??
+          parseNumber(balance?.minutes)
+
+        if (minutes === null) {
+          const seconds =
+            parseNumber(
+              balance?.balanceSeconds ??
+                balance?.balance_seconds ??
+                balance?.totalSeconds ??
+                balance?.total_seconds ??
+                balance?.seconds,
+            ) ?? null
+          if (seconds !== null) {
+            minutes = seconds / 60
+          }
+        }
+
+        if (minutes === null && Array.isArray(balance?.days)) {
+          const total = balance.days.reduce(
+            (acc, day) =>
+              acc +
+              (parseNumber(day?.balanceMinutes ?? day?.balance_minutes ?? day?.minutesBalance ?? day?.minutes_balance ?? day?.minutes) ??
+                0),
+            0,
+          )
+          if (Number.isFinite(total)) {
+            minutes = total
+          }
+        }
+
+        if (!active) return
+        setOvertimeMinutes(minutes)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load overtime balance', error)
+        if (!active) return
+        setOvertimeMinutes(null)
+      } finally {
+        if (active) setOvertimeLoading(false)
+      }
+    }
+
+    fetchOvertimeBalance()
+    return () => {
+      active = false
+    }
+  }, [employeeId, token])
+
   const openEntryNextAction = useMemo(() => {
     const nextActionKey = openEntryStatus?.next_action
     if (!nextActionKey) return null
@@ -213,6 +332,16 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [openEntryStatus?.next_action, t])
 
   const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
+
+  const overtimeLabel = useMemo(
+    () => (overtimeLoading ? t('common.loading', 'Carregando...') : formatBalanceToLabel(overtimeMinutes)),
+    [formatBalanceToLabel, overtimeLoading, overtimeMinutes, t],
+  )
+
+  const overtimeTone = useMemo(
+    () => (overtimeLoading ? 'text-muted-foreground' : getBalanceTone(overtimeMinutes)),
+    [getBalanceTone, overtimeLoading, overtimeMinutes],
+  )
 
   const summaryStats = useMemo(
     () => [
@@ -225,9 +354,9 @@ export default function TimeClock({ onContinueToDashboard }) {
             ? 'text-muted-foreground'
             : 'text-emerald-500 dark:text-emerald-300',
       },
-      { label: t('timeClock.summary.bank'), value: '+02:15', tone: 'text-emerald-500 dark:text-emerald-300' },
+      { label: t('timeClock.summary.bank'), value: overtimeLabel, tone: overtimeTone },
     ],
-    [normalizedStatus, t, workedTodayLabel],
+    [normalizedStatus, overtimeLabel, overtimeTone, t, workedTodayLabel],
   )
 
   const normalizeEntryList = useCallback(
@@ -243,7 +372,7 @@ export default function TimeClock({ onContinueToDashboard }) {
           day: '2-digit',
           month: 'short',
         })
-        const timeLabel = format(date, 'HH:mm')
+        const timeLabel = formatClockedTime(entry.clocked_at)
         const typeKey =
           entry.type === 'in'
             ? 'in'
@@ -277,7 +406,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         }
       })
     },
-    [i18n.language, t],
+    [formatClockedTime, i18n.language, t],
   )
 
   useEffect(() => {

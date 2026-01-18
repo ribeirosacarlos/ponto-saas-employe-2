@@ -337,15 +337,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                 </span>
               </div>
 
-              <div className="mt-3 grid gap-3 rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs sm:grid-cols-3 sm:text-sm">
-                <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {t('adminAdjustmentsPage.table.original', 'Horario original')}
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    {formatDateTime(adjustment.originalTime, t('adminAdjustmentsPage.table.unset', 'Nao informado'))}
-                  </p>
-                </div>
+              <div className="mt-3 grid gap-3 rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs sm:grid-cols-2 sm:text-sm">
                 <div className="space-y-1">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                     {t('adminAdjustmentsPage.table.corrected', 'Horario corrigido')}

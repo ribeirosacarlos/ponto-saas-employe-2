@@ -7,6 +7,8 @@ import {
   startOfMonth,
   endOfMonth,
   subMonths,
+  endOfDay,
+  startOfDay,
 } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import {
@@ -223,7 +225,7 @@ export default function History({ onBackToDashboard }) {
         const normalized = (data || []).map((item) => normalizeEntry(item, t))
         setEntries((prev) => (append ? [...prev, ...normalized] : normalized))
         setMeta(responseMeta || null)
-        setCurrentPage(page)
+        setCurrentPage(responseMeta?.currentPage ?? page)
         if (!append) setLocalPage(1)
       } catch (err) {
         const message =
@@ -245,8 +247,8 @@ export default function History({ onBackToDashboard }) {
 
   const filteredEntries = useMemo(() => {
     const { from, to } = appliedFilters
-    const fromDate = from ? parseISO(from) : null
-    const toDate = to ? parseISO(to) : null
+    const fromDate = from ? startOfDay(parseISO(from)) : null
+    const toDate = to ? endOfDay(parseISO(to)) : null
 
     return entries
       .filter((entry) => {

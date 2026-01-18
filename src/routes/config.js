@@ -25,6 +25,11 @@ export const ROUTES = {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  closeTimesheet: {
+    path: '/area-manager/payroll-close',
+    aliases: ['/area-manager/close-timesheet'],
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
   settings: {
     path: '/settings',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },

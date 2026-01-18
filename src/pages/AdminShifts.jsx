@@ -503,7 +503,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
       {renderContent()}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'edit'

@@ -11,6 +11,7 @@ import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
 import AdminAdjustments from './pages/AdminAdjustments.jsx'
+import CloseTimesheetPage from './pages/area-manager/CloseTimesheetPage.tsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
@@ -350,6 +351,8 @@ export default function App() {
         return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
         return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'closeTimesheet':
+        return <CloseTimesheetPage sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformBillingPlans':
         return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformCompanies':

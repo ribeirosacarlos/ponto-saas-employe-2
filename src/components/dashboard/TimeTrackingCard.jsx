@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { format, isSameDay } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Clock3 } from 'lucide-react'
 import { useToast } from '../ui/use-toast'
@@ -25,20 +24,41 @@ export function TimeTrackingCard({ onOpenHistory }) {
   const { entries, loadingEntries, refreshEntries } = useClocking()
   const [sendingAdjustment, setSendingAdjustment] = useState(false)
 
+  const getUtcDateKey = (value) => {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'invalid'
+    return date.toISOString().split('T')[0]
+  }
+
+  const formatClockedTime = (value) => {
+    if (!value) return '--:--'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return date.toLocaleTimeString(i18n.language, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    })
+  }
+
   useEffect(() => {
     if (!token) return
     refreshEntries()
   }, [refreshEntries, token])
 
   const todaysEntries = useMemo(
-    () => entries.filter((entry) => entry.clocked_at && isSameDay(new Date(entry.clocked_at), new Date())),
+    () => {
+      const todayKey = getUtcDateKey(new Date())
+      return entries.filter((entry) => entry.clocked_at && getUtcDateKey(entry.clocked_at) === todayKey)
+    },
     [entries],
   )
 
   const daySummaries = useMemo(() => {
     const grouped = entries.reduce((acc, entry) => {
       if (!entry.clocked_at) return acc
-      const key = format(new Date(entry.clocked_at), 'yyyy-MM-dd')
+      const key = getUtcDateKey(entry.clocked_at)
       acc[key] = acc[key] ? [...acc[key], entry] : [entry]
       return acc
     }, {})
@@ -81,7 +101,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
     let workedDays = 0
 
     daySummaries.forEach((day) => {
-      const current = new Date(day.dateKey)
+      const current = new Date(`${day.dateKey}T00:00:00Z`)
       if (current.getMonth() === now.getMonth() && current.getFullYear() === now.getFullYear()) {
         totalMinutes += day.totalMinutes
         workedDays += 1
@@ -104,10 +124,11 @@ export function TimeTrackingCard({ onOpenHistory }) {
   }
 
   const formatDayLabel = (dateKey) => {
-    const label = new Date(dateKey).toLocaleDateString(i18n.language, {
+    const label = new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(i18n.language, {
       weekday: 'long',
       day: '2-digit',
       month: 'short',
+      timeZone: 'UTC',
     })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
@@ -185,8 +206,8 @@ export function TimeTrackingCard({ onOpenHistory }) {
                   {t('dashboardPage.timeTracking.interval', {
                     entryLabel: t('dashboardPage.timeTracking.entryLabel'),
                     exitLabel: t('dashboardPage.timeTracking.exitLabel'),
-                    start: day.firstIn ? format(new Date(day.firstIn), 'HH:mm') : '--:--',
-                    end: day.lastOut ? format(new Date(day.lastOut), 'HH:mm') : '--:--',
+                    start: day.firstIn ? formatClockedTime(day.firstIn) : '--:--',
+                    end: day.lastOut ? formatClockedTime(day.lastOut) : '--:--',
                   })}
                 </span>
               </div>

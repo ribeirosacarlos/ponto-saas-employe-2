@@ -75,11 +75,23 @@ export async function rejectAdminAdjustment(id) {
   return normalizeAdjustment(data?.data ?? data ?? {}, 0)
 }
 
-export async function listTeamEntries({ page = 1 } = {}) {
+export async function listTeamEntries({
+  page = 1,
+  perPage,
+  userId,
+  dateFrom,
+  dateTo,
+  type,
+} = {}) {
   const params = {}
   if (page) params.page = page
+  if (perPage) params.per_page = perPage
+  if (userId) params.user_id = userId
+  if (dateFrom) params.date_from = dateFrom
+  if (dateTo) params.date_to = dateTo
+  if (type) params.type = type
 
   const { data } = await api.get('/v1/area-manager/team/entries', { params })
-  const { items, meta } = normalizePaginated(data, page)
+  const { items, meta } = normalizePaginated(data, page, perPage)
   return { data: items.map((entry, index) => normalizeTeamEntry(entry, index)), meta }
 }
