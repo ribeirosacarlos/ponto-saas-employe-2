@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Bell, FileText, GraduationCap, IdCard, Search } from 'lucide-react'
+import { AlertTriangle, Bell, Search } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
@@ -75,113 +75,6 @@ export default function Dashboard({
     absenceToday?.justification ||
     t('dashboardPage.absence.commentFallback', 'Sem justificativa informada.')
 
-  const documentSections = useMemo(
-    () => [
-      {
-        id: 'payroll',
-        title: t('dashboardPage.documents.sections.payroll.title'),
-        description: t('dashboardPage.documents.sections.payroll.description'),
-        icon: FileText,
-        accent: 'emerald',
-        items: [
-          {
-            name: t('dashboardPage.documents.sections.payroll.items.current.name'),
-            status: t('dashboardPage.documents.sections.payroll.items.current.status'),
-            updatedAt: t('dashboardPage.documents.sections.payroll.items.current.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.payroll.items.current.action'),
-          },
-          {
-            name: t('dashboardPage.documents.sections.payroll.items.previous.name'),
-            status: t('dashboardPage.documents.sections.payroll.items.previous.status'),
-            updatedAt: t('dashboardPage.documents.sections.payroll.items.previous.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.payroll.items.previous.action'),
-          },
-        ],
-      },
-      {
-        id: 'courses',
-        title: t('dashboardPage.documents.sections.courses.title'),
-        description: t('dashboardPage.documents.sections.courses.description'),
-        icon: GraduationCap,
-        accent: 'indigo',
-        items: [
-          {
-            name: t('dashboardPage.documents.sections.courses.items.onboarding.name'),
-            status: t('dashboardPage.documents.sections.courses.items.onboarding.status'),
-            updatedAt: t('dashboardPage.documents.sections.courses.items.onboarding.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.courses.items.onboarding.action'),
-          },
-          {
-            name: t('dashboardPage.documents.sections.courses.items.lgpd.name'),
-            status: t('dashboardPage.documents.sections.courses.items.lgpd.status'),
-            updatedAt: t('dashboardPage.documents.sections.courses.items.lgpd.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.courses.items.lgpd.action'),
-          },
-        ],
-      },
-      {
-        id: 'personal',
-        title: t('dashboardPage.documents.sections.personal.title'),
-        description: t('dashboardPage.documents.sections.personal.description'),
-        icon: IdCard,
-        accent: 'amber',
-        items: [
-          {
-            name: t('dashboardPage.documents.sections.personal.items.address.name'),
-            status: t('dashboardPage.documents.sections.personal.items.address.status'),
-            updatedAt: t('dashboardPage.documents.sections.personal.items.address.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.personal.items.address.action'),
-          },
-          {
-            name: t('dashboardPage.documents.sections.personal.items.rg.name'),
-            status: t('dashboardPage.documents.sections.personal.items.rg.status'),
-            updatedAt: t('dashboardPage.documents.sections.personal.items.rg.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.personal.items.rg.action'),
-          },
-          {
-            name: t('dashboardPage.documents.sections.personal.items.workCard.name'),
-            status: t('dashboardPage.documents.sections.personal.items.workCard.status'),
-            updatedAt: t('dashboardPage.documents.sections.personal.items.workCard.updatedAt'),
-            actionLabel: t('dashboardPage.documents.sections.personal.items.workCard.action'),
-          },
-        ],
-      },
-    ],
-    [t],
-  )
-
-  const announcements = useMemo(
-    () => [
-      {
-        id: 'hybrid',
-        title: t('dashboardPage.announcements.items.hybrid.title'),
-        body: t('dashboardPage.announcements.items.hybrid.body'),
-        sentAt: t('dashboardPage.announcements.items.hybrid.sentAt'),
-        status: 'pending',
-      },
-      {
-        id: 'security',
-        title: t('dashboardPage.announcements.items.security.title'),
-        body: t('dashboardPage.announcements.items.security.body'),
-        sentAt: t('dashboardPage.announcements.items.security.sentAt'),
-        status: 'seen',
-        viewedAt: t('dashboardPage.announcements.items.security.viewedAt'),
-      },
-    ],
-    [t],
-  )
-
-  const timeOffSummary = useMemo(
-    () => ({
-      availableDays: 12,
-      nextVacation: t('dashboardPage.timeOff.nextVacationValue'),
-      statusKey: 'approved',
-      status: t('dashboardPage.timeOff.statusValue.approved'),
-      absences: t('dashboardPage.timeOff.absencesValue', { count: 0 }),
-    }),
-    [t],
-  )
-
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const visibleCards = useMemo(
     () => DASHBOARD_CARDS.filter((card) => canRenderCard(capabilities, card.requires)),
@@ -202,7 +95,7 @@ export default function Dashboard({
   const cardProps = {
     timeTracking: { onOpenHistory },
     documents: {
-      sections: documentSections,
+      sections: [],
       onViewAll: handleViewAllDocuments,
       onAction: (item) =>
         toast({
@@ -215,7 +108,7 @@ export default function Dashboard({
       maxItemsPerSection: 1,
     },
     timeOff: {
-      summary: timeOffSummary,
+      summary: null,
       onRequest: () =>
         toast({
           title: t('dashboardPage.toasts.vacation.title'),
@@ -232,7 +125,7 @@ export default function Dashboard({
       },
     },
     announcements: {
-      announcements,
+      announcements: [],
       onViewAll: () => {
         if (onOpenAnnouncements) {
           onOpenAnnouncements()
