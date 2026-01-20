@@ -1,8 +1,9 @@
 import axios from 'axios'
+import { attachForbiddenInterceptor } from '../../lib/http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  'https://yellowgreen-falcon-528249.hostingersite.com/api'
+  'https://api.jornafy.com/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,3 +16,5 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+attachForbiddenInterceptor(api)

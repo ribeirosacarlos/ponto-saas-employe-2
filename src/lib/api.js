@@ -1,8 +1,9 @@
 ﻿import axios from 'axios'
+import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  'https://yellowgreen-falcon-528249.hostingersite.com/api'
+  'https://api.jornafy.com/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,6 +16,8 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+attachForbiddenInterceptor(api)
 
 export async function loginRequest(email, password) {
   const { data } = await api.post('/v1/auth/login', { email, password })
@@ -30,7 +33,21 @@ export async function logoutRequest() {
   return data
 }
 
+export async function meRequest() {
+  const { data } = await api.get('/v1/auth/me')
+  const payload = data?.data || data || {}
+  return {
+    user: payload.user || payload,
+    roles: payload.roles || [],
+  }
+}
+
 export async function clockRequest(type, coords = {}) {
+  const allowedTypes = ['in', 'out']
+  if (!allowedTypes.includes(type)) {
+    throw new Error(`Unsupported clock type "${type}". API now only accepts: ${allowedTypes.join(', ')}`)
+  }
+
   const payload = { type }
 
   if (coords.latitude) payload.latitude = coords.latitude
@@ -40,35 +57,86 @@ export async function clockRequest(type, coords = {}) {
   return data
 }
 
-export async function getEmployeeEntries({ from, to, page = 1, perPage = 20 } = {}) {
-  const params = {}
-  if (from) params.from = from
-  if (to) params.to = to
+const parseEntriesResponse = (data, { page, perPage }) => {
+  const payload = data?.data && !Array.isArray(data.data) ? data.data : data
+  const entries = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.entries)
+        ? payload.entries
+        : []
 
-  // Send both variants to support older API versions.
-  if (page) params.page = page
-  if (perPage) {
-    params.per_page = perPage
-    params.perPage = perPage
+  const metaSource = data?.meta || payload?.meta || payload || {}
+  const meta = {
+    currentPage:
+      metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
+    perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
+    total: metaSource.total ?? payload?.total,
+    lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
   }
 
-  const { data } = await api.get('/v1/employee/entries', {
-    params,
-  })
-
-  const entries = Array.isArray(data) ? data : data?.data || data?.entries || []
-  const meta =
-    data?.meta ||
-    (data && typeof data === 'object'
-      ? {
-          page: data.page || page,
-          perPage: data.per_page || data.perPage || perPage,
-          total: data.total,
-          lastPage: data.last_page || data.lastPage,
-        }
-      : null)
-
   return { data: entries, meta }
+}
+
+const extractClockedAt = (entry) =>
+  entry?.clocked_at ||
+  entry?.clockedAt ||
+  entry?.date ||
+  entry?.timestamp ||
+  entry?.created_at ||
+  null
+
+const isSameDay = (left, right) =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate()
+
+export async function getEmployeeEntries({
+  from,
+  to,
+  page = 1,
+  perPage = 20,
+  preferLatestPage = true,
+} = {}) {
+  const buildParams = (pageValue) => {
+    const params = {}
+    if (pageValue) params.page = pageValue
+    if (perPage) params.per_page = perPage
+    if (from) params.from = from
+    if (to) params.to = to
+    return params
+  }
+
+  const fetchPage = async (pageValue) => {
+    const { data } = await api.get('/v1/employee/entries', { params: buildParams(pageValue) })
+    return { data, pageValue }
+  }
+
+  let response = await fetchPage(page)
+  let parsed = parseEntriesResponse(response.data, { page, perPage })
+
+  if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
+    const today = new Date()
+    const filterAllowsToday =
+      (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
+    const hasTodayEntry =
+      filterAllowsToday &&
+      parsed.data.some((entry) => {
+        const value = extractClockedAt(entry)
+        if (!value) return false
+        const dt = new Date(value)
+        return !isNaN(dt) && isSameDay(dt, today)
+      })
+
+    // If the first page doesn't include today's records and there are more pages, fetch the last page.
+    if (!hasTodayEntry && parsed.meta.currentPage === 1) {
+      response = await fetchPage(parsed.meta.lastPage)
+      parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+    }
+  }
+
+  return parsed
 }
 
 export async function listEntries(page = 1) {
@@ -82,9 +150,10 @@ export async function requestAdjustment(payload) {
 }
 
 export async function breakRequest(action, coords = {}) {
-  const isStart = action === 'start'
-  const type = isStart ? 'break_start' : 'break_end'
-  return clockRequest(type, coords)
+  const actionLabel = action === 'start' ? 'start' : 'end'
+  throw new Error(
+    `Break clocking (${actionLabel}) is no longer supported by the API. Use regular in/out clocking instead.`,
+  )
 }
 
 export async function startBreak(coords = {}) {
@@ -106,24 +175,32 @@ export async function getWorkedToday() {
   }
 }
 
-export async function listEmployees(page = 1) {
+export async function getOpenTimeEntryStatus() {
+  const { data } = await api.get('/v1/employee/time-entries/open-status')
+  return data?.data ?? data
+}
+
+export async function getCurrentEmployeeShift() {
+  const { data } = await api.get('/v1/employee/shift')
+  return data?.data ?? data
+}
+
+export async function listEmployees(page = 1, filters = {}) {
   const params = {}
   if (page) params.page = page
+  if (filters.perPage) params.per_page = filters.perPage
+  if (filters.per_page) params.per_page = filters.per_page
 
   const { data } = await api.get('/v1/admin/employees', { params })
   const payload = data?.data ?? data
   const employees = Array.isArray(payload) ? payload : payload?.data || payload?.employees || []
-  const meta =
-    data?.meta ||
-    payload?.meta ||
-    (data && typeof data === 'object'
-      ? {
-          page: data.page ?? page,
-          perPage: data.per_page ?? data.perPage,
-          total: data.total,
-          lastPage: data.last_page ?? data.lastPage,
-        }
-      : null)
+  const metaSource = data?.meta || payload?.meta || data || {}
+  const meta = {
+    currentPage: metaSource.current_page ?? metaSource.currentPage ?? metaSource.page ?? page,
+    perPage: metaSource.per_page ?? metaSource.perPage,
+    total: metaSource.total,
+    lastPage: metaSource.last_page ?? metaSource.lastPage,
+  }
 
   return { data: employees, meta }
 }

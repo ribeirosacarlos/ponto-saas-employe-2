@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
+import { BrandSignature } from '../components/BrandSignature'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -16,6 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const login = useAuthStore((state) => state.login)
   const loading = useAuthStore((state) => state.loading)
+  const authError = useAuthStore((state) => state.error)
   const { toast } = useToast()
   const { t } = useTranslation()
 
@@ -53,22 +55,23 @@ export default function Login() {
         </div>
 
         <div className="rounded-[28px] border border-border/70 bg-card/90 p-8 shadow-[0_28px_70px_-35px_rgba(62,82,152,0.45)] backdrop-blur-xl transition-colors dark:shadow-[0_30px_80px_-42px_rgba(0,0,0,0.75)]">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-base font-semibold uppercase text-primary-foreground shadow-inner shadow-primary/30">
-              {t('login.brand.badge')}
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-foreground/70 dark:text-primary/80">
-                {t('login.brand.title')}
-              </p>
-              <p className="text-sm text-muted-foreground">{t('login.brand.subtitle')}</p>
-            </div>
+          <div className="mb-8">
+            <BrandSignature size="md" titleKey="login.brand.title" subtitleKey="login.brand.subtitle" />
           </div>
 
           <div className="mb-6 space-y-2">
             <h1 className="text-[22px] font-semibold leading-tight">{t('login.title')}</h1>
             <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
           </div>
+
+          {authError ? (
+            <div className="mb-4 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm text-rose-700 shadow-[0_14px_42px_-30px_rgba(244,63,94,0.45)] dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
+              <p className="font-semibold">{t('login.error.title', 'Erro ao autenticar')}</p>
+              <p className="text-xs text-rose-600/90 dark:text-rose-50/80">
+                {authError || t('login.error.description', 'Credenciais inválidas. Confira e tente novamente.')}
+              </p>
+            </div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -145,7 +148,6 @@ export default function Login() {
           </div>
           <div className="space-y-0.5 text-center">
             <p>{t('login.sessionCopy')}</p>
-            <p className="text-[11px] text-muted-foreground">{t('login.uiCredits')}</p>
           </div>
           <ShieldCheck className="h-4 w-4 text-primary" />
         </div>

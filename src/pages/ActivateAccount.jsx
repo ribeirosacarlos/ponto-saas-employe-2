@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { api } from '../lib/api'
 import { PageContainer } from '../components/ui/PageContainer'
+import { BrandSignature } from '../components/BrandSignature'
 
 export default function ActivateAccount() {
   const [email, setEmail] = useState('')
@@ -109,16 +110,8 @@ export default function ActivateAccount() {
         </div>
 
         <div className="rounded-[28px] border border-border/70 bg-card/90 p-8 shadow-[0_28px_70px_-35px_rgba(62,82,152,0.45)] backdrop-blur-xl transition-colors dark:shadow-[0_30px_80px_-42px_rgba(0,0,0,0.75)]">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-base font-semibold uppercase text-primary-foreground shadow-inner shadow-primary/30">
-              {t('login.brand.badge')}
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-foreground/70 dark:text-primary/80">
-                {t('login.brand.title')}
-              </p>
-              <p className="text-sm text-muted-foreground">{t('login.brand.subtitle')}</p>
-            </div>
+          <div className="mb-8">
+            <BrandSignature size="md" titleKey="login.brand.title" subtitleKey="login.brand.subtitle" />
           </div>
 
           <div className="mb-6 space-y-2">
@@ -256,7 +249,6 @@ export default function ActivateAccount() {
           </div>
           <div className="space-y-0.5 text-center">
             <p>{t('login.sessionCopy')}</p>
-            <p className="text-[11px] text-muted-foreground">{t('login.uiCredits')}</p>
           </div>
           <ShieldCheck className="h-4 w-4 text-primary" />
         </div>

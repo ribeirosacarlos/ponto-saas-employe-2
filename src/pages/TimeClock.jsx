@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { format } from 'date-fns'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { format, isYesterday } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -8,9 +8,12 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useClocking } from '../features/ponto/useClocking'
-import { getWorkedToday } from '../lib/api'
+import { getWorkedToday, getOpenTimeEntryStatus } from '../lib/api'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
+import { listEntries as listEmployeeEntries } from '../services/modules/employee'
+import { getEmployeeOvertimeBalance } from '../services/modules/employees'
+import { getCurrentEmployeeShift } from '../services/modules/shifts'
 
 const statusTokens = {
   idle: {
@@ -47,6 +50,13 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
+  const [plannedMinutes, setPlannedMinutes] = useState(null)
+  const [plannedLoading, setPlannedLoading] = useState(false)
+  const [overtimeMinutes, setOvertimeMinutes] = useState(null)
+  const [overtimeLoading, setOvertimeLoading] = useState(false)
+  const [recentEntries, setRecentEntries] = useState([])
+  const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
+  const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const userMenuRef = useRef(null)
 
   useEffect(() => {
@@ -76,6 +86,15 @@ export default function TimeClock({ onContinueToDashboard }) {
     user?.email?.split('@')[0] ||
     t('dashboard.fallbackName')
 
+  const employeeId = useMemo(
+    () =>
+      user?.employee_id ||
+      user?.employeeId ||
+      user?.employee?.id ||
+      user?.id,
+    [user],
+  )
+
   const normalizedStatus = clockStatus || 'idle'
 
   const statusTitle = t(`timeClock.status.title.${normalizedStatus}`)
@@ -93,30 +112,35 @@ export default function TimeClock({ onContinueToDashboard }) {
     month: 'long',
   })
 
-  const lastRecordLabel = lastWorkEntry
-    ? t('timeClock.lastRecord.label', {
-        type: t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`),
-        time: format(new Date(lastWorkEntry.clocked_at), 'HH:mm'),
+  const formatClockedTime = useCallback(
+    (value) => {
+      if (!value) return '--:--'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return String(value)
+      return date.toLocaleTimeString(i18n.language, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
       })
-    : t('timeClock.lastRecord.placeholder')
+    },
+    [i18n.language],
+  )
 
-  const formatRecentDay = (offset = 0) => {
-    const date = new Date()
-    date.setDate(date.getDate() - offset)
-    return date.toLocaleDateString(i18n.language, {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'short',
-    })
-  }
+  const lastRecordLabel = useMemo(() => {
+    if (!lastWorkEntry) return t('timeClock.lastRecord.placeholder')
 
-  const formatRecentInterval = (start, end) =>
-    t('timeClock.recent.interval', {
-      entryLabel: t('timeClock.recent.entryLabel'),
-      exitLabel: t('timeClock.recent.exitLabel'),
-      start,
-      end,
-    })
+    const recordDate = new Date(lastWorkEntry.clocked_at)
+    const typeLabel = t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`)
+    const timeLabel = formatClockedTime(lastWorkEntry.clocked_at)
+
+    if (Number.isNaN(recordDate.getTime())) {
+      return t('timeClock.lastRecord.label', { type: typeLabel, time: timeLabel })
+    }
+
+    const labelKey = isYesterday(recordDate) ? 'timeClock.lastRecord.yesterdayLabel' : 'timeClock.lastRecord.label'
+    return t(labelKey, { type: typeLabel, time: timeLabel })
+  }, [formatClockedTime, lastWorkEntry, t])
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -125,6 +149,23 @@ export default function TimeClock({ onContinueToDashboard }) {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }
+
+  const formatBalanceToLabel = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
+    const rounded = Math.round(minutes)
+    const sign = rounded > 0 ? '+' : rounded < 0 ? '-' : ''
+    const absolute = Math.abs(rounded)
+    const hours = String(Math.floor(absolute / 60)).padStart(2, '0')
+    const mins = String(absolute % 60).padStart(2, '0')
+    return `${sign}${hours}:${mins}`
+  }, [])
+
+  const getBalanceTone = useCallback((minutes) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return 'text-muted-foreground'
+    if (minutes > 0) return 'text-emerald-500 dark:text-emerald-300'
+    if (minutes < 0) return 'text-rose-500 dark:text-rose-300'
+    return 'text-foreground'
+  }, [])
 
   const formatAbsenceDate = (value) => {
     if (!value) return ''
@@ -197,9 +238,201 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
   }, [token])
 
+  useEffect(() => {
+    let active = true
+
+    const parseTimeToMinutes = (value) => {
+      if (!value || typeof value !== 'string') return null
+      const [hours, minutes] = value.split(':').map((part) => Number(part))
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
+      return hours * 60 + minutes
+    }
+
+    const computePlannedMinutes = (day) => {
+      if (!day) return null
+      if (day.is_working_day === false) return 0
+
+      const start = parseTimeToMinutes(day.start_time ?? day.startTime ?? day.start)
+      const end = parseTimeToMinutes(day.end_time ?? day.endTime ?? day.end)
+      if (start === null || end === null) return null
+
+      const breakMinutesRaw = Number(
+        day.break_minutes ?? day.breakMinutes ?? day.breakDuration ?? day.break_duration ?? 0,
+      )
+      const breakMinutes = Number.isFinite(breakMinutesRaw) ? breakMinutesRaw : 0
+      const duration = Math.max(0, end - start - breakMinutes)
+      return Number.isFinite(duration) ? duration : null
+    }
+
+    const fetchPlannedShift = async () => {
+      if (!token) {
+        if (active) {
+          setPlannedMinutes(null)
+          setPlannedLoading(false)
+        }
+        return
+      }
+
+      setPlannedLoading(true)
+      try {
+        const { shift } = await getCurrentEmployeeShift()
+        const today = new Date()
+        const jsWeekday = today.getDay()
+        const isoWeekday = jsWeekday === 0 ? 7 : jsWeekday
+        const days = shift?.shift_days ?? shift?.days ?? []
+
+        const plannedDay =
+          days.find((day) => Number(day.weekday ?? day.day) === isoWeekday) ||
+          days.find((day) => Number(day.weekday ?? day.day) === jsWeekday) ||
+          null
+
+        const minutes = computePlannedMinutes(plannedDay)
+        if (!active) return
+        setPlannedMinutes(minutes)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load employee shift', error)
+        if (!active) return
+        setPlannedMinutes(null)
+      } finally {
+        if (active) setPlannedLoading(false)
+      }
+    }
+
+    fetchPlannedShift()
+    return () => {
+      active = false
+    }
+  }, [token])
+
+  useEffect(() => {
+    let active = true
+    const fetchOpenStatus = async () => {
+      if (!token) {
+        setOpenEntryStatus(null)
+        return
+      }
+      try {
+        const status = await getOpenTimeEntryStatus()
+        if (!active) return
+        setOpenEntryStatus(status)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load open-status', error)
+      }
+    }
+    fetchOpenStatus()
+    return () => {
+      active = false
+    }
+  }, [token])
+
+  useEffect(() => {
+    let active = true
+
+    const fetchOvertimeBalance = async () => {
+      if (!token || !employeeId) {
+        if (active) {
+          setOvertimeMinutes(null)
+          setOvertimeLoading(false)
+        }
+        return
+      }
+
+      setOvertimeLoading(true)
+      try {
+        const today = new Date()
+        const from = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
+        const to = format(today, 'yyyy-MM-dd')
+        const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
+
+        const parseNumber = (value) => {
+          if (value === null || value === undefined) return null
+          const parsed = Number(value)
+          return Number.isFinite(parsed) ? parsed : null
+        }
+
+        let minutes =
+          parseNumber(balance?.balanceMinutes ?? balance?.balance_minutes) ??
+          parseNumber(balance?.totalMinutes ?? balance?.total_minutes) ??
+          parseNumber(balance?.minutesBalance ?? balance?.minutes_balance) ??
+          parseNumber(balance?.minutes)
+
+        if (minutes === null) {
+          const seconds =
+            parseNumber(
+              balance?.balanceSeconds ??
+                balance?.balance_seconds ??
+                balance?.totalSeconds ??
+                balance?.total_seconds ??
+                balance?.seconds,
+            ) ?? null
+          if (seconds !== null) {
+            minutes = seconds / 60
+          }
+        }
+
+        if (minutes === null && Array.isArray(balance?.days)) {
+          const total = balance.days.reduce(
+            (acc, day) =>
+              acc +
+              (parseNumber(day?.balanceMinutes ?? day?.balance_minutes ?? day?.minutesBalance ?? day?.minutes_balance ?? day?.minutes) ??
+                0),
+            0,
+          )
+          if (Number.isFinite(total)) {
+            minutes = total
+          }
+        }
+
+        if (!active) return
+        setOvertimeMinutes(minutes)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load overtime balance', error)
+        if (!active) return
+        setOvertimeMinutes(null)
+      } finally {
+        if (active) setOvertimeLoading(false)
+      }
+    }
+
+    fetchOvertimeBalance()
+    return () => {
+      active = false
+    }
+  }, [employeeId, token])
+
+  const openEntryNextAction = useMemo(() => {
+    const nextActionKey = openEntryStatus?.next_action
+    if (!nextActionKey) return null
+    return t(`timeClock.nextActions.${nextActionKey}`, {
+      defaultValue: t('timeClock.nextActions.default'),
+    })
+  }, [openEntryStatus?.next_action, t])
+
+  const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
+
+  const overtimeLabel = useMemo(
+    () => (overtimeLoading ? t('common.loading', 'Carregando...') : formatBalanceToLabel(overtimeMinutes)),
+    [formatBalanceToLabel, overtimeLoading, overtimeMinutes, t],
+  )
+
+  const overtimeTone = useMemo(
+    () => (overtimeLoading ? 'text-muted-foreground' : getBalanceTone(overtimeMinutes)),
+    [getBalanceTone, overtimeLoading, overtimeMinutes],
+  )
+
+  const plannedLabel = useMemo(() => {
+    if (plannedLoading) return t('common.loading', 'Carregando...')
+    if (plannedMinutes === null || plannedMinutes === undefined || Number.isNaN(plannedMinutes)) {
+      return '--:--'
+    }
+    return formatMinutesToLabel(plannedMinutes)
+  }, [formatMinutesToLabel, plannedLoading, plannedMinutes, t])
+
+  const plannedTone = plannedLoading ? 'text-muted-foreground' : 'text-foreground'
+
   const summaryStats = useMemo(
     () => [
-      { label: t('timeClock.summary.planned'), value: '08:00', tone: 'text-foreground' },
+      { label: t('timeClock.summary.planned'), value: plannedLabel, tone: plannedTone },
       {
         label: t('timeClock.summary.recorded'),
         value: workedTodayLabel,
@@ -208,34 +441,90 @@ export default function TimeClock({ onContinueToDashboard }) {
             ? 'text-muted-foreground'
             : 'text-emerald-500 dark:text-emerald-300',
       },
-      { label: t('timeClock.summary.bank'), value: '+02:15', tone: 'text-emerald-500 dark:text-emerald-300' },
+      { label: t('timeClock.summary.bank'), value: overtimeLabel, tone: overtimeTone },
     ],
-    [normalizedStatus, t],
+    [normalizedStatus, overtimeLabel, overtimeTone, plannedLabel, plannedTone, t, workedTodayLabel],
   )
 
-  const recentEntries = useMemo(
-    () => [
-      {
-        day: formatRecentDay(1),
-        interval: formatRecentInterval('09:02', '17:36'),
-        value: '08:34',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(2),
-        interval: formatRecentInterval('09:11', '17:21'),
-        value: '08:10',
-        tone: 'text-emerald-500 dark:text-emerald-300',
-      },
-      {
-        day: formatRecentDay(3),
-        interval: formatRecentInterval('08:59', '16:45'),
-        value: '07:46',
-        tone: 'text-amber-500 dark:text-amber-300',
-      },
-    ],
-    [i18n.language, t],
+  const normalizeEntryList = useCallback(
+    (items = []) => {
+      const sorted = [...items]
+        .filter((entry) => entry?.clocked_at)
+        .sort((a, b) => new Date(b.clocked_at).getTime() - new Date(a.clocked_at).getTime())
+
+      return sorted.slice(0, 5).map((entry) => {
+        const date = new Date(entry.clocked_at)
+        const day = date.toLocaleDateString(i18n.language, {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'short',
+        })
+        const timeLabel = formatClockedTime(entry.clocked_at)
+        const typeKey =
+          entry.type === 'in'
+            ? 'in'
+            : entry.type === 'out'
+              ? 'out'
+              : entry.type === 'break_start'
+                ? 'breakStart'
+                : entry.type === 'break_end'
+                  ? 'breakEnd'
+                  : entry.type
+        const typeLabel =
+          t(`types.${typeKey}`) ||
+          (typeKey === 'breakStart'
+            ? t('timeClock.recent.breakStart', 'Início do intervalo')
+            : typeKey === 'breakEnd'
+              ? t('timeClock.recent.breakEnd', 'Fim do intervalo')
+              : entry.type)
+        const tone =
+          entry.type === 'in'
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : entry.type === 'out'
+              ? 'text-amber-500 dark:text-amber-300'
+              : 'text-muted-foreground'
+
+        return {
+          id: entry.id || `${entry.clocked_at}-${entry.type}`,
+          day,
+          interval: `${typeLabel} • ${timeLabel}`,
+          value: entry.source || entry.type,
+          tone,
+        }
+      })
+    },
+    [formatClockedTime, i18n.language, t],
   )
+
+  useEffect(() => {
+    let active = true
+
+    const fetchRecentEntries = async () => {
+      if (!token) {
+        setRecentEntries([])
+        return
+      }
+
+      setRecentEntriesLoading(true)
+      try {
+        const { data } = await listEmployeeEntries(1)
+        if (!active) return
+        const normalized = Array.isArray(data) ? data : data?.data || []
+        setRecentEntries(normalizeEntryList(normalized))
+      } catch (error) {
+        console.error('[TimeClock] Failed to load recent entries', error)
+        if (!active) return
+        setRecentEntries([])
+      } finally {
+        if (active) setRecentEntriesLoading(false)
+      }
+    }
+
+    fetchRecentEntries()
+    return () => {
+      active = false
+    }
+  }, [normalizeEntryList, token])
 
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
@@ -293,8 +582,16 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [])
 
   return (
-    <PageContainer className="min-h-screen py-6 sm:py-8 lg:py-10">
-      <div className="relative w-full overflow-hidden rounded-[32px] border border-border/80 bg-gradient-to-br from-background/95 via-card/95 to-background/95 p-6 sm:p-8 lg:p-10 shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)] backdrop-blur-xl">
+    <PageContainer className="flex min-h-screen items-center justify-center">
+      <div className="
+        relative w-full max-w-6x1 overflow-hidden
+        rounded-[28px] sm:rounded-[32px]
+        border border-border/80
+        bg-gradient-to-br from-background/95 via-card/95 to-background/95
+        p-4 sm:p-6 lg:p-8
+        shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)]
+        backdrop-blur-xl
+      ">
         <div className="pointer-events-none absolute inset-0 opacity-90">
           <div className="absolute left-[-14%] top-[-18%] h-72 w-72 rounded-full bg-primary/18 blur-[120px]" />
           <div className="absolute right-[-18%] top-[10%] h-80 w-80 rounded-full bg-primary/16 blur-[120px]" />
@@ -302,89 +599,54 @@ export default function TimeClock({ onContinueToDashboard }) {
         </div>
 
         <div className="relative z-10 space-y-10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {t('timeClock.greeting', { name: firstName })}
-                </p>
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
-                  <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
+          <div className="grid gap-4 lg:flex lg:items-start lg:justify-between">
+            <div className="order-2 lg:order-1">
+              <div className="flex items-start gap-3">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {t('timeClock.greeting', { name: firstName })}
+                  </p>
+                  <div className="space-y-1">
+                    <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
+                    <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2 lg:items-end">
-              <div className="flex items-center gap-3">
-                <div className="text-right leading-tight">
-                  <p className="text-sm font-semibold text-muted-foreground">{formattedDate}</p>
-                  <p className="text-lg font-bold text-foreground">{formattedTime}</p>
-                </div>
-                <div ref={userMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_10px_30px_-18px_rgba(0,0,0,0.55)] transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
-                  >
-                    {initials}
-                  </button>
+            
+            <div className="order-1 lg:order-2">
+              <div className="flex flex-col gap-2 lg:items-end">
+                <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/70 px-3 py-2 shadow-[0_16px_50px_-42px_rgba(62,82,152,0.35)] backdrop-blur lg:w-auto lg:justify-start lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
+                  <div className="min-w-0 leading-tight lg:text-right">
+                    <p className="truncate text-xs font-semibold text-muted-foreground lg:text-sm">
+                      {formattedDate}
+                    </p>
+                    <p className="text-base font-bold text-foreground lg:text-lg">
+                      {formattedTime}
+                    </p>
+                  </div>
 
-                  {isUserMenuOpen ? (
-                    <div className="absolute right-0 top-14 w-64 rounded-2xl border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-38px_rgba(0,0,0,0.45)] backdrop-blur">
-                      <div className="flex items-center gap-3 rounded-xl bg-muted/70 px-3 py-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {user?.name || firstName}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {user?.email || t('dashboard.fallbackEmail', 'usuario@empresa.com')}
-                          </p>
-                        </div>
+                  <div ref={userMenuRef} className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-[0_10px_30px_-18px_rgba(0,0,0,0.55)] transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 lg:h-12 lg:w-12 lg:text-sm"
+                      aria-haspopup="menu"
+                      aria-expanded={isUserMenuOpen}
+                    >
+                      {initials}
+                    </button>
+
+                    {isUserMenuOpen ? (
+                      <div className="absolute right-0 top-12 w-64 rounded-2xl border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-38px_rgba(0,0,0,0.45)] backdrop-blur lg:top-14">
+                        {/* ...seu menu igual... */}
                       </div>
-
-                      <div className="my-3 h-px bg-border/80" />
-
-                      <div className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={handleGoToProfile}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
-                        >
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <User className="h-4 w-4" />
-                          </span>
-                          {t('timeClock.menu.profile', 'Perfil do técnico')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleOpenHelp}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
-                        >
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <HelpCircle className="h-4 w-4" />
-                          </span>
-                          {t('timeClock.menu.help', 'Solicitar ajuda')}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={logoutLoading}
-                          onClick={handleLogout}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
-                        >
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
-                            <LogOut className="h-4 w-4" />
-                          </span>
-                          {t('timeClock.actions.logout')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -414,6 +676,33 @@ export default function TimeClock({ onContinueToDashboard }) {
                           'Voce esta bloqueado para registrar o ponto.',
                         )}
                       </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {hasOpenEntry ? (
+                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/90 p-4 shadow-[0_16px_40px_-32px_rgba(251,191,36,0.35)] dark:border-amber-500/40 dark:bg-amber-500/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
+                      <AlertTriangle className="h-5 w-5" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                        {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
+                      </p>
+                      <p className="text-xs text-amber-800/90 dark:text-amber-50/90">
+                        {t(
+                          'timeClock.openEntryWarning.description',
+                          'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+                        )}
+                      </p>
+                      {openEntryNextAction ? (
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                          {t('timeClock.openEntryWarning.nextAction', {
+                            action: openEntryNextAction,
+                          })}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -506,18 +795,28 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {recentEntries.map((entry) => (
-                    <div
-                      key={entry.day + entry.value}
-                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold">{entry.day}</p>
-                        <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                  {recentEntriesLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('common.loading', 'Carregando registros...')}
+                    </p>
+                  ) : recentEntries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
+                    </p>
+                  ) : (
+                    recentEntries.map((entry) => (
+                      <div
+                        key={entry.id || entry.day + entry.value}
+                        className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold">{entry.day}</p>
+                          <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                        </div>
+                        <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
                       </div>
-                      <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

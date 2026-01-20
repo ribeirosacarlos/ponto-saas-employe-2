@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock3, FileText, Home, ListChecks, Menu, Settings, Users, X } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import ActivateAccount from './pages/ActivateAccount'
@@ -10,61 +10,40 @@ import History from './pages/History.jsx'
 import Equipo from './pages/Equipo.jsx'
 import Vacations from './pages/Vacations.jsx'
 import AdminVacations from './pages/AdminVacations.jsx'
+import AdminAdjustments from './pages/AdminAdjustments.jsx'
+import CloseTimesheetPage from './pages/area-manager/CloseTimesheetPage.tsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
-import { AppSidebar } from './components/AppSidebar.jsx'
+import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
+import AdminShifts from './pages/AdminShifts.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
+import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
+import SubscribePage from './pages/SubscribePage.jsx'
+import ForbiddenPage from './pages/ForbiddenPage.jsx'
+import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
+import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
+import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
+import { BrandSignature } from './components/BrandSignature.jsx'
 import { useAuthStore } from './store/useAuth.js'
-import { getWorkedToday } from './lib/api'
+import { getWorkedToday, meRequest } from './lib/api'
 import { useToast } from './components/ui/use-toast'
-import { UserProfileDropdown } from './components/UserProfileDropdown'
 import { useTheme } from './providers/ThemeProvider.jsx'
-import { LanguageSwitcher } from './components/LanguageSwitcher'
-import { ThemeToggle } from './components/ThemeToggle'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
+import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
+import { NAV_ITEMS } from './config/nav.config'
+import { useIsMobile } from './hooks/useMediaQuery'
+import { useAccess } from './providers/AccessProvider.jsx'
+import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
 
-const PAGE_PATHS = {
-  login: '/',
-  activateAccount: '/activate-account',
-  timeClock: '/time-clock',
-  dashboard: '/dashboard',
-  history: '/history',
-  documents: '/documents',
-  vacations: '/vacations',
-  adminVacations: '/admin/vacations',
-  adminAnnouncements: '/admin/announcements',
-
-  equipo: '/equipo',
-  announcements: '/announcements',
-  platformCompanies: '/platform/companies',
-}
-
-const PAGE_GUARDS = {
-  equipo: { anyOf: ['area_manager'] },
-  vacations: { anyOf: ['employee'] },
-  announcements: { anyOf: ['employee'] },
-  adminVacations: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-  adminAnnouncements: { anyOf: ['area_manager', 'admin', 'super_admin'] },
-  platformCompanies: { anyOf: ['super_admin'] },
-}
-
-const resolvePageFromPath = (path) => {
-  if (!path) return 'login'
-  const normalized = path.replace(/\/+$/, '') || '/'
-  if (normalized === '/history' || normalized === '/time-entries') return 'history'
-  if (normalized === '/dashboard') return 'dashboard'
-  if (normalized === '/time-clock') return 'timeClock'
-  if (normalized === '/documents') return 'documents'
-  if (normalized === '/vacations') return 'vacations'
-  if (normalized === '/admin/vacations') return 'adminVacations'
-  if (normalized === '/admin/announcements') return 'adminAnnouncements'
-  if (normalized === '/equipo') return 'equipo'
-  if (normalized === '/announcements') return 'announcements'
-  if (normalized === '/platform/companies') return 'platformCompanies'
-
-  if (normalized === '/activate-account') return 'activateAccount'
-  return 'login'
+const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
+const getInitialSidebarCollapsed = () => {
+  if (typeof window === 'undefined') return false
+  const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+  if (stored === '1') return true
+  if (stored === '0') return false
+  return false
 }
 
 export default function App() {
@@ -73,14 +52,20 @@ export default function App() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const roles = useAuthStore((state) => state.roles)
+  const syncProfile = useAuthStore((state) => state.syncProfile)
   const { theme } = useTheme()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const { accessDeniedReason, lastDeniedMessage, clearAccessDenied } = useAccess()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
   )
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  )
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
 
   const formatMinutesToLabel = useCallback((minutes) => {
@@ -91,22 +76,57 @@ export default function App() {
     return `${hours}:${mins}`
   }, [t])
 
+  const allNavItems = useMemo(
+    () =>
+      NAV_ITEMS.map((item) => {
+        const route = item.page ? ROUTES[item.page] : undefined
+        return {
+          ...item,
+          badge: item.id === 'dashboard' ? todayBadge : item.badge,
+          badgeKey: item.id === 'dashboard' ? undefined : item.badgeKey,
+          path: route?.path ?? item.path,
+          requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
+        }
+      }).filter((item) => canRenderCard(capabilities, item.requires)),
+    [capabilities, todayBadge],
+  )
+
+  const desktopNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInDesktop !== false),
+    [allNavItems],
+  )
+
+  const drawerNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInDrawer !== false),
+    [allNavItems],
+  )
+
+  const bottomNavItems = useMemo(
+    () => allNavItems.filter((item) => item.showInBottomNav),
+    [allNavItems],
+  )
+
   const canAccessPage = useCallback(
-    (page) => canRenderCard(capabilities, PAGE_GUARDS[page]),
+    (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
     [capabilities],
   )
 
   const navigateTo = useCallback(
-    (page, replace = false) => {
-      const allowedPage = canAccessPage(page) ? page : 'dashboard'
-      const path = PAGE_PATHS[allowedPage] || '/'
+    (page, replace = false, options = {}) => {
+      const targetPage = ROUTES[page] ? page : 'dashboard'
+      const allowedPage = canAccessPage(targetPage) ? targetPage : 'dashboard'
+      const basePath = options.pathOverride || PAGE_PATHS[allowedPage] || '/'
+      const path = options.search ? `${basePath}${options.search}` : basePath
       const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
       if (typeof window !== 'undefined') {
         window.history[method]({ page: allowedPage }, '', path)
       }
       setCurrentPage(allowedPage)
+      if (isMobile) {
+        setSidebarOpen(false)
+      }
     },
-    [canAccessPage],
+    [canAccessPage, isMobile],
   )
 
   useEffect(() => {
@@ -114,7 +134,16 @@ export default function App() {
   }, [restoreSession])
 
   useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    } else {
+      setSidebarOpen(true)
+    }
+  }, [isMobile])
+
+  useEffect(() => {
     if (!token) {
+      clearAccessDenied()
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
 
@@ -137,7 +166,7 @@ export default function App() {
       return
     }
     setCurrentPage(allowedPage)
-  }, [canAccessPage, navigateTo, token])
+  }, [canAccessPage, clearAccessDenied, navigateTo, token])
 
   useEffect(() => {
     const handlePopstate = () => {
@@ -160,12 +189,60 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [canAccessPage, navigateTo, token])
 
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }, [currentPage, isMobile])
+
+
+  useEffect(() => {
+    let active = true
+
+    const bootstrapAccess = async () => {
+      if (!token) return
+      try {
+        const profile = await meRequest()
+        if (!active) return
+        if (profile?.user) {
+          syncProfile(profile.user, profile.roles || [])
+        }
+        clearAccessDenied()
+      } catch (error) {
+        if (!active) return
+        const status = error?.response?.status
+        if (status === 401) {
+          toast({
+            title: t('toast.sessionExpired.title'),
+            description: error.response?.data?.message || t('toast.sessionExpired.description'),
+            variant: 'error',
+          })
+          await logout()
+        }
+      }
+    }
+
+    bootstrapAccess()
+    return () => {
+      active = false
+    }
+  }, [clearAccessDenied, logout, syncProfile, t, toast, token])
+
+  useEffect(() => {
+    if (!token || !accessDeniedReason) return
+    const redirect = getAccessRedirect(accessDeniedReason)
+    if (!redirect?.page) return
+    if (ROUTES[currentPage]?.isPublic) return
+    if (currentPage === redirect.page) return
+
+    navigateTo(redirect.page, true, { search: redirect.search })
+  }, [accessDeniedReason, currentPage, navigateTo, token])
 
   useEffect(() => {
     let active = true
 
     const fetchWorkedToday = async () => {
-      if (!token) {
+      if (!token || accessDeniedReason) {
         setTodayBadge(t('dashboardPage.badges.today'))
         return
       }
@@ -189,7 +266,7 @@ export default function App() {
     return () => {
       active = false
     }
-  }, [formatMinutesToLabel, t, token])
+  }, [accessDeniedReason, formatMinutesToLabel, t, token])
 
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
@@ -220,37 +297,108 @@ export default function App() {
     })
   }
 
-  const navItems = [
-    {
-      label: t('dashboardPage.nav.dashboard'),
-      icon: Home,
-      page: 'dashboard',
-      onClick: handleGoToDashboard,
-      badge: todayBadge,
-    },
-    {
-      label: t('dashboardPage.nav.history'),
-      icon: ListChecks,
-      page: 'history',
-      onClick: handleGoToHistory,
-    },
-    {
-      label: t('dashboardPage.nav.documents'),
-      icon: FileText,
-      page: 'documents',
-      onClick: handleGoToDocuments,
-    },
-    { label: t('dashboardPage.nav.calendar'), icon: CalendarDays },
-    {
-      label: t('dashboardPage.nav.registerPoint'),
-      icon: Clock3,
-      page: 'timeClock',
-      onClick: handleGoToTimeClock,
-    },
-    { label: t('dashboardPage.nav.projects'), icon: ListChecks },
-    { label: t('dashboardPage.nav.team'), icon: Users },
-    { label: t('dashboardPage.nav.settings'), icon: Settings },
-  ]
+  const handleRetryAccess = useCallback(async () => {
+    try {
+      const profile = await meRequest()
+      if (profile?.user) {
+        syncProfile(profile.user, profile.roles || [])
+      }
+      clearAccessDenied()
+      navigateTo('dashboard', true)
+    } catch (error) {
+      const status = error?.response?.status
+      if (status === 401) {
+        toast({
+          title: t('toast.sessionExpired.title'),
+          description: error.response?.data?.message || t('toast.sessionExpired.description'),
+          variant: 'error',
+        })
+        await logout()
+      }
+    }
+  }, [clearAccessDenied, logout, navigateTo, syncProfile, t, toast])
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            onOpenHistory={handleGoToHistory}
+            onOpenDocuments={handleGoToDocuments}
+            onOpenVacations={handleGoToVacations}
+            onOpenAnnouncements={handleGoToAnnouncements}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+      case 'history':
+        return (
+          <History
+            onBackToDashboard={handleGoToDashboard}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+      case 'documents':
+        return <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'vacations':
+        return <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminVacations':
+        return <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminAdjustments':
+        return <AdminAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminShifts':
+        return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminAnnouncements':
+        return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'closeTimesheet':
+        return <CloseTimesheetPage sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'platformBillingPlans':
+        return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'platformCompanies':
+        return <PlatformCompanies />
+      case 'announcements':
+        return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'equipo':
+        return <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'settings':
+        return <SettingsPage />
+      case 'companyMissing':
+        return (
+          <CompanyMissingPage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+          />
+        )
+      case 'subscribe':
+        return (
+          <SubscribePage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+          />
+        )
+      case 'forbidden':
+        return (
+          <ForbiddenPage
+            message={lastDeniedMessage}
+            onRetry={handleRetryAccess}
+          />
+        )
+      default:
+        return (
+          <TimeClock
+            onContinueToDashboard={handleGoToDashboard}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
 
 
   return (
@@ -270,83 +418,74 @@ export default function App() {
       <div className="relative z-10">
         {token ? (
           <>
-            <div
-              aria-hidden="true"
-              className={cn(
-                'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 md:hidden',
-                sidebarOpen ? 'opacity-70 pointer-events-auto' : 'opacity-0 pointer-events-none',
-              )}
-            />
-            <AppSidebar
-              sidebarOpen={sidebarOpen}
-              currentPage={currentPage}
-              onNavigate={navigateTo}
-              onToggle={handleToggleSidebar}
-              onProfile={handleProfile}
-              onHelp={handleHelp}
-              onLogout={handleLogout}
-            />
+            {!isMobile ? (
+              <DesktopSidebar
+                open={sidebarOpen}
+                collapsed={sidebarCollapsed}
+                navItems={desktopNavItems}
+                currentPage={currentPage}
+                onNavigate={navigateTo}
+                user={user}
+                onProfile={handleProfile}
+                onHelp={handleHelp}
+                onLogout={handleLogout}
+                onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+              />
+            ) : (
+              <MobileSidebarDrawer
+                open={sidebarOpen}
+                onOpenChange={setSidebarOpen}
+                navItems={drawerNavItems}
+                currentPage={currentPage}
+                user={user}
+                onNavigate={navigateTo}
+                onProfile={handleProfile}
+                onHelp={handleHelp}
+                onLogout={handleLogout}
+              />
+            )}
 
             <main
               className={cn(
-                'relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300',
-                sidebarOpen ? 'md:ml-64' : 'md:ml-0',
+                'relative flex-1 flex min-h-screen flex-col min-w-0 pb-24 md:pb-0 transition-all duration-300',
+                !isMobile && sidebarOpen
+                  ? sidebarCollapsed
+                    ? 'md:ml-16'
+                    : 'md:ml-64'
+                  : 'md:ml-0',
               )}
+              style={
+                isMobile
+                  ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }
+                  : undefined
+              }
             >
-              <div className="absolute left-0 top-4 z-30 w-full px-3 sm:top-6 sm:px-4 lg:px-6 flex">
-                <button
-                  type="button"
-                  aria-label={t('dashboardPage.header.toggleMenu')}
-                  onClick={handleToggleSidebar}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground shadow-sm transition hover:bg-muted/80"
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-              </div>
+              {isMobile ? (
+                <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
+                  <button
+                    type="button"
+                    aria-label={t('sidebar.actions.openMenu', { defaultValue: 'Open menu' })}
+                    onClick={() => setSidebarOpen(true)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-muted text-foreground transition hover:bg-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                  <BrandSignature />
+                </div>
+              ) : null}
               <div className="flex-1 min-h-0">
-                <div className="w-full">
-                  {currentPage === 'dashboard' ? (
-                    <Dashboard
-                      onOpenHistory={handleGoToHistory}
-                      onOpenDocuments={handleGoToDocuments}
-                      onOpenVacations={handleGoToVacations}
-                      onOpenAnnouncements={handleGoToAnnouncements}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'history' ? (
-                    <History
-                      onBackToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'documents' ? (
-                    <Documents sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'vacations' ? (
-                    <Vacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'adminVacations' ? (
-                    <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'adminAnnouncements' ? (
-                    <AdminAnnouncements
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  ) : currentPage === 'platformCompanies' ? (
-                    <PlatformCompanies />
-                  ) : currentPage === 'announcements' ? (
-                    <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : currentPage === 'equipo' ? (
-                    <Equipo sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
-                  ) : (
-                    <TimeClock
-                      onContinueToDashboard={handleGoToDashboard}
-                      sidebarOpen={sidebarOpen}
-                      onToggleSidebar={handleToggleSidebar}
-                    />
-                  )}
+                <div className="mx-auto w-full max-w-[1320px]">
+                  {renderCurrentPage()}
                 </div>
               </div>
             </main>
+            {isMobile ? (
+              <BottomNavigation
+                items={bottomNavItems}
+                currentPage={currentPage}
+                onNavigate={navigateTo}
+              />
+            ) : null}
           </>
         ) : currentPage === 'activateAccount' ? (
           <ActivateAccount />
