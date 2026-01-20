@@ -472,6 +472,7 @@ const en = {
         title: 'Last record',
         placeholder: 'No record found for today',
         label: '{{type}} at {{time}}',
+        yesterdayLabel: '{{type}} at {{time}} (yesterday)',
       },
       recent: {
         title: 'Recent punches',

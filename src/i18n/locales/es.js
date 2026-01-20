@@ -472,6 +472,7 @@ const es = {
         title: 'Último registro',
         placeholder: 'Ningún registro encontrado para hoy',
         label: '{{type}} a las {{time}}',
+        yesterdayLabel: '{{type}} a las {{time}} (ayer)',
       },
       recent: {
         title: 'Últimos registros',

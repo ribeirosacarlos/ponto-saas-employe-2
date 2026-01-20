@@ -57,3 +57,46 @@
     font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
+
+@keyframes toast-in {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@layer utilities {
+  .animate-toast-in {
+    animation: toast-in 180ms ease-out forwards;
+  }
+  .animate-toast-out {
+    animation: toast-out 180ms ease-in forwards;
+  }
+  .animate-toast-progress {
+    animation: toast-progress linear forwards;
+  }
+}

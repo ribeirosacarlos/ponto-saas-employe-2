@@ -472,6 +472,7 @@ const ptBR = {
         title: 'Último registro',
         placeholder: 'Nenhum registro encontrado para hoje',
         label: '{{type}} às {{time}}',
+        yesterdayLabel: '{{type}} às {{time}} (ontem)',
       },
       recent: {
         title: 'Últimos registros',

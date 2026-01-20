@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { format } from 'date-fns'
+import { format, isYesterday } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -13,6 +13,7 @@ import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
+import { getCurrentEmployeeShift } from '../services/modules/shifts'
 
 const statusTokens = {
   idle: {
@@ -49,6 +50,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
+  const [plannedMinutes, setPlannedMinutes] = useState(null)
+  const [plannedLoading, setPlannedLoading] = useState(false)
   const [overtimeMinutes, setOvertimeMinutes] = useState(null)
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [recentEntries, setRecentEntries] = useState([])
@@ -124,12 +127,20 @@ export default function TimeClock({ onContinueToDashboard }) {
     [i18n.language],
   )
 
-  const lastRecordLabel = lastWorkEntry
-    ? t('timeClock.lastRecord.label', {
-        type: t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`),
-        time: formatClockedTime(lastWorkEntry.clocked_at),
-      })
-    : t('timeClock.lastRecord.placeholder')
+  const lastRecordLabel = useMemo(() => {
+    if (!lastWorkEntry) return t('timeClock.lastRecord.placeholder')
+
+    const recordDate = new Date(lastWorkEntry.clocked_at)
+    const typeLabel = t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`)
+    const timeLabel = formatClockedTime(lastWorkEntry.clocked_at)
+
+    if (Number.isNaN(recordDate.getTime())) {
+      return t('timeClock.lastRecord.label', { type: typeLabel, time: timeLabel })
+    }
+
+    const labelKey = isYesterday(recordDate) ? 'timeClock.lastRecord.yesterdayLabel' : 'timeClock.lastRecord.label'
+    return t(labelKey, { type: typeLabel, time: timeLabel })
+  }, [formatClockedTime, lastWorkEntry, t])
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -222,6 +233,72 @@ export default function TimeClock({ onContinueToDashboard }) {
 
     fetchWorkedToday()
 
+    return () => {
+      active = false
+    }
+  }, [token])
+
+  useEffect(() => {
+    let active = true
+
+    const parseTimeToMinutes = (value) => {
+      if (!value || typeof value !== 'string') return null
+      const [hours, minutes] = value.split(':').map((part) => Number(part))
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
+      return hours * 60 + minutes
+    }
+
+    const computePlannedMinutes = (day) => {
+      if (!day) return null
+      if (day.is_working_day === false) return 0
+
+      const start = parseTimeToMinutes(day.start_time ?? day.startTime ?? day.start)
+      const end = parseTimeToMinutes(day.end_time ?? day.endTime ?? day.end)
+      if (start === null || end === null) return null
+
+      const breakMinutesRaw = Number(
+        day.break_minutes ?? day.breakMinutes ?? day.breakDuration ?? day.break_duration ?? 0,
+      )
+      const breakMinutes = Number.isFinite(breakMinutesRaw) ? breakMinutesRaw : 0
+      const duration = Math.max(0, end - start - breakMinutes)
+      return Number.isFinite(duration) ? duration : null
+    }
+
+    const fetchPlannedShift = async () => {
+      if (!token) {
+        if (active) {
+          setPlannedMinutes(null)
+          setPlannedLoading(false)
+        }
+        return
+      }
+
+      setPlannedLoading(true)
+      try {
+        const { shift } = await getCurrentEmployeeShift()
+        const today = new Date()
+        const jsWeekday = today.getDay()
+        const isoWeekday = jsWeekday === 0 ? 7 : jsWeekday
+        const days = shift?.shift_days ?? shift?.days ?? []
+
+        const plannedDay =
+          days.find((day) => Number(day.weekday ?? day.day) === isoWeekday) ||
+          days.find((day) => Number(day.weekday ?? day.day) === jsWeekday) ||
+          null
+
+        const minutes = computePlannedMinutes(plannedDay)
+        if (!active) return
+        setPlannedMinutes(minutes)
+      } catch (error) {
+        console.error('[TimeClock] Failed to load employee shift', error)
+        if (!active) return
+        setPlannedMinutes(null)
+      } finally {
+        if (active) setPlannedLoading(false)
+      }
+    }
+
+    fetchPlannedShift()
     return () => {
       active = false
     }
@@ -343,9 +420,19 @@ export default function TimeClock({ onContinueToDashboard }) {
     [getBalanceTone, overtimeLoading, overtimeMinutes],
   )
 
+  const plannedLabel = useMemo(() => {
+    if (plannedLoading) return t('common.loading', 'Carregando...')
+    if (plannedMinutes === null || plannedMinutes === undefined || Number.isNaN(plannedMinutes)) {
+      return '--:--'
+    }
+    return formatMinutesToLabel(plannedMinutes)
+  }, [formatMinutesToLabel, plannedLoading, plannedMinutes, t])
+
+  const plannedTone = plannedLoading ? 'text-muted-foreground' : 'text-foreground'
+
   const summaryStats = useMemo(
     () => [
-      { label: t('timeClock.summary.planned'), value: '08:00', tone: 'text-foreground' },
+      { label: t('timeClock.summary.planned'), value: plannedLabel, tone: plannedTone },
       {
         label: t('timeClock.summary.recorded'),
         value: workedTodayLabel,
@@ -356,7 +443,7 @@ export default function TimeClock({ onContinueToDashboard }) {
       },
       { label: t('timeClock.summary.bank'), value: overtimeLabel, tone: overtimeTone },
     ],
-    [normalizedStatus, overtimeLabel, overtimeTone, t, workedTodayLabel],
+    [normalizedStatus, overtimeLabel, overtimeTone, plannedLabel, plannedTone, t, workedTodayLabel],
   )
 
   const normalizeEntryList = useCallback(

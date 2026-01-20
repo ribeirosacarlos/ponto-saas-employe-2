@@ -67,7 +67,10 @@ export async function getEmployeeEntries({
   }
 
   const fetchPage = async (pageValue) => {
-    const { data } = await api.get('/v1/employee/entries', { params: buildParams(pageValue) })
+    const params = buildParams(pageValue)
+    
+    console.log('[employee] getEmployeeEntries fetchPage', { pageValue, params })
+    const { data } = await api.get('/v1/employee/entries', { params })
     return { data, pageValue }
   }
 
@@ -134,10 +137,5 @@ export async function getWorkedToday() {
 
 export async function getOpenTimeEntryStatus() {
   const { data } = await api.get('/v1/employee/time-entries/open-status')
-  return data?.data ?? data
-}
-
-export async function getCurrentEmployeeShift() {
-  const { data } = await api.get('/v1/employee/shift')
   return data?.data ?? data
 }

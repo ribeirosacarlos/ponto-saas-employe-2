@@ -81,3 +81,15 @@ export async function deleteShift(id) {
   const { data } = await api.delete(`${BASE}/${id}`)
   return data?.data ?? data ?? { id }
 }
+
+export async function getCurrentEmployeeShift() {
+  const { data } = await api.get('/v1/employee/shift')
+  const payload = data?.data ?? data ?? {}
+  const shift = payload?.shift ?? payload
+  const assignment = payload?.assignment ?? null
+
+  return {
+    shift: shift ? normalizeShift(shift, 0) : null,
+    assignment,
+  }
+}

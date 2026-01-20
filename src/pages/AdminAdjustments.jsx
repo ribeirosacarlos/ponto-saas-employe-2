@@ -66,6 +66,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
       return date.toLocaleString(i18n.language, {
         dateStyle: 'short',
         timeStyle: 'short',
+        timeZone: 'UTC',
       })
     },
     [i18n.language, t],
