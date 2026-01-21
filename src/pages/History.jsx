@@ -84,22 +84,29 @@ function calculateDayDuration(entries = [], alreadySorted = false) {
 function calculateBreakDuration(entries = []) {
   let totalMs = 0
   let breakStart = null
+  const intervals = []
 
   entries.forEach((entry) => {
     if (!entry.clockedAt) return
     const ts = new Date(entry.clockedAt).getTime()
-    if (entry.type === 'break_start') {
+    const type = entry.type
+
+    // Interval starts when user clocks out (leaves for lunch) and ends on the next clock-in.
+    if (type === 'out' || type === 'break_start') {
       breakStart = ts
       return
     }
-    if (entry.type === 'break_end' && breakStart) {
-      totalMs += Math.max(0, ts - breakStart)
+
+    if ((type === 'in' || type === 'break_end') && breakStart) {
+      const duration = Math.max(0, ts - breakStart)
+      totalMs += duration
+      intervals.push({ start: breakStart, end: ts })
       breakStart = null
     }
   })
 
   const minutes = Math.max(0, Math.round(totalMs / 60000))
-  return { minutes, hasBreak: minutes > 0 }
+  return { minutes, hasBreak: minutes > 0, intervals }
 }
 
 function summarizeDay(entries = []) {
@@ -118,7 +125,7 @@ function summarizeDay(entries = []) {
 
   const entryAt = entryRecord?.clockedAt ? new Date(entryRecord.clockedAt) : null
   const exitAt = exitRecord?.clockedAt ? new Date(exitRecord.clockedAt) : null
-  const { minutes: breakMinutes, hasBreak } = calculateBreakDuration(sorted)
+  const { minutes: breakMinutes, hasBreak, intervals: breakIntervals } = calculateBreakDuration(sorted)
   const workMinutes = calculateDayDuration(sorted, true)
   const spanMinutes =
     entryAt && exitAt
@@ -131,6 +138,7 @@ function summarizeDay(entries = []) {
     exitAt,
     breakMinutes,
     hasBreak,
+    breakIntervals,
     workMinutes,
     idleMinutes,
   }
@@ -140,6 +148,34 @@ export default function History({ onBackToDashboard }) {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const user = useAuthStore((state) => state.user)
+
+  const formatTimeUTC = useCallback(
+    (value) => {
+      if (!value) return t('historyPage.labels.timeFallback')
+      const date = value instanceof Date ? value : new Date(value)
+      if (Number.isNaN(date.getTime())) return t('historyPage.labels.timeFallback')
+      return date.toLocaleTimeString(i18n.language, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
+      })
+    },
+    [i18n.language, t],
+  )
+
+  const formatBreakRanges = useCallback(
+    (intervals = []) => {
+      if (!intervals.length) return t('historyPage.labels.timeFallback')
+      const ranges = intervals.map((interval) => {
+        const startLabel = formatTimeUTC(interval.start)
+        const endLabel = interval.end ? formatTimeUTC(interval.end) : '--:--'
+        return `${startLabel} - ${endLabel}`
+      })
+      return ranges.join(' · ')
+    },
+    [formatTimeUTC, t],
+  )
 
   const [filters, setFilters] = useState({ from: '', to: '' })
   const [appliedFilters, setAppliedFilters] = useState({ from: '', to: '' })
@@ -175,6 +211,7 @@ export default function History({ onBackToDashboard }) {
       const monthLabel = target.toLocaleDateString(i18n.language, {
         month: 'long',
         year: 'numeric',
+        timeZone: 'UTC',
       })
       const caption = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
       options.push({
@@ -221,6 +258,17 @@ export default function History({ onBackToDashboard }) {
           page,
           perPage: PAGE_SIZE,
         })
+
+        // Debug: inspect raw types from API to validate interval (break) detection.
+        if (Array.isArray(data)) {
+          const typeCounts = data.reduce((acc, item) => {
+            const t = item?.type || item?.kind || item?.event_type || item?.status || 'unknown'
+            acc[t] = (acc[t] || 0) + 1
+            return acc
+          }, {})
+          // eslint-disable-next-line no-console
+          console.log('[history] raw entry types', typeCounts)
+        }
 
         const normalized = (data || []).map((item) => normalizeEntry(item, t))
         setEntries((prev) => (append ? [...prev, ...normalized] : normalized))
@@ -392,7 +440,9 @@ export default function History({ onBackToDashboard }) {
       format: 'a4',
     })
     const getDateLabel = (value) =>
-      value ? new Date(value).toLocaleDateString(i18n.language) : t('historyPage.pdf.allDates')
+      value
+        ? new Date(value).toLocaleDateString(i18n.language, { timeZone: 'UTC' })
+        : t('historyPage.pdf.allDates')
 
     const periodRange = `${getDateLabel(appliedFilters.from)} - ${getDateLabel(appliedFilters.to)}`
 
@@ -416,14 +466,10 @@ export default function History({ onBackToDashboard }) {
 
     const body = groupedEntries.map((group) => {
       const { summary } = group
-      const entryLabel = summary?.entryAt
-        ? format(summary.entryAt, 'HH:mm')
-        : t('historyPage.labels.timeFallback')
-      const exitLabel = summary?.exitAt
-        ? format(summary.exitAt, 'HH:mm')
-        : t('historyPage.labels.timeFallback')
+      const entryLabel = summary?.entryAt ? formatTimeUTC(summary.entryAt) : t('historyPage.labels.timeFallback')
+      const exitLabel = summary?.exitAt ? formatTimeUTC(summary.exitAt) : t('historyPage.labels.timeFallback')
       const intervalLabel = summary?.hasBreak
-        ? formatDuration(summary.breakMinutes)
+        ? formatBreakRanges(summary.breakIntervals)
         : t('historyPage.labels.timeFallback')
       const workedLabel = group.duration
         ? formatDuration(group.duration)
@@ -486,6 +532,7 @@ export default function History({ onBackToDashboard }) {
       weekday: 'long',
       day: '2-digit',
       month: 'short',
+      timeZone: 'UTC',
     })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
@@ -719,13 +766,13 @@ export default function History({ onBackToDashboard }) {
                       {groupedEntries.map((group) => {
                         const { summary } = group
                         const entryLabel = summary?.entryAt
-                          ? format(summary.entryAt, 'HH:mm')
+                          ? formatTimeUTC(summary.entryAt)
                           : t('historyPage.labels.timeFallback')
                         const exitLabel = summary?.exitAt
-                          ? format(summary.exitAt, 'HH:mm')
+                          ? formatTimeUTC(summary.exitAt)
                           : t('historyPage.labels.timeFallback')
                         const intervalLabel = summary?.hasBreak
-                          ? formatDuration(summary.breakMinutes)
+                          ? formatBreakRanges(summary.breakIntervals)
                           : t('historyPage.labels.timeFallback')
                         const workedLabel = group.duration
                           ? formatDuration(group.duration)

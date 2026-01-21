@@ -455,7 +455,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-1">
           <div className="space-y-4 lg:col-span-2">
             <section className="rounded-3xl border border-border/70 bg-card/90 p-5 shadow-[0_18px_70px_-50px_rgba(62,82,152,0.35)] sm:p-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -583,7 +583,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
             </section>
           </div>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <section className="rounded-3xl border border-border/70 bg-card/90 p-5 shadow-[0_18px_70px_-50px_rgba(62,82,152,0.35)] sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -679,7 +679,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                 </div>
               ) : null}
             </section>
-          </aside>
+          </aside> */}
         </div>
       </PageContainer>
     </div>
