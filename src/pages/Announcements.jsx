@@ -273,12 +273,6 @@ export default function Announcements() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground transition-colors duration-300">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-6%] top-[-8%] h-64 w-64 rounded-full bg-primary/16 blur-[120px]" />
-        <div className="absolute right-[-8%] top-1/4 h-72 w-72 rounded-full bg-sky-300/18 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-6%] h-72 w-72 rounded-full bg-indigo-200/18 blur-[120px]" />
-      </div>
-
       <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

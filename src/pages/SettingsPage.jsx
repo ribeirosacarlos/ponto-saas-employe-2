@@ -440,12 +440,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-10%] top-[-8%] h-64 w-64 rounded-full bg-primary/12 blur-[120px]" />
-        <div className="absolute right-[-5%] top-1/4 h-72 w-72 rounded-full bg-sky-300/12 blur-[120px]" />
-        <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px]" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
 
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
         <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">

@@ -172,12 +172,7 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
   }, [announcements, listError, listLoading, loadAnnouncements])
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-6%] top-[-8%] h-64 w-64 rounded-full bg-primary/16 blur-[120px]" />
-        <div className="absolute right-[-8%] top-1/4 h-72 w-72 rounded-full bg-sky-300/18 blur-[120px]" />
-      </div>
-
+    <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">

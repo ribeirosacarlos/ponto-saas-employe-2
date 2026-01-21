@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { CalendarCheck2, CalendarDays, Plane, Timer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
@@ -13,25 +12,31 @@ const statusTone = {
 
 export function TimeOffCard({ summary, onRequest, onViewAll }) {
   const { t } = useTranslation()
-  const fallbackSummary = useMemo(
-    () => ({
-      availableDays: 12,
-      nextVacation: t('dashboardPage.timeOff.nextVacationValue'),
-      statusKey: 'approved',
-      status: t('dashboardPage.timeOff.statusValue.approved'),
-      absences: t('dashboardPage.timeOff.absencesValue', { count: 0 }),
-    }),
-    [t],
-  )
-
-  const resolvedSummary = summary || fallbackSummary
+  const resolvedSummary = summary || {}
   const statusKey = resolvedSummary.statusKey || resolvedSummary.status || 'approved'
   const normalizedStatusKey = typeof statusKey === 'string' ? statusKey.toLowerCase() : 'approved'
-  const statusLabel =
-    resolvedSummary.status ||
-    t(`dashboardPage.timeOff.statusValue.${normalizedStatusKey}`) ||
-    resolvedSummary.statusKey
-  const statusClass = statusTone[normalizedStatusKey] || statusTone.approved
+  const hasSummary =
+    Boolean(summary) &&
+    (summary.availableDays != null ||
+      summary.nextVacation ||
+      summary.status ||
+      summary.statusKey ||
+      summary.absences != null)
+  const statusDisplayLabel = hasSummary
+    ? resolvedSummary.status ||
+      t(`dashboardPage.timeOff.statusValue.${normalizedStatusKey}`) ||
+      resolvedSummary.statusKey ||
+      '--'
+    : '--'
+  const statusClass =
+    hasSummary && statusTone[normalizedStatusKey] ? statusTone[normalizedStatusKey] : 'border border-border bg-muted/60 text-muted-foreground'
+  const gaugeAccentClass = hasSummary
+    ? 'border-primary border-b-transparent border-l-transparent border-r-transparent'
+    : 'border-muted/40 border-b-transparent border-l-transparent border-r-transparent'
+  const availableDaysLabel =
+    resolvedSummary.availableDays != null ? resolvedSummary.availableDays : '--'
+  const nextVacationLabel = resolvedSummary.nextVacation || '--'
+  const absencesLabel = resolvedSummary.absences ?? '--'
 
   return (
     <section className="flex flex-col gap-4 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5">
@@ -56,12 +61,14 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
         <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center shrink-0">
           <div className="absolute inset-0 rounded-full border-[9px] border-border/50 sm:border-[10px]" />
-          <div className="absolute inset-0 rotate-[135deg] rounded-full border-[9px] border-primary border-b-transparent border-l-transparent border-r-transparent sm:border-[10px]" />
+          <div
+            className={`absolute inset-0 rotate-[135deg] rounded-full border-[9px] ${gaugeAccentClass} sm:border-[10px]`}
+          />
           <div className="relative flex h-12 w-12 flex-col items-center justify-center rounded-full bg-background text-foreground shadow-sm sm:h-14 sm:w-14">
             <span className="text-[9px] uppercase tracking-wide text-muted-foreground sm:text-[10px]">
               {t('dashboardPage.timeOff.gaugeLabel')}
             </span>
-            <span className="text-[12px] font-semibold sm:text-sm">{resolvedSummary.availableDays}</span>
+            <span className="text-[12px] font-semibold sm:text-sm">{availableDaysLabel}</span>
           </div>
         </div>
 
@@ -72,7 +79,8 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
               {t('dashboardPage.timeOff.available')}
             </div>
             <span className="text-[12px] font-semibold sm:text-[13px]">
-              {resolvedSummary.availableDays} {t('dashboardPage.timeOff.availableSuffix')}
+              {availableDaysLabel}
+              {availableDaysLabel !== '--' ? ` ${t('dashboardPage.timeOff.availableSuffix')}` : ''}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
@@ -80,22 +88,25 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
               <Plane className="h-4 w-4 text-primary" />
               {t('dashboardPage.timeOff.nextVacation')}
             </div>
-            <span className="text-[12px] font-semibold sm:text-[13px]">
-              {resolvedSummary.nextVacation}
-            </span>
+            <span className="text-[12px] font-semibold sm:text-[13px]">{nextVacationLabel}</span>
           </div>
           <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
             <div className="flex items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
               <Timer className="h-4 w-4 text-primary" />
               {t('dashboardPage.timeOff.status')}
             </div>
-            <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold', statusClass)}>
-              {statusLabel}
+            <span
+              className={cn(
+                'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold',
+                statusClass,
+              )}
+            >
+              {statusDisplayLabel}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-[12px]">
             <span>{t('dashboardPage.timeOff.absences')}</span>
-            <span className="font-semibold text-foreground">{resolvedSummary.absences}</span>
+            <span className="font-semibold text-foreground">{absencesLabel}</span>
           </div>
         </div>
       </div>
