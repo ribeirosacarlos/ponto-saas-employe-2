@@ -474,6 +474,12 @@ const es = {
         label: '{{type}} a las {{time}}',
         yesterdayLabel: '{{type}} a las {{time}} (ayer)',
       },
+      lastPunch: {
+        title: 'Último fichaje',
+        registeredAt: 'Registrado a las: {{time}}',
+        opened: 'Abierto',
+        none: 'Aún no hay registros',
+      },
       recent: {
         title: 'Últimos registros',
         viewAll: 'Ver todo',

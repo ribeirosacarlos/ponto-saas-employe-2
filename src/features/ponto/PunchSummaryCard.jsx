@@ -21,6 +21,17 @@ export function PunchSummaryCard({
   const [showDetails, setShowDetails] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState(workedTime || '--:--')
 
+  const formatClockedTime = (value) => {
+    if (!value) return '--:--'
+    if (typeof value === 'string') {
+      const match = value.match(/T(\d{2}:\d{2})/)
+      if (match?.[1]) return match[1]
+    }
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return format(date, 'HH:mm')
+  }
+
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
     const totalMinutes = Math.max(0, Math.round(minutes))
@@ -60,6 +71,27 @@ export function PunchSummaryCard({
     }
   }, [token, workedTime])
 
+  useEffect(() => {
+    console.log('[PunchSummaryCard] lastPunch clocked_at:', {
+      raw: lastPunch?.clocked_at,
+      formatted: formatClockedTime(lastPunch?.clocked_at),
+      type: lastPunch?.type,
+    })
+
+    console.log(
+      '[PunchSummaryCard] dayRows times:',
+      dayRows.map((row) => ({
+        label: row.label,
+        startRaw: row.start,
+        start: formatClockedTime(row.start),
+        endRaw: row.end,
+        end: formatClockedTime(row.end),
+        duration: row.duration,
+        open: row.open,
+      })),
+    )
+  }, [dayRows, lastPunch])
+
   return (
     <Card className="relative overflow-hidden bg-card/90">
       <div className="pointer-events-none absolute inset-0 opacity-80">
@@ -98,9 +130,9 @@ export function PunchSummaryCard({
                   <p className="text-xs text-foreground/70">
                     {lastPunch?.clocked_at
                       ? t('dashboard.registeredAt', {
-                          time: format(new Date(lastPunch.clocked_at), 'HH:mm'),
+                          time: formatClockedTime(lastPunch.clocked_at),
                         })
-                      : t('dashboard.noEntriesToday')}
+                      : t('dashboard.lastPunchFallback')}
                   </p>
                 </div>
               </div>
@@ -123,29 +155,37 @@ export function PunchSummaryCard({
 
             {showDetails && (
               <div id="day-history" className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-3">
-                {dayRows.length === 0 && (
+                {dayRows.length === 0 ? (
                   <p className="text-xs text-foreground/70">{t('dashboard.noEntriesToday')}</p>
+                ) : (
+                  (() => {
+                    const lastRow = dayRows[dayRows.length - 1]
+                    const openRow = dayRows.find((row) => row.open)
+                    const punchTime = lastPunch?.clocked_at
+                      ? formatClockedTime(lastPunch.clocked_at)
+                      : '--:--'
+                    const duration = (openRow || lastRow)?.duration || '--:--'
+                    const isOpen = Boolean(openRow)
+
+                    return (
+                      <div className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-4 py-3 shadow-[0_14px_40px_-32px_rgba(92,134,255,0.45)]">
+                        <div>
+                          <p className="text-sm font-semibold">{t('dashboard.lastPunchRow')}</p>
+                          <p className="flex items-center gap-2 text-xs text-foreground/70">
+                            <span>{punchTime}</span>
+                            {isOpen ? (
+                              <>
+                                <span className="text-muted-foreground/60">{'>'}</span>
+                                <span className="font-semibold text-primary">{t('dashboard.openStatus')}</span>
+                              </>
+                            ) : null}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary">{duration}</span>
+                      </div>
+                    )
+                  })()
                 )}
-                {dayRows.map((row, idx) => (
-                  <div
-                    key={`${row.label}-${idx}-${row.start || 'open'}`}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-4 py-3 shadow-[0_14px_40px_-32px_rgba(92,134,255,0.45)]"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold">{row.label}</p>
-                      <p className="text-xs text-foreground/70">
-                        {row.start ? format(new Date(row.start), 'HH:mm') : '--:--'}{' '}
-                        <span className="mx-1 text-muted-foreground/70">{'>'}</span>{' '}
-                        {row.end ? format(new Date(row.end), 'HH:mm') : t('dashboard.openStatus')}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-sm font-semibold ${row.tone === 'muted' ? 'text-emerald-400' : 'text-primary'}`}
-                    >
-                      {row.duration}
-                    </span>
-                  </div>
-                ))}
               </div>
             )}
           </div>

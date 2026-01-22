@@ -474,6 +474,12 @@ const ptBR = {
         label: '{{type}} às {{time}}',
         yesterdayLabel: '{{type}} às {{time}} (ontem)',
       },
+      lastPunch: {
+        title: 'Último ponto',
+        registeredAt: 'Registrado às: {{time}}',
+        opened: 'Aberto',
+        none: 'Ainda não há registros',
+      },
       recent: {
         title: 'Últimos registros',
         viewAll: 'Ver tudo',

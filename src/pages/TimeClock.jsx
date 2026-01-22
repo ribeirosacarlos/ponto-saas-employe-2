@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { format, isYesterday } from 'date-fns'
+import { format, isSameDay } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
+import { AlertTriangle, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -42,7 +42,8 @@ export default function TimeClock({ onContinueToDashboard }) {
     clocking,
     loadingEntries,
     refreshEntries,
-    lastWorkEntry,
+    entries,
+    todaysEntries,
     lastError,
   } = useClocking()
   const { isAbsentToday, absenceToday } = useAbsenceStatus()
@@ -58,6 +59,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const userMenuRef = useRef(null)
+  const isMounted = useRef(true)
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -112,35 +114,66 @@ export default function TimeClock({ onContinueToDashboard }) {
     month: 'long',
   })
 
-  const formatClockedTime = useCallback(
-    (value) => {
-      if (!value) return '--:--'
-      const date = new Date(value)
-      if (Number.isNaN(date.getTime())) return String(value)
-      return date.toLocaleTimeString(i18n.language, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'UTC',
-      })
-    },
-    [i18n.language],
-  )
+  const formatClockedTime = useCallback((value) => {
+    if (!value) return '--:--'
+    if (typeof value === 'string') {
+      // Prefer the raw time portion coming from the API (avoids TZ shifts).
+      const match = value.match(/T(\d{2}:\d{2})/)
+      if (match?.[1]) return match[1]
+    }
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return format(date, 'HH:mm')
+  }, [])
 
-  const lastRecordLabel = useMemo(() => {
-    if (!lastWorkEntry) return t('timeClock.lastRecord.placeholder')
+  const sortedWorkEntries = useMemo(() => {
+    const workEntries = Array.isArray(entries)
+      ? entries.filter((entry) => ['in', 'out'].includes(entry?.type))
+      : []
 
-    const recordDate = new Date(lastWorkEntry.clocked_at)
-    const typeLabel = t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`)
-    const timeLabel = formatClockedTime(lastWorkEntry.clocked_at)
-
-    if (Number.isNaN(recordDate.getTime())) {
-      return t('timeClock.lastRecord.label', { type: typeLabel, time: timeLabel })
+    const getTimestamp = (entry) => {
+      const raw = entry?.clocked_at || entry?.created_at
+      const date = raw ? new Date(raw) : null
+      return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0
     }
 
-    const labelKey = isYesterday(recordDate) ? 'timeClock.lastRecord.yesterdayLabel' : 'timeClock.lastRecord.label'
-    return t(labelKey, { type: typeLabel, time: timeLabel })
-  }, [formatClockedTime, lastWorkEntry, t])
+    return [...workEntries].sort((a, b) => getTimestamp(b) - getTimestamp(a))
+  }, [entries])
+
+  const todayWorkEntries = useMemo(() => {
+    const today = currentTime
+    return sortedWorkEntries.filter((entry) => {
+      const date = new Date(entry?.clocked_at || entry?.created_at)
+      if (Number.isNaN(date.getTime())) return false
+      return isSameDay(date, today)
+    })
+  }, [currentTime, sortedWorkEntries])
+
+  const lastPunch = todayWorkEntries?.[0] || null
+
+  const lastPunchTime = useMemo(
+    () => (lastPunch ? formatClockedTime(lastPunch.clocked_at || lastPunch.created_at) : null),
+    [formatClockedTime, lastPunch],
+  )
+
+  const isLastPunchOpen = lastPunch?.type === 'in'
+
+  useEffect(() => {
+    const formatTime = (value) => {
+      if (!value) return null
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? String(value) : format(date, 'HH:mm')
+    }
+
+    console.log(
+      '[TimeClock] todayWorkEntries:',
+      todayWorkEntries.map((entry) => ({
+        type: entry?.type,
+        raw: entry?.clocked_at || entry?.created_at,
+        formatted: formatTime(entry?.clocked_at || entry?.created_at),
+      })),
+    )
+  }, [todayWorkEntries])
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -496,35 +529,28 @@ export default function TimeClock({ onContinueToDashboard }) {
     [formatClockedTime, i18n.language, t],
   )
 
-  useEffect(() => {
-    let active = true
-
-    const fetchRecentEntries = async () => {
-      if (!token) {
-        setRecentEntries([])
-        return
-      }
-
-      setRecentEntriesLoading(true)
-      try {
-        const { data } = await listEmployeeEntries(1)
-        if (!active) return
-        const normalized = Array.isArray(data) ? data : data?.data || []
-        setRecentEntries(normalizeEntryList(normalized))
-      } catch (error) {
-        console.error('[TimeClock] Failed to load recent entries', error)
-        if (!active) return
-        setRecentEntries([])
-      } finally {
-        if (active) setRecentEntriesLoading(false)
-      }
+  const fetchRecentEntries = useCallback(async () => {
+    if (!token) {
+      if (isMounted.current) setRecentEntries([])
+      return
     }
 
-    fetchRecentEntries()
-    return () => {
-      active = false
+    if (isMounted.current) setRecentEntriesLoading(true)
+    try {
+      const { data } = await listEmployeeEntries(1)
+      const normalized = Array.isArray(data) ? data : data?.data || []
+      if (isMounted.current) setRecentEntries(normalizeEntryList(normalized))
+    } catch (error) {
+      console.error('[TimeClock] Failed to load recent entries', error)
+      if (isMounted.current) setRecentEntries([])
+    } finally {
+      if (isMounted.current) setRecentEntriesLoading(false)
     }
   }, [normalizeEntryList, token])
+
+  useEffect(() => {
+    fetchRecentEntries()
+  }, [fetchRecentEntries])
 
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
@@ -547,6 +573,7 @@ export default function TimeClock({ onContinueToDashboard }) {
       return
     }
     await registerClock(mainActionType)
+    await fetchRecentEntries()
   }
 
   const handleLogout = async () => {
@@ -579,6 +606,10 @@ export default function TimeClock({ onContinueToDashboard }) {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => () => {
+    isMounted.current = false
   }, [])
 
   return (
@@ -729,17 +760,55 @@ export default function TimeClock({ onContinueToDashboard }) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
-                <div className="flex items-center gap-3">
+              <div className="rounded-2xl border border-border/70 bg-background/85 px-4 py-4 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
+                <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Clock3 className="h-5 w-5" />
+                    <Clock3 className="h-5 w-5" aria-hidden />
                   </span>
-                  <div>
-                    <p className="text-sm font-semibold">{t('timeClock.lastRecord.title')}</p>
-                    <p className="text-xs text-muted-foreground">{lastRecordLabel}</p>
+                  <div className="flex w-full flex-col gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                      {t('timeClock.lastPunch.title')}
+                    </p>
+                    {todayWorkEntries.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">{t('timeClock.lastPunch.none')}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {todayWorkEntries.map((entry, index) => {
+                          const timeLabel = formatClockedTime(entry.clocked_at || entry.created_at)
+                          const isOpenEntry = index === 0 && entry.type === 'in'
+                          const typeKey = entry.type === 'in' ? 'in' : 'out'
+                          const typeLabel = t(`types.${typeKey}`)
+
+                          return (
+                            <div
+                              key={entry.id || `${entry.clocked_at}-${entry.type}-${index}`}
+                              className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-3 py-2"
+                            >
+                              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <span>{timeLabel}</span>
+                                {isOpenEntry ? (
+                                  <>
+                                    <span className="text-muted-foreground">{'>'}</span>
+                                    <span className="text-primary text-xs font-semibold">
+                                      {t('timeClock.lastPunch.opened')}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-[11px] uppercase tracking-[0.16em]">
+                                    {typeLabel}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[11px] font-semibold text-muted-foreground">
+                                {t('timeClock.lastPunch.registeredAt', { time: timeLabel })}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

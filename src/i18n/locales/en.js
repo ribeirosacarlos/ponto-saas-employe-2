@@ -474,6 +474,12 @@ const en = {
         label: '{{type}} at {{time}}',
         yesterdayLabel: '{{type}} at {{time}} (yesterday)',
       },
+      lastPunch: {
+        title: 'Last punch',
+        registeredAt: 'Registered at: {{time}}',
+        opened: 'Opened',
+        none: 'No punches yet',
+      },
       recent: {
         title: 'Recent punches',
         viewAll: 'View all',
