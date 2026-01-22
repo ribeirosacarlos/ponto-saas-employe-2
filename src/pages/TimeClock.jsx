@@ -121,6 +121,13 @@ export default function TimeClock({ onContinueToDashboard }) {
     month: 'long',
   })
 
+  const getEntryTimestamp = useCallback((entry) => {
+    const raw = entry?.clocked_at || entry?.created_at
+    const date = raw ? new Date(raw) : null
+    const timestamp = date && !Number.isNaN(date.getTime()) ? date.getTime() : null
+    return timestamp
+  }, [])
+
   const formatClockedTime = useCallback(
     (value) => {
       const formatted = formatTime(value, { hour12: false })
@@ -134,14 +141,10 @@ export default function TimeClock({ onContinueToDashboard }) {
       ? entries.filter((entry) => ['in', 'out'].includes(entry?.type))
       : []
 
-    const getTimestamp = (entry) => {
-      const raw = entry?.clocked_at || entry?.created_at
-      const date = raw ? new Date(raw) : null
-      return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0
-    }
-
-    return [...workEntries].sort((a, b) => getTimestamp(b) - getTimestamp(a))
-  }, [entries])
+    return [...workEntries].sort(
+      (a, b) => (getEntryTimestamp(b) ?? 0) - (getEntryTimestamp(a) ?? 0),
+    )
+  }, [entries, getEntryTimestamp])
 
   const todayWorkEntries = useMemo(() => {
     return sortedWorkEntries.filter((entry) =>
@@ -165,6 +168,96 @@ export default function TimeClock({ onContinueToDashboard }) {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }
+
+  const punchTimelineRows = useMemo(() => {
+    if (!todayWorkEntries.length) return []
+
+    const entriesAsc = [...todayWorkEntries].sort(
+      (a, b) => (getEntryTimestamp(a) ?? 0) - (getEntryTimestamp(b) ?? 0),
+    )
+
+    const segments = []
+
+    for (let i = 0; i < entriesAsc.length; i += 1) {
+      const current = entriesAsc[i]
+      const next = entriesAsc[i + 1]
+
+      if (current?.type === 'in') {
+        segments.push({
+          key: `work-${i}`,
+          kind: 'work',
+          start: current,
+          end: next?.type === 'out' ? next : null,
+        })
+      } else if (current?.type === 'out') {
+        segments.push({
+          key: `break-${i}`,
+          kind: 'break',
+          start: current,
+          end: next?.type === 'in' ? next : null,
+        })
+      }
+    }
+
+    const workSegments = segments.filter((segment) => segment.kind === 'work')
+    const firstWork = workSegments[0]
+    const lastWork = workSegments.length > 1 ? workSegments[workSegments.length - 1] : null
+    const firstBreak = segments.find((segment) => segment.kind === 'break')
+
+    const toTimeLabel = (entry) =>
+      entry ? formatClockedTime(entry.clocked_at || entry.created_at) : '--:--'
+
+    const computeDuration = (segment) => {
+      if (!segment?.start) return '--:--'
+      const startTs = getEntryTimestamp(segment.start)
+      const endTs = segment.end ? getEntryTimestamp(segment.end) : null
+      const endTime = endTs ?? currentTime.getTime()
+      if (!startTs || !endTime) return '--:--'
+      return formatMinutesToLabel((endTime - startTs) / 60000)
+    }
+
+    const buildRow = (segment, type) => {
+      if (!segment) return null
+
+      const hasEnd = Boolean(segment.end)
+      const endLabel =
+        hasEnd && segment.end
+          ? toTimeLabel(segment.end)
+          : segment.kind === 'work'
+            ? t('timeClock.lastPunch.opened')
+            : '--:--'
+
+      const tone =
+        segment.kind === 'break'
+          ? 'text-primary'
+          : !hasEnd && type === 'last'
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : 'text-foreground'
+
+      return {
+        key: type,
+        label: t(`timeClock.lastPunch.sections.${type}`),
+        startLabel: toTimeLabel(segment.start),
+        endLabel,
+        duration: computeDuration(segment),
+        tone,
+        highlightEnd: segment.kind === 'work' && !hasEnd,
+      }
+    }
+
+    return [
+      buildRow(firstWork, 'first'),
+      buildRow(firstBreak, 'interval'),
+      buildRow(lastWork, 'last'),
+    ].filter(Boolean)
+  }, [
+    currentTime,
+    formatClockedTime,
+    formatMinutesToLabel,
+    getEntryTimestamp,
+    t,
+    todayWorkEntries,
+  ])
 
   const formatBalanceToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
@@ -750,53 +843,54 @@ export default function TimeClock({ onContinueToDashboard }) {
               </div>
 
               <div className="rounded-2xl border border-border/70 bg-background/85 px-4 py-4 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Clock3 className="h-5 w-5" aria-hidden />
-                  </span>
-                  <div className="flex w-full flex-col gap-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                      {t('timeClock.lastPunch.title')}
-                    </p>
-                    {todayWorkEntries.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">{t('timeClock.lastPunch.none')}</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {todayWorkEntries.map((entry, index) => {
-                          const timeLabel = formatClockedTime(entry.clocked_at || entry.created_at)
-                          const isOpenEntry = index === 0 && entry.type === 'in'
-                          const typeKey = entry.type === 'in' ? 'in' : 'out'
-                          const typeLabel = t(`types.${typeKey}`)
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Clock3 className="h-5 w-5" aria-hidden />
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                          {t('timeClock.lastPunch.title')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {lastPunchTime
+                            ? t('timeClock.lastPunch.registeredAt', { time: lastPunchTime })
+                            : t('timeClock.lastPunch.none')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-                          return (
-                            <div
-                              key={entry.id || `${entry.clocked_at}-${entry.type}-${index}`}
-                              className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-3 py-2"
-                            >
-                              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <span>{timeLabel}</span>
-                                {isOpenEntry ? (
-                                  <>
-                                    <span className="text-muted-foreground">{'>'}</span>
-                                    <span className="text-primary text-xs font-semibold">
-                                      {t('timeClock.lastPunch.opened')}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-muted-foreground text-[11px] uppercase tracking-[0.16em]">
-                                    {typeLabel}
-                                  </span>
+                  {punchTimelineRows.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('timeClock.lastPunch.none')}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {punchTimelineRows.map((row) => (
+                        <div
+                          key={row.key}
+                          className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-3 py-3"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm font-semibold text-foreground">{row.label}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{row.startLabel}</span>
+                              <span className="text-muted-foreground/60">{'>'}</span>
+                              <span
+                                className={cn(
+                                  'text-foreground',
+                                  row.highlightEnd ? 'font-semibold text-primary' : 'text-foreground',
                                 )}
-                              </div>
-                              <span className="text-[11px] font-semibold text-muted-foreground">
-                                {t('timeClock.lastPunch.registeredAt', { time: timeLabel })}
+                              >
+                                {row.endLabel}
                               </span>
                             </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+                          </div>
+                          <span className={cn('text-sm font-bold', row.tone)}>{row.duration}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

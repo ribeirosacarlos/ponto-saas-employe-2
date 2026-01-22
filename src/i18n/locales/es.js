@@ -519,6 +519,11 @@ const es = {
         registeredAt: 'Registrado a las: {{time}}',
         opened: 'Abierto',
         none: 'Aún no hay registros',
+        sections: {
+          first: 'Primera marcación',
+          interval: 'Intervalo',
+          last: 'Última marcación',
+        },
       },
       recent: {
         title: 'Últimos registros',

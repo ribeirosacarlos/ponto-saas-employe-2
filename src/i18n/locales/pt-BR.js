@@ -519,6 +519,11 @@ const ptBR = {
         registeredAt: 'Registrado às: {{time}}',
         opened: 'Aberto',
         none: 'Ainda não há registros',
+        sections: {
+          first: 'Primeira batida',
+          interval: 'Intervalo',
+          last: 'Última batida',
+        },
       },
       recent: {
         title: 'Últimos registros',

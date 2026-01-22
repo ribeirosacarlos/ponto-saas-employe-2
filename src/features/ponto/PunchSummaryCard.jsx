@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
 import { getWorkedToday } from '../../lib/api'
@@ -25,6 +24,7 @@ export function PunchSummaryCard({
   const formatClockedTime = (value) => {
     const formatted = formatTime(value, { hour12: false })
     return formatted === '-' ? '--:--' : formatted
+  return format(date, 'HH:mm')
   }
 
   const formatMinutesToLabel = (minutes) => {

@@ -519,6 +519,11 @@ const en = {
         registeredAt: 'Registered at: {{time}}',
         opened: 'Opened',
         none: 'No punches yet',
+        sections: {
+          first: 'First punch',
+          interval: 'Interval',
+          last: 'Last punch',
+        },
       },
       recent: {
         title: 'Recent punches',
