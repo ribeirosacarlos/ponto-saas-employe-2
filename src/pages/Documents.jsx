@@ -7,62 +7,7 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 
-const DOCUMENTS = [
-  {
-    id: 'payroll-nov',
-    title: 'Folha de pagamento - Novembro/2025',
-    category: 'payroll',
-    status: 'available',
-    size: '240 KB',
-    type: 'PDF',
-    updatedAt: '2025-11-30',
-  },
-  {
-    id: 'course-onboarding',
-    title: 'Onboarding de segurança',
-    category: 'courses',
-    status: 'pending',
-    size: '1.2 MB',
-    type: 'PDF',
-    updatedAt: '2025-12-22',
-  },
-  {
-    id: 'personal-address',
-    title: 'Comprovante de endereço',
-    category: 'personal',
-    status: 'review',
-    size: '520 KB',
-    type: 'JPG',
-    updatedAt: '2025-12-17',
-  },
-  {
-    id: 'certificate-medical',
-    title: 'Certificado médico',
-    category: 'others',
-    status: 'expired',
-    size: '180 KB',
-    type: 'PDF',
-    updatedAt: '2025-10-01',
-  },
-  {
-    id: 'course-lgpd',
-    title: 'Treinamento LGPD',
-    category: 'courses',
-    status: 'available',
-    size: '890 KB',
-    type: 'PDF',
-    updatedAt: '2025-11-12',
-  },
-  {
-    id: 'payroll-oct',
-    title: 'Folha de pagamento - Outubro/2025',
-    category: 'payroll',
-    status: 'available',
-    size: '228 KB',
-    type: 'PDF',
-    updatedAt: '2025-10-31',
-  },
-]
+const DOCUMENTS = []
 
 const CATEGORY_TABS = ['all', 'payroll', 'courses', 'personal', 'others']
 
