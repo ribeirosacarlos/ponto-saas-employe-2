@@ -272,7 +272,7 @@ export default function Announcements() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground transition-colors duration-300">
+    <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

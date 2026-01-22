@@ -283,13 +283,7 @@ export default function Vacations() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-8%] top-[-12%] h-64 w-64 rounded-full bg-primary/12 blur-[120px]" />
-        <div className="absolute right-[-10%] top-[16%] h-72 w-72 rounded-full bg-sky-300/18 blur-[120px]" />
-        <div className="absolute bottom-[-18%] left-[20%] h-72 w-72 rounded-full bg-indigo-300/16 blur-[120px] dark:bg-indigo-500/14" />
-      </div>
-
+    <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
           <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
