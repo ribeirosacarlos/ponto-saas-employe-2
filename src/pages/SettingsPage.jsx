@@ -641,6 +641,7 @@ export default function SettingsPage() {
   const { data, isLoading, error, reload } = useSettingsOverview()
   const overview = data || {}
   const roles = useAuthStore((state) => state.roles)
+  const showCompanyTimezone = false
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const canEditTimezone = useMemo(
     () => capabilities.includes('admin') || capabilities.includes('super_admin'),
@@ -718,7 +719,7 @@ export default function SettingsPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <BillingCard billing={overview.billing} links={overview.links} />
               <CompanyCard company={overview.company} />
-              <TimezoneCard canEdit={canEditTimezone} />
+              {showCompanyTimezone ? <TimezoneCard canEdit={canEditTimezone} /> : null}
               <UsageCard usage={overview.usage} />
               <WorkdayCard workday={overview.workday} />
               <SecurityComplianceCard security={overview.security} compliance={overview.compliance} />
