@@ -11,7 +11,29 @@ import {
 const ROLE_PRIORITY = ['admin', 'manager', 'area_manager', 'employee']
 
 export const normalizeEmployee = (employee = {}, index = 0) => {
+  const roleFromRolesArray = (() => {
+    if (!Array.isArray(employee.roles) || employee.roles.length === 0) return undefined
+    const roleNames = employee.roles
+      .map((role) => role?.name || role?.role || role?.role_name || role?.slug || role?.id)
+      .filter(Boolean)
+
+    if (roleNames.length === 0) return undefined
+
+    const sortedByPriority = roleNames.sort((a, b) => {
+      const aIndex = ROLE_PRIORITY.indexOf(a)
+      const bIndex = ROLE_PRIORITY.indexOf(b)
+
+      if (aIndex === -1 && bIndex === -1) return 0
+      if (aIndex === -1) return 1
+      if (bIndex === -1) return -1
+      return aIndex - bIndex
+    })
+
+    return sortedByPriority[0]
+  })()
+
   const role =
+    roleFromRolesArray ||
     employee.role ||
     employee.type ||
     employee.permission ||
@@ -29,8 +51,24 @@ export const normalizeEmployee = (employee = {}, index = 0) => {
     employee?.email ??
     `employee-${index}`
 
-  const shiftId = employee?.shift_id ?? employee?.shiftId ?? employee?.shift?.id ?? ''
+  const primaryUserShift = (() => {
+    if (!Array.isArray(employee.user_shifts) || employee.user_shifts.length === 0) return null
+    // Prefer the most recent active (end_date null) shift; otherwise take the latest by updated_at.
+    const active = employee.user_shifts.filter((s) => !s.end_date)
+    if (active.length) return active[0]
+    return employee.user_shifts[0]
+  })()
+
+  const shiftId =
+    primaryUserShift?.shift_id ??
+    primaryUserShift?.shift?.id ??
+    employee?.shift_id ??
+    employee?.shiftId ??
+    employee?.shift?.id ??
+    ''
+
   const shiftName =
+    primaryUserShift?.shift?.name ??
     employee?.shift_name ??
     employee?.shift?.name ??
     employee?.shift?.title ??
@@ -60,6 +98,9 @@ export const normalizeEmployee = (employee = {}, index = 0) => {
 export const normalizeShift = (shift = {}, index = 0) => ({
   id: shift?.id ?? shift?.uuid ?? shift?.shift_id ?? shift?.code ?? `shift-${index}`,
   name: shift?.name ?? shift?.title ?? shift?.label ?? '',
+  start_time: shift?.start_time ?? shift?.startTime ?? shift?.start ?? null,
+  end_time: shift?.end_time ?? shift?.endTime ?? shift?.end ?? null,
+  is_flexible: shift?.is_flexible ?? shift?.flexible ?? false,
 })
 
 export function useEmployeesManagement({
@@ -134,6 +175,9 @@ export function useEmployeesManagement({
             return {
               id: normalized.id,
               name: normalized.name || `Shift ${normalized.id}`,
+              start_time: normalized.start_time,
+              end_time: normalized.end_time,
+              is_flexible: normalized.is_flexible,
             }
           }),
         )
