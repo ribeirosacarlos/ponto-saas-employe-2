@@ -40,7 +40,6 @@ export const ROUTES = {
   },
   settings: {
     path: '/settings',
-    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   platformBillingPlans: {
     path: '/platform/billing/plans',
