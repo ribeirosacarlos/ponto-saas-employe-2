@@ -99,4 +99,29 @@
   .animate-toast-progress {
     animation: toast-progress linear forwards;
   }
+
+  .dialog-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) hsl(var(--card));
+  }
+
+  .dialog-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dialog-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--card));
+    border-radius: 999px;
+  }
+
+  .dialog-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 999px;
+    border: 2px solid hsl(var(--card));
+    transition: background 0.2s ease;
+  }
+
+  .dialog-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsla(var(--primary), 0.85);
+  }
 }

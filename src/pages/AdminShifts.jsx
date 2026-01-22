@@ -503,7 +503,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
       {renderContent()}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'edit'
@@ -515,7 +515,10 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
             </DialogDescription>
           </DialogHeader>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form
+            className="dialog-scrollbar space-y-5 max-h-[70vh] overflow-y-auto pr-3 pb-4"
+            onSubmit={handleSubmit}
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="shift-name">{t('adminShiftsPage.form.name')}</Label>

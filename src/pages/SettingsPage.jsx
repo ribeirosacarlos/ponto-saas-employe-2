@@ -670,10 +670,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
+      <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
 
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
-        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
+        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_12px_54px_-50px_rgba(62,82,152,0.35)] backdrop-blur-2xl">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">

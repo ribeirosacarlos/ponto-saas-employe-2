@@ -519,12 +519,7 @@ export default function History({ onBackToDashboard }) {
   }
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-8%] top-[-10%] h-64 w-64 rounded-full bg-primary/12 blur-[110px]" />
-        <div className="absolute right-[-12%] top-[12%] h-72 w-72 rounded-full bg-primary/10 blur-[110px]" />
-        <div className="absolute bottom-[-18%] left-[20%] h-72 w-72 rounded-full bg-indigo-300/16 blur-[120px] dark:bg-indigo-500/14" />
-      </div>
+    <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
 
       <PageContainer className="relative z-10 py-6 lg:py-8">
         <header className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
