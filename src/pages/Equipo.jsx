@@ -35,7 +35,6 @@ const buildEditForm = (employee = {}) => ({
   name: employee.name || '',
   email: employee.email || '',
   role: employee.role || 'employee',
-  password: '',
   shift_id: employee.shift_id ?? employee.shiftId ?? '',
 })
 
@@ -68,6 +67,7 @@ export default function Equipo() {
   const [assignEmployee, setAssignEmployee] = useState(null)
 
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [showShiftPreview, setShowShiftPreview] = useState(false)
 
   const roleOptions = useMemo(
     () =>
@@ -149,6 +149,10 @@ export default function Equipo() {
     }
   }, [createOpen])
 
+  useEffect(() => {
+    setShowShiftPreview(false)
+  }, [editForm.shift_id])
+
   const formatRole = (role) => {
     if (!role) return t('equipoPage.roles.unknown')
     return t(`equipoPage.roles.${role}`, role)
@@ -164,6 +168,17 @@ export default function Equipo() {
       year: 'numeric',
     })
   }
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '--:--'
+    const parts = timeString.split(':')
+    return `${parts[0] || '--'}:${parts[1] || '00'}`
+  }
+
+  const selectedEditShift = useMemo(
+    () => shifts.find((shift) => shift.id === editForm.shift_id),
+    [shifts, editForm.shift_id],
+  )
 
   const handleCreateSubmit = async (event) => {
     event.preventDefault()
@@ -206,6 +221,7 @@ export default function Equipo() {
     setSelectedEmployee(employee)
     setEditForm(buildEditForm(employee))
     setEditOpen(true)
+    setShowShiftPreview(false)
     setEditLoading(true)
     try {
       const detail = await getEmployee(employee.id)
@@ -235,9 +251,6 @@ export default function Equipo() {
       name: editForm.name.trim(),
       email: editForm.email.trim(),
       role: editForm.role,
-    }
-    if (editForm.password) {
-      payload.password = editForm.password
     }
     if (editForm.shift_id) {
       payload.shift_id = editForm.shift_id
@@ -823,18 +836,6 @@ export default function Equipo() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-password">{t('equipoPage.form.passwordLabel')}</Label>
-              <Input
-                id="edit-password"
-                name="password"
-                type="password"
-                value={editForm.password}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, password: event.target.value }))}
-                placeholder={t('equipoPage.form.passwordPlaceholder')}
-                disabled={editLoading}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit-shift">{t('equipoPage.form.shiftLabel')}</Label>
               <select
                 id="edit-shift"
@@ -863,6 +864,35 @@ export default function Equipo() {
                   ))
                 )}
               </select>
+              {editForm.shift_id && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowShiftPreview((prev) => !prev)}
+                      disabled={editLoading}
+                    >
+                      {showShiftPreview ? 'Esconder pré-visualização' : 'Ver pré-visualização'}
+                    </Button>
+                    {selectedEditShift?.name && !showShiftPreview && (
+                      <span className="text-xs text-muted-foreground">
+                        Veja detalhes da jornada selecionada
+                      </span>
+                    )}
+                  </div>
+                  {showShiftPreview && selectedEditShift && (
+                    <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm">
+                      <div className="font-semibold text-foreground">{selectedEditShift.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatTime(selectedEditShift.start_time)} - {formatTime(selectedEditShift.end_time)}
+                        {selectedEditShift.is_flexible ? ' · Flexível' : ' · Fixa'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 pt-2">
               <DialogClose asChild>

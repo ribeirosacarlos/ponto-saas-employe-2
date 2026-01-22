@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { format, isSameDay } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui/use-toast'
 import { clockRequest, endBreak, listEntries, startBreak } from '../../lib/api'
 import { useAuthStore } from '../../store/useAuth'
+import { useDateTime } from '../../hooks/useDateTime'
 
 const WORK_TYPES = ['in', 'out']
 const BREAK_START = 'break_start'
@@ -13,6 +13,7 @@ export function useClocking() {
   const logout = useAuthStore((state) => state.logout)
   const { toast } = useToast()
   const { t } = useTranslation()
+  const { formatTime, isSameDay } = useDateTime()
 
   const [entries, setEntries] = useState([])
   const [loadingEntries, setLoadingEntries] = useState(false)
@@ -59,7 +60,9 @@ export function useClocking() {
       try {
         const data = await clockRequest(type)
         const savedAt = data.clocked_at || data.created_at
-        const formattedTime = savedAt ? format(new Date(savedAt), 'HH:mm') : t('dashboard.nowLabel')
+        const formattedTime = savedAt
+          ? formatTime(savedAt, { hour12: false }) || t('dashboard.nowLabel')
+          : t('dashboard.nowLabel')
         toast({
           title: t('toast.clockSuccess.title'),
           description: t('toast.clockSuccess.description', { time: formattedTime }),
@@ -100,7 +103,7 @@ export function useClocking() {
         setClocking('')
       }
     },
-    [logout, refreshEntries, toast, t],
+    [formatTime, logout, refreshEntries, toast, t],
   )
 
   const registerBreak = useCallback(
@@ -110,7 +113,9 @@ export function useClocking() {
       try {
         const data = action === 'start' ? await startBreak() : await endBreak()
         const savedAt = data.clocked_at || data.created_at
-        const formattedTime = savedAt ? format(new Date(savedAt), 'HH:mm') : t('dashboard.nowLabel')
+        const formattedTime = savedAt
+          ? formatTime(savedAt, { hour12: false }) || t('dashboard.nowLabel')
+          : t('dashboard.nowLabel')
         toast({
           title: action === 'start' ? t('timeClock.actions.goToBreak', 'Iniciar intervalo') : t('timeClock.actions.backFromBreak', 'Voltar do intervalo'),
           description: t('toast.clockSuccess.description', { time: formattedTime }),
@@ -145,12 +150,12 @@ export function useClocking() {
         setBreakLoading(false)
       }
     },
-    [logout, refreshEntries, toast, t],
+    [formatTime, logout, refreshEntries, toast, t],
   )
 
   const todaysEntries = useMemo(
-    () => entries.filter((entry) => entry.clocked_at && isSameDay(new Date(entry.clocked_at), new Date())),
-    [entries],
+    () => entries.filter((entry) => entry.clocked_at && isSameDay(entry.clocked_at, new Date())),
+    [entries, isSameDay],
   )
 
   const workEntries = useMemo(

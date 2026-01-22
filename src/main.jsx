@@ -6,6 +6,7 @@ import { ThemeProvider } from './providers/ThemeProvider.jsx'
 import { AccessProvider } from './providers/AccessProvider.jsx'
 import { ToastProvider } from './components/ui/use-toast.jsx'
 import { Toaster } from './components/ui/toaster.jsx'
+import { TimezoneProvider } from './providers/TimezoneProvider.jsx'
 import './i18n/i18n.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,8 +14,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AccessProvider>
       <ThemeProvider defaultTheme="light">
         <ToastProvider>
-          <App />
-          <Toaster />
+          <TimezoneProvider>
+            <App />
+            <Toaster />
+          </TimezoneProvider>
         </ToastProvider>
       </ThemeProvider>
     </AccessProvider>

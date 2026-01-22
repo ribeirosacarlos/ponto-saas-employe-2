@@ -15,8 +15,10 @@ import CloseTimesheetPage from './pages/area-manager/CloseTimesheetPage.tsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
+import AdminCompanyTimezone from './pages/AdminCompanyTimezone.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
+import AdminDocuments from './pages/AdminDocuments.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
 import SubscribePage from './pages/SubscribePage.jsx'
@@ -347,10 +349,14 @@ export default function App() {
         return <AdminVacations sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAdjustments':
         return <AdminAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminDocuments':
+        return <AdminDocuments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminShifts':
         return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
         return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminCompanyTimezone':
+        return <AdminCompanyTimezone sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'closeTimesheet':
         return <CloseTimesheetPage sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformBillingPlans':

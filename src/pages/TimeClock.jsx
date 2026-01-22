@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { format, isYesterday } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, ArrowRight, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
+import { AlertTriangle, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -14,6 +13,7 @@ import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
+import { useDateTime } from '../hooks/useDateTime'
 
 const statusTokens = {
   idle: {
@@ -35,6 +35,13 @@ export default function TimeClock({ onContinueToDashboard }) {
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const logout = useAuthStore((state) => state.logout)
+  const {
+    formatDate,
+    formatTime,
+    formatDateForApi,
+    isSameDay,
+    toCompanyZonedParts,
+  } = useDateTime()
   const { toast } = useToast()
   const {
     status: clockStatus,
@@ -42,7 +49,8 @@ export default function TimeClock({ onContinueToDashboard }) {
     clocking,
     loadingEntries,
     refreshEntries,
-    lastWorkEntry,
+    entries,
+    todaysEntries,
     lastError,
   } = useClocking()
   const { isAbsentToday, absenceToday } = useAbsenceStatus()
@@ -58,6 +66,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const userMenuRef = useRef(null)
+  const isMounted = useRef(true)
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -105,42 +114,52 @@ export default function TimeClock({ onContinueToDashboard }) {
   const registeringLabel = t('timeClock.actions.registering')
   const primaryLoading = clocking === mainActionType
 
-  const formattedTime = format(currentTime, 'HH:mm')
-  const formattedDate = currentTime.toLocaleDateString(i18n.language, {
+  const formattedTime = formatTime(currentTime, { hour12: false })
+  const formattedDate = formatDate(currentTime, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
 
+  const getEntryTimestamp = useCallback((entry) => {
+    const raw = entry?.clocked_at || entry?.created_at
+    const date = raw ? new Date(raw) : null
+    const timestamp = date && !Number.isNaN(date.getTime()) ? date.getTime() : null
+    return timestamp
+  }, [])
+
   const formatClockedTime = useCallback(
     (value) => {
-      if (!value) return '--:--'
-      const date = new Date(value)
-      if (Number.isNaN(date.getTime())) return String(value)
-      return date.toLocaleTimeString(i18n.language, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'UTC',
-      })
+      const formatted = formatTime(value, { hour12: false })
+      return formatted === '-' ? '--:--' : formatted
     },
-    [i18n.language],
+    [formatTime],
   )
 
-  const lastRecordLabel = useMemo(() => {
-    if (!lastWorkEntry) return t('timeClock.lastRecord.placeholder')
+  const sortedWorkEntries = useMemo(() => {
+    const workEntries = Array.isArray(entries)
+      ? entries.filter((entry) => ['in', 'out'].includes(entry?.type))
+      : []
 
-    const recordDate = new Date(lastWorkEntry.clocked_at)
-    const typeLabel = t(`types.${lastWorkEntry.type === 'in' ? 'in' : 'out'}`)
-    const timeLabel = formatClockedTime(lastWorkEntry.clocked_at)
+    return [...workEntries].sort(
+      (a, b) => (getEntryTimestamp(b) ?? 0) - (getEntryTimestamp(a) ?? 0),
+    )
+  }, [entries, getEntryTimestamp])
 
-    if (Number.isNaN(recordDate.getTime())) {
-      return t('timeClock.lastRecord.label', { type: typeLabel, time: timeLabel })
-    }
+  const todayWorkEntries = useMemo(() => {
+    return sortedWorkEntries.filter((entry) =>
+      isSameDay(entry?.clocked_at || entry?.created_at, currentTime),
+    )
+  }, [currentTime, isSameDay, sortedWorkEntries])
 
-    const labelKey = isYesterday(recordDate) ? 'timeClock.lastRecord.yesterdayLabel' : 'timeClock.lastRecord.label'
-    return t(labelKey, { type: typeLabel, time: timeLabel })
-  }, [formatClockedTime, lastWorkEntry, t])
+  const lastPunch = todayWorkEntries?.[0] || null
+
+  const lastPunchTime = useMemo(
+    () => (lastPunch ? formatClockedTime(lastPunch.clocked_at || lastPunch.created_at) : null),
+    [formatClockedTime, lastPunch],
+  )
+
+  const isLastPunchOpen = lastPunch?.type === 'in'
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -149,6 +168,96 @@ export default function TimeClock({ onContinueToDashboard }) {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }
+
+  const punchTimelineRows = useMemo(() => {
+    if (!todayWorkEntries.length) return []
+
+    const entriesAsc = [...todayWorkEntries].sort(
+      (a, b) => (getEntryTimestamp(a) ?? 0) - (getEntryTimestamp(b) ?? 0),
+    )
+
+    const segments = []
+
+    for (let i = 0; i < entriesAsc.length; i += 1) {
+      const current = entriesAsc[i]
+      const next = entriesAsc[i + 1]
+
+      if (current?.type === 'in') {
+        segments.push({
+          key: `work-${i}`,
+          kind: 'work',
+          start: current,
+          end: next?.type === 'out' ? next : null,
+        })
+      } else if (current?.type === 'out') {
+        segments.push({
+          key: `break-${i}`,
+          kind: 'break',
+          start: current,
+          end: next?.type === 'in' ? next : null,
+        })
+      }
+    }
+
+    const workSegments = segments.filter((segment) => segment.kind === 'work')
+    const firstWork = workSegments[0]
+    const lastWork = workSegments.length > 1 ? workSegments[workSegments.length - 1] : null
+    const firstBreak = segments.find((segment) => segment.kind === 'break')
+
+    const toTimeLabel = (entry) =>
+      entry ? formatClockedTime(entry.clocked_at || entry.created_at) : '--:--'
+
+    const computeDuration = (segment) => {
+      if (!segment?.start) return '--:--'
+      const startTs = getEntryTimestamp(segment.start)
+      const endTs = segment.end ? getEntryTimestamp(segment.end) : null
+      const endTime = endTs ?? currentTime.getTime()
+      if (!startTs || !endTime) return '--:--'
+      return formatMinutesToLabel((endTime - startTs) / 60000)
+    }
+
+    const buildRow = (segment, type) => {
+      if (!segment) return null
+
+      const hasEnd = Boolean(segment.end)
+      const endLabel =
+        hasEnd && segment.end
+          ? toTimeLabel(segment.end)
+          : segment.kind === 'work'
+            ? t('timeClock.lastPunch.opened')
+            : '--:--'
+
+      const tone =
+        segment.kind === 'break'
+          ? 'text-primary'
+          : !hasEnd && type === 'last'
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : 'text-foreground'
+
+      return {
+        key: type,
+        label: t(`timeClock.lastPunch.sections.${type}`),
+        startLabel: toTimeLabel(segment.start),
+        endLabel,
+        duration: computeDuration(segment),
+        tone,
+        highlightEnd: segment.kind === 'work' && !hasEnd,
+      }
+    }
+
+    return [
+      buildRow(firstWork, 'first'),
+      buildRow(firstBreak, 'interval'),
+      buildRow(lastWork, 'last'),
+    ].filter(Boolean)
+  }, [
+    currentTime,
+    formatClockedTime,
+    formatMinutesToLabel,
+    getEntryTimestamp,
+    t,
+    todayWorkEntries,
+  ])
 
   const formatBalanceToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
@@ -168,14 +277,12 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [])
 
   const formatAbsenceDate = (value) => {
-    if (!value) return ''
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return date.toLocaleDateString(i18n.language, {
+    const formatted = formatDate(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     })
+    return formatted === '-' ? '' : formatted
   }
 
   const absencePeriodLabel = useMemo(() => {
@@ -340,8 +447,16 @@ export default function TimeClock({ onContinueToDashboard }) {
       setOvertimeLoading(true)
       try {
         const today = new Date()
-        const from = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
-        const to = format(today, 'yyyy-MM-dd')
+        const zonedToday = toCompanyZonedParts(today) || {
+          year: today.getFullYear(),
+          month: today.getMonth() + 1,
+          day: today.getDate(),
+        }
+        const firstDayUtc = new Date(Date.UTC(zonedToday.year, zonedToday.month - 1, 1))
+        const from =
+          formatDateForApi(firstDayUtc) ||
+          `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-01`
+        const to = formatDateForApi(today) || `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-${String(zonedToday.day).padStart(2, '0')}`
         const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
 
         const parseNumber = (value) => {
@@ -454,7 +569,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
       return sorted.slice(0, 5).map((entry) => {
         const date = new Date(entry.clocked_at)
-        const day = date.toLocaleDateString(i18n.language, {
+        const day = formatDate(date, {
           weekday: 'long',
           day: '2-digit',
           month: 'short',
@@ -496,35 +611,28 @@ export default function TimeClock({ onContinueToDashboard }) {
     [formatClockedTime, i18n.language, t],
   )
 
-  useEffect(() => {
-    let active = true
-
-    const fetchRecentEntries = async () => {
-      if (!token) {
-        setRecentEntries([])
-        return
-      }
-
-      setRecentEntriesLoading(true)
-      try {
-        const { data } = await listEmployeeEntries(1)
-        if (!active) return
-        const normalized = Array.isArray(data) ? data : data?.data || []
-        setRecentEntries(normalizeEntryList(normalized))
-      } catch (error) {
-        console.error('[TimeClock] Failed to load recent entries', error)
-        if (!active) return
-        setRecentEntries([])
-      } finally {
-        if (active) setRecentEntriesLoading(false)
-      }
+  const fetchRecentEntries = useCallback(async () => {
+    if (!token) {
+      if (isMounted.current) setRecentEntries([])
+      return
     }
 
-    fetchRecentEntries()
-    return () => {
-      active = false
+    if (isMounted.current) setRecentEntriesLoading(true)
+    try {
+      const { data } = await listEmployeeEntries(1)
+      const normalized = Array.isArray(data) ? data : data?.data || []
+      if (isMounted.current) setRecentEntries(normalizeEntryList(normalized))
+    } catch (error) {
+      console.error('[TimeClock] Failed to load recent entries', error)
+      if (isMounted.current) setRecentEntries([])
+    } finally {
+      if (isMounted.current) setRecentEntriesLoading(false)
     }
   }, [normalizeEntryList, token])
+
+  useEffect(() => {
+    fetchRecentEntries()
+  }, [fetchRecentEntries])
 
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
@@ -547,6 +655,7 @@ export default function TimeClock({ onContinueToDashboard }) {
       return
     }
     await registerClock(mainActionType)
+    await fetchRecentEntries()
   }
 
   const handleLogout = async () => {
@@ -579,6 +688,10 @@ export default function TimeClock({ onContinueToDashboard }) {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => () => {
+    isMounted.current = false
   }, [])
 
   return (
@@ -729,17 +842,56 @@ export default function TimeClock({ onContinueToDashboard }) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Clock3 className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold">{t('timeClock.lastRecord.title')}</p>
-                    <p className="text-xs text-muted-foreground">{lastRecordLabel}</p>
+              <div className="rounded-2xl border border-border/70 bg-background/85 px-4 py-4 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Clock3 className="h-5 w-5" aria-hidden />
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                          {t('timeClock.lastPunch.title')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {lastPunchTime
+                            ? t('timeClock.lastPunch.registeredAt', { time: lastPunchTime })
+                            : t('timeClock.lastPunch.none')}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  {punchTimelineRows.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('timeClock.lastPunch.none')}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {punchTimelineRows.map((row) => (
+                        <div
+                          key={row.key}
+                          className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-3 py-3"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm font-semibold text-foreground">{row.label}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{row.startLabel}</span>
+                              <span className="text-muted-foreground/60">{'>'}</span>
+                              <span
+                                className={cn(
+                                  'text-foreground',
+                                  row.highlightEnd ? 'font-semibold text-primary' : 'text-foreground',
+                                )}
+                              >
+                                {row.endLabel}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={cn('text-sm font-bold', row.tone)}>{row.duration}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

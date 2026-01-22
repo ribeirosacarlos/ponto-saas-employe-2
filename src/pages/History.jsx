@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  format,
-  isAfter,
-  isBefore,
-  parseISO,
-  startOfMonth,
-  endOfMonth,
-  subMonths,
-  endOfDay,
-  startOfDay,
-} from 'date-fns'
+import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
@@ -29,6 +19,7 @@ import { useAuthStore } from '../store/useAuth'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PageContainer } from '../components/ui/PageContainer'
+import { useDateTime } from '../hooks/useDateTime'
 
 const PAGE_SIZE = 20
 
@@ -145,36 +136,30 @@ function summarizeDay(entries = []) {
 }
 
 export default function History({ onBackToDashboard }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { toast } = useToast()
   const user = useAuthStore((state) => state.user)
+  const { formatDate, formatTime, formatDateForApi, tz, locale } = useDateTime()
 
-  const formatTimeUTC = useCallback(
+  const formatTimeTz = useCallback(
     (value) => {
-      if (!value) return t('historyPage.labels.timeFallback')
-      const date = value instanceof Date ? value : new Date(value)
-      if (Number.isNaN(date.getTime())) return t('historyPage.labels.timeFallback')
-      return date.toLocaleTimeString(i18n.language, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'UTC',
-      })
+      const formatted = formatTime(value, { hour: '2-digit', minute: '2-digit', hour12: false })
+      return formatted === '-' ? t('historyPage.labels.timeFallback') : formatted
     },
-    [i18n.language, t],
+    [formatTime, t],
   )
 
   const formatBreakRanges = useCallback(
     (intervals = []) => {
       if (!intervals.length) return t('historyPage.labels.timeFallback')
       const ranges = intervals.map((interval) => {
-        const startLabel = formatTimeUTC(interval.start)
-        const endLabel = interval.end ? formatTimeUTC(interval.end) : '--:--'
+        const startLabel = formatTimeTz(interval.start)
+        const endLabel = interval.end ? formatTimeTz(interval.end) : '--:--'
         return `${startLabel} - ${endLabel}`
       })
       return ranges.join(' · ')
     },
-    [formatTimeUTC, t],
+    [formatTimeTz, t],
   )
 
   const [filters, setFilters] = useState({ from: '', to: '' })
@@ -208,21 +193,20 @@ export default function History({ onBackToDashboard }) {
       const target = subMonths(today, offset)
       const start = startOfMonth(target)
       const end = endOfMonth(target)
-      const monthLabel = target.toLocaleDateString(i18n.language, {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-      })
-      const caption = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+      const monthLabel = formatDate(start, { month: 'long', year: 'numeric' })
+      const caption = monthLabel && monthLabel !== '-' ? monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1) : ''
+      const from = formatDateForApi(start)
+      const to = formatDateForApi(end)
+      const id = from ? from.slice(0, 7) : `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`
       options.push({
-        id: `${format(start, 'yyyy-MM')}`,
-        label: caption,
-        from: format(start, 'yyyy-MM-dd'),
-        to: format(end, 'yyyy-MM-dd'),
+        id,
+        label: caption || id,
+        from,
+        to,
       })
     }
-    return options
-  }, [i18n.language])
+    return options.filter((option) => option.from && option.to)
+  }, [formatDate, formatDateForApi])
 
   useEffect(() => {
     if (!monthOptions.length) return
@@ -295,23 +279,22 @@ export default function History({ onBackToDashboard }) {
 
   const filteredEntries = useMemo(() => {
     const { from, to } = appliedFilters
-    const fromDate = from ? startOfDay(parseISO(from)) : null
-    const toDate = to ? endOfDay(parseISO(to)) : null
 
     return entries
       .filter((entry) => {
         if (!entry.clockedAt) return true
-        const dateValue = new Date(entry.clockedAt)
-        if (fromDate && isBefore(dateValue, fromDate)) return false
-        if (toDate && isAfter(dateValue, toDate)) return false
+        const key = formatDateForApi(entry.clockedAt)
+        if (!key) return true
+        if (from && key < from) return false
+        if (to && key > to) return false
         return true
       })
       .sort((a, b) => {
-        const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
-        const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
-        return right - left
+        const left = a.clockedAt ? formatDateForApi(a.clockedAt) || '' : ''
+        const right = b.clockedAt ? formatDateForApi(b.clockedAt) || '' : ''
+        return right.localeCompare(left)
       })
-  }, [appliedFilters, entries])
+  }, [appliedFilters, entries, formatDateForApi])
 
   const paginatedEntries = useMemo(() => {
     if (supportsServerPagination) return filteredEntries
@@ -320,7 +303,7 @@ export default function History({ onBackToDashboard }) {
 
   const groupedEntries = useMemo(() => {
     const groups = paginatedEntries.reduce((acc, entry) => {
-      const key = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
+      const key = entry.clockedAt ? formatDateForApi(entry.clockedAt) || 'unknown' : 'unknown'
       acc[key] = acc[key] ? [...acc[key], entry] : [entry]
       return acc
     }, {})
@@ -341,11 +324,9 @@ export default function History({ onBackToDashboard }) {
         }
       })
       .sort((a, b) => {
-        const aTs = new Date(a.dateKey).getTime()
-        const bTs = new Date(b.dateKey).getTime()
-        return (isNaN(bTs) ? 0 : bTs) - (isNaN(aTs) ? 0 : aTs)
+        return (b.dateKey || '').localeCompare(a.dateKey || '')
       })
-  }, [paginatedEntries])
+  }, [formatDateForApi, paginatedEntries])
 
   const hasMore = useMemo(() => {
     if (supportsServerPagination) {
@@ -393,7 +374,7 @@ export default function History({ onBackToDashboard }) {
     const fromLabel = appliedFilters.from || 'todos'
     const toLabel = appliedFilters.to || 'todos'
     const filename = `historial_marcaciones_${fromLabel}_${toLabel}.csv`
-    exportEntriesToCSV(paginatedEntries, filename)
+    exportEntriesToCSV(paginatedEntries, filename, { timeZone: tz, locale })
 
     toast({
       title: t('historyPage.export.successTitle'),
@@ -439,10 +420,11 @@ export default function History({ onBackToDashboard }) {
       unit: 'mm',
       format: 'a4',
     })
-    const getDateLabel = (value) =>
-      value
-        ? new Date(value).toLocaleDateString(i18n.language, { timeZone: 'UTC' })
-        : t('historyPage.pdf.allDates')
+    const getDateLabel = (value) => {
+      if (!value) return t('historyPage.pdf.allDates')
+      const label = formatDate(value, { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return label === '-' ? t('historyPage.pdf.allDates') : label
+    }
 
     const periodRange = `${getDateLabel(appliedFilters.from)} - ${getDateLabel(appliedFilters.to)}`
 
@@ -466,8 +448,8 @@ export default function History({ onBackToDashboard }) {
 
     const body = groupedEntries.map((group) => {
       const { summary } = group
-      const entryLabel = summary?.entryAt ? formatTimeUTC(summary.entryAt) : t('historyPage.labels.timeFallback')
-      const exitLabel = summary?.exitAt ? formatTimeUTC(summary.exitAt) : t('historyPage.labels.timeFallback')
+      const entryLabel = summary?.entryAt ? formatTimeTz(summary.entryAt) : t('historyPage.labels.timeFallback')
+      const exitLabel = summary?.exitAt ? formatTimeTz(summary.exitAt) : t('historyPage.labels.timeFallback')
       const intervalLabel = summary?.hasBreak
         ? formatBreakRanges(summary.breakIntervals)
         : t('historyPage.labels.timeFallback')
@@ -528,11 +510,10 @@ export default function History({ onBackToDashboard }) {
 
   const formatDateLabel = (dateKey) => {
     if (dateKey === 'unknown') return t('historyPage.labels.unknownDate')
-    const label = new Date(dateKey).toLocaleDateString(i18n.language, {
+    const label = formatDate(dateKey, {
       weekday: 'long',
       day: '2-digit',
       month: 'short',
-      timeZone: 'UTC',
     })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
@@ -766,10 +747,10 @@ export default function History({ onBackToDashboard }) {
                       {groupedEntries.map((group) => {
                         const { summary } = group
                         const entryLabel = summary?.entryAt
-                          ? formatTimeUTC(summary.entryAt)
+                          ? formatTimeTz(summary.entryAt)
                           : t('historyPage.labels.timeFallback')
                         const exitLabel = summary?.exitAt
-                          ? formatTimeUTC(summary.exitAt)
+                          ? formatTimeTz(summary.exitAt)
                           : t('historyPage.labels.timeFallback')
                         const intervalLabel = summary?.hasBreak
                           ? formatBreakRanges(summary.breakIntervals)

@@ -7,6 +7,7 @@ import { AjusteModal } from '../AjusteModal'
 import { useClocking } from '../../features/ponto/useClocking'
 import { requestAdjustment } from '../../lib/api'
 import { useAuthStore } from '../../store/useAuth'
+import { useDateTime } from '../../hooks/useDateTime'
 
 const statusTone = {
   normal:
@@ -19,27 +20,17 @@ const statusTone = {
 
 export function TimeTrackingCard({ onOpenHistory }) {
   const token = useAuthStore((state) => state.token)
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { toast } = useToast()
   const { entries, loadingEntries, refreshEntries } = useClocking()
+  const { formatDate, formatTime, formatDateForApi } = useDateTime()
   const [sendingAdjustment, setSendingAdjustment] = useState(false)
 
-  const getUtcDateKey = (value) => {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return 'invalid'
-    return date.toISOString().split('T')[0]
-  }
+  const getDateKey = (value) => formatDateForApi(value) || 'invalid'
 
   const formatClockedTime = (value) => {
-    if (!value) return '--:--'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return date.toLocaleTimeString(i18n.language, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC',
-    })
+    const formatted = formatTime(value, { hour12: false })
+    return formatted === '-' ? '--:--' : formatted
   }
 
   useEffect(() => {
@@ -49,8 +40,8 @@ export function TimeTrackingCard({ onOpenHistory }) {
 
   const todaysEntries = useMemo(
     () => {
-      const todayKey = getUtcDateKey(new Date())
-      return entries.filter((entry) => entry.clocked_at && getUtcDateKey(entry.clocked_at) === todayKey)
+      const todayKey = getDateKey(new Date())
+      return entries.filter((entry) => entry.clocked_at && getDateKey(entry.clocked_at) === todayKey)
     },
     [entries],
   )
@@ -58,7 +49,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
   const daySummaries = useMemo(() => {
     const grouped = entries.reduce((acc, entry) => {
       if (!entry.clocked_at) return acc
-      const key = getUtcDateKey(entry.clocked_at)
+      const key = getDateKey(entry.clocked_at)
       acc[key] = acc[key] ? [...acc[key], entry] : [entry]
       return acc
     }, {})
@@ -96,13 +87,14 @@ export function TimeTrackingCard({ onOpenHistory }) {
   const recentDays = useMemo(() => daySummaries.slice(0, 5), [daySummaries])
 
   const monthlyStats = useMemo(() => {
-    const now = new Date()
+    const todayKey = getDateKey(new Date())
+    const [todayYear, todayMonth] = todayKey.split('-').map((part) => Number(part))
     let totalMinutes = 0
     let workedDays = 0
 
     daySummaries.forEach((day) => {
-      const current = new Date(`${day.dateKey}T00:00:00Z`)
-      if (current.getMonth() === now.getMonth() && current.getFullYear() === now.getFullYear()) {
+      const [year, month] = day.dateKey.split('-').map((part) => Number(part))
+      if (year === todayYear && month === todayMonth) {
         totalMinutes += day.totalMinutes
         workedDays += 1
       }
@@ -124,11 +116,10 @@ export function TimeTrackingCard({ onOpenHistory }) {
   }
 
   const formatDayLabel = (dateKey) => {
-    const label = new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(i18n.language, {
+    const label = formatDate(`${dateKey}T00:00:00Z`, {
       weekday: 'long',
       day: '2-digit',
       month: 'short',
-      timeZone: 'UTC',
     })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }

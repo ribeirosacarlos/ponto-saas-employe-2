@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { DEFAULT_TIMEZONE, formatDate, formatTime } from './datetime'
 
 function escapeCsvValue(value) {
   if (value === null || value === undefined) return ''
@@ -9,13 +9,31 @@ function escapeCsvValue(value) {
   return stringValue
 }
 
-export function exportEntriesToCSV(entries = [], filename = 'historial_marcaciones.csv') {
+export function exportEntriesToCSV(
+  entries = [],
+  filename = 'historial_marcaciones.csv',
+  { timeZone = DEFAULT_TIMEZONE, locale } = {},
+) {
   const headers = ['date', 'time', 'type', 'status', 'notes', 'source']
 
   const rows = entries.map((entry) => {
     const clock = entry.clockedAt || entry.clocked_at || entry.date || entry.timestamp
-    const dateValue = clock ? format(new Date(clock), 'yyyy-MM-dd') : ''
-    const timeValue = clock ? format(new Date(clock), 'HH:mm') : ''
+    const dateLabel = formatDate(clock, {
+      locale,
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    const timeLabel = formatTime(clock, {
+      locale,
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    const dateValue = dateLabel === '-' ? '' : dateLabel
+    const timeValue = timeLabel === '-' ? '' : timeLabel
 
     return {
       date: dateValue,

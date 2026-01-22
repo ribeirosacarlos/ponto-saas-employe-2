@@ -19,6 +19,7 @@ const ptBR = {
         es: 'ES',
       },
       sourceFallback: 'web',
+      activeTimezone: 'Fuso horário: {{tz}}',
     },
     branding: {
       name: 'Jornafy',
@@ -215,6 +216,45 @@ const ptBR = {
         shifts: 'Jornadas',
         adjustments: 'Ajustes de ponto',
         closeTimesheet: 'Fechar folha',
+        companyTimezone: 'Fuso horário da empresa',
+      },
+    },
+    adminTimezonePage: {
+      title: 'Fuso horário da empresa',
+      subtitle:
+        'Somente administradores podem ajustar a referência de timezone usada em telas, filtros e exportações.',
+      actions: {
+        reload: 'Recarregar',
+        save: 'Salvar',
+        saving: 'Salvando...',
+        reset: 'Descartar alterações',
+      },
+      form: {
+        title: 'Configurar timezone',
+        fieldLabel: 'Timezone da empresa (para exibição e filtros)',
+        fieldHint: 'O backend aplica este timezone em listagens, relatórios e exportações.',
+        placeholder: 'Digite ou selecione um timezone',
+        tooltip:
+          'Este valor define como séries de data/hora aparecem e são interpretadas no ASP.NET (Europe/Madrid para empresas espanholas).',
+        tooltipLabel: 'Ajuda sobre timezone da empresa',
+        autoUtc: 'A API converte tudo para UTC internamente.',
+      },
+      filters: {
+        title: 'Como isso afeta filtros e exportações',
+        description:
+          'Sempre que abrir filtros de data (relatórios, exportações), os intervalos são interpretados usando este timezone. A API já converte tudo para UTC, então o front só precisa informar ao usuário.',
+      },
+      toast: {
+        successTitle: 'Fuso horário atualizado',
+        successDescription: 'A empresa agora usa o novo timezone.',
+        errorTitle: 'Erro ao salvar',
+        errorDescription: 'Não foi possível salvar o timezone.',
+      },
+      states: {
+        errorLoading: 'Não foi possível carregar o fuso horário.',
+        noPermissionTitle: 'Apenas administradores podem acessar',
+        noPermissionDescription: 'Este painel é restrito a usuários com papel de administrador.',
+        noOptions: 'Nenhum timezone disponível',
       },
     },
     adminShiftsPage: {
@@ -473,6 +513,17 @@ const ptBR = {
         placeholder: 'Nenhum registro encontrado para hoje',
         label: '{{type}} às {{time}}',
         yesterdayLabel: '{{type}} às {{time}} (ontem)',
+      },
+      lastPunch: {
+        title: 'Último ponto',
+        registeredAt: 'Registrado às: {{time}}',
+        opened: 'Aberto',
+        none: 'Ainda não há registros',
+        sections: {
+          first: 'Primeira batida',
+          interval: 'Intervalo',
+          last: 'Última batida',
+        },
       },
       recent: {
         title: 'Últimos registros',
