@@ -1,22 +1,32 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   BadgeCheck,
   Building2,
   CreditCard,
+  Globe2,
   Link as LinkIcon,
   LockKeyhole,
+  RefreshCcw,
   Radar,
+  Save,
   ShieldCheck,
   SlidersHorizontal,
+  HelpCircle,
+  Info,
   Users,
 } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
+import { Label } from '../components/ui/label'
 import { SettingsSummaryCards } from '../components/settings/SettingsSummaryCards'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { cn } from '../lib/utils'
+import { useToast } from '../components/ui/use-toast'
+import { useAuthStore } from '../store/useAuth'
+import { getCapabilitiesFromRoles } from '../auth/acl'
+import { fetchCompanyTimezone, updateCompanyTimezone } from '../services/companyTimezoneService'
 
 const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
@@ -241,6 +251,219 @@ const InlineActionLink = ({ label, url }) => {
   )
 }
 
+const TimezoneCard = ({ canEdit }) => {
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [timezone, setTimezone] = useState('')
+  const [availableTimezones, setAvailableTimezones] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState({})
+
+  const filteredTimezones = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return availableTimezones
+    return availableTimezones.filter((tz) => tz.toLowerCase().includes(term))
+  }, [availableTimezones, searchTerm])
+
+  const loadTimezone = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    setValidationErrors({})
+    try {
+      const response = await fetchCompanyTimezone()
+      const nextTz = response.timezone || ''
+      setTimezone(nextTz)
+      setSearchTerm(nextTz)
+      setAvailableTimezones(Array.isArray(response.available_timezones) ? response.available_timezones : [])
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Não foi possível carregar o fuso horário.'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadTimezone()
+  }, [loadTimezone])
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    if (!canEdit || !timezone) return
+    setSaving(true)
+    setValidationErrors({})
+    try {
+      const response = await updateCompanyTimezone(timezone)
+      const savedTz = response.timezone || timezone
+      setTimezone(savedTz)
+      setSearchTerm(savedTz)
+      setAvailableTimezones(Array.isArray(response.available_timezones) ? response.available_timezones : [])
+      toast({
+        title: 'Fuso horário atualizado',
+        description: 'A empresa agora usa o novo timezone.',
+        variant: 'success',
+      })
+    } catch (err) {
+      const apiErrors = err?.response?.data?.errors || {}
+      setValidationErrors(apiErrors)
+      const message =
+        apiErrors?.timezone?.join?.(', ') ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Não foi possível salvar o timezone.'
+      toast({
+        title: 'Erro ao salvar',
+        description: message,
+        variant: 'error',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const timezoneError = validationErrors?.timezone
+
+  return (
+    <SectionCard
+      icon={Globe2}
+      title="Fuso horário da empresa"
+      description="Defina como horários são exibidos e interpretados em filtros e exportações."
+    >
+      <div className="space-y-4">
+        {error ? (
+          <div className="rounded-xl border border-rose-200/70 bg-rose-50/80 px-4 py-3 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-50">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <p className="text-sm font-semibold">Erro</p>
+            </div>
+            <p className="text-sm">{error}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={loadTimezone}
+              disabled={loading}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Recarregar
+            </Button>
+          </div>
+        ) : null}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label htmlFor="company-timezone">Timezone da empresa (para exibição e filtros)</Label>
+                <p className="text-xs text-muted-foreground">
+                  O backend aplica este timezone em listagens, relatórios e exportações.
+                </p>
+              </div>
+              <HelpCircle
+                className="h-4 w-4 text-muted-foreground"
+                title="Este valor define como séries de data/hora aparecem e são interpretadas no ASP.NET (ex.: Europe/Madrid para empresas espanholas)."
+              />
+            </div>
+            <div className="relative">
+              <input
+                id="company-timezone"
+                name="timezone"
+                className="mt-1 block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60"
+                value={searchTerm}
+                autoComplete="off"
+                placeholder="Digite ou selecione um timezone"
+                disabled={loading || saving || !canEdit}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value)
+                  setTimezone(event.target.value)
+                  setShowSuggestions(true)
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                required
+              />
+              {showSuggestions ? (
+                <ul className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-border/80 bg-card/95 shadow-2xl backdrop-blur">
+                  {filteredTimezones.length ? (
+                    filteredTimezones.map((tz) => (
+                      <li key={tz}>
+                        <button
+                          type="button"
+                          className={cn(
+                            'flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-primary/10',
+                            tz === timezone ? 'bg-primary/10 text-primary' : 'text-foreground',
+                          )}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setTimezone(tz)
+                            setSearchTerm(tz)
+                            setShowSuggestions(false)
+                          }}
+                        >
+                          {tz}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">Nenhum timezone disponível</li>
+                  )}
+                </ul>
+              ) : null}
+              {timezoneError ? (
+                <p className="mt-2 text-sm text-rose-600 dark:text-rose-300">
+                  {Array.isArray(timezoneError) ? timezoneError.join(', ') : timezoneError}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={saving || loading || !timezone || !canEdit}>
+              {saving ? (
+                <>
+                  <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar
+                </>
+              )}
+            </Button>
+            <Button type="button" variant="outline" disabled={loading || saving} onClick={loadTimezone}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Recarregar
+            </Button>
+            {!canEdit ? (
+              <span className="text-xs text-muted-foreground">
+                Apenas administradores podem editar.
+              </span>
+            ) : null}
+          </div>
+
+          <div className="rounded-xl border border-sky-200/70 bg-sky-50/80 p-4 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-50">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              <p className="text-sm font-semibold">Impacto nos filtros e exportações</p>
+            </div>
+            <p className="mt-2 text-sm">
+              Ao abrir filtros de data, os intervalos são interpretados usando este timezone. A API converte para UTC automaticamente.
+            </p>
+          </div>
+        </form>
+      </div>
+    </SectionCard>
+  )
+}
+
 const CompanyCard = ({ company }) => (
   <SectionCard
     icon={Building2}
@@ -417,6 +640,12 @@ const ActionsCard = ({ links, onDefaultSubscribe }) => {
 export default function SettingsPage() {
   const { data, isLoading, error, reload } = useSettingsOverview()
   const overview = data || {}
+  const roles = useAuthStore((state) => state.roles)
+  const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const canEditTimezone = useMemo(
+    () => capabilities.includes('admin') || capabilities.includes('super_admin'),
+    [capabilities],
+  )
 
   const hasData = useMemo(
     () =>
@@ -489,6 +718,7 @@ export default function SettingsPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <BillingCard billing={overview.billing} links={overview.links} />
               <CompanyCard company={overview.company} />
+              <TimezoneCard canEdit={canEditTimezone} />
               <UsageCard usage={overview.usage} />
               <WorkdayCard workday={overview.workday} />
               <SecurityComplianceCard security={overview.security} compliance={overview.compliance} />

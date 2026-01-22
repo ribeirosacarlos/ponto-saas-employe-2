@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { CircleHelp, LogOut, MoreHorizontal, UserRound } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { ThemeToggle } from './ThemeToggle'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { useDateTime } from '../hooks/useDateTime'
 
 export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, className, collapsed = false }) {
+  const { t } = useTranslation()
+  const { tz } = useDateTime()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -95,6 +99,9 @@ export function UserProfileDropdown({ user, onProfile, onHelp, onLogout, classNa
               </span>
               <span>Sair da aplicacao</span>
             </button>
+            <div className="mt-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+              {t('common.activeTimezone', { tz })}
+            </div>
           </div>
         </div>
       )}

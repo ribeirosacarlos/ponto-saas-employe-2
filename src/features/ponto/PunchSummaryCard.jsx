@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
-import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
 import { getWorkedToday } from '../../lib/api'
 import { useAuthStore } from '../../store/useAuth'
+import { useDateTime } from '../../hooks/useDateTime'
 
 export function PunchSummaryCard({
   t,
@@ -18,18 +18,13 @@ export function PunchSummaryCard({
   onAdjustment,
 }) {
   const token = useAuthStore((state) => state.token)
+  const { formatTime } = useDateTime()
   const [showDetails, setShowDetails] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState(workedTime || '--:--')
 
   const formatClockedTime = (value) => {
-    if (!value) return '--:--'
-    if (typeof value === 'string') {
-      const match = value.match(/T(\d{2}:\d{2})/)
-      if (match?.[1]) return match[1]
-    }
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return format(date, 'HH:mm')
+    const formatted = formatTime(value, { hour12: false })
+    return formatted === '-' ? '--:--' : formatted
   }
 
   const formatMinutesToLabel = (minutes) => {

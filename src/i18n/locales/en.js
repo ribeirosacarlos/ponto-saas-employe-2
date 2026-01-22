@@ -19,6 +19,7 @@ const en = {
         es: 'ES',
       },
       sourceFallback: 'web',
+      activeTimezone: 'Timezone: {{tz}}',
     },
     branding: {
       name: 'Jornafy',
@@ -215,6 +216,7 @@ const en = {
         shifts: 'Shifts',
         adjustments: 'Adjustments',
         closeTimesheet: 'Close timesheet',
+        companyTimezone: 'Company timezone',
       },
     },
     adminShiftsPage: {
@@ -280,6 +282,44 @@ const en = {
           },
         },
       },
+    adminTimezonePage: {
+      title: 'Company timezone',
+      subtitle:
+        'Only administrators can change the timezone reference used across lists, filters and exports.',
+      actions: {
+        reload: 'Reload',
+        save: 'Save',
+        saving: 'Saving...',
+        reset: 'Discard changes',
+      },
+      form: {
+        title: 'Configure timezone',
+        fieldLabel: 'Company timezone (for display and filters)',
+        fieldHint: 'The backend applies this timezone to lists, reports and exports.',
+        placeholder: 'Type or select a timezone',
+        tooltip:
+          'This value defines how date/time series appear and are interpreted in ASP.NET (Europe/Madrid for Spanish companies).',
+        tooltipLabel: 'Help about company timezone',
+        autoUtc: 'The API converts everything to UTC internally.',
+      },
+      filters: {
+        title: 'How this impacts filters and exports',
+        description:
+          'Whenever a date filter is opened (reports, exports), ranges are interpreted using this timezone. The API already converts everything to UTC, so the front just needs to inform users.',
+      },
+      toast: {
+        successTitle: 'Timezone updated',
+        successDescription: 'The company now uses the new timezone.',
+        errorTitle: 'Save error',
+        errorDescription: 'Unable to save the timezone.',
+      },
+      states: {
+        errorLoading: 'Unable to load timezone.',
+        noPermissionTitle: 'Admins only',
+        noPermissionDescription: 'This panel is restricted to administrator users.',
+        noOptions: 'No timezones available',
+      },
+    },
     adminAdjustmentsPage: {
       title: 'Time adjustments',
       subtitle: 'Review and act on employee adjustment requests.',

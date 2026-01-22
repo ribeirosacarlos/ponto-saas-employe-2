@@ -9,6 +9,7 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
+import { useDateTime } from '../hooks/useDateTime'
 import {
   approveAdminAdjustment,
   listAdminAdjustments,
@@ -40,6 +41,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const roles = useAuthStore((state) => state.roles)
+  const { formatDateTime } = useDateTime()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, MANAGEMENT_REQUIRES), [capabilities])
 
@@ -57,20 +59,6 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const [teamMeta, setTeamMeta] = useState(null)
   const [teamLoading, setTeamLoading] = useState(false)
   const [teamError, setTeamError] = useState('')
-
-  const formatDateTime = useCallback(
-    (value, fallback) => {
-      if (!value) return fallback || t('adminAdjustmentsPage.table.unset', 'Nao informado')
-      const date = new Date(value)
-      if (Number.isNaN(date.getTime())) return value
-      return date.toLocaleString(i18n.language, {
-        dateStyle: 'short',
-        timeStyle: 'short',
-        timeZone: 'UTC',
-      })
-    },
-    [i18n.language, t],
-  )
 
   const statusLabel = useCallback(
     (status) => {
@@ -304,10 +292,9 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
       <div className="space-y-3">
         {filteredAdjustments.map((adjustment) => {
           const disabled = actionLoading[adjustment.id]
-          const createdAt = formatDateTime(
-            adjustment.createdAt,
-            t('adminAdjustmentsPage.table.unset', 'Nao informado'),
-          )
+          const createdAt =
+            formatDateTime(adjustment.createdAt) ||
+            t('adminAdjustmentsPage.table.unset', 'Nao informado')
           return (
             <div
               key={adjustment.id}
@@ -344,7 +331,8 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                     {t('adminAdjustmentsPage.table.corrected', 'Horario corrigido')}
                   </p>
                   <p className="font-semibold text-foreground">
-                    {formatDateTime(adjustment.correctedTime, t('adminAdjustmentsPage.table.unset', 'Nao informado'))}
+                    {formatDateTime(adjustment.correctedTime) ||
+                      t('adminAdjustmentsPage.table.unset', 'Nao informado')}
                   </p>
                 </div>
                 <div className="space-y-1">

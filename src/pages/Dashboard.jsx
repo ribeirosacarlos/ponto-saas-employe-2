@@ -7,6 +7,7 @@ import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
 import { DASHBOARD_CARDS } from './dashboardCards'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { PageContainer } from '../components/ui/PageContainer'
+import { useDateTime } from '../hooks/useDateTime'
 
 export default function Dashboard({
   onOpenHistory,
@@ -16,13 +17,14 @@ export default function Dashboard({
 }) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { isAbsentToday, absenceToday } = useAbsenceStatus()
+  const { formatDate, formatTime } = useDateTime()
 
   const todayLabel = useMemo(() => {
-    const label = new Date().toLocaleDateString(i18n.language, { day: '2-digit', month: 'long' })
+    const label = formatDate(new Date(), { day: '2-digit', month: 'long' })
     return label.charAt(0).toUpperCase() + label.slice(1)
-  }, [i18n.language])
+  }, [formatDate])
 
   const [currentTime, setCurrentTime] = useState(() => new Date())
 
@@ -32,7 +34,7 @@ export default function Dashboard({
     return () => clearInterval(interval)
   }, [])
 
-  const currentTimeLabel = currentTime.toLocaleTimeString(i18n.language, {
+  const currentTimeLabel = formatTime(currentTime, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -40,14 +42,12 @@ export default function Dashboard({
   })
 
   const formatAbsenceDate = (value) => {
-    if (!value) return ''
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return date.toLocaleDateString(i18n.language, {
+    const formatted = formatDate(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     })
+    return formatted === '-' ? '' : formatted
   }
 
   const absencePeriodLabel = useMemo(() => {
@@ -59,7 +59,7 @@ export default function Dashboard({
       return `${formatAbsenceDate(start)} - ${formatAbsenceDate(end)}`
     }
     return formatAbsenceDate(start || end)
-  }, [absenceToday, i18n.language])
+  }, [absenceToday, formatDate])
 
   const absenceTypeLabel =
     absenceToday?.type_label ||

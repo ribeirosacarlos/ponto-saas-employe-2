@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { format, isSameDay } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -14,6 +13,7 @@ import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
+import { useDateTime } from '../hooks/useDateTime'
 
 const statusTokens = {
   idle: {
@@ -35,6 +35,13 @@ export default function TimeClock({ onContinueToDashboard }) {
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const logout = useAuthStore((state) => state.logout)
+  const {
+    formatDate,
+    formatTime,
+    formatDateForApi,
+    isSameDay,
+    toCompanyZonedParts,
+  } = useDateTime()
   const { toast } = useToast()
   const {
     status: clockStatus,
@@ -107,24 +114,20 @@ export default function TimeClock({ onContinueToDashboard }) {
   const registeringLabel = t('timeClock.actions.registering')
   const primaryLoading = clocking === mainActionType
 
-  const formattedTime = format(currentTime, 'HH:mm')
-  const formattedDate = currentTime.toLocaleDateString(i18n.language, {
+  const formattedTime = formatTime(currentTime, { hour12: false })
+  const formattedDate = formatDate(currentTime, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
 
-  const formatClockedTime = useCallback((value) => {
-    if (!value) return '--:--'
-    if (typeof value === 'string') {
-      // Prefer the raw time portion coming from the API (avoids TZ shifts).
-      const match = value.match(/T(\d{2}:\d{2})/)
-      if (match?.[1]) return match[1]
-    }
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return format(date, 'HH:mm')
-  }, [])
+  const formatClockedTime = useCallback(
+    (value) => {
+      const formatted = formatTime(value, { hour12: false })
+      return formatted === '-' ? '--:--' : formatted
+    },
+    [formatTime],
+  )
 
   const sortedWorkEntries = useMemo(() => {
     const workEntries = Array.isArray(entries)
@@ -141,13 +144,10 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [entries])
 
   const todayWorkEntries = useMemo(() => {
-    const today = currentTime
-    return sortedWorkEntries.filter((entry) => {
-      const date = new Date(entry?.clocked_at || entry?.created_at)
-      if (Number.isNaN(date.getTime())) return false
-      return isSameDay(date, today)
-    })
-  }, [currentTime, sortedWorkEntries])
+    return sortedWorkEntries.filter((entry) =>
+      isSameDay(entry?.clocked_at || entry?.created_at, currentTime),
+    )
+  }, [currentTime, isSameDay, sortedWorkEntries])
 
   const lastPunch = todayWorkEntries?.[0] || null
 
@@ -157,23 +157,6 @@ export default function TimeClock({ onContinueToDashboard }) {
   )
 
   const isLastPunchOpen = lastPunch?.type === 'in'
-
-  useEffect(() => {
-    const formatTime = (value) => {
-      if (!value) return null
-      const date = new Date(value)
-      return Number.isNaN(date.getTime()) ? String(value) : format(date, 'HH:mm')
-    }
-
-    console.log(
-      '[TimeClock] todayWorkEntries:',
-      todayWorkEntries.map((entry) => ({
-        type: entry?.type,
-        raw: entry?.clocked_at || entry?.created_at,
-        formatted: formatTime(entry?.clocked_at || entry?.created_at),
-      })),
-    )
-  }, [todayWorkEntries])
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -201,14 +184,12 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [])
 
   const formatAbsenceDate = (value) => {
-    if (!value) return ''
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return String(value)
-    return date.toLocaleDateString(i18n.language, {
+    const formatted = formatDate(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     })
+    return formatted === '-' ? '' : formatted
   }
 
   const absencePeriodLabel = useMemo(() => {
@@ -373,8 +354,16 @@ export default function TimeClock({ onContinueToDashboard }) {
       setOvertimeLoading(true)
       try {
         const today = new Date()
-        const from = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
-        const to = format(today, 'yyyy-MM-dd')
+        const zonedToday = toCompanyZonedParts(today) || {
+          year: today.getFullYear(),
+          month: today.getMonth() + 1,
+          day: today.getDate(),
+        }
+        const firstDayUtc = new Date(Date.UTC(zonedToday.year, zonedToday.month - 1, 1))
+        const from =
+          formatDateForApi(firstDayUtc) ||
+          `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-01`
+        const to = formatDateForApi(today) || `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-${String(zonedToday.day).padStart(2, '0')}`
         const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
 
         const parseNumber = (value) => {
@@ -487,7 +476,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
       return sorted.slice(0, 5).map((entry) => {
         const date = new Date(entry.clocked_at)
-        const day = date.toLocaleDateString(i18n.language, {
+        const day = formatDate(date, {
           weekday: 'long',
           day: '2-digit',
           month: 'short',

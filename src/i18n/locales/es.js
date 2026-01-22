@@ -19,6 +19,7 @@ const es = {
         es: 'ES',
       },
       sourceFallback: 'web',
+      activeTimezone: 'Zona horaria: {{tz}}',
     },
     branding: {
       name: 'Jornafy',
@@ -215,6 +216,7 @@ const es = {
         shifts: 'Jornadas',
         adjustments: 'Ajustes',
         closeTimesheet: 'Cerrar hoja',
+        companyTimezone: 'Zona horaria de la empresa',
       },
     },
     adminShiftsPage: {
@@ -278,6 +280,44 @@ const es = {
           title: 'Error al eliminar',
           description: 'No pudimos remover esta jornada ahora.',
         },
+      },
+    },
+    adminTimezonePage: {
+      title: 'Zona horaria de la empresa',
+      subtitle:
+        'Solo los administradores pueden cambiar la referencia de timezone usada en listas, filtros y exportaciones.',
+      actions: {
+        reload: 'Recargar',
+        save: 'Guardar',
+        saving: 'Guardando...',
+        reset: 'Descartar cambios',
+      },
+      form: {
+        title: 'Configurar timezone',
+        fieldLabel: 'Timezone de la empresa (para visualización y filtros)',
+        fieldHint: 'El backend aplica este timezone en listados, reportes y exportaciones.',
+        placeholder: 'Escribe o selecciona un timezone',
+        tooltip:
+          'Este valor define cómo se muestran e interpretan las series de fecha/hora en ASP.NET (Europe/Madrid para empresas españolas).',
+        tooltipLabel: 'Ayuda sobre el timezone de la empresa',
+        autoUtc: 'La API convierte todo a UTC internamente.',
+      },
+      filters: {
+        title: 'Impacto en filtros y exportaciones',
+        description:
+          'Cada vez que abras filtros de fecha (reportes, exportaciones), los rangos se interpretan con este timezone. La API ya convierte todo a UTC, así que el front solo debe informar al usuario.',
+      },
+      toast: {
+        successTitle: 'Timezone actualizado',
+        successDescription: 'La empresa ahora usa el nuevo timezone.',
+        errorTitle: 'Error al guardar',
+        errorDescription: 'No se pudo guardar el timezone.',
+      },
+      states: {
+        errorLoading: 'No fue posible cargar el timezone.',
+        noPermissionTitle: 'Solo administradores',
+        noPermissionDescription: 'Este panel es exclusivo para usuarios con rol de administrador.',
+        noOptions: 'No hay timezones disponibles',
       },
     },
     adminAdjustmentsPage: {
