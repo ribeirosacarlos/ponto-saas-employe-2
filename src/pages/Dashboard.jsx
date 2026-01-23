@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Bell, Search } from 'lucide-react'
+import { AlertTriangle, Bell, Search, FileText, BookOpen, IdCard, Archive } from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
@@ -8,6 +8,35 @@ import { DASHBOARD_CARDS } from './dashboardCards'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
+import { listMyDocuments, downloadDocument } from '../services/documentsService'
+import { listAnnouncements } from '../services/announcementsService'
+
+const DOCUMENT_CATEGORIES = {
+  payroll: {
+    accent: 'emerald',
+    icon: FileText,
+    fallbackTitle: 'Holerites',
+    fallbackDescription: 'Seus contracheques recentes.',
+  },
+  courses: {
+    accent: 'indigo',
+    icon: BookOpen,
+    fallbackTitle: 'Cursos',
+    fallbackDescription: 'Treinamentos e certificações.',
+  },
+  personal: {
+    accent: 'amber',
+    icon: IdCard,
+    fallbackTitle: 'Pessoais',
+    fallbackDescription: 'Documentos pessoais e comprovantes.',
+  },
+  others: {
+    accent: 'slate',
+    icon: Archive,
+    fallbackTitle: 'Outros',
+    fallbackDescription: 'Arquivos enviados recentemente.',
+  },
+}
 
 export default function Dashboard({
   onOpenHistory,
@@ -40,6 +69,166 @@ export default function Dashboard({
     second: '2-digit',
     hour12: false,
   })
+
+  const [documentSections, setDocumentSections] = useState([])
+  const [documentsLoading, setDocumentsLoading] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false)
+
+  const fallbackAnnouncements = useMemo(
+    () => [
+      {
+        id: 'hybrid-update',
+        title: t('dashboardPage.announcements.items.hybrid.title', 'Hybrid work update'),
+        body: t(
+          'dashboardPage.announcements.items.hybrid.body',
+          'Starting next month, teams will alternate office and remote days.',
+        ),
+        sent_at: '2025-08-12T17:42:00-03:00',
+        sender_role: 'admin',
+      },
+      {
+        id: 'security-policy',
+        title: t('dashboardPage.announcements.items.security.title', 'Security policy revised'),
+        body: t(
+          'dashboardPage.announcements.items.security.body',
+          'Review the new MFA guidance and update your passwords before the end of the month.',
+        ),
+        sent_at: '2025-08-10T09:15:00-03:00',
+        seen_at: '2025-08-10T10:02:00-03:00',
+        sender_role: 'area_manager',
+      },
+    ],
+    [t],
+  )
+
+  const mapDocumentsToSections = (docs = []) => {
+    const grouped = docs.reduce((acc, doc) => {
+      const categoryKey = DOCUMENT_CATEGORIES[doc.category] ? doc.category : 'others'
+      if (!acc[categoryKey]) acc[categoryKey] = []
+      acc[categoryKey].push(doc)
+      return acc
+    }, {})
+
+    return Object.entries(DOCUMENT_CATEGORIES)
+      .map(([category, config]) => {
+        const items = (grouped[category] || []).slice(0, 3).map((doc) => ({
+          id: doc.id,
+          name: doc.title,
+          status: doc.status ? t(`documentsPage.status.${doc.status}`, doc.status) : '',
+          updatedAt: doc.updatedAt
+            ? formatDate(doc.updatedAt, { day: '2-digit', month: 'short', year: 'numeric' })
+            : '',
+          actionLabel: t('documentsPage.actions.download', 'Baixar'),
+          extension: doc.extension,
+        }))
+
+        return {
+          id: category,
+          title: t(`documentsPage.tabs.${category}`, config.fallbackTitle),
+          description: t(
+            `dashboardPage.documents.sections.${category}.description`,
+            config.fallbackDescription,
+          ),
+          accent: config.accent,
+          icon: config.icon,
+          items,
+        }
+      })
+      .filter((section) => section.items.length > 0)
+  }
+
+  const loadDocumentsPreview = async () => {
+    setDocumentsLoading(true)
+    try {
+      const { data } = await listMyDocuments({ page: 1 })
+      setDocumentSections(mapDocumentsToSections(data))
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('dashboardPage.toasts.documents.error', 'Não foi possível carregar seus documentos.')
+      setDocumentSections([])
+      toast({
+        title: t('dashboardPage.toasts.documents.title', 'Falha ao carregar documentos'),
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDocumentsPreview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const formatSentAt = (value) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return formatDate(date, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }) +
+      ' • ' +
+      formatTime(date, { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const loadAnnouncementsPreview = async () => {
+    setAnnouncementsLoading(true)
+    try {
+      const data = await listAnnouncements({ fallback: fallbackAnnouncements })
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.sentAt || b.sent_at).getTime() - new Date(a.sentAt || a.sent_at).getTime(),
+      )
+      const limited = sorted.slice(0, 3).map((item) => ({
+        id: item.id,
+        title: item.title,
+        body: item.body || item.summary,
+        status: item.status || (item.seenAt || item.seen_at ? 'seen' : 'pending'),
+        sentAt: formatSentAt(item.sentAt || item.sent_at),
+      }))
+      setAnnouncements(limited)
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('dashboardPage.toasts.announcements.error', 'Não foi possível carregar comunicados.')
+      setAnnouncements([])
+      toast({
+        title: t('dashboardPage.toasts.announcements.title', 'Falha ao carregar comunicados'),
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setAnnouncementsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadAnnouncementsPreview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fallbackAnnouncements])
+
+  const handleDocumentAction = async (item) => {
+    if (!item?.id) return
+    try {
+      await downloadDocument(item.id, `${item.name || 'documento'}.${item.extension || 'pdf'}`)
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('dashboardPage.toasts.documentAction.error', 'Não foi possível baixar o documento.')
+      toast({
+        title: t('dashboardPage.toasts.documentAction.title', 'Ação não concluída'),
+        description: message,
+        variant: 'destructive',
+      })
+    }
+  }
 
   const formatAbsenceDate = (value) => {
     const formatted = formatDate(value, {
@@ -95,17 +284,10 @@ export default function Dashboard({
   const cardProps = {
     timeTracking: { onOpenHistory },
     documents: {
-      sections: [],
+      sections: documentsLoading ? [] : documentSections,
       onViewAll: handleViewAllDocuments,
-      onAction: (item) =>
-        toast({
-          title: t('dashboardPage.toasts.documentAction.title'),
-          description: t('dashboardPage.toasts.documentAction.description', {
-            action: item.actionLabel || t('dashboardPage.toasts.documentAction.defaultAction'),
-            name: item.name,
-          }),
-        }),
-      maxItemsPerSection: 1,
+      onAction: handleDocumentAction,
+      maxItemsPerSection: 2,
     },
     timeOff: {
       summary: null,
@@ -125,7 +307,7 @@ export default function Dashboard({
       },
     },
     announcements: {
-      announcements: [],
+      announcements: announcementsLoading ? [] : announcements,
       onViewAll: () => {
         if (onOpenAnnouncements) {
           onOpenAnnouncements()
