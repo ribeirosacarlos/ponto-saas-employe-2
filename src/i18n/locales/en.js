@@ -454,6 +454,19 @@ const en = {
         description: 'Invalid credentials. Please check and try again.',
       },
     },
+    forgotPassword: {
+      title: 'Forgot password',
+      subtitle: 'Enter your account email to receive a verification code.',
+      emailLabel: 'Email',
+      submit: 'Send code',
+      submitting: 'Sending...',
+      successTitle: 'Code sent',
+      successDescription: 'We sent a code to your email.',
+      errorTitle: 'Unable to send code',
+      errors: {
+        emailRequired: 'Enter your account email.',
+      },
+    },
     activateAccount: {
       title: 'Activate account',
       subtitle: 'Create your password to access the system',
@@ -464,6 +477,33 @@ const en = {
       submit: 'Activate account',
       success: 'Account activated successfully',
       error: 'Could not activate the account',
+    },
+    resetPassword: {
+      title: 'Reset password',
+      subtitle: 'We sent a code to your email. Enter it to reset your password.',
+      codeLabel: 'Verification code',
+      codePlaceholder: 'XXXXXXXX',
+      passwordLabel: 'New password',
+      passwordConfirmLabel: 'Confirm password',
+      passwordHelper: 'Use at least 8 characters with uppercase letters, numbers, and symbols.',
+      strength: {
+        label: 'Password strength',
+        weak: 'Weak',
+        medium: 'Medium',
+        strong: 'Strong',
+      },
+      submit: 'Reset password',
+      submitting: 'Resetting...',
+      successTitle: 'Password updated',
+      successDescription: 'Your password has been updated successfully.',
+      errorTitle: 'Unable to reset password',
+      errors: {
+        codeRequired: 'Enter the verification code.',
+        passwordRules:
+          'Password must be at least 8 characters and include an uppercase letter, a number, and a symbol.',
+        passwordContainsEmail: 'Password cannot contain your email.',
+        passwordMismatch: 'Passwords do not match.',
+      },
     },
     timeClock: {
       title: 'Time clock',

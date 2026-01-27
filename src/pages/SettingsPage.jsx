@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Label } from '../components/ui/label'
@@ -673,36 +674,36 @@ export default function SettingsPage() {
       <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
 
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
-        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_12px_54px_-50px_rgba(62,82,152,0.35)] backdrop-blur-2xl">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Configurações</p>
-                <h1 className="text-2xl font-semibold leading-tight">Visão geral da conta</h1>
-                <p className="text-sm text-muted-foreground">
-                  Tudo que a UI precisa: plano, empresa, jornadas, segurança, limites e ações.
-                </p>
-              </div>
-            </div>
-            {error ? (
+        <AppTopBar
+          icon={<ShieldCheck className="h-5 w-5" />}
+          eyebrow="Configurações"
+          title="Visão geral da conta"
+          subtitle="Tudo que a UI precisa: plano, empresa, jornadas, segurança, limites e ações."
+          filters={
+            error ? (
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={reload}>
-              Recarregar
-            </Button>
-            <Button type="button" onClick={handleDefaultSubscribe}>
-              Assinar / Regularizar
-            </Button>
-          </div>
-        </header>
+            ) : null
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={reload}
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+              >
+                <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
+                Recarregar
+              </Button>
+              <Button type="button" onClick={handleDefaultSubscribe} className="rounded-full px-4 text-sm">
+                Assinar / Regularizar
+              </Button>
+            </>
+          }
+        />
 
         {isLoading ? (
           <SettingsSkeleton />
@@ -732,3 +733,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+

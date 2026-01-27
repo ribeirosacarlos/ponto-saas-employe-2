@@ -14,6 +14,7 @@ import {
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import {
   getAnnouncement,
   listAnnouncements,
@@ -274,49 +275,35 @@ export default function Announcements() {
   return (
     <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
-          <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                      <Bell className="h-6 w-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                        {t('announcementsPage.tag')}
-                      </p>
-                      <h1 className="text-2xl font-semibold leading-tight">{t('announcementsPage.title')}</h1>
-                      <p className="text-sm text-muted-foreground">{t('announcementsPage.subtitle')}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <span className="rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground">
-                    {t('announcementsPage.helper.updated')}
-                  </span>
-                  <span className="rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1 text-[11px] text-amber-700">
-                    {t('announcementsPage.helper.pendingBadge', { count: pendingCount })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={loadAnnouncements}
-                  className="rounded-full border-border bg-background/80 px-4 text-sm font-semibold"
-                >
-                  <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
-                  {t('announcementsPage.actions.refresh')}
-                </Button>
-              </div>
+        <AppTopBar
+          icon={<Bell className="h-5 w-5" />}
+          eyebrow={t('announcementsPage.tag')}
+          title={t('announcementsPage.title')}
+          subtitle={t('announcementsPage.subtitle')}
+          filters={
+            <div className="flex flex-wrap gap-3">
+              <span className="rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground">
+                {t('announcementsPage.helper.updated')}
+              </span>
+              <span className="rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1 text-[11px] text-amber-700">
+                {t('announcementsPage.helper.pendingBadge', { count: pendingCount })}
+              </span>
             </div>
-          </header>
+          }
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={loadAnnouncements}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
+              {t('announcementsPage.actions.refresh')}
+            </Button>
+          }
+        />
 
-          <section className="rounded-[24px] border border-border/80 bg-card/90 p-4 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
+        <section className="rounded-[24px] border border-border/80 bg-card/90 p-4 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
@@ -493,3 +480,4 @@ export default function Announcements() {
     </div>
   )
 }
+

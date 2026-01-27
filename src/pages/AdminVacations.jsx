@@ -1,4 +1,4 @@
-﻿import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
@@ -29,6 +29,7 @@ import {
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useAdminVacations } from '../features/adminVacations/useAdminVacations'
@@ -492,41 +493,25 @@ export default function AdminVacations() {
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
-          <div className="flex-1 min-w-[240px] max-w-full sm:max-w-xl flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <Plane className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                  {t('vacationsPage.tag', 'Time off')}
-                </p>
-                <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                  {t('vacationsPage.adminTitle', 'Gestao de ferias e ausencias')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    'vacationsPage.adminSubtitle',
-                    'Acompanhe solicitacoes, saldos e registros por colaborador.',
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
+        <AppTopBar
+          icon={<Plane className="h-5 w-5" />}
+          eyebrow={t('vacationsPage.tag', 'Time off')}
+          title={t('vacationsPage.adminTitle', 'Gestao de ferias e ausencias')}
+          subtitle={t(
+            'vacationsPage.adminSubtitle',
+            'Acompanhe solicitacoes, saldos e registros por colaborador.',
+          )}
+          actions={
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="rounded-full px-4"
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
               onClick={refreshAll}
             >
               {t('vacationsPage.actions.refresh', 'Atualizar')}
             </Button>
-          </div>
-        </header>
+          }
+        />
 
         {(employeesError || pendingError) && !employeesLoading ? (
           <section className="rounded-2xl border border-rose-200/60 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
@@ -1213,3 +1198,4 @@ export default function AdminVacations() {
     </div>
   )
 }
+

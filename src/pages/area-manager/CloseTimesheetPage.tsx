@@ -32,6 +32,7 @@ import { jsPDF } from 'jspdf'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
+import { AppTopBar } from '../../components/ui/AppTopBar'
 import {
   Dialog,
   DialogContent,
@@ -535,36 +536,26 @@ export default function CloseTimesheetPage() {
     <div className="relative min-h-screen">
       <PageContainer className="pb-16 pt-8 lg:pt-10">
         <div className="flex flex-col gap-6">
-          <header className="flex flex-col gap-3 rounded-[22px] border border-border/70 bg-card/85 px-4 py-4 shadow-[0_28px_80px_-48px_rgba(62,82,152,0.55)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-inner shadow-primary/15">
-                <Clock3 className="h-5 w-5" />
+          <AppTopBar
+            icon={<Clock3 className="h-5 w-5" />}
+            eyebrow={t('closeTimesheetPage.badge')}
+            title={t('closeTimesheetPage.title')}
+            subtitle={t('closeTimesheetPage.subtitle')}
+            filters={
+              <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-200">
+                {t('closeTimesheetPage.defaultRange')}
               </span>
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                    {t('closeTimesheetPage.badge')}
-                  </span>
-                  <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-200">
-                    {t('closeTimesheetPage.defaultRange')}
-                  </span>
-                </div>
-                <h1 className="text-xl font-semibold leading-tight sm:text-2xl">
-                  {t('closeTimesheetPage.title')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t('closeTimesheetPage.subtitle')}
-                </p>
+            }
+            rightMeta={
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarClock className="h-4 w-4" />
+                <span>
+                  {t('closeTimesheetPage.labels.period')}: {formatDateLabel(filters.from)} -{' '}
+                  {formatDateLabel(filters.to)}
+                </span>
               </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarClock className="h-4 w-4" />
-              <span>
-                {t('closeTimesheetPage.labels.period')}: {formatDateLabel(filters.from)} -{' '}
-                {formatDateLabel(filters.to)}
-              </span>
-            </div>
-          </header>
+            }
+          />
 
           <Card className="border-dashed">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1030,3 +1021,4 @@ export default function CloseTimesheetPage() {
     </div>
   )
 }
+

@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { cn } from '../lib/utils'
 import { useToast } from '../components/ui/use-toast'
 import {
@@ -345,109 +346,109 @@ export default function Documents() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
-        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                <FileText className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Documentos</p>
-                <h1 className="text-2xl font-semibold leading-tight">Envie e acompanhe seus documentos</h1>
-                <p className="text-sm text-muted-foreground">Upload rápido, visualização e status em tempo real.</p>
-              </div>
-            </div>
-            {error ? (
+        <AppTopBar
+          icon={<FileText className="h-5 w-5" />}
+          eyebrow="Documentos"
+          title="Envie e acompanhe seus documentos"
+          subtitle="Upload rápido, visualização e status em tempo real."
+          filters={
+            error ? (
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
                 {error}
               </div>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => loadDocuments({ page })} className="gap-2">
-              <RefreshCcw className="h-4 w-4" />
-              Atualizar
-            </Button>
-            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Enviar documentos
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Enviar documentos</DialogTitle>
-                  <DialogDescription>Selecione os arquivos e defina a categoria.</DialogDescription>
-                </DialogHeader>
-                <form className="space-y-4" onSubmit={submitUpload}>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold">Categoria *</label>
-                    <select
-                      className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
-                      value={uploadForm.category}
-                      onChange={(event) => setUploadForm((prev) => ({ ...prev, category: event.target.value }))}
-                      required
-                    >
-                      <option value="">Selecione</option>
-                      {CATEGORY_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold">Observações (opcional)</label>
-                    <Textarea
-                      rows={3}
-                      value={uploadForm.notes}
-                      onChange={(event) => setUploadForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      placeholder="Informações adicionais para o RH"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
-                      className="cursor-pointer"
-                      onChange={(event) =>
-                        setUploadForm((prev) => ({ ...prev, files: Array.from(event.target.files || []) }))
-                      }
-                    />
-                    <FileInputHint size="5MB" allowed={ALLOWED_EXTENSIONS.join(', ')} />
-                    {uploadForm.files.length ? (
-                      <div className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-sm">
-                        {uploadForm.files.map((file) => (
-                          <div key={file.name} className="flex items-center justify-between gap-2 text-[13px]">
-                            <span className="truncate">{file.name}</span>
-                            <span className="text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-                          </div>
+            ) : null
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => loadDocuments({ page })}
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+              >
+                <RefreshCcw className="h-4 w-4 text-primary" />
+                Atualizar
+              </Button>
+              <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" className="rounded-full px-4 text-sm">
+                    <Plus className="h-4 w-4" />
+                    Enviar documentos
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Enviar documentos</DialogTitle>
+                    <DialogDescription>Selecione os arquivos e defina a categoria.</DialogDescription>
+                  </DialogHeader>
+                  <form className="space-y-4" onSubmit={submitUpload}>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">Categoria *</label>
+                      <select
+                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+                        value={uploadForm.category}
+                        onChange={(event) => setUploadForm((prev) => ({ ...prev, category: event.target.value }))}
+                        required
+                      >
+                        <option value="">Selecione</option>
+                        {CATEGORY_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
                         ))}
-                      </div>
-                    ) : null}
-                  </div>
+                      </select>
+                    </div>
 
-                  <DialogFooter className="pt-2">
-                    <DialogClose asChild>
-                      <Button type="button" variant="ghost">
-                        Cancelar
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">Observações (opcional)</label>
+                      <Textarea
+                        rows={3}
+                        value={uploadForm.notes}
+                        onChange={(event) => setUploadForm((prev) => ({ ...prev, notes: event.target.value }))}
+                        placeholder="Informações adicionais para o RH"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
+                        className="cursor-pointer"
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({ ...prev, files: Array.from(event.target.files || []) }))
+                        }
+                      />
+                      <FileInputHint size="5MB" allowed={ALLOWED_EXTENSIONS.join(', ')} />
+                      {uploadForm.files.length ? (
+                        <div className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-sm">
+                          {uploadForm.files.map((file) => (
+                            <div key={file.name} className="flex items-center justify-between gap-2 text-[13px]">
+                              <span className="truncate">{file.name}</span>
+                              <span className="text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                      <DialogClose asChild>
+                        <Button type="button" variant="ghost">
+                          Cancelar
+                        </Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={uploading} className="min-w-[160px]">
+                        {uploading ? 'Enviando…' : 'Enviar'}
                       </Button>
-                    </DialogClose>
-                    <Button type="submit" disabled={uploading} className="min-w-[160px]">
-                      {uploading ? 'Enviando…' : 'Enviar'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </header>
-
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </>
+          }
+        />
         <section className="grid gap-4 rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
           <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
             <Input
@@ -731,3 +732,5 @@ export default function Documents() {
     </div>
   )
 }
+
+

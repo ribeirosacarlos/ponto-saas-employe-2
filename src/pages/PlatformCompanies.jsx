@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { useAuthStore } from '../store/useAuth'
@@ -693,29 +694,13 @@ export default function PlatformCompanies() {
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
-          <div className="flex-1 min-w-[240px] max-w-full sm:max-w-2xl flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <Building2 className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                  {t('platformCompanies.tag', 'Platform')}
-                </p>
-                <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                  {t('platformCompanies.title', 'Empresas')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    'platformCompanies.subtitle',
-                    'Gerencie empresas da plataforma e controle o acesso.',
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
+        <AppTopBar
+          icon={<Building2 className="h-5 w-5" />}
+          eyebrow={t('platformCompanies.tag', 'Platform')}
+          title={t('platformCompanies.title', 'Empresas')}
+          subtitle={t('platformCompanies.subtitle', 'Gerencie empresas da plataforma e controle o acesso.')}
+          filters={
+            <>
               <div className="flex-1 min-w-[220px] flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
@@ -777,42 +762,40 @@ export default function PlatformCompanies() {
                   {t('platformCompanies.actions.list', 'Lista')}
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-full px-4"
-              onClick={() => refreshCompanies()}
-              disabled={loading}
-            >
-              <RefreshCcw className="h-4 w-4" />
-              {t('platformCompanies.actions.refresh', 'Atualizar')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="rounded-full px-4"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              {t('platformCompanies.actions.create', 'Nova empresa')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-full px-4"
-              onClick={() => setRegisterOpen(true)}
-            >
-              <UserPlus className="h-4 w-4" />
-              {t('platformCompanies.actions.register', 'Registrar empresa + admin')}
-            </Button>
-          </div>
-        </header>
+            </>
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                onClick={() => refreshCompanies()}
+                disabled={loading}
+              >
+                <RefreshCcw className="h-4 w-4 text-primary" />
+                {t('platformCompanies.actions.refresh', 'Atualizar')}
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full px-4 text-sm"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                {t('platformCompanies.actions.create', 'Nova empresa')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                onClick={() => setRegisterOpen(true)}
+              >
+                <UserPlus className="h-4 w-4 text-primary" />
+                {t('platformCompanies.actions.register', 'Registrar empresa + admin')}
+              </Button>
+            </>
+          }
+        />
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-border/70 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-45px_rgba(62,82,152,0.35)]">
@@ -1625,3 +1608,4 @@ export default function PlatformCompanies() {
     </div>
   )
 }
+

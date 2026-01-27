@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import ActivateAccount from './pages/ActivateAccount'
 import Login from './pages/Login.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
 import TimeClock from './pages/TimeClock.jsx'
 import History from './pages/History.jsx'
 import Equipo from './pages/Equipo.jsx'
@@ -149,8 +151,8 @@ export default function App() {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
 
-      if (pageFromPath === 'activateAccount') {
-        setCurrentPage('activateAccount')
+      if (pageFromPath === 'activateAccount' || pageFromPath === 'resetPassword' || pageFromPath === 'forgotPassword') {
+        setCurrentPage(pageFromPath)
         return
       }
 
@@ -161,7 +163,12 @@ export default function App() {
     const pageFromPath =
       typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
     const nextPage =
-      pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
+      pageFromPath === 'login' ||
+      pageFromPath === 'activateAccount' ||
+      pageFromPath === 'resetPassword' ||
+      pageFromPath === 'forgotPassword'
+        ? 'timeClock'
+        : pageFromPath
     const allowedPage = canAccessPage(nextPage) ? nextPage : 'dashboard'
     if (pageFromPath === 'login' || allowedPage !== pageFromPath) {
       navigateTo(allowedPage, true)
@@ -175,11 +182,22 @@ export default function App() {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
-        setCurrentPage(pageFromPath === 'activateAccount' ? 'activateAccount' : 'login')
+      setCurrentPage(
+        pageFromPath === 'activateAccount' ||
+        pageFromPath === 'resetPassword' ||
+        pageFromPath === 'forgotPassword'
+          ? pageFromPath
+          : 'login',
+      )
         return
       }
       const resolvedPage =
-        pageFromPath === 'login' || pageFromPath === 'activateAccount' ? 'timeClock' : pageFromPath
+        pageFromPath === 'login' ||
+        pageFromPath === 'activateAccount' ||
+        pageFromPath === 'resetPassword' ||
+        pageFromPath === 'forgotPassword'
+          ? 'timeClock'
+          : pageFromPath
       if (!canAccessPage(resolvedPage)) {
         navigateTo('dashboard', true)
         return
@@ -495,6 +513,10 @@ export default function App() {
           </>
         ) : currentPage === 'activateAccount' ? (
           <ActivateAccount />
+        ) : currentPage === 'resetPassword' ? (
+          <ResetPassword />
+        ) : currentPage === 'forgotPassword' ? (
+          <ForgotPassword />
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}

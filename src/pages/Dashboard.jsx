@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Bell, Search, FileText, BookOpen, IdCard, Archive } from 'lucide-react'
+import {
+  AlertTriangle,
+  Bell,
+  Search,
+  FileText,
+  BookOpen,
+  IdCard,
+  Archive,
+  LayoutDashboard,
+} from 'lucide-react'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles, canRenderCard } from '../auth/acl'
@@ -10,6 +19,7 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
 import { listMyDocuments, downloadDocument } from '../services/documentsService'
 import { listAnnouncements } from '../services/announcementsService'
+import { AppTopBar } from '../components/ui/AppTopBar'
 
 const DOCUMENT_CATEGORIES = {
   payroll: {
@@ -323,16 +333,14 @@ export default function Dashboard({
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
-          <div className="flex-1 min-w-[220px] max-w-full sm:max-w-lg flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-base font-semibold tracking-tight sm:text-lg md:text-xl">{t('dashboardPage.title')}</h1>
-              <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2 py-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-                {t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+        <AppTopBar
+          icon={<LayoutDashboard className="h-5 w-5" />}
+          eyebrow={t('dashboardPage.badges.today')}
+          title={t('dashboardPage.title')}
+          subtitle={t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
+          filters={
+            <div className="flex w-full items-center gap-2">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
@@ -341,17 +349,16 @@ export default function Dashboard({
                 />
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
+          }
+          rightMeta={
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition hover:bg-muted/80 hover:text-foreground sm:h-9 sm:w-9"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:bg-background hover:text-foreground"
               type="button"
             >
               <Bell className="h-4 w-4" />
             </button>
-          </div>
-        </header>
+          }
+        />
 
         {isAbsentToday ? (
           <section className="rounded-[22px] border border-rose-200/70 bg-rose-500/10 px-5 py-4 shadow-[0_18px_50px_-36px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">

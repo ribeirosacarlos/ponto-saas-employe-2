@@ -116,18 +116,21 @@ export function AppSidebar({
     >
         <div
         className={cn(
-          'group relative flex items-center px-1 pt-1 pb-3',
+          'group relative flex items-center px-1 pr-10 pt-1 pb-3',
           collapsed ? 'justify-center gap-1' : 'justify-between gap-2.5',
         )}
       >
-          <BrandSignature collapsed={collapsed} />
+          <BrandSignature
+            collapsed={collapsed}
+            className={cn('flex-1 pr-8', collapsed ? 'justify-center' : 'justify-between')}
+          />
           <SidebarTooltip collapsed={collapsed} label={collapseLabel}>
             <button
               type="button"
               aria-label={collapseLabel}
               onClick={onToggleCollapse}
               className={cn(
-                'absolute right-1.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-foreground transition hover:bg-muted',
+                'absolute right-4 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-foreground transition hover:bg-muted',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
                 collapsed ? 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto' : '',
               )}

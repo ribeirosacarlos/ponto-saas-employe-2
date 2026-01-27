@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { createShift, deleteShift, listShifts, updateShift } from '../services/modules/shifts'
@@ -466,44 +467,34 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
 
   return (
     <PageContainer className="py-5 sm:py-6 space-y-6">
-      <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/90 shadow-sm">
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent" />
-          <div className="relative flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <CalendarClock className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-tight text-primary">
-                  Administração
-                </p>
-                <h1 className="text-2xl font-bold leading-tight text-foreground">
-                  {t('adminShiftsPage.title')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t('adminShiftsPage.subtitle')}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={loadShifts} disabled={loading}>
-                <RefreshCcw className={cn('h-4 w-4', loading && 'animate-spin')} />
-                {t('adminShiftsPage.actions.refresh')}
-              </Button>
-              <Button size="md" onClick={handleOpenCreate}>
-                <Plus className="h-4 w-4" />
-                {t('adminShiftsPage.actions.create')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AppTopBar
+        icon={<CalendarClock className="h-5 w-5" />}
+        eyebrow={t('sidebar.sections.admin')}
+        title={t('adminShiftsPage.title')}
+        subtitle={t('adminShiftsPage.subtitle')}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={loadShifts}
+              disabled={loading}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className={cn('h-4 w-4 text-primary', loading && 'animate-spin')} />
+              {t('adminShiftsPage.actions.refresh')}
+            </Button>
+            <Button onClick={handleOpenCreate} className="rounded-full px-4 text-sm">
+              <Plus className="h-4 w-4" />
+              {t('adminShiftsPage.actions.create')}
+            </Button>
+          </>
+        }
+      />
 
       {renderContent()}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-4xl">
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'edit'
@@ -704,3 +695,4 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     </PageContainer>
   )
 }
+

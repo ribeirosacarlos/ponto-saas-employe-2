@@ -1,4 +1,4 @@
-// src/i18n/locales/es.js
+﻿// src/i18n/locales/es.js
 const es = {
   translation: {
     common: {
@@ -454,6 +454,19 @@ const es = {
         description: 'Credenciales inválidas. Revísalas e inténtalo de nuevo.',
       },
     },
+    forgotPassword: {
+      title: 'Olvidé mi contraseña',
+      subtitle: 'Ingresa el correo de tu cuenta para recibir un código de verificación.',
+      emailLabel: 'Correo',
+      submit: 'Enviar código',
+      submitting: 'Enviando...',
+      successTitle: 'Código enviado',
+      successDescription: 'Enviamos un código a tu correo.',
+      errorTitle: 'No se pudo enviar el código',
+      errors: {
+        emailRequired: 'Ingresa el correo de la cuenta.',
+      },
+    },
     activateAccount: {
       title: 'Activar cuenta',
       subtitle: 'Crea tu contraseña para acceder al sistema',
@@ -464,6 +477,33 @@ const es = {
       submit: 'Activar cuenta',
       success: 'Cuenta activada con éxito',
       error: 'No fue posible activar la cuenta',
+    },
+    resetPassword: {
+      title: 'Recuperar contraseña',
+      subtitle: 'Te enviamos un código a tu correo. Ingresa el código para restablecer tu contraseña.',
+      codeLabel: 'Código de verificación',
+      codePlaceholder: 'XXXXXXXX',
+      passwordLabel: 'Nueva contraseña',
+      passwordConfirmLabel: 'Confirmar contraseña',
+      passwordHelper: 'Usa al menos 8 caracteres, con mayúsculas, números y símbolos.',
+      strength: {
+        label: 'Fuerza de la contraseña',
+        weak: 'Débil',
+        medium: 'Media',
+        strong: 'Fuerte',
+      },
+      submit: 'Restablecer contraseña',
+      submitting: 'Restableciendo...',
+      successTitle: 'Contraseña actualizada',
+      successDescription: 'Tu contraseña se actualizó correctamente.',
+      errorTitle: 'No se pudo restablecer la contraseña',
+      errors: {
+        codeRequired: 'Ingresa el código de verificación.',
+        passwordRules:
+          'La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, un número y un símbolo.',
+        passwordContainsEmail: 'La contraseña no puede contener tu correo.',
+        passwordMismatch: 'Las contraseñas no coinciden.',
+      },
     },
     timeClock: {
       title: 'Registro de punto',
@@ -1372,4 +1412,6 @@ const es = {
 }
 
 export default es
+
+
 
