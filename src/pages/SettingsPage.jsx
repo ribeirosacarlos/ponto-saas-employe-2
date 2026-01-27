@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   BadgeCheck,
@@ -42,6 +43,15 @@ const STATUS_TONES = {
 const valueOrPlaceholder = (value) => {
   if (value === null || value === undefined || value === '') return '—'
   return value
+}
+
+const normalizeLimitKey = (value) => {
+  if (value === null || value === undefined) return ''
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
 }
 
 const formatBooleanValue = (value) => {
@@ -114,7 +124,7 @@ const KeyValue = ({ label, value, helper }) => (
   </div>
 )
 
-const LimitsList = ({ limits }) => {
+const LimitsList = ({ limits, labels = {} }) => {
   if (!limits || typeof limits !== 'object') return null
   const entries = Object.entries(limits)
   if (!entries.length) return null
@@ -122,9 +132,11 @@ const LimitsList = ({ limits }) => {
     <div className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Limites do plano</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        {entries.map(([key, value]) => (
-          <KeyValue key={key} label={key} value={value} />
-        ))}
+        {entries.map(([key, value]) => {
+          const normalizedKey = normalizeLimitKey(key)
+          const label = labels[normalizedKey] || key
+          return <KeyValue key={key} label={label} value={value} />
+        })}
       </div>
     </div>
   )
@@ -187,7 +199,7 @@ const EmptyState = ({ onRetry }) => (
   </Card>
 )
 
-const BillingCard = ({ billing, links }) => {
+const BillingCard = ({ billing, links, limitLabels }) => {
   const plan = billing?.plan
   const subscription = billing?.subscription
 
@@ -199,42 +211,20 @@ const BillingCard = ({ billing, links }) => {
     >
       <div className="grid gap-3">
         <div className="grid gap-2 sm:grid-cols-2">
-          <KeyValue label="Nome do plano" value={plan?.name} helper={plan?.slug ? `Slug: ${plan.slug}` : null} />
+          <KeyValue label="Nome do plano" value={plan?.name} />
           <KeyValue label="Preço" value={formatPrice(plan)} helper={plan?.currency ? `Moeda: ${plan.currency}` : null} />
           <KeyValue label="Ciclo" value={plan?.billing_interval || '—'} />
           <KeyValue label="Limites" value={plan?.limits ? 'Personalizados' : 'Nenhum limite informado'} />
         </div>
 
-        {plan?.limits ? <LimitsList limits={plan.limits} /> : null}
+        {plan?.limits ? <LimitsList limits={plan.limits} labels={limitLabels} /> : null}
 
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Assinatura</p>
             <StatusBadge status={subscription?.status || subscription?.subscription_status} label={subscription?.status_label} />
-            <KeyValue label="Status label" value={subscription?.status_label} />
-            <KeyValue label="Status da assinatura" value={subscription?.subscription_status} />
-            <KeyValue label="Próxima ação" value={subscription?.next_action} />
-            <KeyValue label="Dias de trial restantes" value={subscription?.trial_days_remaining} />
-            <KeyValue label="Dias até faturamento" value={subscription?.billing_days_remaining} />
-            <KeyValue label="Stripe Customer ID" value={subscription?.stripe_customer_id} />
-            <KeyValue label="Stripe Subscription ID" value={subscription?.stripe_subscription_id} />
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Datas e períodos</p>
-            <KeyValue label="Trial termina em" value={formatDateTime(subscription?.trial_ends_at)} helper={subscription?.trial_days_remaining !== null && subscription?.trial_days_remaining !== undefined ? `${subscription.trial_days_remaining} dias restantes` : null} />
-            <KeyValue label="Próximo ciclo" value={formatDateTime(subscription?.current_period_end)} helper={subscription?.billing_days_remaining !== null && subscription?.billing_days_remaining !== undefined ? `${subscription.billing_days_remaining} dias até faturamento` : null} />
-            <KeyValue label="Término da assinatura" value={formatDateTime(subscription?.subscription_ends_at)} />
-            <KeyValue label="Cancelar ao fim do período" value={formatBooleanValue(subscription?.cancel_at_period_end)} />
-            <KeyValue label="Cancelada em" value={formatDateTime(subscription?.canceled_at)} />
           </div>
         </div>
-
-        {links ? (
-          <div className="flex flex-wrap gap-2">
-            <InlineActionLink label="Checkout" url={links.checkout_url} />
-            <InlineActionLink label="Portal do cliente" url={links.customer_portal_url} />
-          </div>
-        ) : null}
       </div>
     </SectionCard>
   )
@@ -642,12 +632,16 @@ export default function SettingsPage() {
   const { data, isLoading, error, reload } = useSettingsOverview()
   const overview = data || {}
   const roles = useAuthStore((state) => state.roles)
+  const { t } = useTranslation()
   const showCompanyTimezone = false
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const canEditTimezone = useMemo(
     () => capabilities.includes('admin') || capabilities.includes('super_admin'),
     [capabilities],
   )
+  const limitLabels = {
+    max_employees: t('settingsPage.limits.maxEmployees', 'Funcionarios'),
+  }
 
   const hasData = useMemo(
     () =>
@@ -718,7 +712,7 @@ export default function SettingsPage() {
             />
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <BillingCard billing={overview.billing} links={overview.links} />
+              <BillingCard billing={overview.billing} links={overview.links} limitLabels={limitLabels} />
               <CompanyCard company={overview.company} />
               {showCompanyTimezone ? <TimezoneCard canEdit={canEditTimezone} /> : null}
               <UsageCard usage={overview.usage} />

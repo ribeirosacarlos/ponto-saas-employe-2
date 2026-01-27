@@ -1,4 +1,4 @@
-// src/i18n/locales/en.js
+﻿// src/i18n/locales/en.js
 const en = {
   translation: {
     common: {
@@ -62,6 +62,9 @@ const en = {
         statusLabel: 'Status: {{status}}',
         trialEnds: 'Trial until {{date}}',
         renews: 'Renews on {{date}}',
+      },
+      limits: {
+        maxEmployees: 'Employees',
       },
       security: {
         title: 'Security',

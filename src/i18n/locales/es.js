@@ -37,19 +37,19 @@ const es = {
     errors: {
       forbidden: {
         title: 'Sin permiso',
-        description: 'No tienes permiso para realizar esta accion.',
+        description: 'No tienes permiso para realizar esta acción.',
       },
     },
 
     settingsPage: {
       badge: 'Admin',
-      title: 'Configuracion',
+      title: 'Configuración',
       subtitle: 'Plan actual y preferencias esenciales del espacio.',
       loading: 'Cargando...',
       errors: {
         noCompany: 'No hay empresa vinculada al usuario.',
-        load: 'No se pudo cargar la suscripcion actual.',
-        forbidden: 'Tu perfil no tiene acceso a los datos de suscripcion.',
+        load: 'No se pudo cargar la suscripción actual.',
+        forbidden: 'Tu perfil no tiene acceso a los datos de suscripción.',
       },
       tabs: {
         plan: 'Plan',
@@ -58,15 +58,18 @@ const es = {
       plan: {
         title: 'Plan actual',
         unknown: 'Plan desconocido',
-        empty: 'Sin informacion de plan.',
+        empty: 'Sin información de plan.',
         statusLabel: 'Estado: {{status}}',
         trialEnds: 'Trial hasta {{date}}',
         renews: 'Renueva el {{date}}',
       },
+      limits: {
+        maxEmployees: 'Empleados',
+      },
       security: {
         title: 'Seguridad',
         heading: 'Cuentas y accesos',
-        mfa: 'Autenticacion de dos factores',
+        mfa: 'Autenticación de dos factores',
         mfaHint: 'Requerir MFA para admins y managers.',
         sessions: 'Sesiones activas',
         sessionsHint: 'Revoca sesiones sospechosas o expiradas.',
@@ -102,9 +105,9 @@ const es = {
           'No encontramos una empresa asociada a tu usuario. Solicita el vinculo o crea una empresa para continuar.',
       },
       subscription: {
-        badge: 'Suscripcion requerida',
+        badge: 'Suscripción requerida',
         title: 'Activa tu plan para continuar',
-        description: 'Tu organizacion necesita una suscripcion activa o trial para usar la app.',
+        description: 'Tu organizacion necesita una suscripción activa o trial para usar la app.',
         startCheckout: 'Iniciar checkout',
         genericCheckout: 'Ir al checkout',
         monthly: 'Mensual',
@@ -112,10 +115,10 @@ const es = {
         intervalLabel: 'Intervalo',
         checkoutErrorTitle: 'No se pudo iniciar el checkout',
         blockedTitle: 'Acceso bloqueado',
-        blockedDescription: 'Acceso denegado: se requiere una suscripcion activa para continuar.',
+        blockedDescription: 'Acceso denegado: se requiere una suscripción activa para continuar.',
         errorFallback: 'No se pudieron cargar los planes. Intentalo de nuevo en breve.',
         plansTitle: 'Planes disponibles',
-        plansSubtitle: 'Elige un plan para activar o renovar tu suscripcion.',
+        plansSubtitle: 'Elige un plan para activar o renovar tu suscripción.',
         choosePlan: 'Elegir este plan',
         currentPlan: 'Plan actual',
         recommended: 'Recomendado',
@@ -125,7 +128,7 @@ const es = {
           year: '/ano',
           oneTime: 'pago unico',
         },
-        trialLabel: 'Trial de {{count}} dias',
+        trialLabel: 'Trial de {{count}} días',
         badgeYearly: 'Plan anual',
         badgeMonthly: 'Plan mensual',
         perk1: 'Espacio habilitado',
@@ -145,7 +148,7 @@ const es = {
       out: 'Salida',
     },
     dashboard: {
-      badge: 'Reloj de punto',
+      badge: 'Reloj de fichaje',
       greeting: 'Hola, {{name}}',
       fallbackName: 'colaborador',
       description: 'Registra tus marcaciones, pide ajustes y sigue tu historial en tiempo real.',
@@ -154,7 +157,7 @@ const es = {
       myPoint: 'Mis marcaciones',
       details: 'Detalles',
       menu: {
-        history: 'Historial de puntos',
+        history: 'Historial de fichajes',
         signOut: 'Salir',
         theme: 'Alternar tema',
         comingSoon: 'Página aún no disponible.',
@@ -162,9 +165,9 @@ const es = {
       tokenActive: 'Token activo',
       lastPunch: 'Última marcación',
       registeredAt: 'Registrado a las: {{time}}',
-      firstPunch: 'Primer punto',
+      firstPunch: 'Primer fichaje',
       interval: 'Intervalo',
-      lastPunchRow: 'Último punto',
+      lastPunchRow: 'Último fichaje',
       openStatus: 'Abierto',
       todayHistory: 'Historial del día',
       noEntriesToday: 'Ninguna marcación registrada hoy',
@@ -178,7 +181,7 @@ const es = {
       hourBankHelper: 'Valor estático hasta conectar con el endpoint.',
       backendNote:
         'El backend espera alternar {{inLabel}} y {{outLabel}}. El próximo envío será {{nextType}}.',
-      registerButton: 'Registrar punto',
+      registerButton: 'Fichar',
       registering: 'Registrando...',
       nextLabel: {
         in: 'Registrar entrada',
@@ -206,7 +209,7 @@ const es = {
         history: 'Historial',
         documents: 'Documentos',
         announcements: 'Comunicados',
-        clock: 'Registrar punto',
+        clock: 'Fichar',
         projects: 'Proyectos',
         team: 'Equipo',
         platformCompanies: 'Empresas',
@@ -374,9 +377,9 @@ const es = {
       },
       teamEntries: {
         title: 'Marcaciones del equipo',
-        description: 'Ultimas marcaciones enviadas por los colaboradores.',
+        description: 'Últimas marcaciones enviadas por los colaboradores.',
         error: 'No se pudieron cargar las marcaciones.',
-        empty: 'Aun no hay marcaciones.',
+        empty: 'Aún no hay marcaciones.',
       },
       types: {
         breakStart: 'Inicio del intervalo',
@@ -407,7 +410,7 @@ const es = {
       },
       clockError: {
         title: 'Error al registrar',
-        description: 'No fue posible registrar el punto. Verifica permisos o inténtalo de nuevo.',
+        description: 'No fue posible registrar el fichaje. Verifica permisos o inténtalo de nuevo.',
       },
       adjustmentSuccess: {
         title: 'Solicitud enviada',
@@ -506,7 +509,7 @@ const es = {
       },
     },
     timeClock: {
-      title: 'Registro de punto',
+      title: 'Registro de fichaje',
       subtitle: 'Revisa tus marcaciones e intervalos antes de ir al dashboard.',
       greeting: 'Hola, {{name}}',
       status: {
@@ -582,7 +585,7 @@ const es = {
       breakError: 'No se pudo registrar el intervalo',
       breakErrorDescription: 'Inténtalo nuevamente en un momento.',
       openEntryWarning: {
-        title: 'Punto abierto',
+        title: 'Fichaje abierto',
         description: 'Tienes un registro abierto que debe cerrarse para regularizar tu día.',
         nextAction: 'Próxima acción: {{action}}',
       },
@@ -591,7 +594,7 @@ const es = {
         clock_out: 'Registrar salida',
         break_start: 'Iniciar pausa',
         break_end: 'Terminar pausa',
-        default: 'Registrar punto',
+        default: 'Fichar',
       },
     },
     dashboardPage: {
@@ -613,7 +616,7 @@ const es = {
         documents: 'Documentos',
         employees: 'Funcionarios',
         calendar: 'Calendario',
-        registerPoint: 'Registrar punto',
+        registerPoint: 'Fichar',
         timeOff: 'Ausencias',
         projects: 'Proyectos',
         team: 'Equipo',
@@ -1220,7 +1223,7 @@ const es = {
         errorDescription: 'No se pudo cargar los registros.',
         retry: 'Intentar nuevamente',
         emptyTitle: 'Ningún registro encontrado',
-        emptyDescription: 'Ajusta los filtros o registra un nuevo punto.',
+        emptyDescription: 'Ajusta los filtros o registra un nuevo fichaje.',
       },
       actions: {
         loadMore: 'Cargar más',
@@ -1250,7 +1253,7 @@ const es = {
         },
       },
       pdf: {
-        title: 'Hoja de punto',
+        title: 'Hoja de fichaje',
         periodLabel: 'Período: {{range}}',
         employerData: 'Datos del empleador',
         collaboratorData: 'Datos del colaborador',
@@ -1310,17 +1313,17 @@ const es = {
     closeTimesheetPage: {
       badge: 'Gestores',
       defaultRange: 'Predeterminado: mes anterior',
-      title: 'Cerrar hoja de punto',
-      subtitle: 'Revise y exporte las marcaciones del periodo seleccionado.',
+      title: 'Cerrar hoja de fichaje',
+      subtitle: 'Revise y exporte las marcaciones del período seleccionado.',
       labels: {
-        period: 'Periodo',
+        period: 'Período',
       },
       filters: {
         title: 'Filtros',
         quick: {
           lastMonth: 'Mes anterior',
           thisMonth: 'Este mes',
-          last30Days: 'Ultimos 30 dias',
+          last30Days: 'Últimos 30 días',
         },
         employee: 'Empleado',
         searchPlaceholder: 'Buscar por nombre o correo',
@@ -1334,16 +1337,16 @@ const es = {
       states: {
         employeesError: 'No fue posible cargar los empleados.',
         employeesErrorTitle: 'Error al cargar la lista',
-        entriesError: 'No fue posible cargar las marcaciones del periodo.',
+        entriesError: 'No fue posible cargar las marcaciones del período.',
         entriesErrorTitle: 'Error al cargar marcaciones',
-        empty: 'No hay registros para este periodo.',
+        empty: 'No hay registros para este período.',
         waitingEmployee: 'Seleccione un empleado y fechas validas para continuar.',
       },
       summary: {
         title: 'Resumen',
         value: 'Valor',
         entries: 'Total de marcaciones',
-        days: 'Dias con registros',
+        days: 'Días con registros',
         hours: 'Horas totales',
         inconsistencies: 'Inconsistencias',
         pending: 'Pendientes',
@@ -1355,12 +1358,12 @@ const es = {
         primary: 'Exportar PDF',
         detailed: 'Exportar PDF detallado',
         emptyTitle: 'Nada para exportar',
-        emptyDescription: 'Busque un periodo antes de exportar.',
+        emptyDescription: 'Busque un período antes de exportar.',
         pageCounter: 'Pagina {{current}} de {{total}}',
-        title: 'Hoja de punto',
+        title: 'Hoja de fichaje',
         company: 'Empresa',
         employee: 'Empleado',
-        period: 'Periodo',
+        period: 'Período',
         issuedAt: 'Emitido en',
         successTitle: 'PDF generado',
         successDescription: 'Descarga iniciada correctamente.',
@@ -1369,7 +1372,7 @@ const es = {
       },
       table: {
         title: 'Marcaciones detalladas',
-        subtitle: 'Ordenadas por fecha y agrupadas por dia.',
+        subtitle: 'Ordenadas por fecha y agrupadas por día.',
         noTime: 'Sin hora',
         unknownDate: 'Fecha desconocida',
         noDate: 'Sin fecha',
