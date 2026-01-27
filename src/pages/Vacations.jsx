@@ -17,6 +17,7 @@ import {
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import {
   cancelEmployeeVacation,
   getEmployeeVacationBalance,
@@ -285,41 +286,24 @@ export default function Vacations() {
   return (
     <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="relative z-10 flex flex-col gap-6 py-6">
-          <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                    <Plane className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                      {t('vacationsPage.tag', 'Time off')}
-                    </p>
-                    <h1 className="text-2xl font-semibold leading-tight">
-                      {t('vacationsPage.title', 'Ferias e ausencias')}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                      {t('vacationsPage.subtitle', 'Acompanhe saldo, solicitacoes e ausencias recentes.')}
-                    </p>
-                  </div>
-                </div>
-              </div>
+        <AppTopBar
+          icon={<Plane className="h-5 w-5" />}
+          eyebrow={t('vacationsPage.tag', 'Time off')}
+          title={t('vacationsPage.title', 'Ferias e ausencias')}
+          subtitle={t('vacationsPage.subtitle', 'Acompanhe saldo, solicitacoes e ausencias recentes.')}
+          actions={
+            <Button
+              type="button"
+              className="rounded-full px-4 text-sm"
+              onClick={() => setRequestOpen(true)}
+            >
+              <CalendarRange className="h-4 w-4" />
+              {t('vacationsPage.actions.request', 'Solicitar ferias')}
+            </Button>
+          }
+        />
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  className="rounded-full px-5"
-                  onClick={() => setRequestOpen(true)}
-                >
-                  <CalendarRange className="h-4 w-4" />
-                  {t('vacationsPage.actions.request', 'Solicitar ferias')}
-                </Button>
-              </div>
-            </div>
-          </header>
-
-          {error ? (
+        {error ? (
             <section className="rounded-2xl border border-rose-200/70 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
               <p className="font-semibold">{t('vacationsPage.states.errorTitle', 'Algo deu errado')}</p>
               <p className="mt-1">{error}</p>
@@ -715,3 +699,4 @@ export default function Vacations() {
     </div>
   )
 }
+

@@ -11,6 +11,7 @@ import {
   Save,
 } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Button } from '../components/ui/button'
@@ -155,31 +156,27 @@ export default function AdminCompanyTimezone({ sidebarOpen = false, onToggleSide
   return (
     <PageContainer className="py-6">
       <div className="flex flex-col gap-5">
-        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-              <Globe2 className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs uppercase tracking-[0.28em] text-primary">Admin</p>
-              <h1 className="text-2xl font-semibold leading-tight">
-                {t('adminTimezonePage.title', 'Fuso horário da empresa')}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  'adminTimezonePage.subtitle',
-                  'Somente admins podem ajustar como horários são exibidos e interpretados nos filtros.',
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" disabled={loading || saving} onClick={loadTimezone}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
+        <AppTopBar
+          icon={<Globe2 className="h-5 w-5" />}
+          eyebrow={t('sidebar.sections.admin')}
+          title={t('adminTimezonePage.title', 'Fuso horário da empresa')}
+          subtitle={t(
+            'adminTimezonePage.subtitle',
+            'Somente admins podem ajustar como horários são exibidos e interpretados nos filtros.',
+          )}
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading || saving}
+              onClick={loadTimezone}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
               {t('adminTimezonePage.actions.reload', 'Recarregar')}
             </Button>
-          </div>
-        </header>
+          }
+        />
 
         <Card className="border border-border/80 bg-card/90">
           <CardHeader>
@@ -317,3 +314,4 @@ export default function AdminCompanyTimezone({ sidebarOpen = false, onToggleSide
     </PageContainer>
   )
 }
+

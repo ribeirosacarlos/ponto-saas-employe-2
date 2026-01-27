@@ -14,6 +14,7 @@ import {
 } from '../components/ui/dialog'
 import { useToast } from '../components/ui/use-toast'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
@@ -362,23 +363,13 @@ export default function Equipo() {
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
-          <div className="flex-1 min-w-[240px] max-w-full sm:max-w-xl flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <Users className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                  {t('equipoPage.tag')}
-                </p>
-                <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                  {t('equipoPage.title')}
-                </h1>
-                <p className="text-sm text-muted-foreground">{t('equipoPage.subtitle')}</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+        <AppTopBar
+          icon={<Users className="h-5 w-5" />}
+          eyebrow={t('equipoPage.tag')}
+          title={t('equipoPage.title')}
+          subtitle={t('equipoPage.subtitle')}
+          filters={
+            <>
               <div className="flex-1 min-w-[220px] flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
@@ -407,31 +398,30 @@ export default function Equipo() {
                   ))}
                 </select>
               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-full px-4"
-              onClick={() => refreshEmployees(page)}
-            >
-              <RefreshCcw className="h-4 w-4" />
-              {t('equipoPage.actions.refresh')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="rounded-full px-4"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              {t('equipoPage.actions.create')}
-            </Button>
-          </div>
-        </header>
+            </>
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                onClick={() => refreshEmployees(page)}
+              >
+                <RefreshCcw className="h-4 w-4 text-primary" />
+                {t('equipoPage.actions.refresh')}
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full px-4 text-sm"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                {t('equipoPage.actions.create')}
+              </Button>
+            </>
+          }
+        />
 
         <section className="rounded-3xl border border-border/80 bg-card/95 p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3">

@@ -3,6 +3,7 @@ import { Bell, RefreshCcw, Send } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
 import { normalizeAnnouncement } from '../services/announcementsService'
 import {
@@ -175,34 +176,27 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
-          <header className="rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  aria-label="Alternar menu"
-                  onClick={onToggleSidebar}
-                  className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
-                >
-                  <Bell className="h-5 w-5" />
-                </button>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                    Administração
-                  </p>
-                  <h1 className="text-2xl font-semibold leading-tight">Comunicados</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Crie e acompanhe comunicados enviados aos colaboradores.
-                  </p>
-                </div>
-              </div>
-
-              <Button type="button" variant="outline" size="sm" onClick={loadAnnouncements}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
+          <AppTopBar
+            icon={
+              <button
+                type="button"
+                aria-label="Alternar menu"
+                onClick={onToggleSidebar}
+                className="flex h-full w-full items-center justify-center"
+              >
+                <Bell className="h-5 w-5" />
+              </button>
+            }
+            eyebrow="Administração"
+            title="Comunicados"
+            subtitle="Crie e acompanhe comunicados enviados aos colaboradores."
+            actions={
+              <Button type="button" variant="outline" onClick={loadAnnouncements} className="rounded-full border-border bg-background/80 px-3 text-sm">
+                <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
                 Atualizar lista
               </Button>
-            </div>
-          </header>
+            }
+          />
 
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
             <section className="rounded-[24px] border border-border/80 bg-card/90 p-5 shadow-[0_25px_80px_-60px_rgba(62,82,152,0.55)]">
@@ -285,3 +279,4 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
     </div>
   )
 }
+

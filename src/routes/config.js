@@ -1,6 +1,8 @@
 export const ROUTES = {
   login: { path: '/', isPublic: true },
   activateAccount: { path: '/activate-account', isPublic: true },
+  resetPassword: { path: '/reset-password', isPublic: true },
+  forgotPassword: { path: '/forgot-password', isPublic: true },
   companyMissing: { path: '/company/missing' },
   subscribe: { path: '/billing/subscribe' },
   forbidden: { path: '/forbidden' },

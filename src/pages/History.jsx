@@ -20,6 +20,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
+import { AppTopBar } from '../components/ui/AppTopBar'
 
 const PAGE_SIZE = 20
 
@@ -522,68 +523,47 @@ export default function History({ onBackToDashboard }) {
     <div className="relative min-h-screen bg-transparent text-foreground transition-colors duration-300">
 
       <PageContainer className="relative z-10 py-6 lg:py-8">
-        <header className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner shadow-primary/20">
-              <HistoryIcon className="h-5 w-5" />
-            </span>
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-                  {t('historyPage.badge')}
-                </span>
-              </div>
-              <h1 className="text-xl font-semibold leading-tight sm:text-2xl">
-                {t('historyPage.title')}
-              </h1>
-              <p className="text-sm text-muted-foreground">{t('historyPage.subtitle')}</p>
-            </div>
-          </div>
-
-          <div
-            className="
-              -mx-4 px-4
-              flex items-center gap-2
-              overflow-x-auto
-              whitespace-nowrap
-              sm:mx-0 sm:px-0
-              sm:justify-end
-              scrollbar-hide
-            "
-          >
-            <EntryAdjustmentModal
-              onSubmit={handleAdjustment}
-              isSubmitting={Boolean(submittingAdjustment)}
-              trigger={
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-full border-border bg-background/80 px-3 text-sm"
-                >
-                  {t('historyPage.adjustment.cta')}
-                </Button>
-              }
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full border-border bg-background/80 px-3 text-sm"
-              onClick={handleExport}
-            >
-              <Download className="mr-2 h-4 w-4 text-primary" />
-              {t('historyPage.export.label')}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full border-border bg-background/80 px-3 text-sm"
-              onClick={handleExportPDF}
-            >
-              <FileText className="mr-2 h-4 w-4 text-primary" />
-              {t('historyPage.export.pdfLabel')}
-            </Button>
-          </div>
-        </header>
+        <AppTopBar
+          icon={<HistoryIcon className="h-5 w-5" />}
+          eyebrow={t('historyPage.badge')}
+          title={t('historyPage.title')}
+          subtitle={t('historyPage.subtitle')}
+          actions={
+            <>
+              <EntryAdjustmentModal
+                onSubmit={handleAdjustment}
+                isSubmitting={Boolean(submittingAdjustment)}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full border-border bg-background/80 px-3 text-sm"
+                  >
+                    {t('historyPage.adjustment.cta')}
+                  </Button>
+                }
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                onClick={handleExport}
+              >
+                <Download className="mr-2 h-4 w-4 text-primary" />
+                {t('historyPage.export.label')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                onClick={handleExportPDF}
+              >
+                <FileText className="mr-2 h-4 w-4 text-primary" />
+                {t('historyPage.export.pdfLabel')}
+              </Button>
+            </>
+          }
+        />
 
         <div class="mt-5 grid gap-5 lg:grid-cols-[320px_1fr] min-w-0">
           <section className="space-y-4 min-w-0">

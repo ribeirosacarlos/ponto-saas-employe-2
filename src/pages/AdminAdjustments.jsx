@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
@@ -408,40 +409,35 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   return (
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/80 bg-card/90 px-5 py-5 shadow-[0_10px_45px_-30px_rgba(62,82,152,0.35)] backdrop-blur-lg sm:px-7 sm:py-6 lg:px-8 lg:py-5">
-          <div className="flex min-w-[240px] flex-1 flex-col gap-3 sm:max-w-xl">
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                aria-label={t('sidebar.actions.expand', { defaultValue: 'Abrir menu' })}
-                onClick={onToggleSidebar}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-muted text-foreground transition hover:bg-muted/80"
-              >
-                <ClipboardList className="h-5 w-5" />
-              </button>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                  {t('sidebar.sections.admin')}
-                </p>
-                <h1 className="text-2xl font-semibold leading-tight">
-                  {t('adminAdjustmentsPage.title', 'Ajustes de ponto')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    'adminAdjustmentsPage.subtitle',
-                    'Acompanhe solicitacoes de ajuste e aprove ou recuse rapidamente.',
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => loadAdjustments(page)} disabled={loading}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
+        <AppTopBar
+          icon={
+            <button
+              type="button"
+              aria-label={t('sidebar.actions.expand', { defaultValue: 'Abrir menu' })}
+              onClick={onToggleSidebar}
+              className="flex h-full w-full items-center justify-center"
+            >
+              <ClipboardList className="h-5 w-5" />
+            </button>
+          }
+          eyebrow={t('sidebar.sections.admin')}
+          title={t('adminAdjustmentsPage.title', 'Ajustes de ponto')}
+          subtitle={t(
+            'adminAdjustmentsPage.subtitle',
+            'Acompanhe solicitacoes de ajuste e aprove ou recuse rapidamente.',
+          )}
+          actions={
+            <Button
+              variant="outline"
+              onClick={() => loadAdjustments(page)}
+              disabled={loading}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
               {t('adminAdjustmentsPage.actions.refresh', 'Atualizar')}
             </Button>
-          </div>
-        </header>
+          }
+        />
 
         <div className="grid gap-6 lg:grid-cols-1">
           <div className="space-y-4 lg:col-span-2">
@@ -673,3 +669,4 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     </div>
   )
 }
+

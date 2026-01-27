@@ -1,4 +1,4 @@
-// src/i18n/locales/pt-BR.js
+﻿// src/i18n/locales/pt-BR.js
 const ptBR = {
   translation: {
     common: {
@@ -454,6 +454,19 @@ const ptBR = {
         description: 'Credenciais inválidas. Confira e tente novamente.',
       },
     },
+    forgotPassword: {
+      title: 'Esqueci minha senha',
+      subtitle: 'Informe o e-mail da sua conta para receber um código de verificação.',
+      emailLabel: 'E-mail',
+      submit: 'Enviar código',
+      submitting: 'Enviando...',
+      successTitle: 'Código enviado',
+      successDescription: 'Enviamos um código para o seu e-mail.',
+      errorTitle: 'Não foi possível enviar o código',
+      errors: {
+        emailRequired: 'Informe o e-mail da conta.',
+      },
+    },
     activateAccount: {
       title: 'Ativar conta',
       subtitle: 'Crie sua senha para acessar o sistema',
@@ -464,6 +477,33 @@ const ptBR = {
       submit: 'Ativar conta',
       success: 'Conta ativada com sucesso',
       error: 'Não foi possível ativar a conta',
+    },
+    resetPassword: {
+      title: 'Recuperar senha',
+      subtitle: 'Enviamos um código para seu e-mail. Insira o código para redefinir a senha.',
+      codeLabel: 'Código de verificação',
+      codePlaceholder: 'XXXXXXXX',
+      passwordLabel: 'Nova senha',
+      passwordConfirmLabel: 'Confirmar senha',
+      passwordHelper: 'Use pelo menos 8 caracteres, com maiúsculas, números e símbolos.',
+      strength: {
+        label: 'Força da senha',
+        weak: 'Fraca',
+        medium: 'Média',
+        strong: 'Forte',
+      },
+      submit: 'Redefinir senha',
+      submitting: 'Redefinindo...',
+      successTitle: 'Senha atualizada',
+      successDescription: 'Sua senha foi atualizada com sucesso.',
+      errorTitle: 'Não foi possível redefinir a senha',
+      errors: {
+        codeRequired: 'Informe o código de verificação.',
+        passwordRules:
+          'A senha deve ter pelo menos 8 caracteres e incluir uma letra maiúscula, um número e um símbolo.',
+        passwordContainsEmail: 'A senha não pode conter seu e-mail.',
+        passwordMismatch: 'As senhas não coincidem.',
+      },
     },
     timeClock: {
       title: 'Registro de ponto',
@@ -1373,4 +1413,6 @@ const ptBR = {
 }
 
 export default ptBR
+
+
 

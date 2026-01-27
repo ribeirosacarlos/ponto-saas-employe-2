@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
 import { cn } from '../lib/utils'
 import { useToast } from '../components/ui/use-toast'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
@@ -245,31 +246,30 @@ export default function AdminDocuments() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
-        <header className="flex flex-wrap items-start justify-between gap-4 rounded-[28px] border border-border/80 bg-card/90 px-5 py-6 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)] backdrop-blur-2xl">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                <FileText className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Validação</p>
-                <h1 className="text-2xl font-semibold leading-tight">Validação de documentos</h1>
-                <p className="text-sm text-muted-foreground">Analise, aprove ou rejeite documentos enviados.</p>
-              </div>
-            </div>
-            {error ? (
+        <AppTopBar
+          icon={<FileText className="h-5 w-5" />}
+          eyebrow="Validação"
+          title="Validação de documentos"
+          subtitle="Analise, aprove ou rejeite documentos enviados."
+          filters={
+            error ? (
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
                 {error}
               </div>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => fetchDocuments({ page })} className="gap-2">
-              <RefreshCcw className="h-4 w-4" />
+            ) : null
+          }
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fetchDocuments({ page })}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className="h-4 w-4 text-primary" />
               Atualizar
             </Button>
-          </div>
-        </header>
+          }
+        />
 
         <div className="flex flex-wrap items-center gap-3 rounded-[18px] border border-border/70 bg-muted/20 p-2">
           {['pending', 'review'].map((key) => (
@@ -588,3 +588,4 @@ export default function AdminDocuments() {
     </div>
   )
 }
+

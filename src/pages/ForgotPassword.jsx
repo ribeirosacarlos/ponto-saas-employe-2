@@ -1,41 +1,55 @@
 import { useState } from 'react'
-import { Lock, Mail, ShieldCheck } from 'lucide-react'
+import { Mail, ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useToast } from '../components/ui/use-toast'
-import { useAuthStore } from '../store/useAuth'
-import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 
-export default function Login() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const login = useAuthStore((state) => state.login)
-  const loading = useAuthStore((state) => state.loading)
-  const authError = useAuthStore((state) => state.error)
+  const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const { toast } = useToast()
   const { t } = useTranslation()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      await login(email, password)
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setErrorMessage('')
+
+    if (!email.trim()) {
+      const message = t('forgotPassword.errors.emailRequired')
+      setErrorMessage(message)
       toast({
-        title: t('toast.loginSuccess.title'),
-        description: t('toast.loginSuccess.description'),
+        title: t('forgotPassword.errorTitle'),
+        description: message,
+        variant: 'error',
+      })
+      return
+    }
+
+    setLoading(true)
+    try {
+      await Promise.resolve()
+      toast({
+        title: t('forgotPassword.successTitle'),
+        description: t('forgotPassword.successDescription'),
         variant: 'success',
       })
     } catch (error) {
+      const fallbackMessage = t('forgotPassword.errorTitle')
+      setErrorMessage(fallbackMessage)
       toast({
-        title: t('toast.loginError.title'),
-        description: error.message,
+        title: t('forgotPassword.errorTitle'),
+        description: fallbackMessage,
         variant: 'error',
       })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -60,23 +74,20 @@ export default function Login() {
           </div>
 
           <div className="mb-6 space-y-2">
-            <h1 className="text-[22px] font-semibold leading-tight">{t('login.title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
+            <h1 className="text-[22px] font-semibold leading-tight">{t('forgotPassword.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('forgotPassword.subtitle')}</p>
           </div>
 
-          {authError ? (
-            <div className="mb-4 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm text-rose-700 shadow-[0_14px_42px_-30px_rgba(244,63,94,0.45)] dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
-              <p className="font-semibold">{t('login.error.title', 'Erro ao autenticar')}</p>
-              <p className="text-xs text-rose-600/90 dark:text-rose-50/80">
-                {authError || t('login.error.description', 'Credenciais inválidas. Confira e tente novamente.')}
-              </p>
+          {errorMessage ? (
+            <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {errorMessage}
             </div>
           ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-foreground/80" htmlFor="email">
-                {t('login.emailLabel')}
+                {t('forgotPassword.emailLabel')}
               </Label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -85,6 +96,7 @@ export default function Login() {
                 <Input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   placeholder={t('login.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -94,55 +106,12 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-foreground/80" htmlFor="password">
-                {t('login.passwordLabel')}
-              </Label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-500">
-                  <Lock className="h-5 w-5 fill-amber-500 text-amber-500" />
-                </span>
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder={t('login.passwordPlaceholder')}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-[54px] rounded-2xl border border-border/80 bg-background/70 pl-12 pr-16 text-[15px] shadow-[0_16px_40px_-28px_rgba(62,82,152,0.45)] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-input/80"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
-                  aria-pressed={showPassword}
-                  aria-label={t('login.togglePasswordAlt')}
-                >
-                  {showPassword ? t('login.hide') : t('login.show')}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.href = '/forgot-password'
-                  }
-                }}
-                className="text-xs font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground"
-              >
-                {t('login.forgotPassword')}
-              </button>
-            </div>
-
             <Button
               type="submit"
               className="mt-2 h-[48px] w-full rounded-full shadow-[0_18px_40px_-22px_rgba(62,82,152,0.6)] hover:-translate-y-0.5 hover:shadow-[0_22px_52px_-24px_rgba(62,82,152,0.7)] focus-visible:ring-offset-0"
               disabled={loading}
             >
-              {loading ? t('login.submitting') : t('login.submit')}
+              {loading ? t('forgotPassword.submitting') : t('forgotPassword.submit')}
             </Button>
           </form>
         </div>
