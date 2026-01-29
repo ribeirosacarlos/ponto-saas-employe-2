@@ -9,6 +9,7 @@ import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
 import { listMyDocuments, downloadDocument } from '../services/documentsService'
+import { getEmployeeVacationBalance } from '../services/vacationsService'
 import { listAnnouncements } from '../services/announcementsService'
 
 const DOCUMENT_CATEGORIES = {
@@ -74,6 +75,8 @@ export default function Dashboard({
   const [documentsLoading, setDocumentsLoading] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [announcementsLoading, setAnnouncementsLoading] = useState(false)
+  const [timeOffSummary, setTimeOffSummary] = useState(null)
+  const [timeOffLoading, setTimeOffLoading] = useState(false)
 
   const fallbackAnnouncements = useMemo(
     () => [
@@ -213,6 +216,37 @@ export default function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fallbackAnnouncements])
 
+  const loadTimeOffSummary = async () => {
+    setTimeOffLoading(true)
+    try {
+      const data = await getEmployeeVacationBalance()
+      setTimeOffSummary({
+        availableDays: data?.available ?? data?.balance ?? '--',
+        nextVacation: data?.policy?.name || '--',
+        absences: data?.used ?? 0,
+        statusKey: 'approved',
+      })
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('dashboardPage.toasts.timeOff.error', 'Não foi possível carregar o saldo de férias.')
+      setTimeOffSummary(null)
+      toast({
+        title: t('dashboardPage.toasts.timeOff.title', 'Falha ao carregar férias'),
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setTimeOffLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTimeOffSummary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleDocumentAction = async (item) => {
     if (!item?.id) return
     try {
@@ -290,7 +324,7 @@ export default function Dashboard({
       maxItemsPerSection: 2,
     },
     timeOff: {
-      summary: null,
+      summary: timeOffLoading ? null : timeOffSummary,
       onRequest: () =>
         toast({
           title: t('dashboardPage.toasts.vacation.title'),
