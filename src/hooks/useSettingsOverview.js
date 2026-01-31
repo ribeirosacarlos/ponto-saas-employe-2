@@ -25,7 +25,7 @@ export function useSettingsOverview() {
         err?.response?.data?.message ||
         err?.userFriendlyMessage ||
         err?.message ||
-        t('settingsPage.error.load', 'Não foi possível carregar as configurações.')
+        t('settingsPage.errors.load', 'Não foi possível carregar as configurações.')
       setError(message)
 
       if (status === 401) {
