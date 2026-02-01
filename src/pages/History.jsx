@@ -5,7 +5,6 @@ import {
   AlertCircle,
   CalendarDays,
   Download,
-  Filter,
   FileText,
   History as HistoryIcon,
   RefreshCcw,
@@ -150,6 +149,48 @@ export default function History({ onBackToDashboard }) {
     [formatTime, t],
   )
 
+  const weekdayFormatter = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat(locale || 'pt-BR', { weekday: 'long', timeZone: tz })
+    } catch (error) {
+      return null
+    }
+  }, [locale, tz])
+
+  const formatWeekday = useCallback(
+    (value) => {
+      if (!value || !weekdayFormatter) return ''
+      const date = value instanceof Date ? value : new Date(value)
+      if (Number.isNaN(date.getTime())) return ''
+      const label = weekdayFormatter.format(date)
+      if (!label) return ''
+      const normalized = label.toLocaleLowerCase(locale || 'pt-BR')
+      return normalized
+        ? `${normalized.charAt(0).toLocaleUpperCase(locale || 'pt-BR')}${normalized.slice(1)}`
+        : ''
+    },
+    [locale, weekdayFormatter],
+  )
+
+  const formatDateCell = useCallback(
+    (value) => {
+      if (!value) {
+        return { date: t('historyPage.labels.unknownDate'), weekday: '' }
+      }
+      const apiDate = formatDateForApi(value)
+      if (!apiDate) {
+        return { date: t('historyPage.labels.unknownDate'), weekday: formatWeekday(value) }
+      }
+      const [year, month, day] = apiDate.split('-')
+      const dateLabel = `${day}/${month}/${year}`
+      return {
+        date: dateLabel || t('historyPage.labels.unknownDate'),
+        weekday: formatWeekday(value),
+      }
+    },
+    [formatDateForApi, formatWeekday, t],
+  )
+
   const formatBreakRanges = useCallback(
     (intervals = []) => {
       if (!intervals.length) return t('historyPage.labels.timeFallback')
@@ -159,6 +200,25 @@ export default function History({ onBackToDashboard }) {
         return `${startLabel} - ${endLabel}`
       })
       return ranges.join(' · ')
+    },
+    [formatTimeTz, t],
+  )
+
+  const formatBreakReturn = useCallback(
+    (intervals = []) => {
+      if (!intervals.length) return t('historyPage.labels.emptyValue')
+      const ranges = intervals.map((interval) => {
+        const startLabel =
+          interval?.start !== null && interval?.start !== undefined
+            ? formatTimeTz(interval.start)
+            : t('historyPage.labels.timeFallback')
+        const endLabel =
+          interval?.end !== null && interval?.end !== undefined
+            ? formatTimeTz(interval.end)
+            : t('historyPage.labels.timeFallback')
+        return `${startLabel} → ${endLabel}`
+      })
+      return ranges.join(' / ')
     },
     [formatTimeTz, t],
   )
@@ -537,7 +597,7 @@ export default function History({ onBackToDashboard }) {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-border bg-background/80 px-3 text-sm"
+                    className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
                   >
                     {t('historyPage.adjustment.cta')}
                   </Button>
@@ -546,7 +606,7 @@ export default function History({ onBackToDashboard }) {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
                 onClick={handleExport}
               >
                 <Download className="mr-2 h-4 w-4 text-primary" />
@@ -555,7 +615,7 @@ export default function History({ onBackToDashboard }) {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
                 onClick={handleExportPDF}
               >
                 <FileText className="mr-2 h-4 w-4 text-primary" />
@@ -565,75 +625,7 @@ export default function History({ onBackToDashboard }) {
           }
         />
 
-        <div class="mt-5 grid gap-5 lg:grid-cols-[320px_1fr] min-w-0">
-          <section className="space-y-4 min-w-0">
-            <div className="rounded-2xl border border-border/80 bg-card/95 p-4 shadow-[0_20px_60px_-48px_rgba(62,82,152,0.35)]">
-              <div className="flex items-center gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Filter className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold">{t('historyPage.filters.title')}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('historyPage.filters.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="history-month-selector">
-                    {t('historyPage.filters.month')}
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="history-month-selector"
-                      value={selectedMonth?.id ?? ''}
-                      onChange={(event) => {
-                        const option = monthOptions.find((item) => item.id === event.target.value)
-                        if (option) {
-                          setSelectedMonth(option)
-                        }
-                      }}
-                      className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-primary/40"
-                    >
-                      {monthOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button
-                    type="button"
-                    className="rounded-full px-4 text-sm"
-                    onClick={handleApplyFilters}
-                    disabled={loading}
-                  >
-                    {t('historyPage.filters.apply')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="rounded-full px-4 text-sm"
-                    onClick={handleClearFilters}
-                    disabled={loading}
-                  >
-                    {t('historyPage.filters.clear')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-border/80 bg-muted/60 p-4 text-xs text-muted-foreground shadow-[0_10px_40px_-36px_rgba(62,82,152,0.45)]">
-              <p className="font-semibold text-foreground">{t('historyPage.helper.title')}</p>
-              <p className="mt-1 leading-relaxed">{t('historyPage.helper.description')}</p>
-            </div>
-          </section>
-
+        <div className="mt-5 min-w-0">
           <section className="space-y-4 min-w-0">
             {loading ? (
               <div className="space-y-3">
@@ -647,16 +639,18 @@ export default function History({ onBackToDashboard }) {
             ) : null}
 
             {!loading && error ? (
-              <div className="flex items-start gap-3 rounded-2xl border border-rose-200/60 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
+              <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-rose-200/60 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div className="space-y-2">
-                  <p className="font-semibold">{t('historyPage.states.errorTitle')}</p>
-                  <p>{error}</p>
+                <div className="min-w-0 space-y-2">
+                  <p className="font-semibold break-words text-balance">
+                    {t('historyPage.states.errorTitle')}
+                  </p>
+                  <p className="break-words">{error}</p>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="rounded-full px-3 text-xs"
+                    className="w-full rounded-full px-3 text-xs sm:w-auto"
                     onClick={() => handleFetch({ page: 1 })}
                   >
                     <RefreshCcw className="mr-2 h-4 w-4" />
@@ -668,10 +662,19 @@ export default function History({ onBackToDashboard }) {
 
             {!loading && !error && groupedEntries.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/70 bg-card/90 px-5 py-6 text-sm text-muted-foreground shadow-[0_18px_50px_-40px_rgba(62,82,152,0.35)]">
-                <p className="font-semibold text-foreground">{t('historyPage.states.emptyTitle')}</p>
-                <p className="mt-1">{t('historyPage.states.emptyDescription')}</p>
+                <p className="font-semibold text-foreground break-words text-balance">
+                  {t('historyPage.states.emptyTitle')}
+                </p>
+                <p className="mt-1 break-words text-balance">
+                  {t('historyPage.states.emptyDescription')}
+                </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button type="button" size="sm" className="rounded-full px-4" onClick={handleClearFilters}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full rounded-full px-4 sm:w-auto"
+                    onClick={handleClearFilters}
+                  >
                     {t('historyPage.filters.clear')}
                   </Button>
                   {onBackToDashboard ? (
@@ -679,7 +682,7 @@ export default function History({ onBackToDashboard }) {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="rounded-full px-4"
+                      className="w-full rounded-full px-4 sm:w-auto"
                       onClick={onBackToDashboard}
                     >
                       {t('historyPage.actions.back')}
@@ -690,29 +693,79 @@ export default function History({ onBackToDashboard }) {
             ) : null}
 
             {!loading && !error && groupedEntries.length > 0 && (
-              <div className="rounded-3xl border border-border/80 bg-card/95 p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
-                  <div className="flex items-center gap-3">
+              <div className="min-w-0 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                       <CalendarDays className="h-4 w-4" />
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold leading-tight">{t('historyPage.table.title')}</p>
-                      <p className="text-xs text-muted-foreground">{t('historyPage.table.description')}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold leading-tight break-words text-balance">
+                        {t('historyPage.table.title')}
+                      </p>
+                      <p className="text-xs text-muted-foreground break-words text-balance">
+                        {t('historyPage.table.description')}
+                      </p>
                     </div>
                   </div>
-                  <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                    {t('historyPage.labels.totalEntries', { count: groupedEntries.length })}
-                  </span>
+                  <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                    <span className="max-w-full rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-center text-[11px] font-semibold tracking-[0.14em] text-primary break-words text-balance">
+                      {t('historyPage.labels.totalEntries', { count: groupedEntries.length })}
+                    </span>
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-none">
+                      <label className="sr-only" htmlFor="history-month-selector">
+                        {t('historyPage.filters.month')}
+                      </label>
+                      <select
+                        id="history-month-selector"
+                        value={selectedMonth?.id ?? ''}
+                        onChange={(event) => {
+                          const option = monthOptions.find((item) => item.id === event.target.value)
+                          if (option) {
+                            setSelectedMonth(option)
+                          }
+                        }}
+                        className="w-full min-w-[180px] rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-xs text-foreground focus:border-primary focus:ring-2 focus:ring-primary/40 sm:w-auto sm:text-sm"
+                      >
+                        {monthOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full px-3 text-xs"
+                        onClick={handleApplyFilters}
+                        disabled={loading}
+                      >
+                        {t('historyPage.filters.apply')}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full px-3 text-xs"
+                        onClick={handleClearFilters}
+                        disabled={loading}
+                      >
+                        {t('historyPage.filters.clear')}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-5 overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                  <table className="w-full min-w-full text-sm">
                     <thead>
                       <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                         <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.interval')}</th>
+                        <th className="px-3 py-3">{t('historyPage.table.headers.breakReturn')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.idle')}</th>
@@ -721,6 +774,7 @@ export default function History({ onBackToDashboard }) {
                     <tbody>
                       {groupedEntries.map((group) => {
                         const { summary } = group
+                        const dateCell = formatDateCell(summary?.entryAt)
                         const entryLabel = summary?.entryAt
                           ? formatTimeTz(summary.entryAt)
                           : t('historyPage.labels.timeFallback')
@@ -730,6 +784,7 @@ export default function History({ onBackToDashboard }) {
                         const intervalLabel = summary?.hasBreak
                           ? formatBreakRanges(summary.breakIntervals)
                           : t('historyPage.labels.timeFallback')
+                        const breakReturnLabel = formatBreakReturn(summary?.breakIntervals)
                         const workedLabel = group.duration
                           ? formatDuration(group.duration)
                           : t('historyPage.labels.noDuration')
@@ -744,16 +799,21 @@ export default function History({ onBackToDashboard }) {
                             className="border-b border-border/80 last:border-b-0"
                           >
                             <td className="px-3 py-4">
-                              <p className="font-semibold">{formatDateLabel(group.dateKey)}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {t('historyPage.labels.totalEntries', { count: group.items.length })}
+                              <p className="font-semibold break-words text-balance">
+                                {dateCell.date}
                               </p>
+                              {dateCell.weekday ? (
+                                <p className="text-[11px] text-muted-foreground break-words">
+                                  {dateCell.weekday}
+                                </p>
+                              ) : null}
                             </td>
-                            <td className="px-3 py-4">{entryLabel}</td>
-                            <td className="px-3 py-4">{intervalLabel}</td>
-                            <td className="px-3 py-4">{exitLabel}</td>
-                            <td className="px-3 py-4">{workedLabel}</td>
-                            <td className="px-3 py-4">{idleLabel}</td>
+                            <td className="px-3 py-4 break-words">{entryLabel}</td>
+                            <td className="px-3 py-4 break-words">{intervalLabel}</td>
+                            <td className="px-3 py-4 break-words">{breakReturnLabel}</td>
+                            <td className="px-3 py-4 break-words">{exitLabel}</td>
+                            <td className="px-3 py-4 break-words">{workedLabel}</td>
+                            <td className="px-3 py-4 break-words">{idleLabel}</td>
                           </tr>
                         )
                       })}
@@ -767,7 +827,7 @@ export default function History({ onBackToDashboard }) {
                 <Button
                   type="button"
                   variant="secondary"
-                  className="rounded-full px-4"
+                  className="w-full rounded-full px-4 sm:w-auto"
                   onClick={handleLoadMore}
                   disabled={loadingMore}
                 >

@@ -20,16 +20,18 @@ export function AnnouncementsCard({ announcements, onViewAll }) {
 
   return (
     <section className="flex flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
-      <header className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-2xl bg-muted text-muted-foreground text-xs sm:h-8 sm:w-8 sm:text-sm">
             <CalendarDays className="h-4 w-4" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
               {t('dashboardPage.announcements.tag')}
             </p>
-            <h2 className="text-sm font-semibold">{t('dashboardPage.announcements.title')}</h2>
+            <h2 className="text-sm font-semibold break-words text-balance">
+              {t('dashboardPage.announcements.title')}
+            </h2>
           </div>
         </div>
         <ViewAllButton label={t('dashboardPage.common.viewAll')} onClick={() => onViewAll?.()} />
@@ -51,17 +53,17 @@ export function AnnouncementsCard({ announcements, onViewAll }) {
                 key={announcement.id || announcement.title}
                 className="rounded-2xl border border-border bg-muted/70 px-3 py-3 shadow-inner sm:px-4 sm:py-4"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-semibold">{announcement.title}</p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
+                <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-sm font-semibold break-words">{announcement.title}</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground break-words sm:text-[12px]">
                       {announcement.body}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">{announcement.sentAt}</p>
+                    <p className="text-[10px] text-muted-foreground break-words">{announcement.sentAt}</p>
                   </div>
                   <span
                     className={cn(
-                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-[0_10px_25px_-18px_rgba(62,82,152,0.45)]',
+                      'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-[0_10px_25px_-18px_rgba(62,82,152,0.45)]',
                       tone.tone,
                     )}
                   >
@@ -74,7 +76,9 @@ export function AnnouncementsCard({ announcements, onViewAll }) {
           })
         ) : (
           <div className="rounded-2xl border border-border/70 bg-muted/60 px-4 py-6 text-center text-sm text-muted-foreground shadow-inner">
-            <p>{t('dashboardPage.announcements.emptyState', 'No hay comunicados disponibles.')}</p>
+            <p className="break-words">
+              {t('dashboardPage.announcements.emptyState', 'No hay comunicados disponibles.')}
+            </p>
           </div>
         )}
       </div>

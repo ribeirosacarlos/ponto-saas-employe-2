@@ -373,20 +373,20 @@ export default function Dashboard({
           title={t('dashboardPage.title')}
           subtitle={t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
           filters={
-            <div className="flex w-full items-center gap-2">
-              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+            <div className="flex w-full min-w-0 items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={t('dashboardPage.searchPlaceholder')}
-                  className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                  className="w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
             </div>
           }
           rightMeta={
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:bg-background hover:text-foreground"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:bg-background hover:text-foreground"
               type="button"
             >
               <Bell className="h-4 w-4" />
@@ -397,35 +397,35 @@ export default function Dashboard({
         {isAbsentToday ? (
           <section className="rounded-[22px] border border-rose-200/70 bg-rose-500/10 px-5 py-4 shadow-[0_18px_50px_-36px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
+              <div className="flex min-w-0 items-start gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
                   <AlertTriangle className="h-5 w-5" />
                 </span>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-rose-700 dark:text-rose-100">
+                <div className="min-w-0 space-y-1">
+                  <p className="break-words text-sm font-semibold text-rose-700 dark:text-rose-100">
                     {t('dashboardPage.absence.bannerTitle', 'Ausencia registrada para hoje:')}{' '}
                     {absenceTypeLabel}
                   </p>
                   {absencePeriodLabel ? (
-                    <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                    <p className="break-words text-xs text-rose-600/90 dark:text-rose-100/80">
                       {t('dashboardPage.absence.periodLabel', 'Periodo:')} {absencePeriodLabel}
                     </p>
                   ) : null}
-                  <p className="text-xs text-rose-600/90 dark:text-rose-100/80">
+                  <p className="break-words text-xs text-rose-600/90 dark:text-rose-100/80">
                     {t('dashboardPage.absence.reasonLabel', 'Motivo:')} {absenceComment}
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center rounded-full border border-rose-200/70 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-600 dark:border-rose-400/30 dark:text-rose-100">
+              <span className="inline-flex max-w-full items-center rounded-full border border-rose-200/70 bg-rose-500/15 px-3 py-1 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-600 break-words dark:border-rose-400/30 dark:text-rose-100">
                 {t('dashboardPage.absence.badge', 'Bloqueio de ponto ativo')}
               </span>
             </div>
           </section>
         ) : null}
 
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 auto-rows-fr">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 auto-rows-fr">
           {visibleCards.length === 0 ? (
-            <div className="col-span-full rounded-2xl border border-border bg-card px-4 py-5 text-sm text-muted-foreground">
+            <div className="col-span-full rounded-2xl border border-border bg-card px-4 py-5 text-sm text-muted-foreground break-words">
               {t('dashboardPage.emptyState', 'Nenhum card disponivel para seu perfil.')}
             </div>
           ) : (

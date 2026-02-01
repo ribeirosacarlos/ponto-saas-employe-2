@@ -16,11 +16,11 @@ export function AppTopBar({ icon, eyebrow, title, subtitle, actions, filters, ri
                 </span>
               </div>
             ) : null}
-            <h1 className="text-xl font-semibold leading-tight sm:text-2xl break-words">
+            <h1 className="text-xl font-semibold leading-tight sm:text-2xl md:text-3xl break-words text-balance">
               {title}
             </h1>
             {subtitle ? (
-              <p className="text-sm text-muted-foreground break-words">{subtitle}</p>
+              <p className="text-sm text-muted-foreground break-words text-balance">{subtitle}</p>
             ) : null}
           </div>
         </div>
@@ -32,11 +32,12 @@ export function AppTopBar({ icon, eyebrow, title, subtitle, actions, filters, ri
         <div
           className="
             -mx-4 px-4
-            flex items-center gap-2
-            overflow-x-auto
-            whitespace-nowrap
+            flex flex-wrap items-center gap-2
+            min-w-0
             sm:mx-0 sm:px-0
-            sm:justify-end
+            sm:flex-nowrap sm:justify-end
+            sm:overflow-x-auto
+            sm:whitespace-nowrap
             scrollbar-hide
           "
         >

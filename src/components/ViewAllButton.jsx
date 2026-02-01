@@ -11,7 +11,7 @@ export function ViewAllButton({ label, onClick, icon: Icon = ExternalLink, class
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-2 rounded-full border border-border bg-background/90 px-3 py-2 text-[11px] font-semibold text-foreground shadow-[0_12px_28px_-20px_rgba(62,82,152,0.55)] transition hover:-translate-y-0.5 hover:bg-muted/80 sm:text-xs',
+        'inline-flex w-full max-w-full items-center justify-center gap-2 rounded-full border border-border bg-background/90 px-3 py-2 text-center text-[11px] font-semibold text-foreground shadow-[0_12px_28px_-20px_rgba(62,82,152,0.55)] transition hover:-translate-y-0.5 hover:bg-muted/80 sm:w-auto sm:text-xs',
         className,
       )}
     >
