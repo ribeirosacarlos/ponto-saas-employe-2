@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   BadgeCheck,
@@ -19,13 +18,13 @@ import {
 } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Label } from '../components/ui/label'
-import { SettingsSummaryCards } from '../components/settings/SettingsSummaryCards'
+import { PlanSummaryCard } from '../components/settings/PlanSummaryCard'
+import { CompanyCard } from '../components/settings/CompanyCard'
+import { PreferencesCard } from '../components/settings/PreferencesCard'
+import { SecurityCard } from '../components/settings/SecurityCard'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
-import { cn } from '../lib/utils'
-import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles } from '../auth/acl'
 import { fetchCompanyTimezone, updateCompanyTimezone } from '../services/companyTimezoneService'
@@ -43,15 +42,6 @@ const STATUS_TONES = {
 const valueOrPlaceholder = (value) => {
   if (value === null || value === undefined || value === '') return '—'
   return value
-}
-
-const normalizeLimitKey = (value) => {
-  if (value === null || value === undefined) return ''
-  return String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
 }
 
 const formatBooleanValue = (value) => {
@@ -124,7 +114,7 @@ const KeyValue = ({ label, value, helper }) => (
   </div>
 )
 
-const LimitsList = ({ limits, labels = {} }) => {
+const LimitsList = ({ limits }) => {
   if (!limits || typeof limits !== 'object') return null
   const entries = Object.entries(limits)
   if (!entries.length) return null
@@ -132,11 +122,9 @@ const LimitsList = ({ limits, labels = {} }) => {
     <div className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Limites do plano</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        {entries.map(([key, value]) => {
-          const normalizedKey = normalizeLimitKey(key)
-          const label = labels[normalizedKey] || key
-          return <KeyValue key={key} label={label} value={value} />
-        })}
+        {entries.map(([key, value]) => (
+          <KeyValue key={key} label={key} value={value} />
+        ))}
       </div>
     </div>
   )
@@ -171,17 +159,13 @@ const WorkdayDays = ({ days }) => {
 
 const SettingsSkeleton = () => (
   <div className="space-y-4">
-    <div className="h-20 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, idx) => (
-        <div key={`summary-skel-${idx}`} className="h-28 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
-      ))}
-    </div>
+    <div className="h-24 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
+    <div className="h-72 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
     <div className="grid gap-4 lg:grid-cols-2">
-      {Array.from({ length: 6 }).map((_, idx) => (
-        <div key={`section-skel-${idx}`} className="h-64 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
-      ))}
+      <div className="h-64 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
+      <div className="h-64 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
     </div>
+    <div className="h-56 animate-pulse rounded-[22px] border border-border/70 bg-card/80" />
   </div>
 )
 
@@ -199,7 +183,7 @@ const EmptyState = ({ onRetry }) => (
   </Card>
 )
 
-const BillingCard = ({ billing, links, limitLabels }) => {
+const BillingCard = ({ billing, links }) => {
   const plan = billing?.plan
   const subscription = billing?.subscription
 
@@ -211,20 +195,42 @@ const BillingCard = ({ billing, links, limitLabels }) => {
     >
       <div className="grid gap-3">
         <div className="grid gap-2 sm:grid-cols-2">
-          <KeyValue label="Nome do plano" value={plan?.name} />
+          <KeyValue label="Nome do plano" value={plan?.name} helper={plan?.slug ? `Slug: ${plan.slug}` : null} />
           <KeyValue label="Preço" value={formatPrice(plan)} helper={plan?.currency ? `Moeda: ${plan.currency}` : null} />
           <KeyValue label="Ciclo" value={plan?.billing_interval || '—'} />
           <KeyValue label="Limites" value={plan?.limits ? 'Personalizados' : 'Nenhum limite informado'} />
         </div>
 
-        {plan?.limits ? <LimitsList limits={plan.limits} labels={limitLabels} /> : null}
+        {plan?.limits ? <LimitsList limits={plan.limits} /> : null}
 
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Assinatura</p>
             <StatusBadge status={subscription?.status || subscription?.subscription_status} label={subscription?.status_label} />
+            <KeyValue label="Status label" value={subscription?.status_label} />
+            <KeyValue label="Status da assinatura" value={subscription?.subscription_status} />
+            <KeyValue label="Próxima ação" value={subscription?.next_action} />
+            <KeyValue label="Dias de trial restantes" value={subscription?.trial_days_remaining} />
+            <KeyValue label="Dias até faturamento" value={subscription?.billing_days_remaining} />
+            <KeyValue label="Stripe Customer ID" value={subscription?.stripe_customer_id} />
+            <KeyValue label="Stripe Subscription ID" value={subscription?.stripe_subscription_id} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Datas e períodos</p>
+            <KeyValue label="Trial termina em" value={formatDateTime(subscription?.trial_ends_at)} helper={subscription?.trial_days_remaining !== null && subscription?.trial_days_remaining !== undefined ? `${subscription.trial_days_remaining} dias restantes` : null} />
+            <KeyValue label="Próximo ciclo" value={formatDateTime(subscription?.current_period_end)} helper={subscription?.billing_days_remaining !== null && subscription?.billing_days_remaining !== undefined ? `${subscription.billing_days_remaining} dias até faturamento` : null} />
+            <KeyValue label="Término da assinatura" value={formatDateTime(subscription?.subscription_ends_at)} />
+            <KeyValue label="Cancelar ao fim do período" value={formatBooleanValue(subscription?.cancel_at_period_end)} />
+            <KeyValue label="Cancelada em" value={formatDateTime(subscription?.canceled_at)} />
           </div>
         </div>
+
+        {links ? (
+          <div className="flex flex-wrap gap-2">
+            <InlineActionLink label="Checkout" url={links.checkout_url} />
+            <InlineActionLink label="Portal do cliente" url={links.customer_portal_url} />
+          </div>
+        ) : null}
       </div>
     </SectionCard>
   )
@@ -629,10 +635,11 @@ const ActionsCard = ({ links, onDefaultSubscribe }) => {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation()
   const { data, isLoading, error, reload } = useSettingsOverview()
   const overview = data || {}
+
   const roles = useAuthStore((state) => state.roles)
-  const { t } = useTranslation()
   const showCompanyTimezone = false
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const canEditTimezone = useMemo(
@@ -643,88 +650,110 @@ export default function SettingsPage() {
     max_employees: t('settingsPage.limits.maxEmployees', 'Funcionarios'),
   }
 
-  const hasData = useMemo(
+  const setTimezone = useTimezoneStore((state) => state.setTimezone)
+
+  useEffect(() => {
+    if (overview?.company?.timezone) {
+      setTimezone(overview.company.timezone)
+    }
+  }, [overview?.company?.timezone, setTimezone])
+
+  const links = overview.links || {}
+  const hasPortal = Boolean(links.customer_portal_url)
+  const hasCheckout = Boolean(links.checkout_url)
+
+  const hasContent = useMemo(
     () =>
       Boolean(
         overview?.billing ||
           overview?.company ||
-          overview?.workday ||
           overview?.security ||
-          overview?.usage ||
-          overview?.flags ||
-          overview?.links ||
-          overview?.compliance,
+          overview?.compliance ||
+          overview?.usage,
       ),
     [overview],
   )
 
-  const handleDefaultSubscribe = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/billing/subscribe'
-    }
+  const openExternal = (url) => {
+    if (!url || typeof window === 'undefined') return
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
-      <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
-
+    <div className="relative min-h-screen bg-transparent text-foreground">
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
         <AppTopBar
           icon={<ShieldCheck className="h-5 w-5" />}
-          eyebrow="Configurações"
-          title="Visão geral da conta"
-          subtitle="Tudo que a UI precisa: plano, empresa, jornadas, segurança, limites e ações."
+          eyebrow={t('settingsPage.header.title')}
+          title={t('settingsPage.header.title')}
+          subtitle={t('settingsPage.header.subtitle')}
           filters={
-            error ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            ) : null
+            error
+              ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
+                  {error}
+                </div>
+              )
+              : null
           }
           actions={
-            <>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
+                size="sm"
                 onClick={reload}
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
               >
-                <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
-                Recarregar
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                {t('settingsPage.header.actions.reload')}
               </Button>
-              <Button type="button" onClick={handleDefaultSubscribe} className="rounded-full px-4 text-sm">
-                Assinar / Regularizar
+              <Button
+                type="button"
+                size="sm"
+                disabled={!hasPortal}
+                onClick={() => openExternal(links.customer_portal_url)}
+                title={
+                  hasPortal ? undefined : t('settingsPage.header.actions.portalUnavailable')
+                }
+              >
+                {t('settingsPage.header.actions.manageSubscription')}
               </Button>
-            </>
+              {hasCheckout ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openExternal(links.checkout_url)}
+                >
+                  {t('settingsPage.header.actions.updatePlan')}
+                </Button>
+              ) : null}
+            </div>
           }
         />
 
         {isLoading ? (
           <SettingsSkeleton />
-        ) : !hasData ? (
-          <EmptyState onRetry={reload} />
+        ) : !hasContent ? (
+          <EmptyState message={error || t('settingsPage.states.empty')} onRetry={reload} />
         ) : (
-          <>
-            <SettingsSummaryCards
-              billing={overview.billing}
-              flags={overview.flags}
-              usage={overview.usage}
-            />
-
+          <div className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
-              <BillingCard billing={overview.billing} links={overview.links} limitLabels={limitLabels} />
+              <BillingCard billing={overview.billing} links={overview.links} />
               <CompanyCard company={overview.company} />
-              {showCompanyTimezone ? <TimezoneCard canEdit={canEditTimezone} /> : null}
-              <UsageCard usage={overview.usage} />
-              <WorkdayCard workday={overview.workday} />
-              <SecurityComplianceCard security={overview.security} compliance={overview.compliance} />
-              <FlagsCard flags={overview.flags} />
-              <ActionsCard links={overview.links} onDefaultSubscribe={handleDefaultSubscribe} />
+              <PreferencesCard
+                company={overview.company}
+                canEdit={canEditTimezone}
+                onTimezoneSaved={reload}
+              />
             </div>
-          </>
+
+            <PlanSummaryCard billing={overview.billing} usage={overview.usage} links={links} />
+
+            <SecurityCard security={overview.security} compliance={overview.compliance} />
+          </div>
         )}
       </PageContainer>
     </div>
   )
 }
-

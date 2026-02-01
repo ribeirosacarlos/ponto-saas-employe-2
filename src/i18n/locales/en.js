@@ -42,29 +42,32 @@ const en = {
     },
 
     settingsPage: {
-      badge: 'Admin',
-      title: 'Settings',
-      subtitle: 'Current plan and essential workspace preferences.',
-      loading: 'Loading...',
-      errors: {
-        noCompany: 'No company linked to the user.',
-        load: 'Could not load current subscription.',
-        forbidden: 'Your profile does not have access to subscription data.',
+      header: {
+        title: 'Settings',
+        subtitle: 'Plan, company and preferences',
+        actions: {
+          reload: 'Reload',
+          manageSubscription: 'Manage subscription',
+          updatePlan: 'Update plan',
+          portalUnavailable: 'Portal unavailable',
+        },
       },
-      tabs: {
-        plan: 'Plan',
-        preferences: 'Preferences',
+      states: {
+        empty: 'No settings information returned.',
+      },
+      errors: {
+        load: 'Unable to load settings.',
+        forbidden: 'You do not have permission to view settings.',
+        noCompany: 'No company associated to the user.',
       },
       plan: {
-        title: 'Current plan',
+        title: 'Plan summary',
+        subtitle: 'Subscription status and company usage.',
         unknown: 'Unknown plan',
         empty: 'No plan information available.',
         statusLabel: 'Status: {{status}}',
         trialEnds: 'Trial until {{date}}',
         renews: 'Renews on {{date}}',
-      },
-      limits: {
-        maxEmployees: 'Employees',
       },
       security: {
         title: 'Security',
@@ -75,22 +78,56 @@ const en = {
         sessionsHint: 'Revoke suspicious or expired sessions.',
       },
       preferences: {
-        notifications: 'Alerts',
-        title: 'Notifications and alerts',
-        email: 'Email alerts',
-        emailHint: 'Receive operational and billing notifications.',
-        reminders: 'Time tracking reminders',
-        remindersHint: 'Remind collaborators about punches and breaks.',
-        reports: 'Automatic reports',
-        reportsHint: 'Send weekly timesheet summaries to managers.',
-        critical: 'Security',
-        criticalTitle: 'Admin access',
-        criticalDescription: 'Manage who can administer billing, plans, and sensitive settings.',
+        title: 'Preferences',
+        subtitle: 'Company timezone and language.',
+        helper: 'Applied to filters, times and exports.',
+        fields: {
+          timezone: 'Company timezone',
+          locale: 'Language',
+          timezonePlaceholder: 'Type to search and select',
+        },
+        actions: {
+          edit: 'Edit',
+          save: 'Save',
+          reload: 'Reload',
+        },
+        states: {
+          errorLoading: 'Could not load timezone.',
+          noTimezone: 'No timezone configured.',
+        },
+        toast: {
+          successTitle: 'Timezone updated',
+          successDescription: 'The company now uses the new timezone.',
+          errorTitle: 'Save failed',
+          errorDescription: 'Could not save timezone.',
+        },
       },
-      actions: {
-        manage: 'Manage',
-        view: 'View',
-        manageAccess: 'Manage access',
+      security: {
+        title: 'Security / Compliance',
+        subtitle: 'Essential account controls.',
+        helper: 'Values returned by the API.',
+        fields: {
+          twoFactor: '2FA enabled',
+          lastLogin: 'Last login',
+          logRetention: 'Log retention (days)',
+          exportEnabled: 'Export enabled',
+        },
+        labels: {
+          enabled: 'Enabled',
+          disabled: 'Disabled',
+        },
+      },
+      advanced: {
+        title: 'Advanced details',
+        subtitle: 'Technical IDs and URLs',
+        helper: 'Use only when you need to copy billing info.',
+        planSlug: 'Plan slug',
+        stripeCustomerId: 'Stripe Customer ID',
+        stripeSubscriptionId: 'Stripe Subscription ID',
+        customerPortal: 'Customer portal',
+        checkoutUrl: 'Checkout URL',
+        subscriptionStatus: 'Subscription status',
+        nextAction: 'Next action',
       },
     },
     access: {
