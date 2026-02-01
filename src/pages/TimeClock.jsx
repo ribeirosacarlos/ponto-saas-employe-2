@@ -567,7 +567,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         .filter((entry) => entry?.clocked_at)
         .sort((a, b) => new Date(b.clocked_at).getTime() - new Date(a.clocked_at).getTime())
 
-      return sorted.slice(0, 5).map((entry) => {
+      return sorted.slice(0, 3).map((entry) => {
         const date = new Date(entry.clocked_at)
         const day = formatDate(date, {
           weekday: 'long',
