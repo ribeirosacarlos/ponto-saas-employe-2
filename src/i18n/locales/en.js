@@ -1,4 +1,4 @@
-// src/i18n/locales/en.js
+﻿// src/i18n/locales/en.js
 const en = {
   translation: {
     common: {
@@ -64,53 +64,18 @@ const en = {
         title: 'Plan summary',
         subtitle: 'Subscription status and company usage.',
         unknown: 'Unknown plan',
-        status: {
-          unknown: 'No status',
-        },
-        labels: {
-          price: 'Price',
-          interval: 'Interval',
-          month: 'Month',
-          year: 'Year',
-          oneTime: 'One-time',
-          unknownInterval: 'Interval not provided',
-          noPrice: 'No price',
-          trialEnds: 'Trial ends',
-          nextCharge: 'Next charge',
-          periodEnds: 'Ends on',
-          periodFallback: 'Period',
-          noDate: 'No date',
-          limits: 'Plan limits',
-          nextAction: 'Next action',
-          trialDays: 'Trial days remaining',
-          billingDays: 'Days until billing',
-          cancelAtPeriodEnd: 'Cancel at period end',
-          endsAt: 'Subscription ends on',
-          yes: 'Yes',
-          no: 'No',
-        },
-        usage: {
-          withLimit: '{{current}} of {{limit}} seats',
-          withoutLimit: '{{current}} seats',
-          overLimit: 'Over limit',
-          percent: '{{percent}}% of capacity',
-        },
-        actions: {
-          portal: 'Customer portal',
-          portalDisabled: 'Portal unavailable',
-          viewDetails: 'View details',
-          hideDetails: 'Hide details',
-        },
+        empty: 'No plan information available.',
+        statusLabel: 'Status: {{status}}',
+        trialEnds: 'Trial until {{date}}',
+        renews: 'Renews on {{date}}',
       },
-      company: {
-        title: 'Company',
-        subtitle: 'Basic organization data.',
-        unknown: 'Company',
-        fields: {
-          name: 'Name',
-          country: 'Country',
-          createdAt: 'Created at',
-        },
+      security: {
+        title: 'Security',
+        heading: 'Accounts and access',
+        mfa: 'Two-factor authentication',
+        mfaHint: 'Require MFA for admins and managers.',
+        sessions: 'Active sessions',
+        sessionsHint: 'Revoke suspicious or expired sessions.',
       },
       preferences: {
         title: 'Preferences',
