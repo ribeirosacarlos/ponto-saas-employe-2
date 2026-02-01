@@ -1270,8 +1270,15 @@ const en = {
       labels: {
         duration: 'Day duration: {{value}}',
         noDuration: 'No calculated duration',
-        totalEntries: '{{count}} entries',
+        totalEntries_one: '{{count}} record',
+        totalEntries_other: '{{count}} records',
         timeFallback: '--:--',
+        emptyValue: '—',
+      },
+      table: {
+        headers: {
+          breakReturn: 'Back from break',
+        },
       },
     },
 

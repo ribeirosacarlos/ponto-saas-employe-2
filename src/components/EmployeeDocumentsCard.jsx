@@ -41,12 +41,14 @@ export function EmployeeDocumentsCard({
   return (
     <section className="flex flex-col gap-4 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
             {t('dashboardPage.documents.tag')}
           </p>
-          <h2 className="text-sm font-semibold">{t('dashboardPage.documents.title')}</h2>
-          <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
+          <h2 className="text-sm font-semibold break-words text-balance">
+            {t('dashboardPage.documents.title')}
+          </h2>
+          <p className="mt-1 text-[10px] text-muted-foreground break-words sm:text-[11px]">
             {t('dashboardPage.documents.subtitle')}
           </p>
         </div>
@@ -67,16 +69,20 @@ export function EmployeeDocumentsCard({
                 className="rounded-2xl border border-border bg-muted/60 px-3 py-3 shadow-inner sm:px-4 sm:py-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <span className={`flex h-10 w-10 items-center justify-center rounded-xl border ${tone.icon}`}>
                       <Icon className="h-5 w-5" />
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold">{section.title}</p>
-                      <p className="text-[11px] text-muted-foreground">{section.description}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold break-words">{section.title}</p>
+                      <p className="text-[11px] text-muted-foreground break-words">
+                        {section.description}
+                      </p>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${tone.badge}`}>
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[10px] font-semibold ${tone.badge}`}
+                  >
                     {t('dashboardPage.documents.total', { count: total })}
                   </span>
                 </div>
@@ -85,25 +91,27 @@ export function EmployeeDocumentsCard({
                   {displayItems.map((item) => (
                     <div
                       key={item.name}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background/90 px-3 py-2 shadow-sm"
+                      className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background/90 px-3 py-2 shadow-sm"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-semibold">{item.name}</p>
-                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                           {item.status ? (
                             <span
-                              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${tone.pill}`}
+                              className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 font-semibold ${tone.pill}`}
                             >
                               {item.status}
                             </span>
                           ) : null}
-                          {item.updatedAt ? <span className="truncate">{item.updatedAt}</span> : null}
+                          {item.updatedAt ? (
+                            <span className="truncate max-w-full">{item.updatedAt}</span>
+                          ) : null}
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => onAction?.(item)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/70 px-3 py-1.5 text-[11px] font-semibold text-foreground transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                        className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-full border border-border bg-muted/70 px-3 py-1.5 text-[11px] font-semibold text-foreground transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] sm:w-auto"
                       >
                         <Download className="h-4 w-4" />
                         <span>{item.actionLabel || t('dashboardPage.documents.defaultAction')}</span>

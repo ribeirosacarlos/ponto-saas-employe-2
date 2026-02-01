@@ -71,7 +71,12 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <span className={cn('inline-flex w-full', isSubmitting && 'pointer-events-none opacity-80')}>
+        <span
+          className={cn(
+            'inline-flex w-full min-w-0 sm:w-auto',
+            isSubmitting && 'pointer-events-none opacity-80',
+          )}
+        >
           {trigger}
         </span>
       </DialogTrigger>

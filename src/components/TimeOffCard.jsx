@@ -40,17 +40,19 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
 
   return (
     <section className="flex flex-col gap-4 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5">
-      <header className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
               {t('dashboardPage.timeOff.tag')}
             </p>
-            <h2 className="text-sm font-semibold">{t('dashboardPage.timeOff.title')}</h2>
-            <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+            <h2 className="text-sm font-semibold break-words text-balance">
+              {t('dashboardPage.timeOff.title')}
+            </h2>
+            <p className="mt-0.5 text-[10px] text-muted-foreground break-words sm:text-[11px]">
               {t('dashboardPage.timeOff.subtitle')}
             </p>
           </div>
@@ -58,7 +60,7 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
         <ViewAllButton label={t('dashboardPage.common.viewAll')} onClick={() => onViewAll?.()} />
       </header>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
         <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center shrink-0">
           <div className="absolute inset-0 rounded-full border-[9px] border-border/50 sm:border-[10px]" />
           <div
@@ -72,41 +74,43 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
           </div>
         </div>
 
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
-            <div className="flex items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
               <CalendarCheck2 className="h-4 w-4 text-primary" />
               {t('dashboardPage.timeOff.available')}
             </div>
-            <span className="text-[12px] font-semibold sm:text-[13px]">
+            <span className="text-[12px] font-semibold break-words sm:text-[13px] sm:text-right">
               {availableDaysLabel}
               {availableDaysLabel !== '--' ? ` ${t('dashboardPage.timeOff.availableSuffix')}` : ''}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
-            <div className="flex items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
               <Plane className="h-4 w-4 text-primary" />
               {t('dashboardPage.timeOff.nextVacation')}
             </div>
-            <span className="text-[12px] font-semibold sm:text-[13px]">{nextVacationLabel}</span>
+            <span className="text-[12px] font-semibold break-words sm:text-[13px] sm:text-right">
+              {nextVacationLabel}
+            </span>
           </div>
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
-            <div className="flex items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
               <Timer className="h-4 w-4 text-primary" />
               {t('dashboardPage.timeOff.status')}
             </div>
             <span
               className={cn(
-                'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold',
+                'inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-[11px] font-semibold break-words text-center',
                 statusClass,
               )}
             >
               {statusDisplayLabel}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-[12px]">
-            <span>{t('dashboardPage.timeOff.absences')}</span>
-            <span className="font-semibold text-foreground">{absencesLabel}</span>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-[12px]">
+            <span className="break-words">{t('dashboardPage.timeOff.absences')}</span>
+            <span className="font-semibold text-foreground break-words">{absencesLabel}</span>
           </div>
         </div>
       </div>

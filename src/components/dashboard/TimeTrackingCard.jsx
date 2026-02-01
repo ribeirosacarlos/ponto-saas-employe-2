@@ -160,12 +160,14 @@ export function TimeTrackingCard({ onOpenHistory }) {
   return (
     <section className="flex flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
             {t('dashboardPage.timeTracking.tag')}
           </p>
-          <h2 className="text-sm font-semibold">{t('dashboardPage.timeTracking.title')}</h2>
-          <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
+          <h2 className="text-sm font-semibold break-words text-balance">
+            {t('dashboardPage.timeTracking.title')}
+          </h2>
+          <p className="mt-1 text-[10px] text-muted-foreground break-words sm:text-[11px]">
             {t('dashboardPage.timeTracking.subtitle', {
               total: monthlyStats.totalHoursLabel,
               extra: monthlyStats.extraHoursLabel,
@@ -189,11 +191,13 @@ export function TimeTrackingCard({ onOpenHistory }) {
           recentDays.map((day) => (
             <div
               key={day.dateKey}
-              className="flex items-center justify-between rounded-2xl border border-border bg-muted/70 px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 sm:flex-nowrap"
             >
-              <div className="flex flex-col">
-                <span className="font-medium">{formatDayLabel(day.dateKey)}</span>
-                <span className="text-muted-foreground">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="font-medium break-words text-balance">
+                  {formatDayLabel(day.dateKey)}
+                </span>
+                <span className="text-muted-foreground break-words">
                   {t('dashboardPage.timeTracking.interval', {
                     entryLabel: t('dashboardPage.timeTracking.entryLabel'),
                     exitLabel: t('dashboardPage.timeTracking.exitLabel'),
@@ -202,7 +206,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
                   })}
                 </span>
               </div>
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex shrink-0 flex-col items-end gap-1">
                 <span className="text-[10px] font-semibold sm:text-[11px]">
                   {formatDuration(day.totalMinutes)}
                 </span>
@@ -216,13 +220,13 @@ export function TimeTrackingCard({ onOpenHistory }) {
           ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+      <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleViewFullHistory}
-          className="h-10 rounded-full border-border bg-background/80 px-3 text-[11px] font-semibold sm:text-xs"
+          className="h-10 w-full justify-center rounded-full border-border bg-background/80 px-3 text-[11px] font-semibold sm:w-auto sm:text-xs"
         >
           <Clock3 className="h-4 w-4 text-primary" />
           {t('dashboardPage.timeTracking.actions.fullHistory')}
@@ -231,7 +235,10 @@ export function TimeTrackingCard({ onOpenHistory }) {
           onSubmit={handleAdjustment}
           isSubmitting={sendingAdjustment}
           trigger={
-            <Button type="button" className="h-10 rounded-full px-4 text-[11px] font-semibold sm:text-xs">
+            <Button
+              type="button"
+              className="h-10 w-full justify-center rounded-full px-4 text-[11px] font-semibold sm:w-auto sm:text-xs"
+            >
               {t('dashboardPage.timeTracking.actions.adjust')}
             </Button>
           }

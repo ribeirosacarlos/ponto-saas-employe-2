@@ -44,7 +44,7 @@ export function DesktopSidebar({
           aria-label={collapseLabel}
           onClick={onToggleCollapse}
           className={cn(
-            'absolute right-1.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-foreground transition hover:bg-muted',
+            'absolute right-2 top-1/2 -translate-y-1/2 translate-x-[8px] flex h-8 w-8 items-center justify-center rounded-full text-foreground transition hover:bg-muted',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
             collapsed ? 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto' : '',
           )}
