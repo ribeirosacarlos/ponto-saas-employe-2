@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button'
 import { PlanSummaryCard } from '../components/settings/PlanSummaryCard'
 import { CompanyCard } from '../components/settings/CompanyCard'
 import { PreferencesCard } from '../components/settings/PreferencesCard'
-import { SecurityCard } from '../components/settings/SecurityCard'
+// import { SecurityCard } from '../components/settings/SecurityCard'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { useAuthStore } from '../store/useAuth'
 import { getCapabilitiesFromRoles } from '../auth/acl'
@@ -64,6 +64,7 @@ export default function SettingsPage() {
   const links = overview.links || {}
   const hasPortal = Boolean(links.customer_portal_url)
   const hasCheckout = Boolean(links.checkout_url)
+  const manageTarget = links.checkout_url || links.customer_portal_url || '/billing/subscribe'
 
   const hasContent = useMemo(
     () =>
@@ -79,7 +80,12 @@ export default function SettingsPage() {
 
   const openExternal = (url) => {
     if (!url || typeof window === 'undefined') return
-    window.open(url, '_blank', 'noopener,noreferrer')
+    const isExternal = /^https?:\/\//i.test(url)
+    if (isExternal) {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } else {
+      window.location.assign(url)
+    }
   }
 
   return (
@@ -113,11 +119,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 size="sm"
-                disabled={!hasPortal}
-                onClick={() => openExternal(links.customer_portal_url)}
-                title={
-                  hasPortal ? undefined : t('settingsPage.header.actions.portalUnavailable')
-                }
+                onClick={() => openExternal(manageTarget)}
               >
                 {t('settingsPage.header.actions.manageSubscription')}
               </Button>
@@ -152,7 +154,7 @@ export default function SettingsPage() {
 
             <PlanSummaryCard billing={overview.billing} usage={overview.usage} links={links} />
 
-            <SecurityCard security={overview.security} compliance={overview.compliance} />
+            {/* <SecurityCard security={overview.security} compliance={overview.compliance} /> */}
           </div>
         )}
       </PageContainer>

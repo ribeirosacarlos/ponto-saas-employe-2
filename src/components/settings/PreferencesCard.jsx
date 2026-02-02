@@ -142,9 +142,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
         {!isEditing ? (
           <>
             <DetailItem label={t('settingsPage.preferences.fields.timezone')} value={timezone || t('settingsPage.preferences.states.noTimezone')} />
-            {company?.locale ? (
-              <DetailItem label={t('settingsPage.preferences.fields.locale')} value={company.locale} />
-            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
