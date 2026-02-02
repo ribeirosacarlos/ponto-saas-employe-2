@@ -393,29 +393,20 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     if (!hasManagementAccess) {
       return (
         <div className="rounded-2xl border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground">
-          {t('adminShiftsPage.states.noPermission')}
-        </div>
-      )
-    }
-
-    if (loading) {
-      return (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`shift-skeleton-${index}`}
-              className="animate-pulse rounded-2xl border border-border/70 bg-card/80 p-4"
-            >
-              <div className="h-5 w-1/3 rounded-full bg-muted" />
-              <div className="mt-3 h-3 w-1/2 rounded-full bg-muted/80" />
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <div className="h-10 rounded-xl bg-muted/70" />
-                <div className="h-10 rounded-xl bg-muted/70" />
-                <div className="h-10 rounded-xl bg-muted/70" />
-                <div className="h-10 rounded-xl bg-muted/70" />
-              </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base font-semibold text-foreground">
+                {t('adminShiftsPage.states.emptyTitle')}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t('adminShiftsPage.states.emptyDescription')}
+              </p>
             </div>
-          ))}
+            <Button onClick={handleOpenCreate}>
+              <Plus className="h-4 w-4" />
+              {t('adminShiftsPage.actions.create')}
+            </Button>
+          </div>
         </div>
       )
     }
@@ -482,10 +473,6 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
             >
               <RefreshCcw className={cn('h-4 w-4 text-primary', loading && 'animate-spin')} />
               {t('adminShiftsPage.actions.refresh')}
-            </Button>
-            <Button onClick={handleOpenCreate} className="rounded-full px-4 text-sm">
-              <Plus className="h-4 w-4" />
-              {t('adminShiftsPage.actions.create')}
             </Button>
           </>
         }
@@ -695,4 +682,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     </PageContainer>
   )
 }
+
+
+
 

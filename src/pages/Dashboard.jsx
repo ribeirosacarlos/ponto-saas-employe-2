@@ -61,11 +61,6 @@ export default function Dashboard({
   const { isAbsentToday, absenceToday } = useAbsenceStatus()
   const { formatDate, formatTime } = useDateTime()
 
-  const todayLabel = useMemo(() => {
-    const label = formatDate(new Date(), { day: '2-digit', month: 'long' })
-    return label.charAt(0).toUpperCase() + label.slice(1)
-  }, [formatDate])
-
   const [currentTime, setCurrentTime] = useState(() => new Date())
 
   useEffect(() => {
@@ -74,12 +69,40 @@ export default function Dashboard({
     return () => clearInterval(interval)
   }, [])
 
+  const currentDateLabel = useMemo(() => {
+    const rawLabel = formatDate(currentTime, {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+
+    if (!rawLabel || rawLabel === '-') return rawLabel
+
+    const parts = rawLabel.split(' ')
+    let monthIndex = -1
+
+    if (parts.length >= 5 && parts[1]?.toLowerCase() === 'de') {
+      monthIndex = 2
+    } else if (parts.length >= 3) {
+      monthIndex = 1
+    }
+
+    if (monthIndex >= 0 && parts[monthIndex]) {
+      const month = parts[monthIndex]
+      parts[monthIndex] = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
+      return parts.join(' ')
+    }
+
+    return rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1)
+  }, [currentTime, formatDate])
+
   const currentTimeLabel = formatTime(currentTime, {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: false,
   })
+
+  const dateTimeLabel = `${currentDateLabel} • ${currentTimeLabel}`
 
   const [documentSections, setDocumentSections] = useState([])
   const [documentsLoading, setDocumentsLoading] = useState(false)
@@ -230,11 +253,35 @@ export default function Dashboard({
     setTimeOffLoading(true)
     try {
       const data = await getEmployeeVacationBalance()
+      const statusCandidates = [
+        data?.status,
+        data?.state,
+        data?.request_status,
+        data?.requestStatus,
+        data?.vacation_status,
+        data?.vacationStatus,
+        data?.last_request?.status,
+        data?.lastRequest?.status,
+        data?.next_vacation?.status,
+        data?.nextVacation?.status,
+      ]
+      const statusKey = statusCandidates.find(
+        (value) => value !== undefined && value !== null && value !== '',
+      )
+      const statusLabel =
+        data?.status_label ??
+        data?.statusLabel ??
+        data?.request_status_label ??
+        data?.requestStatusLabel ??
+        data?.vacation_status_label ??
+        data?.vacationStatusLabel ??
+        null
       setTimeOffSummary({
         availableDays: data?.available ?? data?.balance ?? '--',
         nextVacation: data?.policy?.name || '--',
         absences: data?.used ?? 0,
-        statusKey: 'approved',
+        statusKey: statusKey ? String(statusKey).toLowerCase() : 'not_requested',
+        status: statusLabel || undefined,
       })
     } catch (err) {
       const message =
@@ -369,28 +416,25 @@ export default function Dashboard({
       <PageContainer className="py-5 sm:py-6 space-y-6">
         <AppTopBar
           icon={<LayoutDashboard className="h-5 w-5" />}
-          eyebrow={t('dashboardPage.badges.today')}
+          meta={dateTimeLabel}
           title={t('dashboardPage.title')}
-          subtitle={t('dashboardPage.todayPill', { date: todayLabel, time: currentTimeLabel })}
           filters={
             <div className="flex w-full min-w-0 items-center gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={t('dashboardPage.searchPlaceholder')}
-                  className="w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                  className="h-full w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
+              <button
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:bg-background hover:text-foreground"
+                type="button"
+              >
+                <Bell className="h-4 w-4" />
+              </button>
             </div>
-          }
-          rightMeta={
-            <button
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:bg-background hover:text-foreground"
-              type="button"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
           }
         />
 

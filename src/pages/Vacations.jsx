@@ -291,170 +291,33 @@ export default function Vacations() {
           eyebrow={t('vacationsPage.tag', 'Time off')}
           title={t('vacationsPage.title', 'Ferias e ausencias')}
           subtitle={t('vacationsPage.subtitle', 'Acompanhe saldo, solicitacoes e ausencias recentes.')}
-          actions={
-            <Button
-              type="button"
-              className="rounded-full px-4 text-sm"
-              onClick={() => setRequestOpen(true)}
-            >
-              <CalendarRange className="h-4 w-4" />
-              {t('vacationsPage.actions.request', 'Solicitar ferias')}
-            </Button>
-          }
         />
 
         {error ? (
-            <section className="rounded-2xl border border-rose-200/70 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
-              <p className="font-semibold">{t('vacationsPage.states.errorTitle', 'Algo deu errado')}</p>
-              <p className="mt-1">{error}</p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-3 rounded-full px-4"
-                onClick={refreshAll}
-              >
-                {t('vacationsPage.actions.retry', 'Tentar novamente')}
-              </Button>
-            </section>
-          ) : null}
-
-          <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                    {t('vacationsPage.balance.tag', 'Saldo')}
-                  </p>
-                  <h2 className="text-lg font-semibold">
-                    {t('vacationsPage.balance.title', 'Saldo disponivel')}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {t('vacationsPage.balance.subtitle', 'Atualizado conforme politica da empresa.')}
-                  </p>
-                </div>
-                {balanceLoading ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t('vacationsPage.balance.loading', 'Carregando')}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-[120px_1fr] md:items-center">
-                <div className="relative flex h-24 w-24 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-[10px] border-border/40" />
-                  <div className="absolute inset-0 rotate-[135deg] rounded-full border-[10px] border-primary border-b-transparent border-l-transparent border-r-transparent" />
-                  <div className="relative flex h-12 w-12 flex-col items-center justify-center rounded-full bg-background text-foreground shadow-sm">
-                    <span className="text-[9px] uppercase tracking-wide text-muted-foreground">
-                      {t('vacationsPage.balance.days', 'Dias')}
-                    </span>
-                    <span className="text-sm font-semibold">
-                      {balance?.available ?? balance?.available_days ?? '--'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/70 px-3 py-2">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {t('vacationsPage.balance.available', 'Saldo disponivel')}
-                    </span>
-                    <span className="text-sm font-semibold">
-                      {balance?.available ?? balance?.available_days ?? '--'} {t('vacationsPage.balance.suffix', 'dias')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/70 px-3 py-2">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {t('vacationsPage.balance.used', 'Usados')}
-                    </span>
-                    <span className="text-sm font-semibold">{balance?.used ?? '--'}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/70 px-3 py-2">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {t('vacationsPage.balance.accrued', 'Adquiridos')}
-                    </span>
-                    <span className="text-sm font-semibold">{balance?.accrued ?? '--'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                    {t('vacationsPage.next.tag', 'Proximas ferias')}
-                  </p>
-                  <h2 className="text-lg font-semibold">
-                    {t('vacationsPage.next.title', 'Proximo periodo')}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {t('vacationsPage.next.subtitle', 'Solicitacao mais proxima encontrada.')}
-                  </p>
-                </div>
-                {upcomingVacation
-                  ? renderStatusPill(upcomingVacation.status)
-                  : (
-                    <span className="rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                      {t('vacationsPage.next.statusEmpty', 'Sem solicitacao')}
-                    </span>
-                  )}
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted/70 px-4 py-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <CalendarDays className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {upcomingVacation?.startDate
-                        ? `${formatDateLabel(upcomingVacation.startDate, i18n.language)} - ${formatDateLabel(
-                            upcomingVacation.endDate,
-                            i18n.language,
-                          )}`
-                        : t('vacationsPage.next.empty', 'Nenhuma ferias agendada')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {upcomingVacation?.requestedDays
-                        ? t('vacationsPage.next.days', '{{count}} dias solicitados', {
-                            count: upcomingVacation.requestedDays,
-                          })
-                        : t('vacationsPage.next.daysEmpty', 'Sem periodo definido')}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full rounded-full border-border bg-background/80"
-                  onClick={() => setRequestOpen(true)}
-                >
-                  {t('vacationsPage.actions.request', 'Solicitar ferias')}
-                </Button>
-              </div>
-            </div>
+          <section className="rounded-2xl border border-rose-200/70 bg-rose-500/10 px-4 py-4 text-sm text-rose-600 shadow-[0_18px_50px_-38px_rgba(255,82,82,0.25)] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
+            <p className="font-semibold">{t('vacationsPage.states.errorTitle', 'Algo deu errado')}</p>
+            <p className="mt-1">{error}</p>
           </section>
+        ) : null}
 
-          <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
-              <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                    {t('vacationsPage.history.tag', 'Historico')}
-                  </p>
-                  <h2 className="text-lg font-semibold">
-                    {t('vacationsPage.history.title', 'Solicitacoes de ferias')}
-                  </h2>
-                </div>
-                {vacationsLoading ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t('vacationsPage.history.loading', 'Carregando')}
-                  </span>
-                ) : null}
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  {t('vacationsPage.history.tag', 'Historico')}
+                </p>
+                <h2 className="text-lg font-semibold">
+                  {t('vacationsPage.history.title', 'Solicitacoes de ferias')}
+                </h2>
               </div>
+              {vacationsLoading ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t('vacationsPage.history.loading', 'Carregando')}
+                </span>
+              ) : null}
+            </div>
 
               <div className="mt-4 space-y-3">
                 {vacationsLoading ? (
@@ -529,23 +392,23 @@ export default function Vacations() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
-              <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                    {t('vacationsPage.absences.tag', 'Ausencias')}
-                  </p>
-                  <h2 className="text-lg font-semibold">
-                    {t('vacationsPage.absences.title', 'Ausencias recentes')}
-                  </h2>
-                </div>
-                {absencesLoading ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t('vacationsPage.absences.loading', 'Carregando')}
-                  </span>
-                ) : null}
+          <div className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  {t('vacationsPage.absences.tag', 'Ausencias')}
+                </p>
+                <h2 className="text-lg font-semibold">
+                  {t('vacationsPage.absences.title', 'Ausencias recentes')}
+                </h2>
               </div>
+              {absencesLoading ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t('vacationsPage.absences.loading', 'Carregando')}
+                </span>
+              ) : null}
+            </div>
 
               <div className="mt-4 space-y-3">
                 {absencesLoading ? (
@@ -593,8 +456,8 @@ export default function Vacations() {
                   ))
                 )}
               </div>
-            </div>
-          </section>
+          </div>
+        </section>
       </PageContainer>
 
       <Dialog
@@ -699,4 +562,5 @@ export default function Vacations() {
     </div>
   )
 }
+
 
