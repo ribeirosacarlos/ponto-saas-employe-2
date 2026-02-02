@@ -550,7 +550,7 @@ export default function AdminDocuments() {
           ))}
         </div>
 
-        <section className="grid gap-4 rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
+        <section className="grid gap-4 overflow-hidden rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
           <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -579,36 +579,18 @@ export default function AdminDocuments() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{meta?.total ? t('documentsPage.admin.listCount', { count: meta.total }) : ''}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page <= 1 || loading}
-                onClick={() => handlePageChange(page - 1)}
-              >
-                {t('documentsPage.admin.pagination.previous')}
-              </Button>
-              <span className="text-foreground">
-                {meta.currentPage} / {meta.lastPage || 1}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={meta.lastPage ? page >= meta.lastPage : documents.length < meta.perPage}
-                onClick={() => handlePageChange(page + 1)}
-              >
-                {t('documentsPage.admin.pagination.next')}
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {meta?.total ? (
+              <span>{t('documentsPage.admin.listCount', { count: meta.total })}</span>
+            ) : null}
+            <span className="ml-auto rounded-full border border-border/70 bg-background/70 px-3 py-1 text-xs text-foreground">
+              {meta.currentPage} / {meta.lastPage || 1}
+            </span>
           </div>
-          <div className="hidden md:block rounded-[24px] border border-border/70 bg-card/95 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.55)]">
-            <div className="overflow-x-auto">
-              <div className="min-w-[1200px]">
-                <div className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_160px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="hidden md:block overflow-hidden rounded-[24px] border border-border/70 bg-card/95 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.55)]">
+            <div className="w-full min-w-0 overflow-x-auto">
+              <div className="min-w-[980px] lg:min-w-[1100px] xl:min-w-[1240px]">
+                <div className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   <span>{t('documentsPage.admin.table.headers.employee')}</span>
                   <span>{t('documentsPage.admin.table.headers.title')}</span>
                   <span>{t('documentsPage.admin.table.headers.category')}</span>
@@ -621,7 +603,7 @@ export default function AdminDocuments() {
                 <div className="divide-y divide-border/60">
                   {loading
                     ? skeletonRows.map((key) => (
-                        <div key={key} className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_160px] gap-3 px-4 py-4">
+                        <div key={key} className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] gap-3 px-4 py-4">
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
@@ -657,18 +639,18 @@ export default function AdminDocuments() {
                       return (
                         <div
                           key={doc.id}
-                          className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_160px] items-center gap-3 px-4 py-4 text-sm"
+                          className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] items-center gap-3 px-4 py-4 text-sm"
                         >
-                          <div className="space-y-1">
-                            <p className="font-semibold truncate">{employeeLabel}</p>
+                          <div className="min-w-0 space-y-1">
+                            <p className="truncate font-semibold">{employeeLabel}</p>
                             <p className="text-xs text-muted-foreground">
                               {t('documentsPage.admin.labels.updatedAt', {
                                 date: formatDate(doc.updatedAt, i18n.language),
                               })}
                             </p>
                           </div>
-                          <span className="truncate">{doc.title}</span>
-                          <span className="truncate">{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
+                          <span className="block min-w-0 truncate">{doc.title}</span>
+                          <span className="block min-w-0 truncate">{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
                           <span>{priorityLabel}</span>
                           <span className={cn('text-xs font-semibold', signatureTone)}>{signatureLabel}</span>
                           <span className="text-xs text-muted-foreground">{lastViewLabel}</span>
