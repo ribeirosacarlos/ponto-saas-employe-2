@@ -268,7 +268,6 @@ export default function App() {
       }
       try {
         const data = await getWorkedToday()
-        console.log('[App] /v1/employee/worked-today response:', data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
 import { getWorkedToday } from '../../lib/api'
@@ -45,7 +46,6 @@ export function PunchSummaryCard({
       }
       try {
         const data = await getWorkedToday()
-        console.log('[PunchSummaryCard] worked-today response:', data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??

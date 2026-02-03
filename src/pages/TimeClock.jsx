@@ -322,13 +322,11 @@ export default function TimeClock({ onContinueToDashboard }) {
       }
       try {
         const data = await getWorkedToday()
-        console.log('[TimeClock] worked-today response:', data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??
           (data?.workedSeconds ?? data?.worked_seconds) / 60
         const label = formatMinutesToLabel(minutes)
-        console.log('[TimeClock] computed label:', { minutes, label })
         if (!active) return
         setWorkedTodayLabel(label)
       } catch (error) {

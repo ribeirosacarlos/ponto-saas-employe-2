@@ -62,7 +62,7 @@ export async function getEmployeeOvertimeBalance(employeeId, { from, to, include
   if (to) params.to = to
   if (includeDays !== undefined) params.include_days = includeDays ? 1 : 0
 
-  const { data } = await api.get(`/v1/admin/employees/${employeeId}/overtime`, { params })
+  const { data } = await api.get(`/v1/employee/${employeeId}/overtime`, { params })
   const payload = data?.data ?? data ?? {}
 
   const getMinutesFromSource = (source) => {

@@ -68,8 +68,7 @@ export async function getEmployeeEntries({
 
   const fetchPage = async (pageValue) => {
     const params = buildParams(pageValue)
-    
-    console.log('[employee] getEmployeeEntries fetchPage', { pageValue, params })
+
     const { data } = await api.get('/v1/employee/entries', { params })
     return { data, pageValue }
   }
