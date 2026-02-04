@@ -8,6 +8,7 @@ import { useClocking } from '../../features/ponto/useClocking'
 import { requestAdjustment } from '../../lib/api'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
+import { ViewAllButton } from '../ViewAllButton'
 
 const statusTone = {
   normal:
@@ -160,20 +161,26 @@ export function TimeTrackingCard({ onOpenHistory }) {
   return (
     <section className="flex flex-col gap-3 rounded-[24px] border border-border bg-card px-4 py-4 shadow-[0_14px_35px_rgba(62,82,152,0.08)] transition hover:shadow-[0_18px_45px_rgba(62,82,152,0.12)] sm:rounded-[28px] sm:px-6 sm:py-5 sm:gap-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
-            {t('dashboardPage.timeTracking.tag')}
-          </p>
-          <h2 className="text-sm font-semibold break-words text-balance">
-            {t('dashboardPage.timeTracking.title')}
-          </h2>
-          <p className="mt-1 text-[10px] text-muted-foreground break-words sm:text-[11px]">
-            {t('dashboardPage.timeTracking.subtitle', {
-              total: monthlyStats.totalHoursLabel,
-              extra: monthlyStats.extraHoursLabel,
-            })}
-          </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <Clock3 className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
+              {t('dashboardPage.timeTracking.tag')}
+            </p>
+            <h2 className="text-sm font-semibold break-words text-balance">
+              {t('dashboardPage.timeTracking.title')}
+            </h2>
+            <p className="mt-1 text-[10px] text-muted-foreground break-words sm:text-[11px]">
+              {t('dashboardPage.timeTracking.subtitle', {
+                total: monthlyStats.totalHoursLabel,
+                extra: monthlyStats.extraHoursLabel,
+              })}
+            </p>
+          </div>
         </div>
+        <ViewAllButton label={t('dashboardPage.common.viewAll')} onClick={handleViewFullHistory} />
       </header>
 
       <div className="space-y-2 text-[11px] sm:text-[12px]">
@@ -220,17 +227,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
           ))}
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleViewFullHistory}
-          className="h-10 w-full justify-center rounded-full border-border bg-background/80 px-3 text-[11px] font-semibold sm:w-auto sm:text-xs"
-        >
-          <Clock3 className="h-4 w-4 text-primary" />
-          {t('dashboardPage.timeTracking.actions.fullHistory')}
-        </Button>
+      <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-end">
         <AjusteModal
           onSubmit={handleAdjustment}
           isSubmitting={sendingAdjustment}

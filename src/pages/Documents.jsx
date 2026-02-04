@@ -1,59 +1,42 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Download, Eye, FileText, Plus, RefreshCcw, Trash2, Upload } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Download, Eye, FileText, PenLine, RefreshCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { Textarea } from '../components/ui/textarea'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { cn } from '../lib/utils'
 import { useToast } from '../components/ui/use-toast'
 import {
-  deleteDocument,
   downloadDocument,
   listMyDocuments,
-  resendDocument,
-  uploadDocuments,
   fetchDocumentBlob,
+  trackDocumentSignature,
+  trackDocumentView,
 } from '../services/documentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 
 const CATEGORY_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'payroll', label: 'Holerites' },
-  { value: 'courses', label: 'Cursos' },
-  { value: 'personal', label: 'Pessoais' },
-  { value: 'others', label: 'Outros' },
+  { value: 'all', labelKey: 'documentsPage.tabs.all' },
+  { value: 'payroll', labelKey: 'documentsPage.tabs.payroll' },
+  { value: 'courses', labelKey: 'documentsPage.tabs.courses' },
+  { value: 'personal', labelKey: 'documentsPage.tabs.personal' },
+  { value: 'others', labelKey: 'documentsPage.tabs.others' },
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'pending', label: 'Pendente' },
-  { value: 'review', label: 'Em revisão' },
-  { value: 'available', label: 'Disponível' },
-  { value: 'expired', label: 'Vencido' },
+  { value: 'all', labelKey: 'documentsPage.filters.segmented.all' },
+  { value: 'pending', labelKey: 'documentsPage.status.pending' },
+  { value: 'review', labelKey: 'documentsPage.status.review' },
+  { value: 'available', labelKey: 'documentsPage.status.available' },
+  { value: 'expired', labelKey: 'documentsPage.status.expired' },
 ]
-
 const STATUS_TONES = {
   available: 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
   pending: 'border-amber-200/70 bg-amber-500/10 text-amber-700',
   review: 'border-sky-200/70 bg-sky-500/10 text-sky-700',
   expired: 'border-rose-200/70 bg-rose-500/10 text-rose-700',
 }
-
-const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']
-const MAX_FILE_SIZE = 5 * 1024 * 1024
-
 const skeletonRows = Array.from({ length: 5 }).map((_, i) => i)
 
 function Badge({ status, children }) {
@@ -64,17 +47,8 @@ function Badge({ status, children }) {
     </span>
   )
 }
-
-function FileInputHint({ size, allowed }) {
-  return (
-    <p className="text-[11px] text-muted-foreground">
-      Máx. {size} • {allowed}
-    </p>
-  )
-}
-
 const formatDate = (value, locale = 'pt-BR') => {
-  if (!value) return '—'
+  if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return String(value)
   return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
@@ -91,23 +65,13 @@ export default function Documents() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [uploadOpen, setUploadOpen] = useState(false)
-  const [resendOpen, setResendOpen] = useState(false)
-  const [resendTarget, setResendTarget] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [resending, setResending] = useState(false)
-
-  const [uploadForm, setUploadForm] = useState({ category: '', notes: '', files: [] })
-  const [resendFile, setResendFile] = useState(null)
+  const [signingId, setSigningId] = useState(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewMime, setPreviewMime] = useState('')
   const [selectedDocument, setSelectedDocument] = useState(null)
-
-  const fileInputRef = useRef(null)
-  const resendInputRef = useRef(null)
 
   const searchTerm = filters.search
 
@@ -129,10 +93,11 @@ export default function Documents() {
         lastPage: responseMeta.lastPage || 1,
       })
     } catch (err) {
-      const message = err?.response?.data?.message || err.message || 'Não foi possível carregar documentos.'
+      const message =
+        err?.response?.data?.message || err.message || t('documentsPage.employee.toasts.loadErrorDescription')
       setError(message)
       toast({
-        title: 'Erro ao carregar',
+        title: t('documentsPage.employee.toasts.loadErrorTitle'),
         description: message,
         variant: 'destructive',
       })
@@ -154,8 +119,8 @@ export default function Documents() {
 
   const filteredCountLabel = useMemo(() => {
     if (!meta?.total) return ''
-    return `${meta.total} itens`
-  }, [meta])
+    return t('documentsPage.employee.listCount', { count: meta.total })
+  }, [meta, t])
 
   const handlePageChange = (nextPage) => {
     if (nextPage < 1 || (meta.lastPage && nextPage > meta.lastPage)) return
@@ -163,41 +128,36 @@ export default function Documents() {
     loadDocuments({ page: nextPage })
   }
 
-  const handleDelete = async (doc) => {
-    const confirmed = typeof window !== 'undefined' ? window.confirm('Deseja excluir este documento?') : true
-    if (!confirmed) return
-    try {
-      await deleteDocument(doc.id)
-      toast({ title: 'Documento excluído', description: doc.title })
-      loadDocuments({ page })
-    } catch (err) {
-      const status = err?.response?.status
-      const friendly =
-        status === 403 || status === 422
-          ? err?.response?.data?.message || 'Ação não permitida.'
-          : err?.message || 'Não foi possível excluir.'
-      toast({ title: 'Erro ao excluir', description: friendly, variant: 'destructive' })
-    }
+  const resolveDocumentError = (status, fallbackMessage, defaultKey) => {
+    if (status === 401) return t('documentsPage.employee.errors.sessionExpired')
+    if (status === 403) return t('documentsPage.employee.errors.noPermission')
+    if (status === 404) return t('documentsPage.employee.errors.notFound')
+    return fallbackMessage || t(defaultKey)
   }
-
   const handleDownload = async (doc) => {
     try {
-      await downloadDocument(doc.id, `${doc.title || 'documento'}.${doc.extension || 'pdf'}`)
+      await downloadDocument(
+        doc.id,
+        `${doc.title || t('documentsPage.employee.fileFallback')}.${doc.extension || 'pdf'}`,
+      )
     } catch (err) {
       toast({
-        title: 'Falha no download',
-        description: err?.response?.data?.message || err.message || 'Tente novamente.',
+        title: t('documentsPage.employee.toasts.downloadErrorTitle'),
+        description:
+          err?.response?.data?.message ||
+          err?.message ||
+          t('documentsPage.employee.toasts.downloadErrorDescription'),
         variant: 'destructive',
       })
     }
   }
-
   const handleView = (doc) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setSelectedDocument(doc)
     setPreviewOpen(true)
     setPreviewLoading(true)
     setPreviewError('')
+    trackDocumentView(doc.id).catch(() => {})
     fetchDocumentBlob(doc.id)
       .then(({ blob, mimeType }) => {
         const url = URL.createObjectURL(blob)
@@ -206,111 +166,50 @@ export default function Documents() {
       })
       .catch((err) => {
         const status = err?.response?.status
-        let message = err?.message || 'Não foi possível carregar o documento.'
-        if (status === 401) message = 'Sessão expirada. Faça login novamente.'
-        if (status === 403) message = 'Sem permissão para visualizar.'
-        if (status === 404) message = 'Arquivo não encontrado.'
+        const message = resolveDocumentError(
+          status,
+          err?.message,
+          'documentsPage.employee.errors.viewGeneric',
+        )
         setPreviewError(message)
-        toast({ title: 'Erro ao visualizar', description: message, variant: 'destructive' })
+        toast({
+          title: t('documentsPage.employee.toasts.viewErrorTitle'),
+          description: message,
+          variant: 'destructive',
+        })
       })
       .finally(() => setPreviewLoading(false))
   }
-
-  const validateFiles = (files, single = false) => {
-    if (!files || !files.length) {
-      toast({ title: 'Selecione arquivos', description: 'Envie ao menos um arquivo.' })
-      return false
-    }
-
-    const list = Array.from(files)
-    if (single && list.length > 1) {
-      toast({ title: 'Apenas um arquivo', description: 'Escolha somente um arquivo para reenviar.' })
-      return false
-    }
-
-    for (const file of list) {
-      if (!file || !file.name) {
-        toast({ title: 'Arquivo inválido', description: 'Selecione um arquivo válido.' })
-        return false
-      }
-      const ext = (file.name.split('.').pop() || '').toLowerCase()
-      if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        toast({
-          title: 'Extensão não permitida',
-          description: `${file.name} não é aceito. Tipos: ${ALLOWED_EXTENSIONS.join(', ')}`,
-          variant: 'destructive',
-        })
-        return false
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: 'Arquivo grande demais',
-          description: `${file.name} excede 5MB.`,
-          variant: 'destructive',
-        })
-        return false
-      }
-    }
-    return true
-  }
-
-  const submitUpload = async (event) => {
-    event?.preventDefault()
-    if (!validateFiles(uploadForm.files)) return
-    if (!uploadForm.category) {
-      toast({ title: 'Selecione a categoria', description: 'Categoria é obrigatória.', variant: 'destructive' })
-      return
-    }
-
-    const formData = new FormData()
-    uploadForm.files.forEach((file) => formData.append('files[]', file))
-    formData.append('category', uploadForm.category)
-    if (uploadForm.notes) formData.append('notes', uploadForm.notes)
-
-    setUploading(true)
+  const handleSign = async (doc) => {
+    if (!doc?.id) return
+    setSigningId(doc.id)
     try {
-      await uploadDocuments(formData)
-      toast({ title: 'Documento enviado', description: 'Enviamos seus arquivos para revisão.' })
-      setUploadOpen(false)
-      setUploadForm({ category: '', notes: '', files: [] })
-      loadDocuments({ page: 1 })
-      setPage(1)
+      await trackDocumentSignature(doc.id)
+      setDocuments((prev) =>
+        prev.map((item) =>
+          item.id === doc.id
+            ? {
+                ...item,
+                signatureStatus: 'signed',
+                signedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      )
+      toast({
+        title: t('documentsPage.employee.toasts.signSuccessTitle'),
+        description: t('documentsPage.employee.toasts.signSuccessDescription'),
+      })
     } catch (err) {
       toast({
-        title: 'Erro ao enviar',
-        description: err?.response?.data?.message || err.message || 'Tente novamente.',
+        title: t('documentsPage.employee.toasts.signErrorTitle'),
+        description: err?.message || t('documentsPage.employee.toasts.signErrorDescription'),
         variant: 'destructive',
       })
     } finally {
-      setUploading(false)
+      setSigningId(null)
     }
   }
-
-  const submitResend = async (event) => {
-    event?.preventDefault()
-    if (!resendTarget) return
-    if (!validateFiles([resendFile], true)) return
-    const formData = new FormData()
-    formData.append('file', resendFile)
-    setResending(true)
-    try {
-      await resendDocument(resendTarget.id, formData)
-      toast({ title: 'Documento reenviado', description: resendTarget.title })
-      setResendOpen(false)
-      setResendTarget(null)
-      setResendFile(null)
-      loadDocuments({ page })
-    } catch (err) {
-      toast({
-        title: 'Erro ao reenviar',
-        description: err?.response?.data?.message || err.message || 'Tente novamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setResending(false)
-    }
-  }
-
   const emptyState = !loading && documents.length === 0
 
   const handleDownloadFromPreview = async () => {
@@ -318,18 +217,22 @@ export default function Documents() {
     try {
       await downloadDocument(
         selectedDocument.id,
-        `${selectedDocument.title || 'documento'}.${selectedDocument.extension || 'pdf'}`,
+        `${selectedDocument.title || t('documentsPage.employee.fileFallback')}.${selectedDocument.extension || 'pdf'}`,
       )
     } catch (err) {
       const status = err?.response?.status
-      let message = err?.message || 'Falha no download.'
-      if (status === 401) message = 'Sessão expirada. Faça login novamente.'
-      if (status === 403) message = 'Sem permissão.'
-      if (status === 404) message = 'Arquivo não encontrado.'
-      toast({ title: 'Erro ao baixar', description: message, variant: 'destructive' })
+      const message = resolveDocumentError(
+        status,
+        err?.message,
+        'documentsPage.employee.errors.downloadGeneric',
+      )
+      toast({
+        title: t('documentsPage.employee.toasts.downloadErrorTitle'),
+        description: message,
+        variant: 'destructive',
+      })
     }
   }
-
   const closePreview = (open) => {
     if (!open && previewUrl) {
       URL.revokeObjectURL(previewUrl)
@@ -348,9 +251,9 @@ export default function Documents() {
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
         <AppTopBar
           icon={<FileText className="h-5 w-5" />}
-          eyebrow="Documentos"
-          title="Envie e acompanhe seus documentos"
-          subtitle="Upload rápido, visualização e status em tempo real."
+          eyebrow={t('documentsPage.tag')}
+          title={t('documentsPage.employee.title')}
+          subtitle={t('documentsPage.employee.subtitle')}
           filters={
             error ? (
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
@@ -359,100 +262,21 @@ export default function Documents() {
             ) : null
           }
           actions={
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => loadDocuments({ page })}
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
-              >
-                <RefreshCcw className="h-4 w-4 text-primary" />
-                Atualizar
-              </Button>
-              <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-                <DialogTrigger asChild>
-                  <Button type="button" className="rounded-full px-4 text-sm">
-                    <Plus className="h-4 w-4" />
-                    Enviar documentos
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Enviar documentos</DialogTitle>
-                    <DialogDescription>Selecione os arquivos e defina a categoria.</DialogDescription>
-                  </DialogHeader>
-                  <form className="space-y-4" onSubmit={submitUpload}>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold">Categoria *</label>
-                      <select
-                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
-                        value={uploadForm.category}
-                        onChange={(event) => setUploadForm((prev) => ({ ...prev, category: event.target.value }))}
-                        required
-                      >
-                        <option value="">Selecione</option>
-                        {CATEGORY_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold">Observações (opcional)</label>
-                      <Textarea
-                        rows={3}
-                        value={uploadForm.notes}
-                        onChange={(event) => setUploadForm((prev) => ({ ...prev, notes: event.target.value }))}
-                        placeholder="Informações adicionais para o RH"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
-                        className="cursor-pointer"
-                        onChange={(event) =>
-                          setUploadForm((prev) => ({ ...prev, files: Array.from(event.target.files || []) }))
-                        }
-                      />
-                      <FileInputHint size="5MB" allowed={ALLOWED_EXTENSIONS.join(', ')} />
-                      {uploadForm.files.length ? (
-                        <div className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-sm">
-                          {uploadForm.files.map((file) => (
-                            <div key={file.name} className="flex items-center justify-between gap-2 text-[13px]">
-                              <span className="truncate">{file.name}</span>
-                              <span className="text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <DialogFooter className="pt-2">
-                      <DialogClose asChild>
-                        <Button type="button" variant="ghost">
-                          Cancelar
-                        </Button>
-                      </DialogClose>
-                      <Button type="submit" disabled={uploading} className="min-w-[160px]">
-                        {uploading ? 'Enviando…' : 'Enviar'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => loadDocuments({ page })}
+              className="rounded-full border-border bg-background/80 px-3 text-sm"
+            >
+              <RefreshCcw className="h-4 w-4 text-primary" />
+              {t('documentsPage.employee.actions.refresh')}
+            </Button>
           }
         />
         <section className="grid gap-4 rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
           <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
             <Input
-              placeholder="Buscar por título"
+              placeholder={t('documentsPage.employee.filters.searchPlaceholder')}
               value={filters.search}
               onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
             />
@@ -463,7 +287,7 @@ export default function Documents() {
             >
               {CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
@@ -474,7 +298,7 @@ export default function Documents() {
             >
               {STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
@@ -490,7 +314,7 @@ export default function Documents() {
                 disabled={page <= 1 || loading}
                 onClick={() => handlePageChange(page - 1)}
               >
-                Anterior
+                {t('documentsPage.employee.pagination.previous')}
               </Button>
               <span className="text-foreground">
                 {meta.currentPage} / {meta.lastPage || 1}
@@ -502,7 +326,7 @@ export default function Documents() {
                 disabled={meta.lastPage ? page >= meta.lastPage : documents.length < meta.perPage}
                 onClick={() => handlePageChange(page + 1)}
               >
-                Próxima
+                {t('documentsPage.employee.pagination.next')}
               </Button>
             </div>
           </div>
@@ -518,10 +342,7 @@ export default function Documents() {
               : null}
             {emptyState ? (
               <div className="rounded-2xl border border-border/70 bg-muted/40 p-6 text-center">
-                <p className="text-sm text-muted-foreground">Nenhum documento encontrado.</p>
-                <Button type="button" className="mt-3" onClick={() => setUploadOpen(true)}>
-                  Enviar documentos
-                </Button>
+                <p className="text-sm text-muted-foreground">{t('documentsPage.employee.emptyState')}</p>
               </div>
             ) : null}
             {!loading &&
@@ -534,20 +355,20 @@ export default function Documents() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold leading-snug">{doc.title}</p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        {doc.extension || 'Arquivo'} • {doc.sizeLabel}
+                        {doc.extension || t('documentsPage.employee.fileLabel')} - {doc.sizeLabel}
                       </p>
                     </div>
                     <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[12px] text-muted-foreground">
                     <span>
-                      {t(`documentsPage.tabs.${doc.category}`, doc.category)} • {formatDate(doc.updatedAt, i18n.language)}
+                      {t(`documentsPage.tabs.${doc.category}`, doc.category)} - {formatDate(doc.updatedAt, i18n.language)}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                        title="Ver"
+                        title={t('documentsPage.actions.view')}
                         onClick={() => handleView(doc)}
                       >
                         <Eye className="h-4 w-4" />
@@ -555,34 +376,26 @@ export default function Documents() {
                       <button
                         type="button"
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                        title="Baixar"
+                        title={t('documentsPage.actions.download')}
                         onClick={() => handleDownload(doc)}
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      <button
-                        type="button"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                        title="Excluir"
-                        onClick={() => handleDelete(doc)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {(doc.requiresSignature ?? doc.isImportant) &&
+                      doc.signatureStatus !== 'signed' &&
+                      !doc.signedAt ? (
+                        <button
+                          type="button"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] disabled:opacity-60"
+                          title={t('documentsPage.employee.actions.sign')}
+                          onClick={() => handleSign(doc)}
+                          disabled={signingId === doc.id}
+                        >
+                          <PenLine className="h-4 w-4" />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
-                  {doc.status === 'review' ? (
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary underline"
-                      onClick={() => {
-                        setResendTarget(doc)
-                        setResendOpen(true)
-                      }}
-                    >
-                      <Upload className="h-4 w-4" />
-                      Reenviar
-                    </button>
-                  ) : null}
                 </div>
               ))}
           </div>
@@ -591,12 +404,12 @@ export default function Documents() {
             <div className="overflow-x-auto">
               <div className="min-w-[960px]">
                 <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_180px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  <span>Documento</span>
-                  <span>Categoria</span>
-                  <span>Status</span>
-                  <span>Tipo</span>
-                  <span>Tamanho</span>
-                  <span className="text-right">Ações</span>
+                  <span>{t('documentsPage.employee.table.headers.document')}</span>
+                  <span>{t('documentsPage.employee.table.headers.category')}</span>
+                  <span>{t('documentsPage.employee.table.headers.status')}</span>
+                  <span>{t('documentsPage.employee.table.headers.type')}</span>
+                  <span>{t('documentsPage.employee.table.headers.size')}</span>
+                  <span className="text-right">{t('documentsPage.employee.table.headers.actions')}</span>
                 </div>
 
                 <div className="divide-y divide-border/60">
@@ -615,10 +428,7 @@ export default function Documents() {
 
                   {!loading && emptyState ? (
                     <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      Nenhum documento encontrado. <br />
-                      <Button type="button" className="mt-3" onClick={() => setUploadOpen(true)}>
-                        Enviar documentos
-                      </Button>
+                      {t('documentsPage.employee.emptyState')}<br />
                     </div>
                   ) : null}
 
@@ -631,18 +441,18 @@ export default function Documents() {
                         <div className="space-y-1">
                           <strong className="block">{doc.title}</strong>
                           <span className="text-[12px] text-muted-foreground">
-                            Atualizado em {formatDate(doc.updatedAt, i18n.language)}
+                            {t('documentsPage.employee.updatedAt', { date: formatDate(doc.updatedAt, i18n.language) })}
                           </span>
                         </div>
                         <span>{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
                         <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
-                        <span>{doc.extension?.toUpperCase() || 'Arquivo'}</span>
+                        <span>{doc.extension?.toUpperCase() || t('documentsPage.employee.fileLabel')}</span>
                         <span>{doc.sizeLabel}</span>
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                            title="Ver"
+                            title={t('documentsPage.actions.view')}
                             onClick={() => handleView(doc)}
                           >
                             <Eye className="h-4 w-4" />
@@ -650,32 +460,24 @@ export default function Documents() {
                           <button
                             type="button"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                            title="Baixar"
+                            title={t('documentsPage.actions.download')}
                             onClick={() => handleDownload(doc)}
                           >
                             <Download className="h-4 w-4" />
                           </button>
-                          <button
-                            type="button"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                            title="Excluir"
-                            onClick={() => handleDelete(doc)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                          {doc.status === 'review' ? (
+                          {(doc.requiresSignature ?? doc.isImportant) &&
+                          doc.signatureStatus !== 'signed' &&
+                          !doc.signedAt ? (
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                              title="Reenviar"
-                              onClick={() => {
-                                setResendTarget(doc)
-                                setResendOpen(true)
-                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] disabled:opacity-60"
+                              title={t('documentsPage.employee.actions.sign')}
+                              onClick={() => handleSign(doc)}
+                              disabled={signingId === doc.id}
                             >
-                              <Upload className="h-4 w-4" />
+                              <PenLine className="h-4 w-4" />
                             </button>
-                          ) : null}
+                           ) : null}
                         </div>
                       </div>
                     ))}
@@ -685,39 +487,6 @@ export default function Documents() {
           </div>
         </section>
       </PageContainer>
-
-      <Dialog open={resendOpen} onOpenChange={setResendOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reenviar documento</DialogTitle>
-            <DialogDescription>
-              {resendTarget?.rejectedComment
-                ? `Motivo: ${resendTarget.rejectedComment}`
-                : 'Envie uma nova versão do arquivo solicitado.'}
-            </DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={submitResend}>
-            <Input
-              ref={resendInputRef}
-              type="file"
-              accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
-              onChange={(event) => setResendFile((event.target.files || [])[0])}
-              required
-            />
-            <FileInputHint size="5MB" allowed={ALLOWED_EXTENSIONS.join(', ')} />
-            <DialogFooter className="pt-2">
-              <DialogClose asChild>
-                <Button type="button" variant="ghost">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={resending || !resendFile} className="min-w-[160px]">
-                {resending ? 'Reenviando…' : 'Reenviar'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <DocumentPreviewModal
         open={previewOpen}
@@ -732,5 +501,39 @@ export default function Documents() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

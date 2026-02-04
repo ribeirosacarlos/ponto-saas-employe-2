@@ -398,14 +398,10 @@ export default function Equipo() {
                   ))}
                 </select>
               </div>
-            </>
-          }
-          actions={
-            <>
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full border-border bg-background/80 px-3 text-sm"
+                className="rounded-full border-border bg-background/80 px-3 text-sm shrink-0"
                 onClick={() => refreshEmployees(page)}
               >
                 <RefreshCcw className="h-4 w-4 text-primary" />
@@ -413,7 +409,7 @@ export default function Equipo() {
               </Button>
               <Button
                 type="button"
-                className="rounded-full px-4 text-sm"
+                className="rounded-full px-4 text-sm shrink-0"
                 onClick={() => setCreateOpen(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -1012,3 +1008,5 @@ export default function Equipo() {
     </div>
   )
 }
+
+

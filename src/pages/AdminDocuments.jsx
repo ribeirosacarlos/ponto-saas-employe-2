@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Check, Download, Eye, FileText, RefreshCcw, Search, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
@@ -21,15 +21,35 @@ import { useToast } from '../components/ui/use-toast'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { downloadDocument, fetchDocumentBlob } from '../services/documentsService'
-import { approve, listPending, listReview, reject } from '../services/adminDocumentsService'
+import { approve, listPending, listReview, reject, uploadTeamDocument } from '../services/adminDocumentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 
+const formatDateTime = (value, locale = 'pt-BR') => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+
 const CATEGORY_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'payroll', label: 'Holerites' },
-  { value: 'courses', label: 'Cursos' },
-  { value: 'personal', label: 'Pessoais' },
-  { value: 'others', label: 'Outros' },
+  { value: 'all', labelKey: 'documentsPage.tabs.all' },
+  { value: 'payroll', labelKey: 'documentsPage.tabs.payroll' },
+  { value: 'courses', labelKey: 'documentsPage.tabs.courses' },
+  { value: 'personal', labelKey: 'documentsPage.tabs.personal' },
+  { value: 'others', labelKey: 'documentsPage.tabs.others' },
+]
+
+const PRIORITY_OPTIONS = [
+  { value: 'high', labelKey: 'documentsPage.priority.high' },
+  { value: 'medium', labelKey: 'documentsPage.priority.medium' },
+  { value: 'low', labelKey: 'documentsPage.priority.low' },
 ]
 
 const STATUS_TONES = {
@@ -43,7 +63,7 @@ const skeletonRows = Array.from({ length: 6 }).map((_, idx) => idx)
 const ALLOWED_ROLES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 
 const formatDate = (value, locale = 'pt-BR') => {
-  if (!value) return '—'
+  if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return String(value)
   return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
@@ -64,6 +84,43 @@ export default function AdminDocuments() {
   const roles = useAuthStore((state) => state.roles)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, ALLOWED_ROLES), [capabilities])
+  const getPriorityLabel = (value) => {
+    const normalized = (value ?? '').toString().toLowerCase()
+    const option = PRIORITY_OPTIONS.find((item) => item.value === normalized)
+    return option ? t(option.labelKey) : t('documentsPage.priority.none')
+  }
+
+  const getSignatureLabel = (doc) => {
+    const requiresSignature = Boolean(doc?.requiresSignature ?? doc?.isImportant)
+    if (!requiresSignature) return t('documentsPage.signature.notRequired')
+    const status = (doc?.signatureStatus ?? '').toString().toLowerCase()
+    if (status === 'signed' || status === 'completed') return t('documentsPage.signature.signed')
+    return t('documentsPage.signature.pending')
+  }
+
+  const getSignatureTone = (doc) => {
+    const requiresSignature = Boolean(doc?.requiresSignature ?? doc?.isImportant)
+    if (!requiresSignature) return 'text-muted-foreground'
+    const status = (doc?.signatureStatus ?? '').toString().toLowerCase()
+    return status === 'signed' || status === 'completed'
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-amber-600 dark:text-amber-400'
+  }
+
+  const getLastViewLabel = (doc) => {
+    const value = doc?.lastViewedAt || doc?.viewedAt
+    if (!value) return t('documentsPage.views.notSeen')
+    return t('documentsPage.views.seenAt', {
+      date: formatDateTime(value, i18n.language),
+    })
+  }
+
+  const resolveDocumentError = (status, fallbackMessage, defaultKey) => {
+    if (status === 401) return t('documentsPage.employee.errors.sessionExpired')
+    if (status === 403) return t('documentsPage.employee.errors.noPermission')
+    if (status === 404) return t('documentsPage.employee.errors.notFound')
+    return fallbackMessage || t(defaultKey)
+  }
 
   const [tab, setTab] = useState('pending')
   const [filters, setFilters] = useState({ search: '', category: 'all', employee: '' })
@@ -72,6 +129,15 @@ export default function AdminDocuments() {
   const [meta, setMeta] = useState({ currentPage: 1, total: 0, perPage: 10, lastPage: 1 })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadForm, setUploadForm] = useState({
+    employee: '',
+    category: '',
+    priority: '',
+    important: false,
+    file: null,
+  })
 
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState(null)
@@ -85,6 +151,63 @@ export default function AdminDocuments() {
   const [previewMime, setPreviewMime] = useState('')
   const [selectedDocument, setSelectedDocument] = useState(null)
 
+  const handleUploadSubmit = async (event) => {
+    event?.preventDefault()
+    if (!uploadForm.file) {
+      toast({
+        title: t('documentsPage.admin.upload.errors.fileTitle'),
+        description: t('documentsPage.admin.upload.errors.fileDescription'),
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!uploadForm.category) {
+      toast({
+        title: t('documentsPage.admin.upload.errors.categoryTitle'),
+        description: t('documentsPage.admin.upload.errors.categoryDescription'),
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!uploadForm.priority) {
+      toast({
+        title: t('documentsPage.admin.upload.errors.priorityTitle'),
+        description: t('documentsPage.admin.upload.errors.priorityDescription'),
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const payload = new FormData()
+    payload.append('file', uploadForm.file)
+    payload.append('category', uploadForm.category)
+    payload.append('priority', uploadForm.priority)
+    payload.append('important', uploadForm.important ? '1' : '0')
+    if (uploadForm.employee) payload.append('employee', uploadForm.employee)
+
+    setUploading(true)
+    try {
+      await uploadTeamDocument(payload)
+      toast({
+        title: t('documentsPage.admin.upload.successTitle'),
+        description: t('documentsPage.admin.upload.successDescription'),
+      })
+      setUploadOpen(false)
+      setUploadForm({ employee: '', category: '', priority: '', important: false, file: null })
+      setPage(1)
+      fetchDocuments({ page: 1 })
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || t('documentsPage.admin.upload.errorDescription')
+      toast({
+        title: t('documentsPage.admin.upload.errorTitle'),
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
   const fetchDocuments = async (params = {}) => {
     if (!hasAccess) return
     setLoading(true)
@@ -106,9 +229,14 @@ export default function AdminDocuments() {
         lastPage: responseMeta.lastPage || 1,
       })
     } catch (err) {
-      const message = err?.response?.data?.message || err.message || 'Erro ao carregar documentos.'
+      const message =
+        err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.loadErrorDescription')
       setError(message)
-      toast({ title: 'Erro', description: message, variant: 'destructive' })
+      toast({
+        title: t('documentsPage.admin.toasts.loadErrorTitle'),
+        description: message,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -145,50 +273,62 @@ export default function AdminDocuments() {
       })
       .catch((err) => {
         const status = err?.response?.status
-        let message = err?.message || 'Não foi possível carregar o documento.'
-        if (status === 401) message = 'Sessão expirada. Faça login novamente.'
-        if (status === 403) message = 'Sem permissão para visualizar.'
-        if (status === 404) message = 'Arquivo não encontrado.'
+        const message = resolveDocumentError(
+          status,
+          err?.message,
+          'documentsPage.admin.errors.viewGeneric',
+        )
         setPreviewError(message)
-        toast({ title: 'Erro ao visualizar', description: message, variant: 'destructive' })
+        toast({
+          title: t('documentsPage.admin.toasts.viewErrorTitle'),
+          description: message,
+          variant: 'destructive',
+        })
       })
       .finally(() => setPreviewLoading(false))
   }
-
   const handleApprove = async (doc) => {
     setApproving(true)
     try {
       await approve(doc.id)
-      toast({ title: 'Documento aprovado', description: doc.title })
+      toast({
+        title: t('documentsPage.admin.toasts.approveSuccessTitle'),
+        description: t('documentsPage.admin.toasts.approveSuccessDescription', {
+          title: doc.title,
+        }),
+      })
       fetchDocuments({ page })
     } catch (err) {
       toast({
-        title: 'Erro ao aprovar',
-        description: err?.response?.data?.message || err.message,
+        title: t('documentsPage.admin.toasts.approveErrorTitle'),
+        description: err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.approveErrorDescription'),
         variant: 'destructive',
       })
     } finally {
       setApproving(false)
     }
   }
-
   const handleDownloadFromPreview = async () => {
     if (!selectedDocument) return
     try {
       await downloadDocument(
         selectedDocument.id,
-        `${selectedDocument.title || 'documento'}.${selectedDocument.extension || 'pdf'}`,
+        `${selectedDocument.title || t('documentsPage.admin.fileFallback')}.${selectedDocument.extension || 'pdf'}`,
       )
     } catch (err) {
       const status = err?.response?.status
-      let message = err?.message || 'Falha no download.'
-      if (status === 401) message = 'Sessão expirada. Faça login novamente.'
-      if (status === 403) message = 'Sem permissão.'
-      if (status === 404) message = 'Arquivo não encontrado.'
-      toast({ title: 'Erro ao baixar', description: message, variant: 'destructive' })
+      const message = resolveDocumentError(
+        status,
+        err?.message,
+        'documentsPage.admin.errors.downloadGeneric',
+      )
+      toast({
+        title: t('documentsPage.admin.toasts.downloadErrorTitle'),
+        description: message,
+        variant: 'destructive',
+      })
     }
   }
-
   const closePreview = (open) => {
     if (!open && previewUrl) {
       URL.revokeObjectURL(previewUrl)
@@ -205,37 +345,44 @@ export default function AdminDocuments() {
   const handleReject = async (event) => {
     event?.preventDefault()
     if (!rejectTarget || !rejectReason || rejectReason.length < 5) {
-      toast({ title: 'Comentário obrigatório', description: 'Informe pelo menos 5 caracteres.' })
+      toast({
+        title: t('documentsPage.admin.reject.requiredTitle'),
+        description: t('documentsPage.admin.reject.requiredDescription'),
+        variant: 'destructive',
+      })
       return
     }
     setRejecting(true)
     try {
       await reject(rejectTarget.id, rejectReason)
-      toast({ title: 'Documento rejeitado', description: rejectTarget.title })
+      toast({
+        title: t('documentsPage.admin.toasts.rejectSuccessTitle'),
+        description: t('documentsPage.admin.toasts.rejectSuccessDescription', {
+          title: rejectTarget.title,
+        }),
+      })
       setRejectOpen(false)
       setRejectTarget(null)
       setRejectReason('')
       fetchDocuments({ page })
       if (tab === 'pending') {
-        // mover para revisão
         setTab('review')
       }
     } catch (err) {
       toast({
-        title: 'Erro ao rejeitar',
-        description: err?.response?.data?.message || err.message,
+        title: t('documentsPage.admin.toasts.rejectErrorTitle'),
+        description: err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.rejectErrorDescription'),
         variant: 'destructive',
       })
     } finally {
       setRejecting(false)
     }
   }
-
   if (!hasAccess) {
     return (
       <PageContainer className="py-10">
         <div className="rounded-2xl border border-border/70 bg-card/90 p-6 text-center text-sm text-muted-foreground">
-          Sem permissão para acessar esta página.
+          {t('documentsPage.admin.states.noPermission')}
         </div>
       </PageContainer>
     )
@@ -248,9 +395,9 @@ export default function AdminDocuments() {
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
         <AppTopBar
           icon={<FileText className="h-5 w-5" />}
-          eyebrow="Validação"
-          title="Validação de documentos"
-          subtitle="Analise, aprove ou rejeite documentos enviados."
+          eyebrow={t('documentsPage.tag')}
+          title={t('documentsPage.admin.title')}
+          subtitle={t('documentsPage.admin.subtitle')}
           filters={
             error ? (
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-3 py-1 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
@@ -259,15 +406,125 @@ export default function AdminDocuments() {
             ) : null
           }
           actions={
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fetchDocuments({ page })}
-              className="rounded-full border-border bg-background/80 px-3 text-sm"
-            >
-              <RefreshCcw className="h-4 w-4 text-primary" />
-              Atualizar
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fetchDocuments({ page })}
+                className="rounded-full border-border bg-background/80 px-3 text-sm"
+              >
+                <RefreshCcw className="h-4 w-4 text-primary" />
+                {t('documentsPage.admin.actions.refresh')}
+              </Button>
+              <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" className="rounded-full px-4 text-sm">
+                    <Upload className="h-4 w-4" />
+                    {t('documentsPage.admin.actions.upload')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('documentsPage.admin.upload.title')}</DialogTitle>
+                    <DialogDescription>{t('documentsPage.admin.upload.description')}</DialogDescription>
+                  </DialogHeader>
+                  <form className="space-y-4" onSubmit={handleUploadSubmit}>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.employeeLabel')}</label>
+                      <Input
+                        placeholder={t('documentsPage.admin.upload.employeePlaceholder')}
+                        value={uploadForm.employee}
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({ ...prev, employee: event.target.value }))
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.categoryLabel')}</label>
+                      <select
+                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+                        value={uploadForm.category}
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({ ...prev, category: event.target.value }))
+                        }
+                        required
+                      >
+                        <option value="">{t('documentsPage.admin.upload.categoryPlaceholder')}</option>
+                        {CATEGORY_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {t(opt.labelKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.priorityLabel')}</label>
+                      <select
+                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+                        value={uploadForm.priority}
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({ ...prev, priority: event.target.value }))
+                        }
+                        required
+                      >
+                        <option value="">{t('documentsPage.admin.upload.priorityPlaceholder')}</option>
+                        {PRIORITY_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {t(opt.labelKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <label className="flex items-start gap-2 rounded-2xl border border-border/70 bg-muted/30 px-3 py-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={uploadForm.important}
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({ ...prev, important: event.target.checked }))
+                        }
+                      />
+                      <span className="font-semibold">
+                        {t('documentsPage.admin.upload.importantLabel')}
+                      </span>
+                    </label>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.fileLabel')}</label>
+                      <Input
+                        type="file"
+                        onChange={(event) =>
+                          setUploadForm((prev) => ({
+                            ...prev,
+                            file: (event.target.files || [])[0] || null,
+                          }))
+                        }
+                        required
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        {t('documentsPage.admin.upload.fileHint')}
+                      </p>
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                      <DialogClose asChild>
+                        <Button type="button" variant="ghost">
+                          {t('common.actions.cancel')}
+                        </Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={uploading} className="min-w-[160px]">
+                        {uploading
+                          ? t('documentsPage.admin.upload.sending')
+                          : t('documentsPage.admin.upload.submit')}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </>
           }
         />
 
@@ -285,7 +542,7 @@ export default function AdminDocuments() {
                 setPage(1)
               }}
             >
-              {key === 'pending' ? 'Pendentes' : 'Em revisão'}
+              {t(`documentsPage.admin.tabs.${key}`)}
               {meta?.total && tab === key ? (
                 <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs">{meta.total}</span>
               ) : null}
@@ -293,13 +550,13 @@ export default function AdminDocuments() {
           ))}
         </div>
 
-        <section className="grid gap-4 rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
+        <section className="grid gap-4 overflow-hidden rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_90px_-60px_rgba(62,82,152,0.55)]">
           <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="Buscar por título"
+                placeholder={t('documentsPage.admin.filters.searchPlaceholder')}
                 value={filters.search}
                 onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
               />
@@ -311,58 +568,45 @@ export default function AdminDocuments() {
             >
               {CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
             <Input
-              placeholder="Funcionário (nome ou e-mail)"
+              placeholder={t('documentsPage.admin.filters.employeePlaceholder')}
               value={filters.employee}
               onChange={(event) => setFilters((prev) => ({ ...prev, employee: event.target.value }))}
             />
           </div>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{meta?.total ? `${meta.total} itens` : ''}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page <= 1 || loading}
-                onClick={() => handlePageChange(page - 1)}
-              >
-                Anterior
-              </Button>
-              <span className="text-foreground">
-                {meta.currentPage} / {meta.lastPage || 1}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={meta.lastPage ? page >= meta.lastPage : documents.length < meta.perPage}
-                onClick={() => handlePageChange(page + 1)}
-              >
-                Próxima
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {meta?.total ? (
+              <span>{t('documentsPage.admin.listCount', { count: meta.total })}</span>
+            ) : null}
+            <span className="ml-auto rounded-full border border-border/70 bg-background/70 px-3 py-1 text-xs text-foreground">
+              {meta.currentPage} / {meta.lastPage || 1}
+            </span>
           </div>
-
-          <div className="hidden md:block rounded-[24px] border border-border/70 bg-card/95 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.55)]">
-            <div className="overflow-x-auto">
-              <div className="min-w-[1024px]">
-                <div className="grid grid-cols-[1.6fr_1.3fr_1fr_1fr_160px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  <span>Funcionário</span>
-                  <span>Título</span>
-                  <span>Categoria</span>
-                  <span>Status</span>
-                  <span className="text-right">Ações</span>
+          <div className="hidden md:block overflow-hidden rounded-[24px] border border-border/70 bg-card/95 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.55)]">
+            <div className="w-full min-w-0 overflow-x-auto">
+              <div className="min-w-[980px] lg:min-w-[1100px] xl:min-w-[1240px]">
+                <div className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <span>{t('documentsPage.admin.table.headers.employee')}</span>
+                  <span>{t('documentsPage.admin.table.headers.title')}</span>
+                  <span>{t('documentsPage.admin.table.headers.category')}</span>
+                  <span>{t('documentsPage.admin.table.headers.priority')}</span>
+                  <span>{t('documentsPage.admin.table.headers.signature')}</span>
+                  <span>{t('documentsPage.admin.table.headers.lastView')}</span>
+                  <span>{t('documentsPage.admin.table.headers.status')}</span>
+                  <span className="text-right">{t('documentsPage.admin.table.headers.actions')}</span>
                 </div>
                 <div className="divide-y divide-border/60">
                   {loading
                     ? skeletonRows.map((key) => (
-                        <div key={key} className="grid grid-cols-[1.6fr_1.3fr_1fr_1fr_160px] gap-3 px-4 py-4">
+                        <div key={key} className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] gap-3 px-4 py-4">
+                          <div className="h-4 rounded bg-muted/50 animate-pulse" />
+                          <div className="h-4 rounded bg-muted/50 animate-pulse" />
+                          <div className="h-4 rounded bg-muted/50 animate-pulse" />
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
                           <div className="h-4 rounded bg-muted/50 animate-pulse" />
@@ -371,32 +615,51 @@ export default function AdminDocuments() {
                         </div>
                       ))
                     : null}
+
                   {!loading && emptyState ? (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum documento.</div>
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      {t('documentsPage.admin.states.empty')}
+                    </div>
                   ) : null}
+
                   {!loading &&
                     documents.map((doc) => {
                       const employee = doc.user || doc.employee
+                      const employeeName =
+                        employee?.name || employee?.full_name || t('documentsPage.admin.labels.employeeFallback')
+                      const employeeEmail = employee?.email || ''
                       const employeeLabel = employee
-                        ? `${employee.name || employee.full_name || 'Funcionário'} (${employee.email || ''})`
-                        : 'Funcionário'
+                        ? `${employeeName} (${employeeEmail})`
+                        : t('documentsPage.admin.labels.employeeFallback')
+                      const priorityLabel = getPriorityLabel(doc.priority)
+                      const signatureLabel = getSignatureLabel(doc)
+                      const signatureTone = getSignatureTone(doc)
+                      const lastViewLabel = getLastViewLabel(doc)
+
                       return (
                         <div
                           key={doc.id}
-                          className="grid grid-cols-[1.6fr_1.3fr_1fr_1fr_160px] items-center gap-3 px-4 py-4 text-sm"
+                          className="grid grid-cols-[1.4fr_1.2fr_0.9fr_0.8fr_0.9fr_1.2fr_0.9fr_200px] items-center gap-3 px-4 py-4 text-sm"
                         >
-                          <div className="space-y-1">
-                            <p className="font-semibold truncate">{employeeLabel}</p>
-                            <p className="text-xs text-muted-foreground">Atualizado {formatDate(doc.updatedAt, i18n.language)}</p>
+                          <div className="min-w-0 space-y-1">
+                            <p className="truncate font-semibold">{employeeLabel}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {t('documentsPage.admin.labels.updatedAt', {
+                                date: formatDate(doc.updatedAt, i18n.language),
+                              })}
+                            </p>
                           </div>
-                          <span className="truncate">{doc.title}</span>
-                          <span className="truncate">{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
+                          <span className="block min-w-0 truncate">{doc.title}</span>
+                          <span className="block min-w-0 truncate">{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
+                          <span>{priorityLabel}</span>
+                          <span className={cn('text-xs font-semibold', signatureTone)}>{signatureLabel}</span>
+                          <span className="text-xs text-muted-foreground">{lastViewLabel}</span>
                           <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                              title="Ver"
+                              title={t('documentsPage.actions.view')}
                               onClick={() => handleView(doc)}
                             >
                               <Eye className="h-4 w-4" />
@@ -404,15 +667,20 @@ export default function AdminDocuments() {
                             <button
                               type="button"
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                              title="Baixar"
-                              onClick={() => downloadDocument(doc.id, `${doc.title || 'documento'}.${doc.extension || 'pdf'}`)}
+                              title={t('documentsPage.actions.download')}
+                              onClick={() =>
+                                downloadDocument(
+                                  doc.id,
+                                  `${doc.title || t('documentsPage.admin.fileFallback')}.${doc.extension || 'pdf'}`,
+                                )
+                              }
                             >
                               <Download className="h-4 w-4" />
                             </button>
                             <button
                               type="button"
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                              title="Aprovar"
+                              title={t('documentsPage.admin.actions.approve')}
                               disabled={approving}
                               onClick={() => handleApprove(doc)}
                             >
@@ -430,16 +698,16 @@ export default function AdminDocuments() {
                                 <button
                                   type="button"
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
-                                  title="Rejeitar"
+                                  title={t('documentsPage.admin.actions.reject')}
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Rejeitar documento</DialogTitle>
+                                  <DialogTitle>{t('documentsPage.admin.reject.title')}</DialogTitle>
                                   <DialogDescription>
-                                    Explique o que precisa ser corrigido para o colaborador.
+                                    {t('documentsPage.admin.reject.description')}
                                   </DialogDescription>
                                 </DialogHeader>
                                 <form className="space-y-4" onSubmit={handleReject}>
@@ -448,17 +716,23 @@ export default function AdminDocuments() {
                                     minLength={5}
                                     value={rejectReason}
                                     onChange={(event) => setRejectReason(event.target.value)}
-                                    placeholder="Explique exatamente o que está errado e o que corrigir."
+                                    placeholder={t('documentsPage.admin.reject.placeholder')}
                                     required
                                   />
                                   <DialogFooter className="pt-2">
                                     <DialogClose asChild>
                                       <Button type="button" variant="ghost">
-                                        Cancelar
+                                        {t('common.actions.cancel')}
                                       </Button>
                                     </DialogClose>
-                                    <Button type="submit" disabled={rejecting || rejectReason.length < 5} className="min-w-[140px]">
-                                      {rejecting ? 'Rejeitando…' : 'Rejeitar'}
+                                    <Button
+                                      type="submit"
+                                      disabled={rejecting || rejectReason.length < 5}
+                                      className="min-w-[140px]"
+                                    >
+                                      {rejecting
+                                        ? t('documentsPage.admin.actions.rejecting')
+                                        : t('documentsPage.admin.actions.reject')}
                                     </Button>
                                   </DialogFooter>
                                 </form>
@@ -481,15 +755,23 @@ export default function AdminDocuments() {
               : null}
             {!loading && emptyState ? (
               <div className="rounded-2xl border border-border/70 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
-                Nenhum documento.
+                {t('documentsPage.admin.states.empty')}
               </div>
             ) : null}
             {!loading &&
               documents.map((doc) => {
                 const employee = doc.user || doc.employee
+                const employeeName =
+                  employee?.name || employee?.full_name || t('documentsPage.admin.labels.employeeFallback')
+                const employeeEmail = employee?.email || ''
                 const employeeLabel = employee
-                  ? `${employee.name || employee.full_name || 'Funcionário'} • ${employee.email || ''}`
-                  : 'Funcionário'
+                  ? `${employeeName} - ${employeeEmail}`
+                  : t('documentsPage.admin.labels.employeeFallback')
+                const priorityLabel = getPriorityLabel(doc.priority)
+                const signatureLabel = getSignatureLabel(doc)
+                const signatureTone = getSignatureTone(doc)
+                const lastViewLabel = getLastViewLabel(doc)
+
                 return (
                   <div key={doc.id} className="rounded-2xl border border-border/70 bg-card/95 p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
@@ -497,33 +779,38 @@ export default function AdminDocuments() {
                         <p className="text-sm font-semibold">{doc.title}</p>
                         <p className="text-xs text-muted-foreground">{employeeLabel}</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {formatDate(doc.updatedAt, i18n.language)} • {t(`documentsPage.tabs.${doc.category}`, doc.category)}
+                          {formatDate(doc.updatedAt, i18n.language)} - {t(`documentsPage.tabs.${doc.category}`, doc.category)}
                         </p>
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          {t('documentsPage.admin.labels.priority', { value: priorityLabel })}
+                        </p>
+                        <p className={cn('text-[11px] font-semibold', signatureTone)}>{signatureLabel}</p>
+                        <p className="text-[11px] text-muted-foreground">{lastViewLabel}</p>
                       </div>
                       <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleView(doc)}
-                      >
+                      <Button type="button" size="sm" variant="outline" onClick={() => handleView(doc)}>
                         <Eye className="h-4 w-4" />
-                        Ver
+                        {t('documentsPage.actions.view')}
                       </Button>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => downloadDocument(doc.id, `${doc.title || 'documento'}.${doc.extension || 'pdf'}`)}
+                        onClick={() =>
+                          downloadDocument(
+                            doc.id,
+                            `${doc.title || t('documentsPage.admin.fileFallback')}.${doc.extension || 'pdf'}`,
+                          )
+                        }
                       >
                         <Download className="h-4 w-4" />
-                        Baixar
+                        {t('documentsPage.actions.download')}
                       </Button>
                       <Button type="button" size="sm" variant="outline" onClick={() => handleApprove(doc)} disabled={approving}>
                         <Check className="h-4 w-4" />
-                        Aprovar
+                        {t('documentsPage.admin.actions.approve')}
                       </Button>
                       <Dialog
                         open={rejectOpen && rejectTarget?.id === doc.id}
@@ -536,14 +823,14 @@ export default function AdminDocuments() {
                         <DialogTrigger asChild>
                           <Button type="button" size="sm" variant="outline">
                             <X className="h-4 w-4" />
-                            Rejeitar
+                            {t('documentsPage.admin.actions.reject')}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Rejeitar documento</DialogTitle>
+                            <DialogTitle>{t('documentsPage.admin.reject.title')}</DialogTitle>
                             <DialogDescription>
-                              Explique o que precisa ser corrigido para o colaborador.
+                              {t('documentsPage.admin.reject.description')}
                             </DialogDescription>
                           </DialogHeader>
                           <form className="space-y-4" onSubmit={handleReject}>
@@ -552,17 +839,19 @@ export default function AdminDocuments() {
                               minLength={5}
                               value={rejectReason}
                               onChange={(event) => setRejectReason(event.target.value)}
-                              placeholder="Explique exatamente o que está errado e o que corrigir."
+                              placeholder={t('documentsPage.admin.reject.placeholder')}
                               required
                             />
                             <DialogFooter className="pt-2">
                               <DialogClose asChild>
                                 <Button type="button" variant="ghost">
-                                  Cancelar
+                                  {t('common.actions.cancel')}
                                 </Button>
                               </DialogClose>
                               <Button type="submit" disabled={rejecting || rejectReason.length < 5} className="min-w-[140px]">
-                                {rejecting ? 'Rejeitando…' : 'Rejeitar'}
+                                {rejecting
+                                  ? t('documentsPage.admin.actions.rejecting')
+                                  : t('documentsPage.admin.actions.reject')}
                               </Button>
                             </DialogFooter>
                           </form>
@@ -588,4 +877,41 @@ export default function AdminDocuments() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

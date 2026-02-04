@@ -15,7 +15,6 @@ import {
 import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
-  CalendarClock,
   CalendarRange,
   Clock3,
   Download,
@@ -541,20 +540,6 @@ export default function CloseTimesheetPage() {
             eyebrow={t('closeTimesheetPage.badge')}
             title={t('closeTimesheetPage.title')}
             subtitle={t('closeTimesheetPage.subtitle')}
-            filters={
-              <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-200">
-                {t('closeTimesheetPage.defaultRange')}
-              </span>
-            }
-            rightMeta={
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarClock className="h-4 w-4" />
-                <span>
-                  {t('closeTimesheetPage.labels.period')}: {formatDateLabel(filters.from)} -{' '}
-                  {formatDateLabel(filters.to)}
-                </span>
-              </div>
-            }
           />
 
           <Card className="border-dashed">
@@ -1021,4 +1006,6 @@ export default function CloseTimesheetPage() {
     </div>
   )
 }
+
+
 

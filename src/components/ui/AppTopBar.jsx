@@ -1,4 +1,4 @@
-export function AppTopBar({ icon, eyebrow, title, subtitle, actions, filters, rightMeta }) {
+export function AppTopBar({ icon, eyebrow, meta, title, subtitle, actions, filters, rightMeta }) {
   const hasRightContent = Boolean(actions) || Boolean(rightMeta)
 
   return (
@@ -15,6 +15,11 @@ export function AppTopBar({ icon, eyebrow, title, subtitle, actions, filters, ri
                   {eyebrow}
                 </span>
               </div>
+            ) : null}
+            {meta ? (
+              <p className="text-[11px] font-medium text-muted-foreground sm:text-[12px] break-words text-balance">
+                {meta}
+              </p>
             ) : null}
             <h1 className="text-xl font-semibold leading-tight sm:text-2xl md:text-3xl break-words text-balance">
               {title}

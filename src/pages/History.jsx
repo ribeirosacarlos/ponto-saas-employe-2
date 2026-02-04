@@ -204,25 +204,6 @@ export default function History({ onBackToDashboard }) {
     [formatTimeTz, t],
   )
 
-  const formatBreakReturn = useCallback(
-    (intervals = []) => {
-      if (!intervals.length) return t('historyPage.labels.emptyValue')
-      const ranges = intervals.map((interval) => {
-        const startLabel =
-          interval?.start !== null && interval?.start !== undefined
-            ? formatTimeTz(interval.start)
-            : t('historyPage.labels.timeFallback')
-        const endLabel =
-          interval?.end !== null && interval?.end !== undefined
-            ? formatTimeTz(interval.end)
-            : t('historyPage.labels.timeFallback')
-        return `${startLabel} → ${endLabel}`
-      })
-      return ranges.join(' / ')
-    },
-    [formatTimeTz, t],
-  )
-
   const [filters, setFilters] = useState({ from: '', to: '' })
   const [appliedFilters, setAppliedFilters] = useState({ from: '', to: '' })
   const [entries, setEntries] = useState([])
@@ -234,60 +215,6 @@ export default function History({ onBackToDashboard }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedMonth, setSelectedMonth] = useState(null)
   const [submittingAdjustment, setSubmittingAdjustment] = useState('')
-
-  const supportsServerPagination = useMemo(() => {
-    if (!meta) return false
-    return Boolean(
-      meta?.lastPage ||
-        meta?.last_page ||
-        meta?.total ||
-        meta?.next_page_url ||
-        meta?.per_page ||
-        meta?.perPage,
-    )
-  }, [meta])
-
-  const monthOptions = useMemo(() => {
-    const options = []
-    const today = new Date()
-    for (let offset = 0; offset < 3; offset += 1) {
-      const target = subMonths(today, offset)
-      const start = startOfMonth(target)
-      const end = endOfMonth(target)
-      const monthLabel = formatDate(start, { month: 'long', year: 'numeric' })
-      const caption = monthLabel && monthLabel !== '-' ? monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1) : ''
-      const from = formatDateForApi(start)
-      const to = formatDateForApi(end)
-      const id = from ? from.slice(0, 7) : `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`
-      options.push({
-        id,
-        label: caption || id,
-        from,
-        to,
-      })
-    }
-    return options.filter((option) => option.from && option.to)
-  }, [formatDate, formatDateForApi])
-
-  useEffect(() => {
-    if (!monthOptions.length) return
-    setSelectedMonth((prev) => {
-      const match = prev && monthOptions.find((option) => option.id === prev.id)
-      return match || monthOptions[0]
-    })
-  }, [monthOptions])
-
-  useEffect(() => {
-    if (!selectedMonth) return
-    setFilters({ from: selectedMonth.from, to: selectedMonth.to })
-  }, [selectedMonth])
-
-  useEffect(() => {
-    if (!selectedMonth) return
-    if (!appliedFilters.from && !appliedFilters.to) {
-      setAppliedFilters({ from: selectedMonth.from, to: selectedMonth.to })
-    }
-  }, [selectedMonth, appliedFilters])
 
   const handleFetch = useCallback(
     async ({ page = 1, append = false, filters: filtersOverride } = {}) => {
@@ -334,9 +261,67 @@ export default function History({ onBackToDashboard }) {
     [appliedFilters, t],
   )
 
+  const supportsServerPagination = useMemo(() => {
+    if (!meta) return false
+    return Boolean(
+      meta?.lastPage ||
+        meta?.last_page ||
+        meta?.total ||
+        meta?.next_page_url ||
+        meta?.per_page ||
+        meta?.perPage,
+    )
+  }, [meta])
+
+  const monthOptions = useMemo(() => {
+    const options = []
+    const today = new Date()
+    for (let offset = 0; offset < 3; offset += 1) {
+      const target = subMonths(today, offset)
+      const start = startOfMonth(target)
+      const end = endOfMonth(target)
+      const monthLabel = formatDate(start, { month: 'long', year: 'numeric' })
+      const caption = monthLabel && monthLabel !== '-' ? monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1) : ''
+      const from = formatDateForApi(start)
+      const to = formatDateForApi(end)
+      const id = from ? from.slice(0, 7) : `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`
+      options.push({
+        id,
+        label: caption || id,
+        from,
+        to,
+      })
+    }
+    return options.filter((option) => option.from && option.to)
+  }, [formatDate, formatDateForApi])
+
   useEffect(() => {
+    if (!monthOptions.length) return
+    setSelectedMonth((prev) => {
+      const match = prev && monthOptions.find((option) => option.id === prev.id)
+      return match || monthOptions[0]
+    })
+  }, [monthOptions])
+
+  useEffect(() => {
+    if (!selectedMonth) return
+    const nextFilters = { from: selectedMonth.from, to: selectedMonth.to }
+    setFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+    handleFetch({ page: 1, filters: nextFilters })
+  }, [handleFetch, selectedMonth])
+
+  useEffect(() => {
+    if (!selectedMonth) return
+    if (!appliedFilters.from && !appliedFilters.to) {
+      setAppliedFilters({ from: selectedMonth.from, to: selectedMonth.to })
+    }
+  }, [selectedMonth, appliedFilters])
+
+  useEffect(() => {
+    if (!appliedFilters.from && !appliedFilters.to) return
     handleFetch({ page: 1 })
-  }, [handleFetch])
+  }, [appliedFilters.from, appliedFilters.to, handleFetch])
 
   const filteredEntries = useMemo(() => {
     const { from, to } = appliedFilters
@@ -738,15 +723,6 @@ export default function History({ onBackToDashboard }) {
                       <Button
                         type="button"
                         size="sm"
-                        className="rounded-full px-3 text-xs"
-                        onClick={handleApplyFilters}
-                        disabled={loading}
-                      >
-                        {t('historyPage.filters.apply')}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
                         variant="outline"
                         className="rounded-full px-3 text-xs"
                         onClick={handleClearFilters}
@@ -765,7 +741,6 @@ export default function History({ onBackToDashboard }) {
                         <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.interval')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.breakReturn')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
                         <th className="px-3 py-3">{t('historyPage.table.headers.idle')}</th>
@@ -784,7 +759,6 @@ export default function History({ onBackToDashboard }) {
                         const intervalLabel = summary?.hasBreak
                           ? formatBreakRanges(summary.breakIntervals)
                           : t('historyPage.labels.timeFallback')
-                        const breakReturnLabel = formatBreakReturn(summary?.breakIntervals)
                         const workedLabel = group.duration
                           ? formatDuration(group.duration)
                           : t('historyPage.labels.noDuration')
@@ -810,7 +784,6 @@ export default function History({ onBackToDashboard }) {
                             </td>
                             <td className="px-3 py-4 break-words">{entryLabel}</td>
                             <td className="px-3 py-4 break-words">{intervalLabel}</td>
-                            <td className="px-3 py-4 break-words">{breakReturnLabel}</td>
                             <td className="px-3 py-4 break-words">{exitLabel}</td>
                             <td className="px-3 py-4 break-words">{workedLabel}</td>
                             <td className="px-3 py-4 break-words">{idleLabel}</td>

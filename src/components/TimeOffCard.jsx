@@ -1,4 +1,4 @@
-import { CalendarCheck2, CalendarDays, Plane, Timer } from 'lucide-react'
+import { AlertTriangle, CalendarCheck2, CalendarDays, Plane, Timer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { ViewAllButton } from './ViewAllButton'
@@ -8,13 +8,16 @@ const statusTone = {
     'border border-emerald-200/80 bg-emerald-500/12 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/15 dark:text-emerald-100',
   pending:
     'border border-amber-200/80 bg-amber-500/12 text-amber-700 dark:border-amber-400/50 dark:bg-amber-500/15 dark:text-amber-100',
+  not_requested:
+    'border border-slate-200/80 bg-slate-100/70 text-slate-600 dark:border-slate-500/40 dark:bg-slate-500/15 dark:text-slate-100',
 }
 
 export function TimeOffCard({ summary, onRequest, onViewAll }) {
   const { t } = useTranslation()
   const resolvedSummary = summary || {}
-  const statusKey = resolvedSummary.statusKey || resolvedSummary.status || 'approved'
-  const normalizedStatusKey = typeof statusKey === 'string' ? statusKey.toLowerCase() : 'approved'
+  const statusKey = resolvedSummary.statusKey || resolvedSummary.status || 'not_requested'
+  const normalizedStatusKey =
+    typeof statusKey === 'string' ? statusKey.toLowerCase() : 'not_requested'
   const hasSummary =
     Boolean(summary) &&
     (summary.availableDays != null ||
@@ -108,22 +111,18 @@ export function TimeOffCard({ summary, onRequest, onViewAll }) {
               {statusDisplayLabel}
             </span>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-[12px]">
-            <span className="break-words">{t('dashboardPage.timeOff.absences')}</span>
-            <span className="font-semibold text-foreground break-words">{absencesLabel}</span>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-[12px] font-semibold sm:text-[13px]">
+              <AlertTriangle className="h-4 w-4 text-primary" />
+              {t('dashboardPage.timeOff.absences')}
+            </div>
+            <span className="text-[12px] font-semibold break-words sm:text-[13px] sm:text-right">
+              {absencesLabel}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
-        <button
-          className="h-10 w-full rounded-full bg-primary text-[11px] font-semibold text-primary-foreground shadow-[0_18px_40px_-22px_rgba(62,82,152,0.6)] transition hover:-translate-y-0.5 hover:bg-primary/90 sm:h-11 sm:text-xs"
-          type="button"
-          onClick={() => onRequest?.()}
-        >
-          {t('dashboardPage.timeOff.request')}
-        </button>
-      </div>
     </section>
   )
 }
