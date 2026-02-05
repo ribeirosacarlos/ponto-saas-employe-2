@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
@@ -33,7 +33,9 @@ export async function logoutRequest() {
   return data
 }
 
+// Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
+  console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')
   const { data } = await api.get('/v1/auth/me')
   const payload = data?.data || data || {}
   return {
