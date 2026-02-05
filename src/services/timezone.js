@@ -1,7 +1,7 @@
-import { api } from './http/api'
 import { fetchCompanyTimezone } from './companyTimezoneService'
 import { getSettingsOverview } from './settings/getSettingsOverview'
 import { DEFAULT_TIMEZONE, isValidTimeZone } from '../lib/datetime'
+import { getCurrentUser } from './authService'
 
 const TZ_STORAGE_KEY = 'company_timezone'
 
@@ -47,12 +47,11 @@ const extractTimezoneFromMe = (payload = {}) => {
 
 export async function fetchEffectiveTimezone() {
   try {
-    const { data } = await api.get('/v1/auth/me')
-    const payload = data?.data ?? data ?? {}
+    const payload = await getCurrentUser()
     const fromMe = extractTimezoneFromMe(payload)
     if (fromMe) return fromMe
   } catch (error) {
-    logDev('Failed to fetch /v1/auth/me for timezone', error)
+    logDev('Failed to fetch user data for timezone', error)
   }
 
   try {

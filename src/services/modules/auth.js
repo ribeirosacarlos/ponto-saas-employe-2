@@ -17,7 +17,9 @@ export async function logoutRequest() {
   return data?.data || data
 }
 
+// Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
+  console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')
   const { data } = await api.get('/v1/auth/me')
   return data?.data || data
 }
