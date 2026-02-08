@@ -3,7 +3,7 @@ import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  'https://api.jornafy.com/api'
+  (import.meta.env.DEV ? '/api' : 'https://api.jornafy.com/api')
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +18,11 @@ api.interceptors.request.use((config) => {
 })
 
 attachForbiddenInterceptor(api)
+
+
+const ENTRIES_CACHE_MS = 15 * 1000 // 15s cache to squash duplicate rapid requests
+const entriesCache = new Map()
+const entriesInflight = new Map()
 
 export async function loginRequest(email, password) {
   const { data } = await api.post('/v1/auth/login', { email, password })
@@ -100,7 +105,19 @@ export async function getEmployeeEntries({
   page = 1,
   perPage = 20,
   preferLatestPage = true,
+  forceRefresh = false,
 } = {}) {
+  const cacheKey = JSON.stringify({ from: from || null, to: to || null, page, perPage, preferLatestPage })
+
+  if (!forceRefresh) {
+    const cached = entriesCache.get(cacheKey)
+    if (cached && Date.now() - cached.time < ENTRIES_CACHE_MS) {
+      return cached.value
+    }
+    const inflight = entriesInflight.get(cacheKey)
+    if (inflight) return inflight
+  }
+
   const buildParams = (pageValue) => {
     const params = {}
     if (pageValue) params.page = pageValue
@@ -115,30 +132,41 @@ export async function getEmployeeEntries({
     return { data, pageValue }
   }
 
-  let response = await fetchPage(page)
-  let parsed = parseEntriesResponse(response.data, { page, perPage })
+  const loadEntries = async () => {
+    let response = await fetchPage(page)
+    let parsed = parseEntriesResponse(response.data, { page, perPage })
 
-  if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
-    const today = new Date()
-    const filterAllowsToday =
-      (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
-    const hasTodayEntry =
-      filterAllowsToday &&
-      parsed.data.some((entry) => {
-        const value = extractClockedAt(entry)
-        if (!value) return false
-        const dt = new Date(value)
-        return !isNaN(dt) && isSameDay(dt, today)
-      })
+    if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
+      const today = new Date()
+      const filterAllowsToday =
+        (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
+      const hasTodayEntry =
+        filterAllowsToday &&
+        parsed.data.some((entry) => {
+          const value = extractClockedAt(entry)
+          if (!value) return false
+          const dt = new Date(value)
+          return !isNaN(dt) && isSameDay(dt, today)
+        })
 
-    // If the first page doesn't include today's records and there are more pages, fetch the last page.
-    if (!hasTodayEntry && parsed.meta.currentPage === 1) {
-      response = await fetchPage(parsed.meta.lastPage)
-      parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+      // If the first page doesn't include today's records and there are more pages, fetch the last page.
+      if (!hasTodayEntry && parsed.meta.currentPage === 1) {
+        response = await fetchPage(parsed.meta.lastPage)
+        parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+      }
     }
+
+    entriesCache.set(cacheKey, { value: parsed, time: Date.now() })
+    return parsed
   }
 
-  return parsed
+  const promise = loadEntries()
+  entriesInflight.set(cacheKey, promise)
+  try {
+    return await promise
+  } finally {
+    entriesInflight.delete(cacheKey)
+  }
 }
 
 export async function listEntries(page = 1) {
@@ -166,15 +194,40 @@ export async function endBreak(coords = {}) {
   return breakRequest('end', coords)
 }
 
-export async function getWorkedToday() {
-  const { data } = await api.get('/v1/employee/worked-today')
-  const payload = data?.data || data || {}
+let workedTodayCache = null
+let workedTodayFetchedAt = 0
+let workedTodayInflight = null
+const WORKED_TODAY_CACHE_MS = 60 * 1000 // 1 minute cache to avoid duplicate calls on load
 
-  return {
-    ...payload,
-    workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
-    workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
+export async function getWorkedToday(forceRefresh = false) {
+  const now = Date.now()
+  const cacheValid = !forceRefresh && workedTodayCache && now - workedTodayFetchedAt < WORKED_TODAY_CACHE_MS
+  if (cacheValid) return workedTodayCache
+
+  if (!forceRefresh && workedTodayInflight) {
+    return workedTodayInflight
   }
+
+  if (forceRefresh) {
+    workedTodayCache = null
+    workedTodayFetchedAt = 0
+  }
+
+  workedTodayInflight = (async () => {
+    const { data } = await api.get('/v1/employee/worked-today')
+    const payload = data?.data || data || {}
+    const normalized = {
+      ...payload,
+      workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
+      workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
+    }
+    workedTodayCache = normalized
+    workedTodayFetchedAt = Date.now()
+    workedTodayInflight = null
+    return normalized
+  })()
+
+  return workedTodayInflight
 }
 
 export async function getOpenTimeEntryStatus() {

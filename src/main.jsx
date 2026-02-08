@@ -10,16 +10,14 @@ import { TimezoneProvider } from './providers/TimezoneProvider.jsx'
 import './i18n/i18n.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <AccessProvider>
-      <ThemeProvider defaultTheme="light">
-        <ToastProvider>
-          <TimezoneProvider>
-            <App />
-            <Toaster />
-          </TimezoneProvider>
-        </ToastProvider>
-      </ThemeProvider>
-    </AccessProvider>
-  </React.StrictMode>,
+  <AccessProvider>
+    <ThemeProvider defaultTheme="light">
+      <ToastProvider>
+        <TimezoneProvider>
+          <App />
+          <Toaster />
+        </TimezoneProvider>
+      </ToastProvider>
+    </ThemeProvider>
+  </AccessProvider>,
 )
