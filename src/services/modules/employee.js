@@ -1,4 +1,5 @@
 import { api } from '../http/api'
+import { getEmployeeEntries as coreGetEmployeeEntries, listEntries as coreListEntries } from '../../lib/api'
 
 export async function clockRequest(type, coords = {}) {
   const allowedTypes = ['in', 'out']
@@ -15,91 +16,12 @@ export async function clockRequest(type, coords = {}) {
   return data
 }
 
-const parseEntriesResponse = (data, { page, perPage }) => {
-  const payload = data?.data && !Array.isArray(data.data) ? data.data : data
-  const entries = Array.isArray(payload?.data)
-    ? payload.data
-    : Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.entries)
-        ? payload.entries
-        : []
-
-  const metaSource = data?.meta || payload?.meta || payload || {}
-  const meta = {
-    currentPage:
-      metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
-    perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
-    total: metaSource.total ?? payload?.total,
-    lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
-  }
-
-  return { data: entries, meta }
-}
-
-const extractClockedAt = (entry) =>
-  entry?.clocked_at ||
-  entry?.clockedAt ||
-  entry?.date ||
-  entry?.timestamp ||
-  entry?.created_at ||
-  null
-
-const isSameDay = (left, right) =>
-  left.getFullYear() === right.getFullYear() &&
-  left.getMonth() === right.getMonth() &&
-  left.getDate() === right.getDate()
-
-export async function getEmployeeEntries({
-  from,
-  to,
-  page = 1,
-  perPage = 20,
-  preferLatestPage = true,
-} = {}) {
-  const buildParams = (pageValue) => {
-    const params = {}
-    if (pageValue) params.page = pageValue
-    if (perPage) params.per_page = perPage
-    if (from) params.from = from
-    if (to) params.to = to
-    return params
-  }
-
-  const fetchPage = async (pageValue) => {
-    const params = buildParams(pageValue)
-
-    const { data } = await api.get('/v1/employee/entries', { params })
-    return { data, pageValue }
-  }
-
-  let response = await fetchPage(page)
-  let parsed = parseEntriesResponse(response.data, { page, perPage })
-
-  if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
-    const today = new Date()
-    const filterAllowsToday =
-      (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
-    const hasTodayEntry =
-      filterAllowsToday &&
-      parsed.data.some((entry) => {
-        const value = extractClockedAt(entry)
-        if (!value) return false
-        const dt = new Date(value)
-        return !isNaN(dt) && isSameDay(dt, today)
-      })
-
-    if (!hasTodayEntry && parsed.meta.currentPage === 1) {
-      response = await fetchPage(parsed.meta.lastPage)
-      parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
-    }
-  }
-
-  return parsed
+export async function getEmployeeEntries(params = {}) {
+  return coreGetEmployeeEntries(params)
 }
 
 export async function listEntries(page = 1) {
-  const { data, meta } = await getEmployeeEntries({ page })
+  const { data, meta } = await coreListEntries(page)
   return { data, meta }
 }
 

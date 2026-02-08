@@ -42,6 +42,20 @@ const WEEK_DAYS = [
 
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
 
+const toHHmm = (value) => {
+  if (value === null || value === undefined) return null
+  const str = String(value).trim()
+  if (!str) return null
+  const [hours = '', minutes = '00'] = str.split(':')
+  if (hours === '' && minutes === '') return null
+  const hNum = Number.parseInt(hours, 10)
+  const mNum = Number.parseInt(minutes, 10)
+  if (!Number.isFinite(hNum) || !Number.isFinite(mNum)) return null
+  const h = String(hNum).padStart(2, '0').slice(-2)
+  const m = String(mNum).padStart(2, '0').slice(0, 2)
+  return `${h}:${m}`
+}
+
 const buildDefaultDay = (weekday) => {
   const working = weekday <= 5
   return {
@@ -69,10 +83,10 @@ const normalizeDayFromSource = (source = {}, weekday) => {
   return {
     weekday,
     is_working_day: Boolean(working),
-    start_time: source.start_time ?? source.startTime ?? defaults.start_time,
-    end_time: source.end_time ?? source.endTime ?? defaults.end_time,
-    break_start_time: source.break_start_time ?? source.breakStartTime ?? defaults.break_start_time,
-    break_end_time: source.break_end_time ?? source.breakEndTime ?? defaults.break_end_time,
+    start_time: toHHmm(source.start_time ?? source.startTime ?? defaults.start_time),
+    end_time: toHHmm(source.end_time ?? source.endTime ?? defaults.end_time),
+    break_start_time: toHHmm(source.break_start_time ?? source.breakStartTime ?? defaults.break_start_time),
+    break_end_time: toHHmm(source.break_end_time ?? source.breakEndTime ?? defaults.break_end_time),
     break_minutes: source.break_minutes ?? source.breakMinutes ?? defaults.break_minutes,
   }
 }
@@ -106,14 +120,18 @@ const buildPayload = (form) => ({
       const parsed = Number(value)
       return Number.isFinite(parsed) ? parsed : null
     }
+    const formatTime = (value) => {
+      const normalized = toHHmm(value)
+      return normalized || null
+    }
 
     return {
       weekday,
       is_working_day: working,
-      start_time: working ? day.start_time || null : null,
-      end_time: working ? day.end_time || null : null,
-      break_start_time: working ? day.break_start_time || null : null,
-      break_end_time: working ? day.break_end_time || null : null,
+      start_time: working ? formatTime(day.start_time) : null,
+      end_time: working ? formatTime(day.end_time) : null,
+      break_start_time: working ? formatTime(day.break_start_time) : null,
+      break_end_time: working ? formatTime(day.break_end_time) : null,
       break_minutes: working ? toNumber(day.break_minutes) : null,
     }
   }),
