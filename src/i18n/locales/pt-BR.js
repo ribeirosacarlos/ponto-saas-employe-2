@@ -550,6 +550,7 @@ const ptBR = {
         recorded: 'Horas registradas',
         bank: 'Banco de horas (mês)',
         todayBadge: 'Hoje',
+        hoursWorked: 'Horas trabalhadas',
       },
       lastRecord: {
         title: 'Último registro',
@@ -560,6 +561,9 @@ const ptBR = {
       lastPunch: {
         title: 'Último ponto',
         registeredAt: 'Registrado às: {{time}}',
+        adjustmentTag: 'Ajuste',
+        adjustmentPendingTooltip: 'Solicitação de ajuste pendente de aprovação',
+        details: 'Detalhes',
         opened: 'Aberto',
         none: 'Ainda não há registros',
         sections: {

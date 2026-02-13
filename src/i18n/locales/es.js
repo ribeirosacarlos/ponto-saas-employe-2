@@ -586,6 +586,7 @@ const es = {
         recorded: 'Horas registradas',
         bank: 'Banco de horas (mes)',
         todayBadge: 'Hoy',
+        hoursWorked: 'Horas trabajadas',
       },
       lastRecord: {
         title: 'Último registro',
@@ -596,6 +597,9 @@ const es = {
       lastPunch: {
         title: 'Último fichaje',
         registeredAt: 'Registrado a las: {{time}}',
+        adjustmentTag: 'Ajuste',
+        adjustmentPendingTooltip: 'Solicitud de ajuste pendiente de aprobación',
+        details: 'Detalles',
         opened: 'Abierto',
         none: 'Aún no hay registros',
         sections: {

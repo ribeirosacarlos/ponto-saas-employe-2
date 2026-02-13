@@ -1,7 +1,7 @@
 import { api } from './http/api'
 
 const normalizeAdjustment = (item = {}, index = 0) => {
-  const status = (item.status ?? item.state ?? '').toString().toLowerCase()
+  const status = (item.adjustment_status ?? item.status ?? item.state ?? '').toString().toLowerCase()
 
   return {
     ...item,
@@ -9,11 +9,14 @@ const normalizeAdjustment = (item = {}, index = 0) => {
     companyId: item.company_id ?? item.companyId ?? null,
     userId: item.user_id ?? item.userId ?? item.employee_id ?? item.employeeId ?? null,
     approverId: item.approver_id ?? item.approverId ?? null,
-    originalTime: item.original_time ?? item.originalTime ?? item.original ?? null,
-    correctedTime: item.corrected_time ?? item.correctedTime ?? item.corrected ?? null,
-    reason: item.reason ?? item.justification ?? item.notes ?? '',
+    originalTime: item.clocked_at ?? item.original_time ?? item.originalTime ?? item.original ?? null,
+    correctedTime:
+      item.proposed_clocked_at ?? item.proposedClockedAt ?? item.corrected_time ?? item.correctedTime ?? item.corrected ?? null,
+    proposedType: item.proposed_type ?? item.proposedType ?? item.type ?? null,
+    reason: item.adjustment_reason ?? item.reason ?? item.justification ?? item.notes ?? '',
+    reviewReason: item.adjustment_review_reason ?? item.review_reason ?? item.reviewReason ?? '',
     status,
-    createdAt: item.created_at ?? item.createdAt ?? null,
+    createdAt: item.adjustment_requested_at ?? item.created_at ?? item.createdAt ?? null,
     updatedAt: item.updated_at ?? item.updatedAt ?? null,
     user: item.user ?? item.employee ?? null,
     approver: item.approver ?? null,
@@ -65,13 +68,13 @@ export async function listAdminAdjustments({ status, userId, page = 1, perPage =
 
 export async function approveAdminAdjustment(id) {
   if (!id) return null
-  const { data } = await api.post(`/v1/area-manager/adjustments/${id}/approve`)
+  const { data } = await api.post(`/v1/admin/time-entries/${id}/adjustment/approve`)
   return normalizeAdjustment(data?.data ?? data ?? {}, 0)
 }
 
 export async function rejectAdminAdjustment(id) {
   if (!id) return null
-  const { data } = await api.post(`/v1/area-manager/adjustments/${id}/reject`)
+  const { data } = await api.post(`/v1/admin/time-entries/${id}/adjustment/reject`)
   return normalizeAdjustment(data?.data ?? data ?? {}, 0)
 }
 

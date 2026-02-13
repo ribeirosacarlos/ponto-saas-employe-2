@@ -129,8 +129,45 @@ export async function listEntries(page = 1) {
   return { data, meta }
 }
 
-export async function requestAdjustment(payload) {
-  const { data } = await api.post('/v1/employee/adjustments', payload)
+export async function requestAdjustment(timeEntryOrPayload, maybePayload = null) {
+  // New API: adjustments are tied to a specific time entry.
+  // Accept both the new signature (timeEntryId, payload) and the legacy one (payload containing the id).
+  const payload = maybePayload || timeEntryOrPayload || {}
+  const timeEntryIdSource = maybePayload ? timeEntryOrPayload : payload
+
+  const maybeId =
+    (typeof timeEntryIdSource === 'string' ? timeEntryIdSource : null) ??
+    (timeEntryIdSource && timeEntryIdSource.timeEntryId) ??
+    timeEntryIdSource?.time_entry_id ??
+    timeEntryIdSource?.time_entry ??
+    timeEntryIdSource?.entry_id ??
+    timeEntryIdSource?.entryId
+  const timeEntryId = timeEntryIdSource?.id && !maybeId ? timeEntryIdSource.id : maybeId
+
+  if (!timeEntryId) {
+    throw new Error('requestAdjustment now requires a timeEntryId (time entry UUID)')
+  }
+
+  const normalizedPayload = {
+    proposed_clocked_at:
+      payload?.proposed_clocked_at ??
+      payload?.proposedClockedAt ??
+      payload?.corrected_time ??
+      payload?.clocked_at ??
+      payload?.clockedAt ??
+      null,
+    proposed_type: payload?.proposed_type ?? payload?.proposedType ?? payload?.type ?? payload?.entry_type ?? null,
+    reason: payload?.reason ?? payload?.adjustment_reason ?? payload?.justification ?? payload?.notes ?? '',
+  }
+
+  // Remove undefined/null keys to avoid validation errors.
+  Object.keys(normalizedPayload).forEach((key) => {
+    if (normalizedPayload[key] === undefined || normalizedPayload[key] === null) {
+      delete normalizedPayload[key]
+    }
+  })
+
+  const { data } = await api.post(`/v1/employee/time-entries/${timeEntryId}/adjustment`, normalizedPayload)
   return data
 }
 
