@@ -629,6 +629,7 @@ const en = {
       openEntryWarning: {
         title: 'Open time entry',
         description: 'You have an open punch that must be closed to regularize your day.',
+        cta: 'Resolve now',
         nextAction: 'Next action: {{action}}',
       },
       nextActions: {

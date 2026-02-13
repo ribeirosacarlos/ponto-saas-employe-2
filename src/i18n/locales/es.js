@@ -626,6 +626,7 @@ const es = {
       openEntryWarning: {
         title: 'Fichaje abierto',
         description: 'Tienes un registro abierto que debe cerrarse para regularizar tu día.',
+        cta: 'Regulariza ahora',
         nextAction: 'Próxima acción: {{action}}',
       },
       nextActions: {

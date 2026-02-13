@@ -590,6 +590,7 @@ const ptBR = {
       openEntryWarning: {
         title: 'Ponto em aberto',
         description: 'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+        cta: 'Regularize agora',
         nextAction: 'Próxima ação: {{action}}',
       },
       nextActions: {
