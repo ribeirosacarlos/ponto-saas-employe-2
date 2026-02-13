@@ -16,7 +16,14 @@ import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
 
-export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting }) {
+export function EntryAdjustmentModal({
+  entry,
+  trigger,
+  onSubmit,
+  isSubmitting,
+  defaultDate,
+  hideOriginalTime = false,
+}) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
@@ -26,7 +33,12 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
   })
 
   const dateValue = entry?.clockedAt || entry?.clocked_at || entry?.date || entry?.timestamp || ''
-  const formattedDate = dateValue ? format(new Date(dateValue), 'yyyy-MM-dd') : ''
+  const fallbackDate = defaultDate ? new Date(defaultDate) : null
+  const formattedDate = dateValue
+    ? format(new Date(dateValue), 'yyyy-MM-dd')
+    : fallbackDate
+      ? format(fallbackDate, 'yyyy-MM-dd')
+      : ''
   const formattedTime = dateValue ? format(new Date(dateValue), 'HH:mm') : ''
 
   useEffect(() => {
@@ -113,7 +125,7 @@ export function EntryAdjustmentModal({ entry, trigger, onSubmit, isSubmitting })
             </div>
           </div>
 
-          {formattedDate || formattedTime ? (
+          {!hideOriginalTime && (formattedDate || formattedTime) ? (
             <div className="space-y-2">
               <Label>{t('historyPage.adjustment.originalTime')}</Label>
               <Input value={[formattedDate, formattedTime].filter(Boolean).join(' ')} readOnly />
