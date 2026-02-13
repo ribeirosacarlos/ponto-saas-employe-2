@@ -17,6 +17,17 @@ export async function logoutRequest() {
   return data?.data || data
 }
 
+export async function acceptInvite(payload = {}) {
+  const { email, invite_code, password, password_confirmation } = payload
+  const { data } = await api.post('/v1/invites/accept', {
+    email,
+    invite_code,
+    password,
+    password_confirmation,
+  })
+  return data
+}
+
 // Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
   console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')

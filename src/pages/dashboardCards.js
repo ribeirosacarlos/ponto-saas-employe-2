@@ -80,13 +80,27 @@ function extractApiMap(apiSource) {
   return map
 }
 
-const apiSourceKey = findSourceKey('lib/api.js')
-const API_ENDPOINT_MAP = extractApiMap(apiSourceKey ? RAW_SOURCES[apiSourceKey] : '')
+const apiSourceKeys = [
+  'services/modules/employee.js',
+  'services/modules/employees.js',
+  'services/modules/shifts.js',
+  'services/modules/auth.js',
+]
+  .map((hint) => findSourceKey(hint))
+  .filter(Boolean)
+
+const API_ENDPOINT_MAP = apiSourceKeys.reduce((acc, key) => {
+  const map = extractApiMap(RAW_SOURCES[key])
+  Object.entries(map).forEach(([fnName, endpoints]) => {
+    acc[fnName] = [...(acc[fnName] || []), ...endpoints]
+  })
+  return acc
+}, {})
 
 function inferEndpointsFromSources(sourceKeys) {
   const combinedAll = sourceKeys.map((key) => RAW_SOURCES[key] || '').join('\n')
   const combinedNonApi = sourceKeys
-    .filter((key) => !apiSourceKey || key !== apiSourceKey)
+    .filter((key) => !apiSourceKeys.includes(key))
     .map((key) => RAW_SOURCES[key] || '')
     .join('\n')
 

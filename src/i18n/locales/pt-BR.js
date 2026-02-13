@@ -538,6 +538,7 @@ const ptBR = {
         backFromBreak: 'Registrar volta',
         backToWork: 'Voltar do intervalo',
         goDashboard: 'Ir para o dashboard',
+        registerPoint: 'Registrar ponto',
         logout: 'Sair da aplicação',
         registering: 'Registrando...',
       },

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
-import { getEmployeeEntries, requestAdjustment } from '../lib/api'
+import { getEmployeeEntries, requestAdjustment } from '../services/modules/employee'
 import { exportEntriesToCSV } from '../lib/exportEntries'
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 import { useAuthStore } from '../store/useAuth'

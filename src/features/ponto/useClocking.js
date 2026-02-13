@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui/use-toast'
-import { clockRequest, endBreak, listEntries, startBreak } from '../../lib/api'
+import { clockRequest, endBreak, listEntries, startBreak } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 

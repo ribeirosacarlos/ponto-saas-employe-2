@@ -167,6 +167,7 @@ export const NAV_ITEMS = [
     page: 'settings',
     path: '/settings',
     group: 'admin',
+    requires: { anyOf: ['admin', 'super_admin'] },
     showInDrawer: true,
     showInDesktop: true,
   },

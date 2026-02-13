@@ -4,9 +4,9 @@ import {
   createEmployee,
   deleteEmployee,
   listEmployees,
-  listShifts,
   updateEmployee,
-} from '../../lib/api'
+} from '../../services/modules/employees'
+import { listShifts } from '../../services/modules/shifts'
 
 const ROLE_PRIORITY = ['admin', 'manager', 'area_manager', 'employee']
 

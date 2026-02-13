@@ -7,7 +7,7 @@ import { Label } from '../components/ui/label'
 import { useToast } from '../components/ui/use-toast'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { api } from '../lib/api'
+import { acceptInvite } from '../services/modules/auth'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 
@@ -61,14 +61,14 @@ export default function ActivateAccount() {
 
     setLoading(true)
     try {
-      const { data } = await api.post('/v1/invites/accept', {
+      const data = await acceptInvite({
         email,
         invite_code: inviteCode.trim(),
         password,
         password_confirmation: passwordConfirmation,
       })
 
-      const successMessage = data?.message || t('activateAccount.success')
+      const successMessage = data?.message || data?.data?.message || t('activateAccount.success')
 
       toast({
         title: t('activateAccount.success'),

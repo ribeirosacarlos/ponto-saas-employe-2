@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
-import { getWorkedToday } from '../../lib/api'
+import { getWorkedToday } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 
