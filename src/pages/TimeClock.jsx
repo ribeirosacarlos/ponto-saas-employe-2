@@ -792,28 +792,24 @@ export default function TimeClock({ onContinueToDashboard }) {
                 </div>
               ) : null}
               {hasOpenEntry ? (
-                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/90 p-4 shadow-[0_16px_40px_-32px_rgba(251,191,36,0.35)] dark:border-amber-500/40 dark:bg-amber-500/10">
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-rose-700/70 bg-rose-600 p-4 text-white shadow-[0_18px_48px_-24px_rgba(190,24,93,0.55)] transition hover:shadow-[0_24px_62px_-28px_rgba(190,24,93,0.6)] dark:border-rose-400/60 dark:bg-rose-500"
+                >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
-                      <AlertTriangle className="h-5 w-5" />
+                    <span className="flex h-10 w-10 items-center justify-center text-white">
+                      <AlertTriangle className="h-5 w-5" aria-hidden />
                     </span>
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                      <p className="text-sm font-semibold leading-tight">
                         {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
                       </p>
-                      <p className="text-xs text-amber-800/90 dark:text-amber-50/90">
+                      <p className="text-[13px] leading-snug text-rose-50">
                         {t(
                           'timeClock.openEntryWarning.description',
                           'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
                         )}
                       </p>
-                      {openEntryNextAction ? (
-                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
-                          {t('timeClock.openEntryWarning.nextAction', {
-                            action: openEntryNextAction,
-                          })}
-                        </p>
-                      ) : null}
                     </div>
                   </div>
                 </div>
