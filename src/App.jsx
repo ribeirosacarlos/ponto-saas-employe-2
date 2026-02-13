@@ -30,7 +30,7 @@ import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.js
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { useAuthStore } from './store/useAuth.js'
-import { getWorkedToday } from './lib/api'
+import { getWorkedToday } from './services/modules/employee'
 import { getCurrentUser, clearAuthCache } from './services/authService'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'

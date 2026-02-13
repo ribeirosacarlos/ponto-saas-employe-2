@@ -174,11 +174,6 @@ export async function listEntries(page = 1) {
   return { data, meta }
 }
 
-export async function requestAdjustment(payload) {
-  const { data } = await api.post('/v1/employee/adjustments', payload)
-  return data
-}
-
 export async function breakRequest(action, coords = {}) {
   const actionLabel = action === 'start' ? 'start' : 'end'
   throw new Error(
@@ -192,47 +187,6 @@ export async function startBreak(coords = {}) {
 
 export async function endBreak(coords = {}) {
   return breakRequest('end', coords)
-}
-
-let workedTodayCache = null
-let workedTodayFetchedAt = 0
-let workedTodayInflight = null
-const WORKED_TODAY_CACHE_MS = 60 * 1000 // 1 minute cache to avoid duplicate calls on load
-
-export async function getWorkedToday(forceRefresh = false) {
-  const now = Date.now()
-  const cacheValid = !forceRefresh && workedTodayCache && now - workedTodayFetchedAt < WORKED_TODAY_CACHE_MS
-  if (cacheValid) return workedTodayCache
-
-  if (!forceRefresh && workedTodayInflight) {
-    return workedTodayInflight
-  }
-
-  if (forceRefresh) {
-    workedTodayCache = null
-    workedTodayFetchedAt = 0
-  }
-
-  workedTodayInflight = (async () => {
-    const { data } = await api.get('/v1/employee/worked-today')
-    const payload = data?.data || data || {}
-    const normalized = {
-      ...payload,
-      workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
-      workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
-    }
-    workedTodayCache = normalized
-    workedTodayFetchedAt = Date.now()
-    workedTodayInflight = null
-    return normalized
-  })()
-
-  return workedTodayInflight
-}
-
-export async function getOpenTimeEntryStatus() {
-  const { data } = await api.get('/v1/employee/time-entries/open-status')
-  return data?.data ?? data
 }
 
 export async function getCurrentEmployeeShift() {
