@@ -306,9 +306,6 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                   <p className="text-sm font-semibold text-foreground">
                     {adjustment.user?.name || t('adminAdjustmentsPage.table.userFallback', 'Colaborador')}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {adjustment.user?.email || t('adminAdjustmentsPage.table.userEmailFallback', 'Email nao informado')}
-                  </p>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock3 className="h-3.5 w-3.5" />
@@ -347,9 +344,6 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {t('adminAdjustmentsPage.table.id', 'ID')}: {adjustment.id}
-                </p>
                 {adjustment.status === 'pending' ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <Button

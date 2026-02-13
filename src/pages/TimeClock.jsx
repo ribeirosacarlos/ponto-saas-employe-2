@@ -7,13 +7,14 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useClocking } from '../features/ponto/useClocking'
-import { getWorkedToday, getOpenTimeEntryStatus } from '../services/modules/employee'
+import { getWorkedToday, getOpenTimeEntryStatus, requestAdjustment } from '../services/modules/employee'
 import { useAbsenceStatus } from '../features/absences/useAbsenceStatus'
 import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
 import { useDateTime } from '../hooks/useDateTime'
+import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 
 const statusTokens = {
   idle: {
@@ -65,6 +66,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [recentEntries, setRecentEntries] = useState([])
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
+  const [submittingOpenAdjustment, setSubmittingOpenAdjustment] = useState(false)
   const userMenuRef = useRef(null)
   const isMounted = useRef(true)
 
@@ -523,6 +525,17 @@ export default function TimeClock({ onContinueToDashboard }) {
 
   const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
 
+  const openEntryForAdjustment = useMemo(() => {
+    if (!hasOpenEntry) return null
+    return (
+      openEntryStatus?.open_entry ||
+      openEntryStatus?.entry ||
+      todaysEntries?.[todaysEntries.length - 1] ||
+      entries?.[0] ||
+      null
+    )
+  }, [entries, hasOpenEntry, openEntryStatus?.entry, openEntryStatus?.open_entry, todaysEntries])
+
   const overtimeLabel = useMemo(
     () => (overtimeLoading ? t('common.loading', 'Carregando...') : formatBalanceToLabel(overtimeMinutes)),
     [formatBalanceToLabel, overtimeLoading, overtimeMinutes, t],
@@ -558,6 +571,30 @@ export default function TimeClock({ onContinueToDashboard }) {
     ],
     [normalizedStatus, overtimeLabel, overtimeTone, plannedLabel, plannedTone, t, workedTodayLabel],
   )
+
+  const handleOpenEntryAdjustment = async (payload, closeModal, resetForm) => {
+    const idKey = payload.entry_id || payload.original_time || 'open-entry'
+    setSubmittingOpenAdjustment(idKey)
+    try {
+      await requestAdjustment(payload)
+      toast({
+        title: t('toast.adjustmentSuccess.title'),
+        description: t('toast.adjustmentSuccess.description'),
+        variant: 'success',
+      })
+      closeModal?.()
+      resetForm?.()
+    } catch (error) {
+      toast({
+        title: t('historyPage.adjustment.errorTitle'),
+        description:
+          error.response?.data?.message || error.message || t('historyPage.adjustment.errorDescription'),
+        variant: 'error',
+      })
+    } finally {
+      setSubmittingOpenAdjustment(false)
+    }
+  }
 
   const normalizeEntryList = useCallback(
     (items = []) => {
@@ -792,27 +829,36 @@ export default function TimeClock({ onContinueToDashboard }) {
                 </div>
               ) : null}
               {hasOpenEntry ? (
-                <div
-                  role="alert"
-                  className="rounded-2xl border border-rose-700/70 bg-rose-600 p-4 text-white shadow-[0_18px_48px_-24px_rgba(190,24,93,0.55)] transition hover:shadow-[0_24px_62px_-28px_rgba(190,24,93,0.6)] dark:border-rose-400/60 dark:bg-rose-500"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center text-white">
-                      <AlertTriangle className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold leading-tight">
-                        {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
-                      </p>
-                      <p className="text-[13px] leading-snug text-rose-50">
-                        {t(
-                          'timeClock.openEntryWarning.description',
-                          'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <EntryAdjustmentModal
+                  entry={openEntryForAdjustment}
+                  defaultDate={new Date()}
+                  hideOriginalTime
+                  onSubmit={handleOpenEntryAdjustment}
+                  isSubmitting={Boolean(submittingOpenAdjustment)}
+                  trigger={
+                    <button
+                      type="button"
+                      className="w-full rounded-2xl border border-rose-700/70 bg-rose-600 p-4 text-left text-white shadow-[0_18px_48px_-24px_rgba(190,24,93,0.55)] transition hover:shadow-[0_24px_62px_-28px_rgba(190,24,93,0.6)] focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-rose-600 dark:border-rose-400/60 dark:bg-rose-500"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center text-white">
+                          <AlertTriangle className="h-5 w-5" aria-hidden />
+                        </span>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold leading-tight">
+                            {t('timeClock.openEntryWarning.title', 'Ponto em aberto')}
+                          </p>
+                          <p className="text-[13px] leading-snug text-rose-50">
+                            {t(
+                              'timeClock.openEntryWarning.description',
+                              'Existe um registro em aberto que precisa ser finalizado para regularizar seu dia.',
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  }
+                />
               ) : null}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">

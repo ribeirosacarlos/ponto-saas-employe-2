@@ -258,7 +258,7 @@ export default function History({ onBackToDashboard }) {
         setLoadingMore(false)
       }
     },
-    [appliedFilters, t],
+    [appliedFilters.from, appliedFilters.to, t],
   )
 
   const supportsServerPagination = useMemo(() => {
