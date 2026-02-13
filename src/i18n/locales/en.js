@@ -599,6 +599,9 @@ const en = {
       lastPunch: {
         title: 'Last punch',
         registeredAt: 'Registered at: {{time}}',
+        adjustmentTag: 'Adjustment',
+        adjustmentPendingTooltip: 'Adjustment request pending approval',
+        details: 'Details',
         opened: 'Opened',
         none: 'No punches yet',
         sections: {

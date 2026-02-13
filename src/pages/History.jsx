@@ -430,10 +430,30 @@ export default function History({ onBackToDashboard }) {
   }
 
   const handleAdjustment = async (payload, closeModal, resetForm) => {
-    const idKey = payload.entry_id || payload.original_time || payload.date || ''
+    const timeEntryId =
+      payload.timeEntryId ||
+      payload.time_entry_id ||
+      payload.entry_id ||
+      payload.entry?.id ||
+      payload.entry?.uuid ||
+      (entries.find((item) => item.id || item.uuid)?.id ??
+        entries.find((item) => item.id || item.uuid)?.uuid) ||
+      ''
+    const idKey = timeEntryId || payload.original_time || payload.date || ''
+    if (!timeEntryId) {
+      toast({
+        title: t('historyPage.adjustment.errorTitle'),
+        description: t('historyPage.adjustment.missingEntry', 'Selecione um registro para ajustar.'),
+        variant: 'error',
+      })
+      return
+    }
     setSubmittingAdjustment(idKey)
     try {
-      await requestAdjustment(payload)
+      await requestAdjustment({
+        ...payload,
+        timeEntryId,
+      })
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),
@@ -576,6 +596,7 @@ export default function History({ onBackToDashboard }) {
           actions={
             <>
               <EntryAdjustmentModal
+                entries={entries}
                 onSubmit={handleAdjustment}
                 isSubmitting={Boolean(submittingAdjustment)}
                 trigger={

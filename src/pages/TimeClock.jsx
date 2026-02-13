@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -60,6 +60,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [workedTodayLabel, setWorkedTodayLabel] = useState('00:00')
   const [plannedMinutes, setPlannedMinutes] = useState(null)
+  const [plannedBreakWindow, setPlannedBreakWindow] = useState({ start: null, end: null })
   const [plannedLoading, setPlannedLoading] = useState(false)
   const [overtimeMinutes, setOvertimeMinutes] = useState(null)
   const [overtimeLoading, setOvertimeLoading] = useState(false)
@@ -67,6 +68,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
   const [submittingOpenAdjustment, setSubmittingOpenAdjustment] = useState(false)
+  const [isLastPunchExpanded, setIsLastPunchExpanded] = useState(true)
   const userMenuRef = useRef(null)
   const isMounted = useRef(true)
 
@@ -162,6 +164,12 @@ export default function TimeClock({ onContinueToDashboard }) {
   )
 
   const isLastPunchOpen = lastPunch?.type === 'in'
+  const registeredAtParts = useMemo(() => {
+    if (!lastPunchTime) return null
+    const full = t('timeClock.lastPunch.registeredAt', { time: lastPunchTime })
+    const [before, after] = full.split(lastPunchTime)
+    return { before: before?.trim?.() || '', after: after?.trim?.() || '' }
+  }, [lastPunchTime, t])
 
   const formatMinutesToLabel = (minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
@@ -170,6 +178,13 @@ export default function TimeClock({ onContinueToDashboard }) {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }
+
+  const isAdjustmentSource = (entry) =>
+    ['adjustment', 'proposed_adjustment'].includes(entry?.source || entry?.proposed_source)
+
+  const isPendingAdjustment = (entry) =>
+    isAdjustmentSource(entry) &&
+    (entry?.adjustment_status === 'pending' || entry?.status === 'pending' || entry?.state === 'pending')
 
   const punchTimelineRows = useMemo(() => {
     if (!todayWorkEntries.length) return []
@@ -204,7 +219,9 @@ export default function TimeClock({ onContinueToDashboard }) {
     const workSegments = segments.filter((segment) => segment.kind === 'work')
     const firstWork = workSegments[0]
     const lastWork = workSegments.length > 1 ? workSegments[workSegments.length - 1] : null
-    const firstBreak = segments.find((segment) => segment.kind === 'break')
+    const breakSegments = segments.filter((segment) => segment.kind === 'break')
+    const activeBreak = breakSegments.length ? breakSegments[0] : null
+    const lastRowSegment = breakSegments.length ? breakSegments[breakSegments.length - 1] : lastWork || firstWork
 
     const toTimeLabel = (entry) =>
       entry ? formatClockedTime(entry.clocked_at || entry.created_at) : '--:--'
@@ -231,7 +248,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
       const tone =
         segment.kind === 'break'
-          ? 'text-primary'
+          ? 'text-emerald-600 dark:text-emerald-300'
           : !hasEnd && type === 'last'
             ? 'text-emerald-500 dark:text-emerald-300'
             : 'text-foreground'
@@ -239,18 +256,20 @@ export default function TimeClock({ onContinueToDashboard }) {
       return {
         key: type,
         label: t(`timeClock.lastPunch.sections.${type}`),
-        startLabel: toTimeLabel(segment.start),
+        startLabel: segment.start ? toTimeLabel(segment.start) : plannedBreakWindow.start || '--:--',
         endLabel,
         duration: computeDuration(segment),
         tone,
         highlightEnd: segment.kind === 'work' && !hasEnd,
+        startPendingAdjustment: isPendingAdjustment(segment.start),
+        endPendingAdjustment: segment.end ? isPendingAdjustment(segment.end) : false,
       }
     }
 
     return [
       buildRow(firstWork, 'first'),
-      buildRow(firstBreak, 'interval'),
-      buildRow(lastWork, 'last'),
+      buildRow(activeBreak, 'interval'),
+      buildRow(lastRowSegment, 'last'),
     ].filter(Boolean)
   }, [
     currentTime,
@@ -355,6 +374,12 @@ export default function TimeClock({ onContinueToDashboard }) {
       return hours * 60 + minutes
     }
 
+    const formatPlannedTime = (value) => {
+      if (!value) return null
+      const [h = '00', m = '00'] = value.split(':')
+      return `${h}:${m}`
+    }
+
     const computePlannedMinutes = (day) => {
       if (!day) return null
       if (day.is_working_day === false) return 0
@@ -396,10 +421,25 @@ export default function TimeClock({ onContinueToDashboard }) {
         const minutes = computePlannedMinutes(plannedDay)
         if (!active) return
         setPlannedMinutes(minutes)
+        setPlannedBreakWindow({
+          start: formatPlannedTime(
+            plannedDay?.break_start_time ??
+              plannedDay?.breakStartTime ??
+              plannedDay?.break_start ??
+              plannedDay?.breakStart,
+          ),
+          end: formatPlannedTime(
+            plannedDay?.break_end_time ??
+              plannedDay?.breakEndTime ??
+              plannedDay?.break_end ??
+              plannedDay?.breakEnd,
+          ),
+        })
       } catch (error) {
         console.error('[TimeClock] Failed to load employee shift', error)
         if (!active) return
         setPlannedMinutes(null)
+        setPlannedBreakWindow({ start: null, end: null })
       } finally {
         if (active) setPlannedLoading(false)
       }
@@ -573,10 +613,29 @@ export default function TimeClock({ onContinueToDashboard }) {
   )
 
   const handleOpenEntryAdjustment = async (payload, closeModal, resetForm) => {
-    const idKey = payload.entry_id || payload.original_time || 'open-entry'
+    const timeEntryId =
+      payload.timeEntryId ||
+      payload.time_entry_id ||
+      payload.entry_id ||
+      openEntryForAdjustment?.id ||
+      openEntryForAdjustment?.uuid ||
+      openEntryForAdjustment?.time_entry_id ||
+      null
+    const idKey = timeEntryId || payload.original_time || 'open-entry'
+    if (!timeEntryId) {
+      toast({
+        title: t('historyPage.adjustment.errorTitle'),
+        description: t('historyPage.adjustment.missingEntry', 'Selecione um registro para ajustar.'),
+        variant: 'error',
+      })
+      return
+    }
     setSubmittingOpenAdjustment(idKey)
     try {
-      await requestAdjustment(payload)
+      await requestAdjustment({
+        ...payload,
+        timeEntryId,
+      })
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),
@@ -797,7 +856,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="grid gap-6">
             <div className="space-y-5 rounded-[26px] border border-border/80 bg-card/95 p-6 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.45)]">
               {isAbsentToday ? (
                 <div className="rounded-2xl border border-rose-200/70 bg-rose-500/10 p-4 shadow-[0_16px_40px_-30px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
@@ -870,67 +929,113 @@ export default function TimeClock({ onContinueToDashboard }) {
                     <p className="text-sm text-muted-foreground">{statusDescription}</p>
                   </div>
                 </div>
-                <div className="relative h-28 w-28">
-                  <div className={cn('absolute inset-0 rounded-full bg-gradient-to-br', statusTokens[normalizedStatus]?.ring)} />
-                  <div className="absolute inset-[10px] rounded-full border border-border/80 bg-card shadow-inner" />
-                  <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-background/85 text-center text-xs font-semibold shadow-sm backdrop-blur dark:bg-card/75">
-                    <span className="uppercase tracking-[0.18em] text-muted-foreground">
-                      {t('timeClock.summary.todayBadge', 'Hoje')}
-                    </span>
-                    <span className="text-lg font-semibold text-foreground">{workedTodayLabel}</span>
-                  </div>
-                </div>
               </div>
 
-              <div className="rounded-2xl border border-border/70 bg-background/85 px-4 py-4 shadow-[0_14px_30px_-22px_rgba(0,0,0,0.35)]">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Clock3 className="h-5 w-5" aria-hidden />
-                      </span>
-                      <div className="flex flex-col gap-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                          {t('timeClock.lastPunch.title')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {lastPunchTime
-                            ? t('timeClock.lastPunch.registeredAt', { time: lastPunchTime })
-                            : t('timeClock.lastPunch.none')}
-                        </p>
-                      </div>
+              <div className="overflow-hidden rounded-[28px] border border-border/70 bg-card/95 shadow-[0_22px_60px_-42px_rgba(0,0,0,0.35)]">
+                <div className="flex items-center justify-between gap-3 bg-muted/35 px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <Clock3 className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div className="flex flex-col leading-tight">
+                      <p className="text-lg font-semibold text-foreground">
+                        {t('timeClock.lastPunch.title')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {lastPunchTime ? (
+                          <>
+                            {registeredAtParts?.before ? (
+                              <span className="font-medium text-foreground/70">{registeredAtParts.before}</span>
+                            ) : null}
+                            {registeredAtParts?.before ? ' ' : null}
+                            <span className="font-semibold text-primary">{lastPunchTime}</span>
+                            {registeredAtParts?.after ? (
+                              <>
+                                {' '}
+                                <span className="font-medium text-foreground/70">{registeredAtParts.after}</span>
+                              </>
+                            ) : null}
+                          </>
+                        ) : (
+                          t('timeClock.lastPunch.none')
+                        )}
+                      </p>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLastPunchExpanded((prev) => !prev)}
+                    aria-expanded={isLastPunchExpanded}
+                    className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
+                  >
+                    {t('timeClock.lastPunch.details', 'Details')}
+                    {isLastPunchExpanded ? (
+                      <ChevronUp className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    )}
+                  </button>
+                </div>
 
-                  {punchTimelineRows.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">{t('timeClock.lastPunch.none')}</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {punchTimelineRows.map((row) => (
+                {isLastPunchExpanded ? (
+                  <div className="space-y-3 bg-background/90 px-5 py-5">
+                    {punchTimelineRows.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t('timeClock.lastPunch.none')}
+                      </p>
+                    ) : (
+                      punchTimelineRows.map((row) => (
                         <div
                           key={row.key}
-                          className="flex items-center justify-between rounded-xl border border-border/60 bg-card/70 px-3 py-3"
+                          className="flex items-center justify-between rounded-2xl border border-border/70 bg-white px-4 py-4 shadow-sm dark:bg-slate-900/50"
                         >
                           <div className="flex flex-col gap-1">
                             <p className="text-sm font-semibold text-foreground">{row.label}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{row.startLabel}</span>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-2 font-medium text-foreground">
+                                <span>{row.startLabel}</span>
+                              </span>
                               <span className="text-muted-foreground/60">{'>'}</span>
                               <span
                                 className={cn(
-                                  'text-foreground',
-                                  row.highlightEnd ? 'font-semibold text-primary' : 'text-foreground',
+                                  'font-medium text-foreground',
+                                  row.highlightEnd ? 'text-primary' : 'text-foreground',
                                 )}
                               >
                                 {row.endLabel}
                               </span>
                             </div>
                           </div>
-                          <span className={cn('text-sm font-bold', row.tone)}>{row.duration}</span>
+                          <span className={cn('text-lg font-bold', row.tone)}>{row.duration}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="rounded-xl border border-border/70 bg-background/85 p-3 shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    {t('timeClock.summary.hoursWorked', 'Hours Worked')}
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="text-xl font-semibold text-foreground">{workedTodayLabel}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/70 bg-background/85 p-3 shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    {t('timeClock.summary.bank', 'My Hour Bank')}
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    {overtimeMinutes < 0 ? (
+                      <AlertTriangle className="h-4 w-4 text-rose-500" aria-hidden />
+                    ) : (
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" aria-hidden />
+                    )}
+                    <span className={cn('text-xl font-semibold', overtimeTone)}>{overtimeLabel}</span>
+                  </div>
                 </div>
               </div>
 
@@ -955,12 +1060,11 @@ export default function TimeClock({ onContinueToDashboard }) {
               ) : null}
             </div>
 
-            <div className="space-y-4 rounded-[26px]">
+            {/* <div className="space-y-4 rounded-[26px]">
               <div className="rounded-[24px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_60px_-54px_rgba(62,82,152,0.4)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold">{t('timeClock.summary.title')}</p>
-                    <p className="text-xs text-muted-foreground">{t('timeClock.summary.subtitle')}</p>
                   </div>
                   <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
                     {t('timeClock.summary.todayBadge', 'Hoje')}
@@ -1011,7 +1115,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                   )}
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex flex-col gap-3 rounded-[22px] border border-border/70 bg-background/85 px-4 py-3 text-xs text-muted-foreground shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)] md:flex-row md:items-center md:justify-between">

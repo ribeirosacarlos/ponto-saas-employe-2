@@ -16,6 +16,7 @@ export function PunchSummaryCard({
   nextType = 'in',
   sendingAdjustment,
   onAdjustment,
+  entries = [],
 }) {
   const token = useAuthStore((state) => state.token)
   const { formatTime } = useDateTime()
@@ -103,6 +104,7 @@ export function PunchSummaryCard({
             <p className="text-sm text-foreground/70">{t('dashboard.description')}</p>
           </div>
           <AjusteModal
+            entries={entries}
             onSubmit={onAdjustment}
             isSubmitting={sendingAdjustment}
             trigger={
