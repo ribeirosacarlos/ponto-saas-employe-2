@@ -14,6 +14,7 @@ import { listEntries as listEmployeeEntries } from '../services/modules/employee
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
 import { useDateTime } from '../hooks/useDateTime'
+import { getCompanyTimezone, isSameCompanyDay, toCompanyDate } from '../lib/datetime'
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 
 const statusTokens = {
@@ -42,6 +43,7 @@ export default function TimeClock({ onContinueToDashboard }) {
     formatDateForApi,
     isSameDay,
     toCompanyZonedParts,
+    tz: companyTimezone,
   } = useDateTime()
   const { toast } = useToast()
   const {
@@ -65,8 +67,10 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [overtimeMinutes, setOvertimeMinutes] = useState(null)
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [recentEntries, setRecentEntries] = useState([])
+  const [todayPendingAdjustments, setTodayPendingAdjustments] = useState([])
   const [recentEntriesLoading, setRecentEntriesLoading] = useState(false)
   const [openEntryStatus, setOpenEntryStatus] = useState(null)
+  const [openStatusLoading, setOpenStatusLoading] = useState(false)
   const [submittingOpenAdjustment, setSubmittingOpenAdjustment] = useState(false)
   const [isLastPunchExpanded, setIsLastPunchExpanded] = useState(true)
   const userMenuRef = useRef(null)
@@ -113,10 +117,18 @@ export default function TimeClock({ onContinueToDashboard }) {
   const statusTitle = t(`timeClock.status.title.${normalizedStatus}`)
   const statusDescription = t(`timeClock.status.description.${normalizedStatus}`)
 
-  const mainActionType = normalizedStatus === 'working' || normalizedStatus === 'break' ? 'out' : 'in'
-  const shiftButtonLabel = t('timeClock.actions.registerPoint', 'REGISTRAR PONTO')
+  const nextExpectedType = (openEntryStatus?.next_event?.expected_type || '').toLowerCase()
+  const nextActionType = ['in', 'out'].includes(nextExpectedType)
+    ? nextExpectedType
+    : normalizedStatus === 'working' || normalizedStatus === 'break'
+      ? 'out'
+      : 'in'
+  const shiftButtonLabel =
+    nextActionType === 'out'
+      ? t('timeClock.actions.registerOut', 'Registrar saída')
+      : t('timeClock.actions.registerIn', 'Registrar entrada')
   const registeringLabel = t('timeClock.actions.registering')
-  const primaryLoading = clocking === mainActionType
+  const primaryLoading = clocking === nextActionType
 
   const formattedTime = formatTime(currentTime, { hour12: false })
   const formattedDate = formatDate(currentTime, {
@@ -140,30 +152,53 @@ export default function TimeClock({ onContinueToDashboard }) {
     [formatTime],
   )
 
-  const sortedWorkEntries = useMemo(() => {
-    const workEntries = Array.isArray(entries)
-      ? entries.filter((entry) => ['in', 'out'].includes(entry?.type))
-      : []
+  const formatDateTimeLabel = useCallback(
+    (value) => {
+      if (!value) return '--'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return '--'
+      const dateLabel = formatDate(date, {
+        day: '2-digit',
+        month: 'short',
+      })
+      const timeLabel = formatTime(date, { hour12: false })
+      return `${dateLabel} ${timeLabel}`
+    },
+    [formatDate, formatTime],
+  )
 
-    return [...workEntries].sort(
-      (a, b) => (getEntryTimestamp(b) ?? 0) - (getEntryTimestamp(a) ?? 0),
-    )
-  }, [entries, getEntryTimestamp])
+  const formatNextEventLabel = useCallback(
+    (event) => {
+      if (!event) return '--'
+      const typeLabel =
+        event.expected_type ||
+        event.kind ||
+        (event.kind === 'work_start'
+          ? t('timeClock.shiftEvent.workStart', 'Início da jornada')
+          : '')
+      const expectedAt = event.expected_at ?? event.expected_time
+      const dateLabel = expectedAt ? formatDateTimeLabel(expectedAt) : '--'
+      return [typeLabel, dateLabel].filter(Boolean).join(' • ')
+    },
+    [formatDateTimeLabel, t],
+  )
 
-  const todayWorkEntries = useMemo(() => {
-    return sortedWorkEntries.filter((entry) =>
-      isSameDay(entry?.clocked_at || entry?.created_at, currentTime),
-    )
-  }, [currentTime, isSameDay, sortedWorkEntries])
+  const [workedTodayData, setWorkedTodayData] = useState(null)
 
-  const lastPunch = todayWorkEntries?.[0] || null
+  const lastPunch = useMemo(() => {
+    const list = workedTodayData?.details?.entries || []
+    if (!list.length) return null
+    return [...list].sort(
+      (a, b) =>
+        new Date(b.clocked_at || b.created_at).getTime() - new Date(a.clocked_at || a.created_at).getTime(),
+    )[0]
+  }, [workedTodayData])
 
   const lastPunchTime = useMemo(
     () => (lastPunch ? formatClockedTime(lastPunch.clocked_at || lastPunch.created_at) : null),
     [formatClockedTime, lastPunch],
   )
 
-  const isLastPunchOpen = lastPunch?.type === 'in'
   const registeredAtParts = useMemo(() => {
     if (!lastPunchTime) return null
     const full = t('timeClock.lastPunch.registeredAt', { time: lastPunchTime })
@@ -186,99 +221,52 @@ export default function TimeClock({ onContinueToDashboard }) {
     isAdjustmentSource(entry) &&
     (entry?.adjustment_status === 'pending' || entry?.status === 'pending' || entry?.state === 'pending')
 
-  const punchTimelineRows = useMemo(() => {
-    if (!todayWorkEntries.length) return []
+  const workedPairsRows = useMemo(() => {
+    const pairs = workedTodayData?.details?.pairs || []
+    const entries = workedTodayData?.details?.entries || []
+    if (!pairs.length && !entries.length) return []
 
-    const entriesAsc = [...todayWorkEntries].sort(
-      (a, b) => (getEntryTimestamp(a) ?? 0) - (getEntryTimestamp(b) ?? 0),
-    )
-
-    const segments = []
-
-    for (let i = 0; i < entriesAsc.length; i += 1) {
-      const current = entriesAsc[i]
-      const next = entriesAsc[i + 1]
-
-      if (current?.type === 'in') {
-        segments.push({
-          key: `work-${i}`,
-          kind: 'work',
-          start: current,
-          end: next?.type === 'out' ? next : null,
-        })
-      } else if (current?.type === 'out') {
-        segments.push({
-          key: `break-${i}`,
-          kind: 'break',
-          start: current,
-          end: next?.type === 'in' ? next : null,
-        })
-      }
-    }
-
-    const workSegments = segments.filter((segment) => segment.kind === 'work')
-    const firstWork = workSegments[0]
-    const lastWork = workSegments.length > 1 ? workSegments[workSegments.length - 1] : null
-    const breakSegments = segments.filter((segment) => segment.kind === 'break')
-    const activeBreak = breakSegments.length ? breakSegments[0] : null
-    const lastRowSegment = breakSegments.length ? breakSegments[breakSegments.length - 1] : lastWork || firstWork
-
-    const toTimeLabel = (entry) =>
-      entry ? formatClockedTime(entry.clocked_at || entry.created_at) : '--:--'
-
-    const computeDuration = (segment) => {
-      if (!segment?.start) return '--:--'
-      const startTs = getEntryTimestamp(segment.start)
-      const endTs = segment.end ? getEntryTimestamp(segment.end) : null
-      const endTime = endTs ?? currentTime.getTime()
-      if (!startTs || !endTime) return '--:--'
-      return formatMinutesToLabel((endTime - startTs) / 60000)
-    }
-
-    const buildRow = (segment, type) => {
-      if (!segment) return null
-
-      const hasEnd = Boolean(segment.end)
-      const endLabel =
-        hasEnd && segment.end
-          ? toTimeLabel(segment.end)
-          : segment.kind === 'work'
-            ? t('timeClock.lastPunch.opened')
-            : '--:--'
-
-      const tone =
-        segment.kind === 'break'
-          ? 'text-emerald-600 dark:text-emerald-300'
-          : !hasEnd && type === 'last'
-            ? 'text-emerald-500 dark:text-emerald-300'
-            : 'text-foreground'
-
+    const rows = pairs.map((pair, index) => {
+      const startLabel = pair.in ? formatTime(pair.in, { hour12: false }) : '--:--'
+      const endLabel = pair.out ? formatTime(pair.out, { hour12: false }) : t('timeClock.lastPunch.opened')
+      const seconds = Math.round(Number(pair.seconds ?? 0))
+      const duration = formatMinutesToLabel(seconds / 60)
+      const isOpen = workedTodayData?.open_session && !pair.out
       return {
-        key: type,
-        label: t(`timeClock.lastPunch.sections.${type}`),
-        startLabel: segment.start ? toTimeLabel(segment.start) : plannedBreakWindow.start || '--:--',
+        key: pair.in || `pair-${index}`,
+        label: t('timeClock.lastPunch.segment', { defaultValue: 'Segment' }) + ` ${index + 1}`,
+        startLabel,
         endLabel,
-        duration: computeDuration(segment),
-        tone,
-        highlightEnd: segment.kind === 'work' && !hasEnd,
-        startPendingAdjustment: isPendingAdjustment(segment.start),
-        endPendingAdjustment: segment.end ? isPendingAdjustment(segment.end) : false,
+        duration,
+        tone: isOpen ? 'text-emerald-500 dark:text-emerald-300' : 'text-foreground',
+        highlightEnd: isOpen,
+        startPendingAdjustment: false,
+        endPendingAdjustment: false,
+      }
+    })
+
+    if (!pairs.length) {
+      const pending = entries.filter((e) => (e.adjustment_status ?? e.status) === 'pending')
+      if (pending.length) {
+        const lastPending = [...pending].sort(
+          (a, b) => new Date(b.clocked_at || b.created_at) - new Date(a.clocked_at || a.created_at),
+        )[0]
+        rows.push({
+          key: lastPending.id || 'pending',
+          label: t('timeClock.lastPunch.pending', 'Adjustment requested'),
+          startLabel: formatTime(lastPending.clocked_at || lastPending.created_at, { hour12: false }),
+          endLabel: t('timeClock.lastPunch.opened'),
+          duration: '--:--',
+          tone: 'text-amber-600 dark:text-amber-300',
+          highlightEnd: true,
+          startPendingAdjustment: true,
+          endPendingAdjustment: true,
+        })
       }
     }
 
-    return [
-      buildRow(firstWork, 'first'),
-      buildRow(activeBreak, 'interval'),
-      buildRow(lastRowSegment, 'last'),
-    ].filter(Boolean)
-  }, [
-    currentTime,
-    formatClockedTime,
-    formatMinutesToLabel,
-    getEntryTimestamp,
-    t,
-    todayWorkEntries,
-  ])
+    return rows
+  }, [formatMinutesToLabel, formatTime, t, workedTodayData])
 
   const formatBalanceToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
@@ -339,10 +327,13 @@ export default function TimeClock({ onContinueToDashboard }) {
     const fetchWorkedToday = async () => {
       if (!token) {
         setWorkedTodayLabel('00:00')
+        setWorkedTodayData(null)
         return
       }
       try {
         const data = await getWorkedToday()
+        if (!active) return
+        setWorkedTodayData(data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??
@@ -354,6 +345,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         console.error('[TimeClock] Failed to load worked-today', error)
         if (!active) return
         setWorkedTodayLabel('00:00')
+        setWorkedTodayData(null)
       }
     }
 
@@ -380,9 +372,54 @@ export default function TimeClock({ onContinueToDashboard }) {
       return `${h}:${m}`
     }
 
+    const toMinutesWithOffset = (time, offset = 0) => {
+      const minutes = parseTimeToMinutes(time)
+      if (minutes === null) return null
+      return minutes + Number(offset || 0) * 24 * 60
+    }
+
+    const computeMinutesFromEvents = (events = []) => {
+      if (!events.length) return null
+      const sorted = [...events].sort(
+        (a, b) => (a.sort_order ?? a.sortOrder ?? 0) - (b.sort_order ?? b.sortOrder ?? 0),
+      )
+      const startEvt = sorted.find((evt) => evt.kind === 'work_start') || sorted[0]
+      const endEvt =
+        [...sorted].reverse().find((evt) => evt.kind === 'work_end') || sorted[sorted.length - 1]
+      const startMinutes = toMinutesWithOffset(
+        startEvt?.expected_time ?? startEvt?.expected_at,
+        startEvt?.day_offset ?? startEvt?.dayOffset ?? 0,
+      )
+      const endMinutes = toMinutesWithOffset(
+        endEvt?.expected_time ?? endEvt?.expected_at,
+        endEvt?.day_offset ?? endEvt?.dayOffset ?? 0,
+      )
+      if (startMinutes === null || endMinutes === null) return null
+
+      let breakMinutes = 0
+      let breakStart = null
+      sorted.forEach((evt) => {
+        const minutes = toMinutesWithOffset(
+          evt.expected_time ?? evt.expected_at,
+          evt.day_offset ?? evt.dayOffset ?? 0,
+        )
+        if (minutes === null) return
+        if (evt.kind === 'break_start') breakStart = minutes
+        if (evt.kind === 'break_end' && breakStart !== null) {
+          breakMinutes += Math.max(0, minutes - breakStart)
+          breakStart = null
+        }
+      })
+
+      return Math.max(0, endMinutes - startMinutes - breakMinutes)
+    }
+
     const computePlannedMinutes = (day) => {
       if (!day) return null
       if (day.is_working_day === false) return 0
+
+      const eventsDuration = computeMinutesFromEvents(day.events || [])
+      if (eventsDuration !== null) return eventsDuration
 
       const start = parseTimeToMinutes(day.start_time ?? day.startTime ?? day.start)
       const end = parseTimeToMinutes(day.end_time ?? day.endTime ?? day.end)
@@ -426,13 +463,15 @@ export default function TimeClock({ onContinueToDashboard }) {
             plannedDay?.break_start_time ??
               plannedDay?.breakStartTime ??
               plannedDay?.break_start ??
-              plannedDay?.breakStart,
+              plannedDay?.breakStart ??
+              (plannedDay?.events || []).find((evt) => evt.kind === 'break_start')?.expected_time,
           ),
           end: formatPlannedTime(
             plannedDay?.break_end_time ??
               plannedDay?.breakEndTime ??
               plannedDay?.break_end ??
-              plannedDay?.breakEnd,
+              plannedDay?.breakEnd ??
+              (plannedDay?.events || []).find((evt) => evt.kind === 'break_end')?.expected_time,
           ),
         })
       } catch (error) {
@@ -451,26 +490,28 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
   }, [token])
 
-  useEffect(() => {
-    let active = true
-    const fetchOpenStatus = async () => {
-      if (!token) {
-        setOpenEntryStatus(null)
-        return
-      }
-      try {
-        const status = await getOpenTimeEntryStatus()
-        if (!active) return
-        setOpenEntryStatus(status)
-      } catch (error) {
-        console.error('[TimeClock] Failed to load open-status', error)
-      }
+  const refreshOpenStatus = useCallback(async () => {
+    if (!token) {
+      setOpenEntryStatus(null)
+      setOpenStatusLoading(false)
+      return null
     }
-    fetchOpenStatus()
-    return () => {
-      active = false
+    setOpenStatusLoading(true)
+    try {
+      const status = await getOpenTimeEntryStatus()
+      if (isMounted.current) setOpenEntryStatus(status)
+      return status
+    } catch (error) {
+      console.error('[TimeClock] Failed to load open-status', error)
+      return null
+    } finally {
+      if (isMounted.current) setOpenStatusLoading(false)
     }
   }, [token])
+
+  useEffect(() => {
+    refreshOpenStatus()
+  }, [refreshOpenStatus])
 
   useEffect(() => {
     let active = true
@@ -555,26 +596,31 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
   }, [employeeId, token])
 
-  const openEntryNextAction = useMemo(() => {
-    const nextActionKey = openEntryStatus?.next_action
-    if (!nextActionKey) return null
-    return t(`timeClock.nextActions.${nextActionKey}`, {
-      defaultValue: t('timeClock.nextActions.default'),
-    })
-  }, [openEntryStatus?.next_action, t])
-
-  const hasOpenEntry = Boolean(openEntryStatus?.has_open_entry)
+  const hasOpenEntry = Boolean(openEntryStatus?.open)
 
   const openEntryForAdjustment = useMemo(() => {
     if (!hasOpenEntry) return null
     return (
       openEntryStatus?.open_entry ||
       openEntryStatus?.entry ||
+      openEntryStatus?.last_entry ||
       todaysEntries?.[todaysEntries.length - 1] ||
       entries?.[0] ||
       null
     )
-  }, [entries, hasOpenEntry, openEntryStatus?.entry, openEntryStatus?.open_entry, todaysEntries])
+  }, [entries, hasOpenEntry, openEntryStatus?.entry, openEntryStatus?.last_entry, openEntryStatus?.open_entry, todaysEntries])
+
+  const openStatusDetails = useMemo(
+    () => ({
+      lastInAt: openEntryStatus?.last_in_at,
+      expectedNextOutAt: openEntryStatus?.expected_next_out_at,
+      openReason: openEntryStatus?.open_reason,
+      shiftDay: openEntryStatus?.shift_day ?? null,
+      nextEvent: openEntryStatus?.next_event ?? null,
+      isOutsideShift: Boolean(openEntryStatus?.is_outside_shift),
+    }),
+    [openEntryStatus],
+  )
 
   const overtimeLabel = useMemo(
     () => (overtimeLoading ? t('common.loading', 'Carregando...') : formatBalanceToLabel(overtimeMinutes)),
@@ -661,9 +707,8 @@ export default function TimeClock({ onContinueToDashboard }) {
         .filter((entry) => entry?.clocked_at)
         .sort((a, b) => new Date(b.clocked_at).getTime() - new Date(a.clocked_at).getTime())
 
-      return sorted.slice(0, 3).map((entry) => {
-        const date = new Date(entry.clocked_at)
-        const day = formatDate(date, {
+      return sorted.slice(0, 4).map((entry) => {
+        const day = formatDate(entry.clocked_at, {
           weekday: 'long',
           day: '2-digit',
           month: 'short',
@@ -674,24 +719,26 @@ export default function TimeClock({ onContinueToDashboard }) {
             ? 'in'
             : entry.type === 'out'
               ? 'out'
-              : entry.type === 'break_start'
-                ? 'breakStart'
-                : entry.type === 'break_end'
-                  ? 'breakEnd'
-                  : entry.type
+              : entry.event_kind === 'free'
+                ? 'adjustment'
+                : entry.type
         const typeLabel =
-          t(`types.${typeKey}`) ||
-          (typeKey === 'breakStart'
-            ? t('timeClock.recent.breakStart', 'Início do intervalo')
-            : typeKey === 'breakEnd'
-              ? t('timeClock.recent.breakEnd', 'Fim do intervalo')
-              : entry.type)
+          typeKey === 'adjustment'
+            ? t('timeClock.recent.adjustmentRequest', 'Solicitação de ajuste')
+            : t(`types.${typeKey}`) ||
+              (typeKey === 'breakStart'
+                ? t('timeClock.recent.breakStart', 'Início do intervalo')
+                : typeKey === 'breakEnd'
+                  ? t('timeClock.recent.breakEnd', 'Fim do intervalo')
+                  : entry.type)
         const tone =
-          entry.type === 'in'
-            ? 'text-emerald-500 dark:text-emerald-300'
-            : entry.type === 'out'
-              ? 'text-amber-500 dark:text-amber-300'
-              : 'text-muted-foreground'
+          typeKey === 'adjustment'
+            ? 'text-amber-600 dark:text-amber-300'
+            : entry.type === 'in'
+              ? 'text-emerald-500 dark:text-emerald-300'
+              : entry.type === 'out'
+                ? 'text-amber-500 dark:text-amber-300'
+                : 'text-muted-foreground'
 
         return {
           id: entry.id || `${entry.clocked_at}-${entry.type}`,
@@ -702,12 +749,15 @@ export default function TimeClock({ onContinueToDashboard }) {
         }
       })
     },
-    [formatClockedTime, i18n.language, t],
+    [formatClockedTime, formatDate, t],
   )
 
   const fetchRecentEntries = useCallback(async () => {
     if (!token) {
-      if (isMounted.current) setRecentEntries([])
+      if (isMounted.current) {
+        setRecentEntries([])
+        setTodayPendingAdjustments([])
+      }
       return
     }
 
@@ -715,14 +765,42 @@ export default function TimeClock({ onContinueToDashboard }) {
     try {
       const { data } = await listEmployeeEntries(1)
       const normalized = Array.isArray(data) ? data : data?.data || []
-      if (isMounted.current) setRecentEntries(normalizeEntryList(normalized))
+      const tz = getCompanyTimezone(companyTimezone)
+      const todayKey = toCompanyDate(new Date(), tz)
+
+      const todayEntries = normalized.filter((entry) =>
+        isSameCompanyDay(entry.clocked_at || entry.created_at, tz, todayKey),
+      )
+
+      const pendingToday = todayEntries.filter(
+        (entry) => (entry.adjustment_status ?? entry.status) === 'pending',
+      )
+      const realToday = todayEntries.filter(
+        (entry) => (entry.adjustment_status ?? entry.status) !== 'pending',
+      )
+
+      if (isMounted.current) {
+        setRecentEntries(normalizeEntryList(realToday))
+        setTodayPendingAdjustments(
+          pendingToday
+            .slice()
+            .sort(
+              (a, b) =>
+                new Date(b.clocked_at || b.created_at).getTime() -
+                new Date(a.clocked_at || a.created_at).getTime(),
+            ),
+        )
+      }
     } catch (error) {
       console.error('[TimeClock] Failed to load recent entries', error)
-      if (isMounted.current) setRecentEntries([])
+      if (isMounted.current) {
+        setRecentEntries([])
+        setTodayPendingAdjustments([])
+      }
     } finally {
       if (isMounted.current) setRecentEntriesLoading(false)
     }
-  }, [normalizeEntryList, token])
+  }, [companyTimezone, normalizeEntryList, token])
 
   useEffect(() => {
     fetchRecentEntries()
@@ -748,8 +826,12 @@ export default function TimeClock({ onContinueToDashboard }) {
       })
       return
     }
-    await registerClock(mainActionType)
+    const result = await registerClock(nextActionType)
+    if (result?.status === 'created' && result?.next_event) {
+      setOpenEntryStatus((prev) => ({ ...(prev || {}), next_event: result.next_event, open: false }))
+    }
     await fetchRecentEntries()
+    await refreshOpenStatus()
   }
 
   const handleLogout = async () => {
@@ -887,6 +969,11 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </div>
                 </div>
               ) : null}
+              {openStatusLoading ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('timeClock.openStatus.loading', 'Carregando status do ponto...')}
+                </p>
+              ) : null}
               {hasOpenEntry ? (
                 <EntryAdjustmentModal
                   entry={openEntryForAdjustment}
@@ -979,12 +1066,12 @@ export default function TimeClock({ onContinueToDashboard }) {
 
                 {isLastPunchExpanded ? (
                   <div className="space-y-3 bg-background/90 px-5 py-5">
-                    {punchTimelineRows.length === 0 ? (
+                    {workedPairsRows.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {t('timeClock.lastPunch.none')}
                       </p>
                     ) : (
-                      punchTimelineRows.map((row) => (
+                      workedPairsRows.map((row) => (
                         <div
                           key={row.key}
                           className="flex items-center justify-between rounded-2xl border border-border/70 bg-white px-4 py-4 shadow-sm dark:bg-slate-900/50"
@@ -1061,60 +1148,7 @@ export default function TimeClock({ onContinueToDashboard }) {
             </div>
 
             {/* <div className="space-y-4 rounded-[26px]">
-              <div className="rounded-[24px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_60px_-54px_rgba(62,82,152,0.4)]">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">{t('timeClock.summary.title')}</p>
-                  </div>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                    {t('timeClock.summary.todayBadge', 'Hoje')}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {summaryStats.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-                    >
-                      <span className="text-sm font-semibold text-muted-foreground">{item.label}</span>
-                      <span className={cn('text-sm font-bold', item.tone)}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[24px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_60px_-54px_rgba(62,82,152,0.4)]">
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="text-sm font-semibold">{t('timeClock.recent.title')}</p>
-                  <button className="text-xs font-semibold text-primary hover:underline">
-                    {t('timeClock.recent.viewAll')}
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {recentEntriesLoading ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t('common.loading', 'Carregando registros...')}
-                    </p>
-                  ) : recentEntries.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
-                    </p>
-                  ) : (
-                    recentEntries.map((entry) => (
-                      <div
-                        key={entry.id || entry.day + entry.value}
-                        className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold">{entry.day}</p>
-                          <p className="text-xs text-muted-foreground">{entry.interval}</p>
-                        </div>
-                        <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              ... (summary and recent punches were here; intentionally hidden per request)
             </div> */}
           </div>
 

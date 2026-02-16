@@ -40,6 +40,13 @@ const WEEK_DAYS = [
   { value: 7, label: 'Domingo', short: 'Dom' },
 ]
 
+const EVENT_LABELS = {
+  work_start: 'Início da jornada',
+  break_start: 'Início do intervalo',
+  break_end: 'Fim do intervalo',
+  work_end: 'Fim da jornada',
+}
+
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
 
 const toHHmm = (value) => {
@@ -396,6 +403,32 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                       <span className="block text-[10px] text-emerald-700/90">
                         {formatBreakLabel(dayData.break_minutes)}
                       </span>
+                    ) : null}
+                    {Array.isArray(dayData.events) && dayData.events.length ? (
+                      <div className="mt-2 space-y-1">
+                        {dayData.events
+                          .slice()
+                          .sort(
+                            (a, b) =>
+                              (a.sort_order ?? a.sortOrder ?? 0) - (b.sort_order ?? b.sortOrder ?? 0),
+                          )
+                          .map((event, index) => {
+                            const label = EVENT_LABELS[event.kind] || event.kind || 'Evento'
+                            const time = event.expected_time || '--:--'
+                            const offsetLabel =
+                              Number(event.day_offset ?? event.dayOffset ?? 0) === 1
+                                ? ' (dia seguinte)'
+                                : ''
+                            const typeLabel = event.expected_type ? ` • ${event.expected_type}` : ''
+                            return (
+                              <p key={`${shift.id}-${day.value}-event-${index}`} className="text-[11px] text-muted-foreground">
+                                {label}: {time}
+                                {offsetLabel}
+                                {typeLabel}
+                              </p>
+                            )
+                          })}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}

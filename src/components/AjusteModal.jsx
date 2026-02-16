@@ -16,7 +16,7 @@ import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
 import { useTranslation } from 'react-i18next'
 
-export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime, entries = [] }) {
+export function AjusteModal({ onSubmit, trigger, isSubmitting, entries = [] }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     corrected_time: '',
@@ -81,7 +81,6 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime, ent
     await onSubmit(
       {
         proposed_clocked_at: form.corrected_time,
-        proposed_type: activeEntry?.proposed_type || activeEntry?.type,
         reason: form.reason,
         entry: activeEntry,
         corrected_time: form.corrected_time,
@@ -127,19 +126,12 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime, ent
             </div>
           ) : null}
 
-          {originalTime ? (
-            <div className="space-y-2">
-              <Label>{t('adjustment.original')}</Label>
-              <Input value={originalTime} disabled />
-            </div>
-          ) : null}
-
           <div className="space-y-2">
             <Label htmlFor="corrected_time">{t('adjustment.corrected')}</Label>
             <div className="group relative rounded-2xl border border-border/70 bg-gradient-to-r from-background/95 via-muted/60 to-background/90 shadow-[0_16px_60px_-40px_rgba(82,110,255,0.55)] transition hover:border-primary/60 hover:shadow-[0_20px_70px_-40px_rgba(82,110,255,0.65)]">
               <Input
                 id="corrected_time"
-              name="corrected_time"
+                name="corrected_time"
                 type="datetime-local"
                 value={form.corrected_time}
                 onChange={handleChange}
@@ -184,6 +176,7 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime, ent
               required
             />
           </div>
+
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <DialogClose asChild>

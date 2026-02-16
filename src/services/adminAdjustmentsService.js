@@ -1,5 +1,11 @@
 import { api } from './http/api'
 
+const normalizeProposedType = (value) => {
+  if (value === undefined || value === null) return null
+  const normalized = String(value).toLowerCase()
+  return normalized === 'in' || normalized === 'out' ? normalized : null
+}
+
 const normalizeAdjustment = (item = {}, index = 0) => {
   const status = (item.adjustment_status ?? item.status ?? item.state ?? '').toString().toLowerCase()
 
@@ -12,7 +18,7 @@ const normalizeAdjustment = (item = {}, index = 0) => {
     originalTime: item.clocked_at ?? item.original_time ?? item.originalTime ?? item.original ?? null,
     correctedTime:
       item.proposed_clocked_at ?? item.proposedClockedAt ?? item.corrected_time ?? item.correctedTime ?? item.corrected ?? null,
-    proposedType: item.proposed_type ?? item.proposedType ?? item.type ?? null,
+    proposedType: normalizeProposedType(item.proposed_type ?? item.proposedType ?? item.type ?? null),
     reason: item.adjustment_reason ?? item.reason ?? item.justification ?? item.notes ?? '',
     reviewReason: item.adjustment_review_reason ?? item.review_reason ?? item.reviewReason ?? '',
     status,

@@ -23,7 +23,6 @@ export function EntryAdjustmentModal({
   onSubmit,
   isSubmitting,
   defaultDate,
-  hideOriginalTime = false,
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -71,11 +70,18 @@ export function EntryAdjustmentModal({
 
   useEffect(() => {
     if (!open) return
-    setForm((prev) => ({
-      ...prev,
-      date: formattedDate || prev.date || '',
-      correctedTime: formattedTime || prev.correctedTime || '',
-    }))
+    setForm((prev) => {
+      const nextDate = formattedDate || prev.date || ''
+      const nextTime = formattedTime || prev.correctedTime || ''
+      if (prev.date === nextDate && prev.correctedTime === nextTime) {
+        return prev
+      }
+      return {
+        ...prev,
+        date: nextDate,
+        correctedTime: nextTime,
+      }
+    })
   }, [formattedDate, formattedTime, open])
 
   const handleChange = (event) => {
@@ -105,11 +111,6 @@ export function EntryAdjustmentModal({
     const payload = {
       timeEntryId,
       proposed_clocked_at: correctedDateTime,
-      proposed_type:
-        activeEntry?.proposed_type ||
-        activeEntry?.proposedType ||
-        activeEntry?.type ||
-        availableEntries.find((item) => item.id === timeEntryId)?.type,
       reason: form.reason,
       entry: activeEntry,
     }
@@ -142,30 +143,6 @@ export function EntryAdjustmentModal({
         </DialogHeader>
 
         <form className="space-y-4 pt-2" onSubmit={handleSubmit}>
-          {!entry ? (
-            <div className="space-y-2">
-              <Label htmlFor="timeEntry">{t('historyPage.adjustment.entryLabel', 'Registro a ajustar')}</Label>
-              <select
-                id="timeEntry"
-                name="timeEntry"
-                required
-                value={selectedEntryId || availableEntries[0]?.id || ''}
-                onChange={(event) => setSelectedEntryId(event.target.value)}
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                {availableEntries.length === 0 ? (
-                  <option value="">{t('historyPage.adjustment.noEntries', 'Nenhum registro carregado')}</option>
-                ) : (
-                  availableEntries.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-          ) : null}
-
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="date">{t('historyPage.adjustment.date')}</Label>
@@ -179,11 +156,11 @@ export function EntryAdjustmentModal({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="correctedTime">{t('historyPage.adjustment.desiredTime')}</Label>
-              <Input
-                id="correctedTime"
-                name="correctedTime"
+          <div className="space-y-2">
+            <Label htmlFor="correctedTime">{t('historyPage.adjustment.desiredTime')}</Label>
+            <Input
+              id="correctedTime"
+              name="correctedTime"
                 type="time"
                 required
                 value={form.correctedTime}
@@ -191,13 +168,6 @@ export function EntryAdjustmentModal({
               />
             </div>
           </div>
-
-          {!hideOriginalTime && (formattedDate || formattedTime) ? (
-            <div className="space-y-2">
-              <Label>{t('historyPage.adjustment.originalTime')}</Label>
-              <Input value={[formattedDate, formattedTime].filter(Boolean).join(' ')} readOnly />
-            </div>
-          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="reason">{t('historyPage.adjustment.reason')}</Label>
