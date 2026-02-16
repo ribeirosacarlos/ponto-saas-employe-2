@@ -28,6 +28,22 @@ export async function acceptInvite(payload = {}) {
   return data
 }
 
+export async function forgotPasswordRequest(email) {
+  const { data } = await api.post('/v1/forgot-password', { email })
+  return data
+}
+
+export async function resetPasswordRequest(payload = {}) {
+  const { token, email, password, password_confirmation } = payload
+  const { data } = await api.post('/v1/reset-password', {
+    token,
+    email,
+    password,
+    password_confirmation,
+  })
+  return data
+}
+
 // Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
   console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Hash, Lock, ShieldCheck } from 'lucide-react'
+import { useState } from 'react'
+import { Hash, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
+import { resetPasswordRequest } from '../services/modules/auth'
 
 const getPasswordChecks = (password) => ({
   length: password.length >= 8,
@@ -64,6 +65,11 @@ const getPasswordErrorKey = (password, confirmation, email) => {
 }
 
 export default function ResetPassword() {
+  const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const params = new URLSearchParams(window.location.search)
+    return params.get('email') || ''
+  })
   const [verificationCode, setVerificationCode] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
@@ -74,12 +80,6 @@ export default function ResetPassword() {
   const { toast } = useToast()
   const { t } = useTranslation()
 
-  const emailFromQuery = useMemo(() => {
-    if (typeof window === 'undefined') return ''
-    const params = new URLSearchParams(window.location.search)
-    return params.get('email') || ''
-  }, [])
-
   const strengthKey = getStrengthKey(password)
   const strengthConfig = strengthStyles[strengthKey]
   const strengthWidth = password ? `${(strengthConfig.value / 3) * 100}%` : '0%'
@@ -87,6 +87,17 @@ export default function ResetPassword() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setErrorMessage('')
+
+    if (!email.trim()) {
+      const message = t('forgotPassword.errors.emailRequired')
+      setErrorMessage(message)
+      toast({
+        title: t('resetPassword.errorTitle'),
+        description: message,
+        variant: 'error',
+      })
+      return
+    }
 
     if (!verificationCode.trim()) {
       const message = t('resetPassword.errors.codeRequired')
@@ -99,7 +110,7 @@ export default function ResetPassword() {
       return
     }
 
-    const passwordErrorKey = getPasswordErrorKey(password, passwordConfirmation, emailFromQuery)
+    const passwordErrorKey = getPasswordErrorKey(password, passwordConfirmation, email)
     if (passwordErrorKey) {
       const message = t(passwordErrorKey)
       setErrorMessage(message)
@@ -113,18 +124,40 @@ export default function ResetPassword() {
 
     setLoading(true)
     try {
-      await Promise.resolve()
+      const payload = {
+        token: verificationCode.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: passwordConfirmation,
+      }
+
+      const response = await resetPasswordRequest(payload)
+      const apiMessage = response?.message || t('resetPassword.successDescription')
+
       toast({
         title: t('resetPassword.successTitle'),
-        description: t('resetPassword.successDescription'),
+        description: apiMessage,
         variant: 'success',
       })
+
+      setErrorMessage('')
+      setVerificationCode('')
+      setPassword('')
+      setPasswordConfirmation('')
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          window.location.href = '/'
+        }, 800)
+      }
     } catch (error) {
+      const apiMessage = error?.response?.data?.message
       const fallbackMessage = t('resetPassword.errorTitle')
-      setErrorMessage(fallbackMessage)
+      const message = apiMessage || fallbackMessage
+      setErrorMessage(message)
       toast({
         title: t('resetPassword.errorTitle'),
-        description: fallbackMessage,
+        description: message,
         variant: 'error',
       })
     } finally {
@@ -164,6 +197,27 @@ export default function ResetPassword() {
           ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-foreground/80" htmlFor="email">
+                {t('forgotPassword.emailLabel')}
+              </Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <Mail className="h-5 w-5" />
+                </span>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder={t('login.emailPlaceholder')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-[54px] rounded-2xl border border-border/80 bg-background/70 pl-12 pr-4 text-[15px] shadow-[0_16px_40px_-28px_rgba(62,82,152,0.45)] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-input/80"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-foreground/80" htmlFor="verificationCode">
                 {t('resetPassword.codeLabel')}
