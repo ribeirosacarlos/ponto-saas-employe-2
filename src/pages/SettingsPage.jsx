@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, BadgeCheck, Building2, Loader2, ShieldCheck } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Switch } from '../components/ui/switch'
+import { PreferencesCard } from '../components/settings/PreferencesCard'
 import { useAuthStore } from '../store/useAuth'
 import { getCurrentCompanySubscription } from '../services/billingService'
 import { cn } from '../lib/utils'
+import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 
 const SETTINGS_TABS = ['plan', 'preferences']
+const TIMEZONE_ACCESS = { anyOf: ['admin', 'super_admin'] }
 
 export default function Settings() {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
+  const syncProfile = useAuthStore((state) => state.syncProfile)
   const [activeTab, setActiveTab] = useState('plan')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,13 +27,19 @@ export default function Settings() {
   const [autoReports, setAutoReports] = useState(false)
 
   const roles = useAuthStore((state) => state.roles)
+  const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const companyId = useMemo(() => {
     if (!user) return null
     return user.company_id || user.companyId || user.company?.id || null
   }, [user])
+  const company = useMemo(() => user?.company || null, [user])
   const canViewSubscription = useMemo(
     () => Array.isArray(roles) && roles.some((role) => ['super_admin'].includes(role)),
     [roles],
+  )
+  const canEditTimezone = useMemo(
+    () => canRenderCard(capabilities, TIMEZONE_ACCESS),
+    [capabilities],
   )
 
   useEffect(() => {
@@ -63,6 +73,15 @@ export default function Settings() {
       active = false
     }
   }, [canViewSubscription, companyId, t])
+
+  const handleTimezoneSaved = useCallback(
+    (nextTimezone) => {
+      if (!nextTimezone || !user || typeof syncProfile !== 'function') return
+      const updatedCompany = { ...(user.company || {}), timezone: nextTimezone }
+      syncProfile({ ...user, timezone: nextTimezone, company: updatedCompany }, roles || [])
+    },
+    [roles, syncProfile, user],
+  )
 
   const planCard = useMemo(() => {
     if (!subscription?.plan) return null
@@ -186,6 +205,12 @@ export default function Settings() {
 
   const renderPreferencesTab = () => (
     <div className="grid gap-4 md:grid-cols-2">
+      <PreferencesCard
+        company={company}
+        canEdit={canEditTimezone}
+        onTimezoneSaved={handleTimezoneSaved}
+      />
+
       <Card className="border border-border/80 bg-card/90">
         <CardHeader>
           <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
@@ -218,7 +243,7 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card className="border border-border/80 bg-card/90">
+      <Card className="border border-border/80 bg-card/90 md:col-span-2">
         <CardHeader className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />

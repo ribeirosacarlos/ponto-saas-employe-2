@@ -223,18 +223,54 @@ export default function TimeClock({ onContinueToDashboard }) {
 
   const workedPairsRows = useMemo(() => {
     const pairs = workedTodayData?.details?.pairs || []
+    const openPair = workedTodayData?.details?.open_pair
     const entries = workedTodayData?.details?.entries || []
-    if (!pairs.length && !entries.length) return []
+    if (!pairs.length && !entries.length && !openPair) return []
 
-    const rows = pairs.map((pair, index) => {
+    // Merge closed pairs + optional open pair at the end to mirror API shape in UI.
+    const combinedPairs = [...pairs]
+    if (openPair?.in) {
+      combinedPairs.push({ ...openPair, isOpenPair: true })
+    }
+
+    const rows = []
+
+    const computeDurationMinutes = (pair) => {
+      if (pair.seconds !== undefined && pair.seconds !== null) {
+        return Math.max(0, Number(pair.seconds) / 60)
+      }
+      if (pair.in && pair.out) {
+        const start = new Date(pair.in)
+        const end = new Date(pair.out)
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0
+        return Math.max(0, (end.getTime() - start.getTime()) / 60000)
+      }
+      if (pair.isOpenPair && pair.in) {
+        const start = new Date(pair.in)
+        const now = new Date(currentTime)
+        if (Number.isNaN(start.getTime()) || Number.isNaN(now.getTime())) return 0
+        return Math.max(0, (now.getTime() - start.getTime()) / 60000)
+      }
+      return 0
+    }
+
+    combinedPairs.forEach((pair, index) => {
+      const isFirst = index === 0
+      const isLast = index === combinedPairs.length - 1
+      const baseLabel = isFirst
+        ? t('timeClock.lastPunch.sections.first', 'First Punch')
+        : isLast
+          ? t('timeClock.lastPunch.sections.last', 'Last Punch')
+          : t('timeClock.lastPunch.segment', { defaultValue: 'Segment' }) + ` ${index + 1}`
+
       const startLabel = pair.in ? formatTime(pair.in, { hour12: false }) : '--:--'
       const endLabel = pair.out ? formatTime(pair.out, { hour12: false }) : t('timeClock.lastPunch.opened')
-      const seconds = Math.round(Number(pair.seconds ?? 0))
-      const duration = formatMinutesToLabel(seconds / 60)
-      const isOpen = workedTodayData?.open_session && !pair.out
-      return {
+      const durationMinutes = computeDurationMinutes(pair)
+      const duration = formatMinutesToLabel(durationMinutes)
+      const isOpen = pair.isOpenPair || (workedTodayData?.open_session && !pair.out)
+      rows.push({
         key: pair.in || `pair-${index}`,
-        label: t('timeClock.lastPunch.segment', { defaultValue: 'Segment' }) + ` ${index + 1}`,
+        label: baseLabel,
         startLabel,
         endLabel,
         duration,
@@ -242,10 +278,33 @@ export default function TimeClock({ onContinueToDashboard }) {
         highlightEnd: isOpen,
         startPendingAdjustment: false,
         endPendingAdjustment: false,
-      }
+      })
+
+      const nextPair = combinedPairs[index + 1]
+      if (!nextPair) return
+
+      const intervalStart = pair.out ? new Date(pair.out) : null
+      const intervalEnd = nextPair.in ? new Date(nextPair.in) : null
+
+      if (!intervalStart || Number.isNaN(intervalStart.getTime())) return
+      if (!intervalEnd || Number.isNaN(intervalEnd.getTime())) return
+
+      const intervalMinutes = Math.max(0, (intervalEnd.getTime() - intervalStart.getTime()) / 60000)
+
+      rows.push({
+        key: `interval-${index}`,
+        label: t('timeClock.lastPunch.sections.interval', 'Interval'),
+        startLabel: formatTime(intervalStart, { hour12: false }),
+        endLabel: formatTime(intervalEnd, { hour12: false }),
+        duration: formatMinutesToLabel(intervalMinutes),
+        tone: 'text-muted-foreground',
+        highlightEnd: false,
+        startPendingAdjustment: false,
+        endPendingAdjustment: false,
+      })
     })
 
-    if (!pairs.length) {
+    if (!combinedPairs.length) {
       const pending = entries.filter((e) => (e.adjustment_status ?? e.status) === 'pending')
       if (pending.length) {
         const lastPending = [...pending].sort(
@@ -266,7 +325,7 @@ export default function TimeClock({ onContinueToDashboard }) {
     }
 
     return rows
-  }, [formatMinutesToLabel, formatTime, t, workedTodayData])
+  }, [currentTime, formatMinutesToLabel, formatTime, t, workedTodayData])
 
   const formatBalanceToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'

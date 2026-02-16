@@ -566,10 +566,11 @@ const ptBR = {
         details: 'Detalhes',
         opened: 'Aberto',
         none: 'Ainda não há registros',
+        segment: 'Segmento',
         sections: {
-          first: 'Primeira batida',
-          interval: 'Intervalo',
-          last: 'Última batida',
+          first: 'First Punch',
+          interval: 'Interval',
+          last: 'Last Punch',
         },
       },
       recent: {

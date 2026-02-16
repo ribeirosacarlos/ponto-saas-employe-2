@@ -93,7 +93,7 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
         variant: 'success',
       })
       setIsEditing(false)
-      if (onTimezoneSaved) onTimezoneSaved()
+      if (onTimezoneSaved) onTimezoneSaved(nextTimezone)
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -111,7 +111,7 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
   }
 
   return (
-    <Card className="border border-border/80 bg-card/90">
+    <Card className="relative z-30 border border-border/80 bg-card/90">
       <CardHeader className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
           <Globe2 className="h-5 w-5" />
@@ -173,16 +173,16 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
                   disabled={loading || saving}
                   placeholder={t('settingsPage.preferences.fields.timezonePlaceholder')}
-                  className="block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 {showSuggestions ? (
-                  <ul className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-border/80 bg-card/95 shadow-2xl backdrop-blur">
+                  <ul className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border/70 bg-card/95 text-foreground shadow-2xl ring-1 ring-primary/10 backdrop-blur">
                     {filteredOptions.length ? (
                       filteredOptions.map((tz) => (
                         <li key={tz}>
                           <button
                             type="button"
-                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-primary/10"
+                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => {
                               setTimezoneState(tz)

@@ -602,10 +602,11 @@ const es = {
         details: 'Detalles',
         opened: 'Abierto',
         none: 'Aún no hay registros',
+        segment: 'Segmento',
         sections: {
-          first: 'Primera marcación',
-          interval: 'Intervalo',
-          last: 'Última marcación',
+          first: 'First Punch',
+          interval: 'Interval',
+          last: 'Last Punch',
         },
       },
       recent: {

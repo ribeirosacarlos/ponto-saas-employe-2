@@ -604,6 +604,7 @@ const en = {
         details: 'Details',
         opened: 'Opened',
         none: 'No punches yet',
+        segment: 'Segment',
         sections: {
           first: 'First punch',
           interval: 'Interval',
