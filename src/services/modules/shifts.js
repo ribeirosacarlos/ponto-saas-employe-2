@@ -35,6 +35,15 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+const normalizeShiftEvent = (event = {}, index = 0) => ({
+  id: event.id ?? event.uuid ?? `event-${index}`,
+  kind: event.kind ?? event.type ?? event.event ?? '',
+  expected_time: event.expected_time ?? event.expectedTime ?? event.expected_at ?? event.expectedAt ?? '',
+  expected_type: event.expected_type ?? event.expectedType ?? event.type ?? '',
+  day_offset: Number(event.day_offset ?? event.dayOffset ?? 0),
+  sort_order: Number(event.sort_order ?? event.sortOrder ?? index),
+})
+
 const normalizeOutgoingDay = (day = {}, index = 0) => {
   const working = toBoolean(
     day.is_working_day ?? day.isWorkingDay ?? day.working_day ?? day.workingDay ?? false,
@@ -82,6 +91,7 @@ const normalizeShiftDay = (day = {}, index = 0) => ({
   break_start_time: toHHmm(day.break_start_time ?? day.breakStartTime ?? day.breakStart ?? ''),
   break_end_time: toHHmm(day.break_end_time ?? day.breakEndTime ?? day.breakEnd ?? ''),
   break_minutes: day.break_minutes ?? day.breakMinutes ?? day.breakDuration ?? null,
+  events: Array.isArray(day.events) ? day.events.map((event, idx) => normalizeShiftEvent(event, idx)) : [],
 })
 
 const normalizeShift = (shift = {}, index = 0) => ({

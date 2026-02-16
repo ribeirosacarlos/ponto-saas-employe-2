@@ -39,19 +39,45 @@ const isSameDay = (left, right) =>
   left.getMonth() === right.getMonth() &&
   left.getDate() === right.getDate()
 
-export async function clockRequest(type, coords = {}) {
-  const allowedTypes = ['in', 'out']
-  if (!allowedTypes.includes(type)) {
-    throw new Error(`Unsupported clock type "${type}". API now only accepts: ${allowedTypes.join(', ')}`)
-  }
+const ALLOWED_PROPOSED_TYPES = ['in', 'out']
+const normalizeProposedType = (value) => {
+  if (value === undefined || value === null) return null
+  const normalized = String(value).toLowerCase()
+  return ALLOWED_PROPOSED_TYPES.includes(normalized) ? normalized : null
+}
 
-  const payload = { type }
+export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
+  // Backward compatibility: previous signature was (type, coords). Type is ignored by the API now.
+  const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
+  const payload = {}
 
   if (coords.latitude) payload.latitude = coords.latitude
   if (coords.longitude) payload.longitude = coords.longitude
+  if (coords.source) payload.source = coords.source
 
-  const { data } = await api.post('/v1/employee/clock', payload)
-  return data
+  const response = await api.post('/v1/employee/clock', payload)
+  const { data: rawData, status: httpStatus } = response
+  const payloadData = rawData?.data ?? rawData ?? {}
+
+  const entry =
+    httpStatus === 201
+      ? payloadData.entry ?? payloadData.time_entry ?? payloadData.entry_data ?? payloadData
+      : null
+  const nextEvent = payloadData.next_event ?? payloadData.nextEvent ?? null
+  const adjustment = payloadData.adjustment ?? payloadData.adjustment_request ?? null
+  const normalizedStatus =
+    httpStatus === 202 || payloadData.status === 'adjustment_requested'
+      ? 'adjustment_requested'
+      : 'created'
+
+  return {
+    status: normalizedStatus,
+    httpStatus,
+    entry,
+    next_event: nextEvent,
+    adjustment,
+    raw: payloadData,
+  }
 }
 
 export async function getEmployeeEntries(params = {}) {
@@ -156,7 +182,6 @@ export async function requestAdjustment(timeEntryOrPayload, maybePayload = null)
       payload?.clocked_at ??
       payload?.clockedAt ??
       null,
-    proposed_type: payload?.proposed_type ?? payload?.proposedType ?? payload?.type ?? payload?.entry_type ?? null,
     reason: payload?.reason ?? payload?.adjustment_reason ?? payload?.justification ?? payload?.notes ?? '',
   }
 
@@ -224,5 +249,36 @@ export async function getWorkedToday(forceRefresh = false) {
 
 export async function getOpenTimeEntryStatus() {
   const { data } = await api.get('/v1/employee/time-entries/open-status')
-  return data?.data ?? data
+  const payload = data?.data ?? data ?? {}
+
+  const shiftDayRaw = payload.shift_day ?? payload.shiftDay ?? null
+  const shiftDay =
+    shiftDayRaw && typeof shiftDayRaw === 'object'
+      ? {
+          ...shiftDayRaw,
+          is_working_day:
+            typeof shiftDayRaw.is_working_day === 'boolean'
+              ? shiftDayRaw.is_working_day
+              : Boolean(
+                  shiftDayRaw.is_working_day ??
+                    shiftDayRaw.isWorkingDay ??
+                    shiftDayRaw.working_day ??
+                    shiftDayRaw.workingDay,
+                ),
+        }
+      : null
+
+  // New contract fields
+  const normalized = {
+    open: Boolean(payload.open ?? payload.has_open_entry ?? false),
+    open_reason: payload.open_reason ?? payload.reason ?? null,
+    expected_next_out_at: payload.expected_next_out_at ?? payload.expectedNextOutAt ?? payload.expected_next_out ?? null,
+    last_in_at: payload.last_in_at ?? payload.lastInAt ?? payload.last_in ?? null,
+    shift_day: shiftDay,
+    assignment_id: payload.assignment_id ?? payload.assignmentId ?? null,
+    next_event: payload.next_event ?? payload.nextEvent ?? null,
+    is_outside_shift: Boolean(payload.is_outside_shift ?? payload.outside_shift ?? false),
+  }
+
+  return normalized
 }

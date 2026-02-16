@@ -49,19 +49,32 @@ export async function meRequest() {
   }
 }
 
-export async function clockRequest(type, coords = {}) {
-  const allowedTypes = ['in', 'out']
-  if (!allowedTypes.includes(type)) {
-    throw new Error(`Unsupported clock type "${type}". API now only accepts: ${allowedTypes.join(', ')}`)
-  }
-
-  const payload = { type }
+export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
+  const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
+  const payload = {}
 
   if (coords.latitude) payload.latitude = coords.latitude
   if (coords.longitude) payload.longitude = coords.longitude
+  if (coords.source) payload.source = coords.source
 
-  const { data } = await api.post('/v1/employee/clock', payload)
-  return data
+  const response = await api.post('/v1/employee/clock', payload)
+  const { data: rawData, status: httpStatus } = response
+  const payloadData = rawData?.data ?? rawData ?? {}
+
+  return {
+    status:
+      httpStatus === 202 || payloadData.status === 'adjustment_requested'
+        ? 'adjustment_requested'
+        : 'created',
+    httpStatus,
+    entry:
+      httpStatus === 201
+        ? payloadData.entry ?? payloadData.time_entry ?? payloadData.entry_data ?? payloadData
+        : null,
+    next_event: payloadData.next_event ?? payloadData.nextEvent ?? null,
+    adjustment: payloadData.adjustment ?? payloadData.adjustment_request ?? null,
+    raw: payloadData,
+  }
 }
 
 const parseEntriesResponse = (data, { page, perPage }) => {
