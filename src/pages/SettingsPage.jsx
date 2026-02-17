@@ -1,153 +1,78 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, BadgeCheck, Building2, Loader2, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Switch } from '../components/ui/switch'
-import { useAuthStore } from '../store/useAuth'
-import { getCurrentCompanySubscription } from '../services/billingService'
 import { cn } from '../lib/utils'
+import { PlanSummaryCard } from '../components/settings/PlanSummaryCard'
+import { useSettingsOverview } from '../hooks/useSettingsOverview'
+import { PreferencesCard } from '../components/settings/PreferencesCard'
+import { useAuthStore } from '../store/useAuth'
 
 const SETTINGS_TABS = ['plan', 'preferences']
 
 export default function Settings() {
   const { t } = useTranslation()
-  const user = useAuthStore((state) => state.user)
   const [activeTab, setActiveTab] = useState('plan')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [subscription, setSubscription] = useState(null)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [reminders, setReminders] = useState(true)
   const [autoReports, setAutoReports] = useState(false)
-
+  const { data, isLoading, error, reload } = useSettingsOverview()
+  const billing = data?.billing || null
+  const usage = data?.usage || null
+  const links = data?.links || null
+  const company = data?.company || null
   const roles = useAuthStore((state) => state.roles)
-  const companyId = useMemo(() => {
-    if (!user) return null
-    return user.company_id || user.companyId || user.company?.id || null
-  }, [user])
-  const canViewSubscription = useMemo(
-    () => Array.isArray(roles) && roles.some((role) => ['super_admin'].includes(role)),
+  const canEditPreferences = useMemo(
+    () => Array.isArray(roles) && roles.some((role) => ['admin', 'super_admin'].includes(role)),
     [roles],
   )
 
-  useEffect(() => {
-    let active = true
-    const loadSubscription = async () => {
-      if (!companyId) {
-        setError(t('settingsPage.errors.noCompany'))
-        return
-      }
-      if (!canViewSubscription) {
-        setError(t('settingsPage.errors.forbidden'))
-        return
-      }
-      setLoading(true)
-      setError('')
-      try {
-        const data = await getCurrentCompanySubscription(companyId)
-        if (!active) return
-        setSubscription(data)
-      } catch (err) {
-        if (!active) return
-        const message = err?.response?.data?.message || err?.message || t('settingsPage.errors.load')
-        setError(message)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadSubscription()
-    return () => {
-      active = false
-    }
-  }, [canViewSubscription, companyId, t])
-
-  const planCard = useMemo(() => {
-    if (!subscription?.plan) return null
-    const plan = subscription.plan
-    const price = plan.priceCents ? plan.priceCents / 100 : 0
-    const formatter = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: plan.currency || 'BRL',
-      minimumFractionDigits: 2,
-    })
-    const intervalLabel =
-      plan.billingInterval === 'year'
-        ? t('access.subscription.perInterval.year')
-        : plan.billingInterval === 'one_time'
-          ? t('access.subscription.perInterval.oneTime')
-          : t('access.subscription.perInterval.month')
-
-    return {
-      name: plan.name || t('settingsPage.plan.unknown'),
-      description: plan.description || '',
-      price: plan.priceCents ? formatter.format(price) : t('access.subscription.freePlan'),
-      intervalLabel,
-      status: subscription.status || '',
-      trialEndsAt: subscription.trialEndsAt || '',
-      currentPeriodEnd: subscription.currentPeriodEnd || '',
-    }
-  }, [subscription, t])
-
   const renderPlanTab = () => (
     <div className="grid gap-4 md:grid-cols-2">
-      <Card className="border border-border/80 bg-card/90">
-        <CardHeader className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div>
+      {isLoading ? (
+        <Card className="border border-border/80 bg-card/90">
+          <CardHeader>
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
               {t('settingsPage.plan.title')}
             </p>
-            <CardTitle className="text-xl">
-              {planCard?.name || t('settingsPage.plan.unknown')}
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {loading ? (
+            <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               {t('settingsPage.loading')}
             </div>
-          ) : error ? (
-            <div className="rounded-xl border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
-              {error}
-            </div>
-          ) : planCard ? (
-            <>
-              <p className="text-sm text-muted-foreground">{planCard.description}</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold">{planCard.price}</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">{planCard.intervalLabel}</span>
+          </CardContent>
+        </Card>
+      ) : billing ? (
+        <PlanSummaryCard billing={billing} usage={usage} links={links} />
+      ) : (
+        <Card className="border border-border/80 bg-card/90">
+          <CardHeader>
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              {t('settingsPage.plan.title')}
+            </p>
+            <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {error ? (
+              <div className="rounded-xl border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
+                {error}
               </div>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {subscription?.status ? (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-600 dark:text-emerald-400">
-                    <BadgeCheck className="h-4 w-4" />
-                    {t('settingsPage.plan.statusLabel', { status: subscription.status })}
-                  </span>
-                ) : null}
-                {planCard.trialEndsAt ? (
-                  <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary text-[11px]">
-                    {t('settingsPage.plan.trialEnds', { date: planCard.trialEndsAt })}
-                  </span>
-                ) : null}
-                {planCard.currentPeriodEnd ? (
-                  <span className="rounded-full bg-muted px-3 py-1 font-semibold text-foreground text-[11px]">
-                    {t('settingsPage.plan.renews', { date: planCard.currentPeriodEnd })}
-                  </span>
-                ) : null}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t('settingsPage.plan.empty')}</p>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('settingsPage.plan.empty')}</p>
+            )}
+            {error ? (
+              <Button type="button" variant="outline" size="sm" onClick={reload}>
+                {t('settingsPage.preferences.actions.reload')}
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
       <Card className="border border-border/80 bg-card/90">
         <CardHeader className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
@@ -186,12 +111,13 @@ export default function Settings() {
 
   const renderPreferencesTab = () => (
     <div className="grid gap-4 md:grid-cols-2">
+      <PreferencesCard company={company} canEdit={canEditPreferences} onTimezoneSaved={reload} />
       <Card className="border border-border/80 bg-card/90">
         <CardHeader>
           <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
             {t('settingsPage.preferences.notifications')}
           </p>
-          <CardTitle className="text-xl">{t('settingsPage.preferences.title')}</CardTitle>
+          <CardTitle className="text-xl">{t('settingsPage.preferences.notificationsTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between gap-3">

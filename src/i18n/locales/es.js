@@ -65,6 +65,42 @@ const es = {
         statusLabel: 'Estado: {{status}}',
         trialEnds: 'Trial hasta {{date}}',
         renews: 'Renueva el {{date}}',
+        labels: {
+          price: 'Precio',
+          interval: 'Ciclo',
+          periodFallback: 'Proximo ciclo',
+          trialEnds: 'Fin del trial',
+          nextCharge: 'Proximo cobro',
+          periodEnds: 'Fin del periodo',
+          nextAction: 'Proxima accion',
+          trialDays: 'Dias de trial',
+          billingDays: 'Dias para cobro',
+          cancelAtPeriodEnd: 'Cancelar al final del periodo',
+          endsAt: 'Termina el',
+          yes: 'Si',
+          no: 'No',
+          unknownInterval: 'Intervalo desconocido',
+          month: 'Mes',
+          year: 'Ano',
+          oneTime: 'Pago unico',
+          noPrice: 'Sin precio',
+          limits: 'Limites',
+        },
+        usage: {
+          withLimit: '{{current}} de {{limit}} colaboradores registrados',
+          withoutLimit: '{{current}} colaboradores registrados',
+          overLimit: 'Por encima del limite',
+          percent: '{{percent}}% de capacidad',
+        },
+        actions: {
+          portal: 'Portal del cliente',
+          portalDisabled: 'Portal no disponible',
+          viewDetails: 'Ver detalles',
+          hideDetails: 'Ocultar detalles',
+        },
+        status: {
+          unknown: 'Estado desconocido',
+        },
       },
       security: {
         title: 'Seguridad',
@@ -83,6 +119,7 @@ const es = {
           locale: 'Idioma',
           timezonePlaceholder: 'Escribe para buscar y seleccionar',
         },
+        notificationsTitle: 'Notificaciones y alertas',
         actions: {
           edit: 'Editar',
           save: 'Guardar',
@@ -1100,7 +1137,9 @@ const es = {
           title: 'Subir documento',
           description: 'Adjunta un archivo y define su prioridad y categoría.',
           employeeLabel: 'Colaborador',
-          employeePlaceholder: 'Nombre o correo',
+          employeePlaceholder: 'Selecciona un colaborador',
+          employeeLoading: 'Cargando colaboradores...',
+          employeeEmpty: 'No se encontraron colaboradores.',
           categoryLabel: 'Categoría',
           categoryPlaceholder: 'Selecciona una categoría',
           priorityLabel: 'Prioridad',
@@ -1614,6 +1653,7 @@ const es = {
 }
 
 export default es
+
 
 
 

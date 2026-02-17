@@ -1,10 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BadgeCheck,
   CalendarClock,
-  ChevronDown,
-  ChevronUp,
   CreditCard,
   ExternalLink,
   Users,
@@ -71,7 +69,6 @@ const LimitsList = ({ limits, t }) => {
 export function PlanSummaryCard({ billing, usage, links }) {
   const { t } = useTranslation()
   const { formatDateTime } = useDateTime()
-  const [showDetails, setShowDetails] = useState(false)
 
   if (!billing) return null
 
@@ -207,75 +204,7 @@ export function PlanSummaryCard({ billing, usage, links }) {
             <ExternalLink className="h-4 w-4" />
             {t('settingsPage.plan.actions.portal')}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDetails((prev) => !prev)}
-          >
-            {showDetails ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                {t('settingsPage.plan.actions.hideDetails')}
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                {t('settingsPage.plan.actions.viewDetails')}
-              </>
-            )}
-          </Button>
         </div>
-
-        {showDetails ? (
-          <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
-            <div className="grid gap-2 md:grid-cols-2">
-              <DetailItem
-                label={t('settingsPage.plan.labels.nextAction')}
-                value={subscription.next_action}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.labels.trialDays')}
-                value={
-                  subscription.trial_days_remaining !== null &&
-                  subscription.trial_days_remaining !== undefined
-                    ? subscription.trial_days_remaining
-                    : null
-                }
-              />
-              <DetailItem
-                label={t('settingsPage.plan.labels.billingDays')}
-                value={
-                  subscription.billing_days_remaining !== null &&
-                  subscription.billing_days_remaining !== undefined
-                    ? subscription.billing_days_remaining
-                    : null
-                }
-              />
-              <DetailItem
-                label={t('settingsPage.plan.labels.cancelAtPeriodEnd')}
-                value={
-                  subscription.cancel_at_period_end === null ||
-                  subscription.cancel_at_period_end === undefined
-                    ? null
-                    : subscription.cancel_at_period_end
-                      ? t('settingsPage.plan.labels.yes')
-                      : t('settingsPage.plan.labels.no')
-                }
-              />
-              <DetailItem
-                label={t('settingsPage.plan.labels.endsAt')}
-                value={
-                  subscription.subscription_ends_at
-                    ? formatDateTime(subscription.subscription_ends_at)
-                    : null
-                }
-              />
-            </div>
-
-            <LimitsList limits={limits} t={t} />
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   )
