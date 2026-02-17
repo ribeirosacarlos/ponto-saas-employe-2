@@ -69,6 +69,42 @@ const en = {
         statusLabel: 'Status: {{status}}',
         trialEnds: 'Trial until {{date}}',
         renews: 'Renews on {{date}}',
+        labels: {
+          price: 'Price',
+          interval: 'Cycle',
+          periodFallback: 'Next cycle',
+          trialEnds: 'Trial ends',
+          nextCharge: 'Next charge',
+          periodEnds: 'Period ends',
+          nextAction: 'Next action',
+          trialDays: 'Trial days',
+          billingDays: 'Billing days',
+          cancelAtPeriodEnd: 'Cancel at period end',
+          endsAt: 'Ends at',
+          yes: 'Yes',
+          no: 'No',
+          unknownInterval: 'Unknown interval',
+          month: 'Month',
+          year: 'Year',
+          oneTime: 'One-time',
+          noPrice: 'No price',
+          limits: 'Limits',
+        },
+        usage: {
+          withLimit: '{{current}} of {{limit}} teammates',
+          withoutLimit: '{{current}} teammates',
+          overLimit: 'Over the limit',
+          percent: '{{percent}}% of capacity',
+        },
+        actions: {
+          portal: 'Customer portal',
+          portalDisabled: 'Portal unavailable',
+          viewDetails: 'View details',
+          hideDetails: 'Hide details',
+        },
+        status: {
+          unknown: 'Unknown status',
+        },
       },
       security: {
         title: 'Security',
@@ -87,6 +123,7 @@ const en = {
           locale: 'Language',
           timezonePlaceholder: 'Type to search and select',
         },
+        notificationsTitle: 'Notifications and alerts',
         actions: {
           edit: 'Edit',
           save: 'Save',
@@ -1122,7 +1159,9 @@ const en = {
           title: 'Upload document',
           description: 'Attach a file and set category and priority.',
           employeeLabel: 'Employee',
-          employeePlaceholder: 'Name or email',
+          employeePlaceholder: 'Select an employee',
+          employeeLoading: 'Loading employees...',
+          employeeEmpty: 'No employees found.',
           categoryLabel: 'Category',
           categoryPlaceholder: 'Select a category',
           priorityLabel: 'Priority',
@@ -1569,4 +1608,5 @@ const en = {
 }
 
 export default en
+
 

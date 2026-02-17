@@ -64,6 +64,42 @@ const ptBR = {
         statusLabel: 'Status: {{status}}',
         trialEnds: 'Trial ate {{date}}',
         renews: 'Renova em {{date}}',
+        labels: {
+          price: 'Preco',
+          interval: 'Ciclo',
+          periodFallback: 'Proximo ciclo',
+          trialEnds: 'Fim do trial',
+          nextCharge: 'Proxima cobranca',
+          periodEnds: 'Fim do periodo',
+          nextAction: 'Proxima acao',
+          trialDays: 'Dias de trial',
+          billingDays: 'Dias para cobranca',
+          cancelAtPeriodEnd: 'Cancela no fim do periodo',
+          endsAt: 'Encerra em',
+          yes: 'Sim',
+          no: 'Nao',
+          unknownInterval: 'Intervalo desconhecido',
+          month: 'Mes',
+          year: 'Ano',
+          oneTime: 'Pagamento unico',
+          noPrice: 'Sem preco',
+          limits: 'Limites',
+        },
+        usage: {
+          withLimit: '{{current}} de {{limit}} colaboradores cadastrados',
+          withoutLimit: '{{current}} colaboradores cadastrados',
+          overLimit: 'Acima do limite',
+          percent: '{{percent}}% da capacidade',
+        },
+        actions: {
+          portal: 'Portal do cliente',
+          portalDisabled: 'Portal indisponivel',
+          viewDetails: 'Ver detalhes',
+          hideDetails: 'Ocultar detalhes',
+        },
+        status: {
+          unknown: 'Status desconhecido',
+        },
       },
       security: {
         title: 'Seguranca',
@@ -74,14 +110,37 @@ const ptBR = {
         sessionsHint: 'Revogue sessoes suspeitas ou expirada.',
       },
       preferences: {
+        title: 'Preferencias',
+        subtitle: 'Zona horaria e idioma da empresa.',
+        helper: 'Aplicado a filtros, horarios e exportacoes.',
         notifications: 'Alertas',
-        title: 'Notificacoes e alertas',
+        notificationsTitle: 'Notificacoes e alertas',
         email: 'Avisos por e-mail',
         emailHint: 'Receber notificacoes operacionais e de cobranca.',
         reminders: 'Lembretes de ponto',
         remindersHint: 'Alertar colaboradores sobre batidas e intervalos.',
         reports: 'Relatorios automaticos',
         reportsHint: 'Enviar resumo semanal de jornadas para gestores.',
+        fields: {
+          timezone: 'Zona horaria da empresa',
+          locale: 'Idioma',
+          timezonePlaceholder: 'Digite para buscar e selecionar',
+        },
+        actions: {
+          edit: 'Editar',
+          save: 'Salvar',
+          reload: 'Recarregar',
+        },
+        states: {
+          errorLoading: 'Nao foi possivel carregar a zona horaria.',
+          noTimezone: 'Sem zona horaria configurada.',
+        },
+        toast: {
+          successTitle: 'Zona horaria atualizada',
+          successDescription: 'A empresa agora usa o novo timezone.',
+          errorTitle: 'Erro ao salvar',
+          errorDescription: 'Nao foi possivel salvar a zona horaria.',
+        },
         critical: 'Seguranca',
         criticalTitle: 'Acesso administrativo',
         criticalDescription: 'Gerencie quem pode administrar billing, planos e configuracoes sensiveis.',
@@ -1084,7 +1143,9 @@ const ptBR = {
           title: 'Subir documento',
           description: 'Anexe um arquivo e defina categoria e prioridade.',
           employeeLabel: 'Colaborador',
-          employeePlaceholder: 'Nome ou e-mail',
+          employeePlaceholder: 'Selecione um colaborador',
+          employeeLoading: 'Carregando colaboradores...',
+          employeeEmpty: 'Nenhum colaborador encontrado.',
           categoryLabel: 'Categoria',
           categoryPlaceholder: 'Selecione a categoria',
           priorityLabel: 'Prioridade',
@@ -1599,6 +1660,7 @@ const ptBR = {
 }
 
 export default ptBR
+
 
 
 

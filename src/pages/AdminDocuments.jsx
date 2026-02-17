@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Download, Eye, FileText, RefreshCcw, Search, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
@@ -23,6 +23,8 @@ import { useAuthStore } from '../store/useAuth'
 import { downloadDocument, fetchDocumentBlob } from '../services/documentsService'
 import { approve, listPending, listReview, reject, uploadTeamDocument } from '../services/adminDocumentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
+import { listEmployees } from '../services/modules/employees'
+import { normalizeEmployee } from '../features/employees/useEmployeesManagement'
 
 const formatDateTime = (value, locale = 'pt-BR') => {
   if (!value) return ''
@@ -61,6 +63,8 @@ const STATUS_TONES = {
 
 const skeletonRows = Array.from({ length: 6 }).map((_, idx) => idx)
 const ALLOWED_ROLES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
+const EMPLOYEE_PAGE_SIZE = 200
+const MAX_EMPLOYEE_PAGES = 10
 
 const formatDate = (value, locale = 'pt-BR') => {
   if (!value) return '-'
@@ -129,6 +133,9 @@ export default function AdminDocuments() {
   const [meta, setMeta] = useState({ currentPage: 1, total: 0, perPage: 10, lastPage: 1 })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [employees, setEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
+  const [employeesError, setEmployeesError] = useState('')
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadForm, setUploadForm] = useState({
@@ -150,6 +157,62 @@ export default function AdminDocuments() {
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewMime, setPreviewMime] = useState('')
   const [selectedDocument, setSelectedDocument] = useState(null)
+
+  const formatRole = useCallback(
+    (role) => {
+      const normalized =
+        typeof role === 'string' ? role : role?.name || role?.role || role?.slug || role?.id || ''
+      if (!normalized) return t('equipoPage.roles.unknown')
+      return t(`equipoPage.roles.${normalized}`, normalized)
+    },
+    [t],
+  )
+
+  const loadEmployees = useCallback(async () => {
+    setEmployeesLoading(true)
+    setEmployeesError('')
+    try {
+      let pageIndex = 1
+      let allEmployees = []
+      let lastPage = null
+
+      while (pageIndex <= MAX_EMPLOYEE_PAGES) {
+        const response = await listEmployees(pageIndex, { perPage: EMPLOYEE_PAGE_SIZE })
+        const payload = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
+        const normalized = payload.map((item, index) =>
+          normalizeEmployee(item, allEmployees.length + index),
+        )
+
+        allEmployees = [...allEmployees, ...normalized]
+        const meta = response?.meta || {}
+        lastPage = meta.lastPage ?? meta.last_page ?? lastPage
+
+        if (lastPage && pageIndex >= lastPage) break
+        if (!lastPage && payload.length < EMPLOYEE_PAGE_SIZE) break
+
+        pageIndex += 1
+      }
+
+      const sorted = allEmployees.sort((left, right) => {
+        const leftLabel = (left.name || left.email || '').toLowerCase()
+        const rightLabel = (right.name || right.email || '').toLowerCase()
+        return leftLabel.localeCompare(rightLabel, i18n.language)
+      })
+
+      setEmployees(sorted)
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || t('equipoPage.states.errorDescription')
+      setEmployeesError(message)
+      toast({
+        title: t('equipoPage.states.errorTitle'),
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setEmployeesLoading(false)
+    }
+  }, [i18n.language, t, toast])
 
   const handleUploadSubmit = async (event) => {
     event?.preventDefault()
@@ -252,6 +315,11 @@ export default function AdminDocuments() {
     fetchDocuments({ page: 1 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.category, filters.search, filters.employee])
+
+  useEffect(() => {
+    if (!uploadOpen || employeesLoading || employees.length) return
+    loadEmployees()
+  }, [employees.length, employeesLoading, loadEmployees, uploadOpen])
 
   const handlePageChange = (nextPage) => {
     if (nextPage < 1 || (meta.lastPage && nextPage > meta.lastPage)) return
@@ -389,7 +457,16 @@ export default function AdminDocuments() {
   }
 
   const emptyState = !loading && documents.length === 0
-
+  const buildEmployeeLabel = (employee) => {
+    const baseName =
+      employee?.name || employee?.email || t('documentsPage.admin.labels.employeeFallback')
+    const emailSuffix =
+      employee?.name && employee?.email && employee.email !== employee.name
+        ? ` (${employee.email})`
+        : ''
+    const roleLabel = formatRole(employee?.role)
+    return `${baseName}${emailSuffix} - ${roleLabel}`
+  }
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
@@ -431,13 +508,34 @@ export default function AdminDocuments() {
                   <form className="space-y-4" onSubmit={handleUploadSubmit}>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.employeeLabel')}</label>
-                      <Input
-                        placeholder={t('documentsPage.admin.upload.employeePlaceholder')}
+                      <select
+                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
                         value={uploadForm.employee}
                         onChange={(event) =>
                           setUploadForm((prev) => ({ ...prev, employee: event.target.value }))
                         }
-                      />
+                        disabled={employeesLoading}
+                      >
+                        <option value="">{t('documentsPage.admin.upload.employeePlaceholder')}</option>
+                        {employees.map((employee) => (
+                          <option key={employee.id} value={employee.id}>
+                            {buildEmployeeLabel(employee)}
+                          </option>
+                        ))}
+                      </select>
+                      {employeesLoading ? (
+                        <p className="text-xs text-muted-foreground">
+                          {t('documentsPage.admin.upload.employeeLoading')}
+                        </p>
+                      ) : null}
+                      {!employeesLoading && !employeesError && employees.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {t('documentsPage.admin.upload.employeeEmpty')}
+                        </p>
+                      ) : null}
+                      {employeesError ? (
+                        <p className="text-xs text-rose-600">{employeesError}</p>
+                      ) : null}
                     </div>
 
                     <div className="space-y-2">
@@ -877,6 +975,12 @@ export default function AdminDocuments() {
     </div>
   )
 }
+
+
+
+
+
+
 
 
 

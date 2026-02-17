@@ -27,8 +27,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
   const [isEditing, setIsEditing] = useState(false)
   const [availableTimezones, setAvailableTimezones] = useState([])
   const [timezone, setTimezoneState] = useState(company?.timezone || '')
-  const [searchTerm, setSearchTerm] = useState(company?.timezone || '')
-  const [showSuggestions, setShowSuggestions] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -36,7 +34,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
   useEffect(() => {
     if (company?.timezone && !timezone) {
       setTimezoneState(company.timezone)
-      setSearchTerm(company.timezone)
     }
   }, [company?.timezone, timezone])
 
@@ -45,12 +42,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
     const merged = Array.from(new Set([...(availableTimezones || []), ...base]))
     return merged
   }, [availableTimezones, company?.timezone])
-
-  const filteredOptions = useMemo(() => {
-    const term = (searchTerm || '').toLowerCase().trim()
-    if (!term) return options
-    return options.filter((tz) => tz.toLowerCase().includes(term))
-  }, [options, searchTerm])
 
   const loadTimezones = async () => {
     setLoading(true)
@@ -84,7 +75,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
       const response = await updateCompanyTimezone(timezone)
       const nextTimezone = response.timezone || timezone
       setTimezoneState(nextTimezone)
-      setSearchTerm(nextTimezone)
       setAvailableTimezones(response.available_timezones || availableTimezones)
       setTimezone(nextTimezone)
       toast({
@@ -142,9 +132,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
         {!isEditing ? (
           <>
             <DetailItem label={t('settingsPage.preferences.fields.timezone')} value={timezone || t('settingsPage.preferences.states.noTimezone')} />
-            {company?.locale ? (
-              <DetailItem label={t('settingsPage.preferences.fields.locale')} value={company.locale} />
-            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -161,47 +148,22 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="timezone-input">{t('settingsPage.preferences.fields.timezone')}</Label>
-              <div className="relative">
-                <input
-                  id="timezone-input"
-                  value={searchTerm}
-                  onChange={(event) => {
-                    setSearchTerm(event.target.value)
-                    setTimezoneState(event.target.value)
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-                  disabled={loading || saving}
-                  placeholder={t('settingsPage.preferences.fields.timezonePlaceholder')}
-                  className="block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                {showSuggestions ? (
-                  <ul className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border/70 bg-card/95 text-foreground shadow-2xl ring-1 ring-primary/10 backdrop-blur">
-                    {filteredOptions.length ? (
-                      filteredOptions.map((tz) => (
-                        <li key={tz}>
-                          <button
-                            type="button"
-                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => {
-                              setTimezoneState(tz)
-                              setSearchTerm(tz)
-                              setShowSuggestions(false)
-                            }}
-                          >
-                            {tz}
-                          </button>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="px-3 py-2 text-sm text-muted-foreground">
-                        {t('settingsPage.preferences.states.noTimezone')}
-                      </li>
-                    )}
-                  </ul>
-                ) : null}
-              </div>
+              <select
+                id="timezone-input"
+                value={timezone}
+                onChange={(event) => setTimezoneState(event.target.value)}
+                disabled={loading || saving}
+                className="block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">
+                  {t('settingsPage.preferences.fields.timezonePlaceholder')}
+                </option>
+                {options.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" onClick={handleSave} disabled={saving || loading || !timezone}>
@@ -218,7 +180,6 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
                   setError('')
                   const fallback = company?.timezone || ''
                   setTimezoneState(fallback)
-                  setSearchTerm(fallback)
                 }}
               >
                 <X className="h-4 w-4" />
