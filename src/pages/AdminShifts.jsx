@@ -63,8 +63,8 @@ const toHHmm = (value) => {
   return `${h}:${m}`
 }
 
-const buildDefaultDay = (weekday) => {
-  const working = weekday <= 5
+const buildDefaultDay = (weekday, useWorkingDefaults = true) => {
+  const working = useWorkingDefaults && weekday <= 5
   return {
     weekday,
     is_working_day: working,
@@ -85,16 +85,22 @@ const normalizeDayFromSource = (source = {}, weekday) => {
     source.enabled ??
     false
 
-  const defaults = buildDefaultDay(weekday)
+  const start_time = toHHmm(source.start_time ?? source.startTime ?? '') || ''
+  const end_time = toHHmm(source.end_time ?? source.endTime ?? '') || ''
+  const break_start_time = toHHmm(source.break_start_time ?? source.breakStartTime ?? '') || ''
+  const break_end_time = toHHmm(source.break_end_time ?? source.breakEndTime ?? '') || ''
+  const break_minutes = source.break_minutes ?? source.breakMinutes ?? null
 
   return {
     weekday,
-    is_working_day: Boolean(working),
-    start_time: toHHmm(source.start_time ?? source.startTime ?? defaults.start_time),
-    end_time: toHHmm(source.end_time ?? source.endTime ?? defaults.end_time),
-    break_start_time: toHHmm(source.break_start_time ?? source.breakStartTime ?? defaults.break_start_time),
-    break_end_time: toHHmm(source.break_end_time ?? source.breakEndTime ?? defaults.break_end_time),
-    break_minutes: source.break_minutes ?? source.breakMinutes ?? defaults.break_minutes,
+    is_working_day: Boolean(
+      working && (start_time || end_time || break_start_time || break_end_time || break_minutes),
+    ),
+    start_time,
+    end_time,
+    break_start_time,
+    break_end_time,
+    break_minutes,
   }
 }
 
@@ -103,7 +109,9 @@ const buildShiftForm = (shift = null) => {
   const mergedDays = WEEK_DAYS.map((day) => {
     const match = sourceDays.find((item) => Number(item.weekday ?? item.day) === day.value)
     if (match) return normalizeDayFromSource(match, day.value)
-    return buildDefaultDay(day.value)
+    return shift
+      ? buildDefaultDay(day.value, false) // edição: não ativar dia sem horário salvo
+      : buildDefaultDay(day.value)
   })
 
   return {
@@ -339,7 +347,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     return (
       <div
         key={shift.id}
-        className="rounded-2xl border border-border/70 bg-card/90 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+        className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">

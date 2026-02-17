@@ -548,8 +548,7 @@ const en = {
     },
     timeClock: {
       title: 'Time clock',
-      subtitle: "Review today's punches and breaks before heading to the dashboard.",
-      greeting: 'Hello, {{name}}',
+      subtitle: "Quickly check today's punches before you go.",
       status: {
         label: {
           heading: 'Day status',
@@ -584,7 +583,7 @@ const en = {
       },
       summary: {
         title: 'Day summary',
-        subtitle: 'Quick view of your planned and recorded time.',
+        subtitle: 'Fast glance at planned vs. recorded time.',
         planned: 'Planned hours',
         recorded: 'Recorded hours',
         bank: 'Time bank (month)',
