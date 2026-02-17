@@ -545,8 +545,7 @@ const es = {
     },
     timeClock: {
       title: 'Registro de fichaje',
-      subtitle: 'Revisa tus marcaciones e intervalos antes de ir al dashboard.',
-      greeting: 'Hola, {{name}}',
+      subtitle: 'Revisa rápido tus marcaciones antes de seguir.',
       status: {
         label: {
           heading: 'Estado del día',
@@ -581,7 +580,7 @@ const es = {
       },
       summary: {
         title: 'Resumen del día',
-        subtitle: 'Vista rápida de tu horario planeado y registrado.',
+        subtitle: 'Vista rápida de horas planeadas y registradas.',
         planned: 'Horas previstas',
         recorded: 'Horas registradas',
         bank: 'Banco de horas (mes)',

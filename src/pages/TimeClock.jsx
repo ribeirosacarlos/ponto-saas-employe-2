@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, ChevronDown, ChevronUp, Clock3, HelpCircle, LogOut, User } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Clock3, HelpCircle, LogOut, Pencil, User } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useAuthStore } from '../store/useAuth'
 import { useToast } from '../components/ui/use-toast'
@@ -115,7 +115,6 @@ export default function TimeClock({ onContinueToDashboard }) {
   const normalizedStatus = clockStatus || 'idle'
 
   const statusTitle = t(`timeClock.status.title.${normalizedStatus}`)
-  const statusDescription = t(`timeClock.status.description.${normalizedStatus}`)
 
   const nextExpectedType = (openEntryStatus?.next_event?.expected_type || '').toLowerCase()
   const nextActionType = ['in', 'out'].includes(nextExpectedType)
@@ -930,13 +929,13 @@ export default function TimeClock({ onContinueToDashboard }) {
   }, [])
 
   return (
-    <PageContainer className="flex min-h-screen items-center justify-center">
+    <PageContainer className="flex min-h-screen items-center justify-center pt-2 sm:pt-4 lg:pt-6">
       <div className="
         relative w-full max-w-6x1 overflow-hidden
         rounded-[28px] sm:rounded-[32px]
         border border-border/80
         bg-gradient-to-br from-background/95 via-card/95 to-background/95
-        p-4 sm:p-6 lg:p-8
+        px-4 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-5 lg:px-8 lg:pb-8 lg:pt-6
         shadow-[0_60px_120px_-70px_rgba(62,82,152,0.55)]
         backdrop-blur-xl
       ">
@@ -946,17 +945,14 @@ export default function TimeClock({ onContinueToDashboard }) {
           <div className="absolute bottom-[-18%] left-[26%] h-72 w-72 rounded-full bg-indigo-400/14 blur-[120px] dark:bg-indigo-500/14" />
         </div>
 
-        <div className="relative z-10 space-y-10">
-          <div className="grid gap-4 lg:flex lg:items-start lg:justify-between">
+        <div className="relative z-10 space-y-2">
+          <div className="grid gap-2 lg:flex lg:items-start lg:justify-between">
             <div className="order-2 lg:order-1">
               <div className="flex items-start gap-3">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    {t('timeClock.greeting', { name: firstName })}
-                  </p>
+                <div className="space-y-1">
                   <div className="space-y-1">
-                    <h1 className="text-3xl font-semibold leading-tight">{t('timeClock.title')}</h1>
-                    <p className="max-w-2xl text-sm text-muted-foreground">{t('timeClock.subtitle')}</p>
+                    <p className="text-[12px] font-medium text-foreground/70 leading-tight">{firstName}</p>
+                    <h1 className="text-[22px] font-bold leading-tight">{t('timeClock.title')}</h1>
                   </div>
                 </div>
               </div>
@@ -966,10 +962,10 @@ export default function TimeClock({ onContinueToDashboard }) {
               <div className="flex flex-col gap-2 lg:items-end">
                 <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/70 px-3 py-2 shadow-[0_16px_50px_-42px_rgba(62,82,152,0.35)] backdrop-blur lg:w-auto lg:justify-start lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
                   <div className="min-w-0 leading-tight lg:text-right">
-                    <p className="truncate text-xs font-semibold text-muted-foreground lg:text-sm">
+                    <p className="truncate text-[11px] font-semibold text-foreground/60">
                       {formattedDate}
                     </p>
-                    <p className="text-base font-bold text-foreground lg:text-lg">
+                    <p className="text-[18px] font-semibold text-foreground">
                       {formattedTime}
                     </p>
                   </div>
@@ -997,10 +993,10 @@ export default function TimeClock({ onContinueToDashboard }) {
 
           </div>
 
-          <div className="grid gap-6">
-            <div className="space-y-5 rounded-[26px] border border-border/80 bg-card/95 p-6 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.45)]">
+          <div className="grid gap-2">
+            <div className="space-y-2 rounded-[26px] border border-border/80 bg-card/95 p-3 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.45)]">
               {isAbsentToday ? (
-                <div className="rounded-2xl border border-rose-200/70 bg-rose-500/10 p-4 shadow-[0_16px_40px_-30px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
+                <div className="rounded-2xl border border-rose-200/70 bg-rose-500/10 p-3 shadow-[0_16px_40px_-30px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
                   <div className="flex items-start gap-3">
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
                       <AlertTriangle className="h-5 w-5" />
@@ -1028,11 +1024,6 @@ export default function TimeClock({ onContinueToDashboard }) {
                   </div>
                 </div>
               ) : null}
-              {openStatusLoading ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('timeClock.openStatus.loading', 'Carregando status do ponto...')}
-                </p>
-              ) : null}
               {hasOpenEntry ? (
                 <EntryAdjustmentModal
                   entry={openEntryForAdjustment}
@@ -1043,7 +1034,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-rose-700/70 bg-rose-600 p-4 text-left text-white shadow-[0_18px_48px_-24px_rgba(190,24,93,0.55)] transition hover:shadow-[0_24px_62px_-28px_rgba(190,24,93,0.6)] focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-rose-600 dark:border-rose-400/60 dark:bg-rose-500"
+                      className="w-full rounded-2xl border border-rose-700/70 bg-rose-600 p-3 text-left text-white shadow-[0_18px_48px_-24px_rgba(190,24,93,0.55)] transition hover:shadow-[0_24px_62px_-28px_rgba(190,24,93,0.6)] focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-rose-600 dark:border-rose-400/60 dark:bg-rose-500"
                     >
                       <div className="flex items-start gap-3">
                         <span className="flex h-10 w-10 items-center justify-center text-white">
@@ -1065,29 +1056,28 @@ export default function TimeClock({ onContinueToDashboard }) {
                   }
                 />
               ) : null}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[1px] text-muted-foreground">
                     {t('timeClock.status.label.heading', 'Status atual')}
                   </p>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-semibold leading-tight">{statusTitle}</h3>
-                    <p className="text-sm text-muted-foreground">{statusDescription}</p>
+                  <div className="space-y-0.5">
+                    <h3 className="text-[16px] font-bold leading-[1.25]">{statusTitle}</h3>
                   </div>
                 </div>
               </div>
 
               <div className="overflow-hidden rounded-[28px] border border-border/70 bg-card/95 shadow-[0_22px_60px_-42px_rgba(0,0,0,0.35)]">
-                <div className="flex items-center justify-between gap-3 bg-muted/35 px-5 py-4">
+                <div className="flex items-center justify-between gap-2.5 bg-muted/35 px-3 py-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 text-primary">
                       <Clock3 className="h-5 w-5" aria-hidden />
                     </span>
                     <div className="flex flex-col leading-tight">
-                      <p className="text-lg font-semibold text-foreground">
+                      <p className="text-[14px] font-semibold text-foreground">
                         {t('timeClock.lastPunch.title')}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-[11px] leading-[1.4] text-muted-foreground">
                         {lastPunchTime ? (
                           <>
                             {registeredAtParts?.before ? (
@@ -1108,23 +1098,72 @@ export default function TimeClock({ onContinueToDashboard }) {
                       </p>
                     </div>
                   </div>
+                <div className="flex items-center gap-2">
+                  {lastPunch ? (
+                    <EntryAdjustmentModal
+                      entry={lastPunch}
+                      defaultDate={
+                        lastPunch?.clocked_at || lastPunch?.created_at
+                          ? new Date(lastPunch.clocked_at || lastPunch.created_at)
+                          : new Date()
+                      }
+                      onSubmit={handleOpenEntryAdjustment}
+                      isSubmitting={Boolean(submittingOpenAdjustment)}
+                      trigger={
+                        <button
+                          type="button"
+                          className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 md:flex"
+                        >
+                          <Pencil className="h-4 w-4" aria-hidden />
+                          {t('timeClock.lastPunch.adjustRequest', 'Solicitar ajuste de ponto')}
+                        </button>
+                      }
+                    />
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setIsLastPunchExpanded((prev) => !prev)}
                     aria-expanded={isLastPunchExpanded}
-                    className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
+                    className="flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-medium text-primary opacity-80 transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
                   >
                     {t('timeClock.lastPunch.details', 'Details')}
-                    {isLastPunchExpanded ? (
-                      <ChevronUp className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" aria-hidden />
-                    )}
-                  </button>
+                      {isLastPunchExpanded ? (
+                        <ChevronUp className="h-4 w-4" aria-hidden />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" aria-hidden />
+                      )}
+                    </button>
+                  </div>
                 </div>
+                {lastPunch ? (
+                  <>
+                    <div className="h-px bg-foreground/15" />
+                    <div className="bg-background/90 px-3 py-[6px] flex justify-center md:hidden">
+                      <EntryAdjustmentModal
+                        entry={lastPunch}
+                        defaultDate={
+                          lastPunch?.clocked_at || lastPunch?.created_at
+                            ? new Date(lastPunch.clocked_at || lastPunch.created_at)
+                            : new Date()
+                        }
+                        onSubmit={handleOpenEntryAdjustment}
+                        isSubmitting={Boolean(submittingOpenAdjustment)}
+                        trigger={
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-center gap-2 px-2 py-[6px] text-[12px] font-semibold text-primary transition hover:bg-primary/8 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />
+                            {t('timeClock.lastPunch.adjustRequest', 'Solicitar ajuste de ponto')}
+                          </button>
+                        }
+                      />
+                    </div>
+                  </>
+                ) : null}
 
                 {isLastPunchExpanded ? (
-                  <div className="space-y-3 bg-background/90 px-5 py-5">
+                  <div className="space-y-2 bg-background/90 px-3 py-3">
                     {workedPairsRows.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {t('timeClock.lastPunch.none')}
@@ -1133,11 +1172,11 @@ export default function TimeClock({ onContinueToDashboard }) {
                       workedPairsRows.map((row) => (
                         <div
                           key={row.key}
-                          className="flex items-center justify-between rounded-2xl border border-border/70 bg-white px-4 py-4 shadow-sm dark:bg-slate-900/50"
+                          className="flex items-center justify-between rounded-2xl border border-border/70 bg-white px-3 py-3 shadow-sm dark:bg-slate-900/50"
                         >
                           <div className="flex flex-col gap-1">
-                            <p className="text-sm font-semibold text-foreground">{row.label}</p>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <p className="text-[11px] font-semibold text-foreground">{row.label}</p>
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
                               <span className="flex items-center gap-2 font-medium text-foreground">
                                 <span>{row.startLabel}</span>
                               </span>
@@ -1152,7 +1191,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                               </span>
                             </div>
                           </div>
-                          <span className={cn('text-lg font-bold', row.tone)}>{row.duration}</span>
+                          <span className={cn('text-[16px] font-semibold', row.tone)}>{row.duration}</span>
                         </div>
                       ))
                     )}
@@ -1160,43 +1199,43 @@ export default function TimeClock({ onContinueToDashboard }) {
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div className="rounded-xl border border-border/70 bg-background/85 p-3 shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)]">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <div className="grid grid-cols-2 gap-2 sm:gap-2">
+                <div className="rounded-xl border border-border/70 bg-background/85 px-[12px] py-[10px] shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)] flex h-full flex-col justify-between">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.06em] text-foreground/50">
                     {t('timeClock.summary.hoursWorked', 'Hours Worked')}
                   </p>
                   <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-xl font-semibold text-foreground">{workedTodayLabel}</span>
+                    <span className="text-[15px] font-semibold text-foreground">{workedTodayLabel}</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border/70 bg-background/85 p-3 shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)]">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-background/85 px-[12px] py-[10px] shadow-[0_12px_28px_-20px_rgba(0,0,0,0.25)] flex h-full flex-col justify-between">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.06em] text-foreground/50">
                     {t('timeClock.summary.bank', 'My Hour Bank')}
                   </p>
                   <div className="mt-1.5 flex items-center gap-2">
                     {overtimeMinutes < 0 ? (
-                      <AlertTriangle className="h-4 w-4 text-rose-500" aria-hidden />
+                      <AlertTriangle className="h-[12px] w-[12px] text-rose-500" aria-hidden />
                     ) : (
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" aria-hidden />
+                      <HelpCircle className="h-[12px] w-[12px] text-muted-foreground" aria-hidden />
                     )}
-                    <span className={cn('text-xl font-semibold', overtimeTone)}>{overtimeLabel}</span>
+                    <span className={cn('text-[15px] font-semibold', overtimeTone)}>{overtimeLabel}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   disabled={primaryLoading || loadingEntries || isClockBlocked}
                   onClick={handlePrimaryAction}
-                  className="h-12 w-full rounded-full shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
+                  className="h-11 w-full rounded-full text-[14px] shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
                 >
                   {primaryLoading ? registeringLabel : shiftButtonLabel}
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={handleGoToDashboard}
-                  className="h-12 w-full rounded-full border border-border bg-background/80 text-foreground shadow-[0_12px_22px_-18px_rgba(62,82,152,0.35)]"
+                  className="h-11 w-full rounded-full border border-border bg-background/80 text-[14px] text-foreground shadow-[0_12px_22px_-18px_rgba(62,82,152,0.35)]"
                 >
                   {t('timeClock.actions.goDashboard')}
                 </Button>
@@ -1206,20 +1245,76 @@ export default function TimeClock({ onContinueToDashboard }) {
               ) : null}
             </div>
 
-            {/* <div className="space-y-4 rounded-[26px]">
-              ... (summary and recent punches were here; intentionally hidden per request)
-            </div> */}
+            <div className="space-y-2 rounded-[26px]">
+              <div className="rounded-[24px] border border-border/80 bg-card/95 p-3 shadow-[0_24px_60px_-54px_rgba(62,82,152,0.4)]">
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">{t('timeClock.summary.title')}</p>
+                  </div>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                    {t('timeClock.summary.todayBadge', 'Hoje')}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {summaryStats.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+                    >
+                      <span className="text-sm font-semibold text-muted-foreground">{item.label}</span>
+                      <span className={cn('text-sm font-bold', item.tone)}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-border/80 bg-card/95 p-3 shadow-[0_24px_60px_-54px_rgba(62,82,152,0.4)]">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-semibold">{t('timeClock.recent.title')}</p>
+                  <button className="text-xs font-semibold text-primary hover:underline">
+                    {t('timeClock.recent.viewAll')}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {recentEntriesLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('common.loading', 'Carregando registros...')}
+                    </p>
+                  ) : recentEntries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
+                    </p>
+                  ) : (
+                    recentEntries.map((entry) => (
+                      <div
+                        key={entry.id || entry.day + entry.value}
+                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold">{entry.day}</p>
+                          <p className="text-xs text-muted-foreground">{entry.interval}</p>
+                        </div>
+                        <span className={cn('text-sm font-bold', entry.tone)}>{entry.value}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-[22px] border border-border/70 bg-background/85 px-4 py-3 text-xs text-muted-foreground shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)] md:flex-row md:items-center md:justify-between">
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-[22px] border border-border/70 bg-background/85 px-3 py-2.5 text-[10px] text-muted-foreground leading-none shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}
+          >
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>{t('timeClock.syncedMessage')}</span>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              <span className="leading-none">{t('timeClock.syncedMessage')}</span>
             </div>
-            <div className="flex items-center gap-4">
-              <button className="hover:text-primary">{t('timeClock.help')}</button>
+            <div className="flex items-center gap-3">
+              <button className="hover:text-primary leading-none">{t('timeClock.help')}</button>
               <span className="text-border">|</span>
-              <button className="hover:text-primary">{t('timeClock.preferences')}</button>
+              <button className="hover:text-primary leading-none">{t('timeClock.preferences')}</button>
             </div>
           </div>
         </div>

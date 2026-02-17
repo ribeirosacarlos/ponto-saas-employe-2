@@ -509,8 +509,7 @@ const ptBR = {
     },
     timeClock: {
       title: 'Registro de ponto',
-      subtitle: 'Controle suas batidas, intervalos e siga para o dashboard quando quiser.',
-      greeting: 'Olá, {{name}}',
+      subtitle: 'Revise rápido suas batidas antes de seguir.',
       status: {
         label: {
           heading: 'Status atual',
@@ -545,7 +544,7 @@ const ptBR = {
       },
       summary: {
         title: 'Resumo do dia',
-        subtitle: 'Visão rápida do seu horário planejado e registrado.',
+        subtitle: 'Visão rápida do planejado x registrado.',
         planned: 'Horas previstas',
         recorded: 'Horas registradas',
         bank: 'Banco de horas (mês)',
