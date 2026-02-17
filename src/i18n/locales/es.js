@@ -18,6 +18,7 @@ const es = {
         en: 'EN',
         es: 'ES',
       },
+      loading: 'Cargando...',
       sourceFallback: 'web',
       activeTimezone: 'Zona horaria: {{tz}}',
     },
@@ -581,8 +582,7 @@ const es = {
     },
     timeClock: {
       title: 'Registro de fichaje',
-      subtitle: 'Revisa tus marcaciones e intervalos antes de ir al dashboard.',
-      greeting: 'Hola, {{name}}',
+      subtitle: 'Revisa rápido tus marcaciones antes de seguir.',
       status: {
         label: {
           heading: 'Estado del día',
@@ -611,16 +611,18 @@ const es = {
         backFromBreak: 'Registrar regreso',
         backToWork: 'Volver del intervalo',
         goDashboard: 'Ir al dashboard',
+        registerPoint: 'Registrar fichaje',
         logout: 'Salir de la aplicación',
         registering: 'Registrando...',
       },
       summary: {
         title: 'Resumen del día',
-        subtitle: 'Vista rápida de tu horario planeado y registrado.',
+        subtitle: 'Vista rápida de horas planeadas y registradas.',
         planned: 'Horas previstas',
         recorded: 'Horas registradas',
         bank: 'Banco de horas (mes)',
         todayBadge: 'Hoy',
+        hoursWorked: 'Horas trabajadas',
       },
       lastRecord: {
         title: 'Último registro',
@@ -631,12 +633,16 @@ const es = {
       lastPunch: {
         title: 'Último fichaje',
         registeredAt: 'Registrado a las: {{time}}',
+        adjustmentTag: 'Ajuste',
+        adjustmentPendingTooltip: 'Solicitud de ajuste pendiente de aprobación',
+        details: 'Detalles',
         opened: 'Abierto',
         none: 'Aún no hay registros',
+        segment: 'Segmento',
         sections: {
-          first: 'Primera marcación',
-          interval: 'Intervalo',
-          last: 'Última marcación',
+          first: 'First Punch',
+          interval: 'Interval',
+          last: 'Last Punch',
         },
       },
       recent: {
@@ -644,7 +650,10 @@ const es = {
         viewAll: 'Ver todo',
         entryLabel: 'Entrada',
         exitLabel: 'Salida',
+        breakStart: 'Inicio de pausa',
+        breakEnd: 'Fin de pausa',
         interval: '{{entryLabel}} {{start}} a las {{exitLabel}} {{end}}',
+        empty: 'Ningún registro encontrado.',
       },
       syncedMessage: 'Registros sincronizados automáticamente con el servidor.',
       help: 'Ayuda',
@@ -658,6 +667,7 @@ const es = {
       openEntryWarning: {
         title: 'Fichaje abierto',
         description: 'Tienes un registro abierto que debe cerrarse para regularizar tu día.',
+        cta: 'Regulariza ahora',
         nextAction: 'Próxima acción: {{action}}',
       },
       nextActions: {
@@ -666,6 +676,16 @@ const es = {
         break_start: 'Iniciar pausa',
         break_end: 'Terminar pausa',
         default: 'Fichar',
+      },
+      absence: {
+        typeFallback: 'Ausencia',
+        commentFallback: 'Sin justificación informada.',
+        blockTitle: 'Fichaje bloqueado',
+        blockDescription: 'Estás marcado como ausente hoy y no puedes registrar el fichaje.',
+        bannerTitle: 'Estás en ausencia hoy:',
+        periodLabel: 'Período:',
+        reasonLabel: 'Motivo:',
+        blockedLabel: 'Estás bloqueado para registrar el fichaje.',
       },
     },
     dashboardPage: {

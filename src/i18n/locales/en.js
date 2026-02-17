@@ -18,6 +18,7 @@ const en = {
         en: 'EN',
         es: 'ES',
       },
+      loading: 'Loading...',
       sourceFallback: 'web',
       activeTimezone: 'Timezone: {{tz}}',
     },
@@ -584,8 +585,7 @@ const en = {
     },
     timeClock: {
       title: 'Time clock',
-      subtitle: "Review today's punches and breaks before heading to the dashboard.",
-      greeting: 'Hello, {{name}}',
+      subtitle: "Quickly check today's punches before you go.",
       status: {
         label: {
           heading: 'Day status',
@@ -614,12 +614,13 @@ const en = {
         backFromBreak: 'Return from break',
         backToWork: 'Resume shift',
         goDashboard: 'Go to the dashboard',
+        registerPoint: 'Register point',
         logout: 'Logout',
         registering: 'Registering...',
       },
       summary: {
         title: 'Day summary',
-        subtitle: 'Quick view of your planned and recorded time.',
+        subtitle: 'Fast glance at planned vs. recorded time.',
         planned: 'Planned hours',
         recorded: 'Recorded hours',
         bank: 'Time bank (month)',
@@ -634,8 +635,12 @@ const en = {
       lastPunch: {
         title: 'Last punch',
         registeredAt: 'Registered at: {{time}}',
+        adjustmentTag: 'Adjustment',
+        adjustmentPendingTooltip: 'Adjustment request pending approval',
+        details: 'Details',
         opened: 'Opened',
         none: 'No punches yet',
+        segment: 'Segment',
         sections: {
           first: 'First punch',
           interval: 'Interval',
@@ -647,7 +652,10 @@ const en = {
         viewAll: 'View all',
         entryLabel: 'Entry',
         exitLabel: 'Exit',
+        breakStart: 'Break start',
+        breakEnd: 'Break end',
         interval: '{{entryLabel}} {{start}} to {{exitLabel}} {{end}}',
+        empty: 'No records found.',
       },
       syncedMessage: 'Entries sync automatically with the server.',
       help: 'Help',
@@ -661,6 +669,7 @@ const en = {
       openEntryWarning: {
         title: 'Open time entry',
         description: 'You have an open punch that must be closed to regularize your day.',
+        cta: 'Resolve now',
         nextAction: 'Next action: {{action}}',
       },
       nextActions: {
@@ -669,6 +678,16 @@ const en = {
         break_start: 'Start break',
         break_end: 'End break',
         default: 'Register punch',
+      },
+      absence: {
+        typeFallback: 'Absence',
+        commentFallback: 'No justification provided.',
+        blockTitle: 'Clocking blocked',
+        blockDescription: 'You are marked absent today and cannot register a punch.',
+        bannerTitle: 'You are absent today:',
+        periodLabel: 'Period:',
+        reasonLabel: 'Reason:',
+        blockedLabel: 'You are blocked from registering a punch.',
       },
     },
     dashboardPage: {

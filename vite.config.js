@@ -3,4 +3,13 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://api.jornafy.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

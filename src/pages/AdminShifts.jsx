@@ -40,10 +40,31 @@ const WEEK_DAYS = [
   { value: 7, label: 'Domingo', short: 'Dom' },
 ]
 
+const EVENT_LABELS = {
+  work_start: 'Início da jornada',
+  break_start: 'Início do intervalo',
+  break_end: 'Fim do intervalo',
+  work_end: 'Fim da jornada',
+}
+
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
 
-const buildDefaultDay = (weekday) => {
-  const working = weekday <= 5
+const toHHmm = (value) => {
+  if (value === null || value === undefined) return null
+  const str = String(value).trim()
+  if (!str) return null
+  const [hours = '', minutes = '00'] = str.split(':')
+  if (hours === '' && minutes === '') return null
+  const hNum = Number.parseInt(hours, 10)
+  const mNum = Number.parseInt(minutes, 10)
+  if (!Number.isFinite(hNum) || !Number.isFinite(mNum)) return null
+  const h = String(hNum).padStart(2, '0').slice(-2)
+  const m = String(mNum).padStart(2, '0').slice(0, 2)
+  return `${h}:${m}`
+}
+
+const buildDefaultDay = (weekday, useWorkingDefaults = true) => {
+  const working = useWorkingDefaults && weekday <= 5
   return {
     weekday,
     is_working_day: working,
@@ -64,16 +85,22 @@ const normalizeDayFromSource = (source = {}, weekday) => {
     source.enabled ??
     false
 
-  const defaults = buildDefaultDay(weekday)
+  const start_time = toHHmm(source.start_time ?? source.startTime ?? '') || ''
+  const end_time = toHHmm(source.end_time ?? source.endTime ?? '') || ''
+  const break_start_time = toHHmm(source.break_start_time ?? source.breakStartTime ?? '') || ''
+  const break_end_time = toHHmm(source.break_end_time ?? source.breakEndTime ?? '') || ''
+  const break_minutes = source.break_minutes ?? source.breakMinutes ?? null
 
   return {
     weekday,
-    is_working_day: Boolean(working),
-    start_time: source.start_time ?? source.startTime ?? defaults.start_time,
-    end_time: source.end_time ?? source.endTime ?? defaults.end_time,
-    break_start_time: source.break_start_time ?? source.breakStartTime ?? defaults.break_start_time,
-    break_end_time: source.break_end_time ?? source.breakEndTime ?? defaults.break_end_time,
-    break_minutes: source.break_minutes ?? source.breakMinutes ?? defaults.break_minutes,
+    is_working_day: Boolean(
+      working && (start_time || end_time || break_start_time || break_end_time || break_minutes),
+    ),
+    start_time,
+    end_time,
+    break_start_time,
+    break_end_time,
+    break_minutes,
   }
 }
 
@@ -82,7 +109,9 @@ const buildShiftForm = (shift = null) => {
   const mergedDays = WEEK_DAYS.map((day) => {
     const match = sourceDays.find((item) => Number(item.weekday ?? item.day) === day.value)
     if (match) return normalizeDayFromSource(match, day.value)
-    return buildDefaultDay(day.value)
+    return shift
+      ? buildDefaultDay(day.value, false) // edição: não ativar dia sem horário salvo
+      : buildDefaultDay(day.value)
   })
 
   return {
@@ -106,14 +135,18 @@ const buildPayload = (form) => ({
       const parsed = Number(value)
       return Number.isFinite(parsed) ? parsed : null
     }
+    const formatTime = (value) => {
+      const normalized = toHHmm(value)
+      return normalized || null
+    }
 
     return {
       weekday,
       is_working_day: working,
-      start_time: working ? day.start_time || null : null,
-      end_time: working ? day.end_time || null : null,
-      break_start_time: working ? day.break_start_time || null : null,
-      break_end_time: working ? day.break_end_time || null : null,
+      start_time: working ? formatTime(day.start_time) : null,
+      end_time: working ? formatTime(day.end_time) : null,
+      break_start_time: working ? formatTime(day.break_start_time) : null,
+      break_end_time: working ? formatTime(day.break_end_time) : null,
       break_minutes: working ? toNumber(day.break_minutes) : null,
     }
   }),
@@ -314,7 +347,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     return (
       <div
         key={shift.id}
-        className="rounded-2xl border border-border/70 bg-card/90 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+        className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
@@ -378,6 +411,32 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                       <span className="block text-[10px] text-emerald-700/90">
                         {formatBreakLabel(dayData.break_minutes)}
                       </span>
+                    ) : null}
+                    {Array.isArray(dayData.events) && dayData.events.length ? (
+                      <div className="mt-2 space-y-1">
+                        {dayData.events
+                          .slice()
+                          .sort(
+                            (a, b) =>
+                              (a.sort_order ?? a.sortOrder ?? 0) - (b.sort_order ?? b.sortOrder ?? 0),
+                          )
+                          .map((event, index) => {
+                            const label = EVENT_LABELS[event.kind] || event.kind || 'Evento'
+                            const time = event.expected_time || '--:--'
+                            const offsetLabel =
+                              Number(event.day_offset ?? event.dayOffset ?? 0) === 1
+                                ? ' (dia seguinte)'
+                                : ''
+                            const typeLabel = event.expected_type ? ` • ${event.expected_type}` : ''
+                            return (
+                              <p key={`${shift.id}-${day.value}-event-${index}`} className="text-[11px] text-muted-foreground">
+                                {label}: {time}
+                                {offsetLabel}
+                                {typeLabel}
+                              </p>
+                            )
+                          })}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}

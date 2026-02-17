@@ -5,7 +5,7 @@ import { useToast } from '../ui/use-toast'
 import { Button } from '../ui/button'
 import { AjusteModal } from '../AjusteModal'
 import { useClocking } from '../../features/ponto/useClocking'
-import { requestAdjustment } from '../../lib/api'
+import { requestAdjustment } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 import { ViewAllButton } from '../ViewAllButton'
@@ -127,8 +127,28 @@ export function TimeTrackingCard({ onOpenHistory }) {
 
   const handleAdjustment = async (form, closeModal, resetForm) => {
     setSendingAdjustment(true)
+    const timeEntryId =
+      form.timeEntryId ||
+      form.time_entry_id ||
+      form.entry?.id ||
+      form.entry?.uuid ||
+      entries?.[0]?.id ||
+      entries?.[0]?.uuid ||
+      null
+    if (!timeEntryId) {
+      toast({
+        title: t('toast.adjustmentError.title'),
+        description: t('toast.adjustmentError.description'),
+        variant: 'error',
+      })
+      setSendingAdjustment(false)
+      return
+    }
     try {
-      await requestAdjustment(form)
+      await requestAdjustment({
+        ...form,
+        timeEntryId,
+      })
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),
@@ -229,6 +249,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
 
       <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-end">
         <AjusteModal
+          entries={entries}
           onSubmit={handleAdjustment}
           isSubmitting={sendingAdjustment}
           trigger={

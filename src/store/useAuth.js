@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { api, loginRequest, logoutRequest } from '../lib/api'
+import { api } from '../services/http/api'
+import { loginRequest, logoutRequest } from '../services/modules/auth'
 import { emitAccessClear } from '../lib/accessDenied'
 import i18n from '../i18n/i18n.js'
 

@@ -18,9 +18,7 @@ import { AppTopBar } from '../components/ui/AppTopBar'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
-import {
-  getEmployee,
-} from '../lib/api'
+import { getEmployee } from '../services/modules/employees'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager'] }
 const ROLE_OPTIONS = ['admin', 'manager', 'area_manager', 'employee']

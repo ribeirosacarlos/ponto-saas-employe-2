@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
+import { forgotPasswordRequest } from '../services/modules/auth'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -34,18 +35,33 @@ export default function ForgotPassword() {
 
     setLoading(true)
     try {
-      await Promise.resolve()
+      const normalizedEmail = email.trim()
+      const response = await forgotPasswordRequest(normalizedEmail)
+      const apiMessage = response?.message || t('forgotPassword.successDescription')
+
       toast({
         title: t('forgotPassword.successTitle'),
-        description: t('forgotPassword.successDescription'),
+        description: apiMessage,
         variant: 'success',
       })
+
+      if (typeof window !== 'undefined') {
+        const emailParam = encodeURIComponent(normalizedEmail)
+        window.setTimeout(() => {
+          window.location.href = `/reset-password?email=${emailParam}`
+        }, 600)
+      }
+
+      setErrorMessage('')
+      setEmail(normalizedEmail)
     } catch (error) {
+      const apiMessage = error?.response?.data?.message
       const fallbackMessage = t('forgotPassword.errorTitle')
-      setErrorMessage(fallbackMessage)
+      const message = apiMessage || fallbackMessage
+      setErrorMessage(message)
       toast({
         title: t('forgotPassword.errorTitle'),
-        description: fallbackMessage,
+        description: message,
         variant: 'error',
       })
     } finally {

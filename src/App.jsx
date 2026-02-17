@@ -30,7 +30,8 @@ import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.js
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { useAuthStore } from './store/useAuth.js'
-import { getWorkedToday, meRequest } from './lib/api'
+import { getWorkedToday } from './services/modules/employee'
+import { getCurrentUser, clearAuthCache } from './services/authService'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
@@ -222,7 +223,7 @@ export default function App() {
     const bootstrapAccess = async () => {
       if (!token) return
       try {
-        const profile = await meRequest()
+        const profile = await getCurrentUser()
         if (!active) return
         if (profile?.user) {
           syncProfile(profile.user, profile.roles || [])
@@ -268,7 +269,6 @@ export default function App() {
       }
       try {
         const data = await getWorkedToday()
-        console.log('[App] /v1/employee/worked-today response:', data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??
@@ -319,7 +319,7 @@ export default function App() {
 
   const handleRetryAccess = useCallback(async () => {
     try {
-      const profile = await meRequest()
+      const profile = await getCurrentUser(true) // Force refresh
       if (profile?.user) {
         syncProfile(profile.user, profile.roles || [])
       }

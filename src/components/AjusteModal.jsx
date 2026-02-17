@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarClock } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -16,14 +16,40 @@ import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
 import { useTranslation } from 'react-i18next'
 
-export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime }) {
+export function AjusteModal({ onSubmit, trigger, isSubmitting, entries = [] }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     corrected_time: '',
     reason: '',
   })
+  const [selectedEntryId, setSelectedEntryId] = useState('')
   const correctedInputRef = useRef(null)
   const { t } = useTranslation()
+
+  const availableEntries = useMemo(
+    () =>
+      (entries || [])
+        .filter((item) => item?.id || item?.uuid)
+        .map((item) => {
+          const id = item.id || item.uuid
+          const date = item.clocked_at || item.clockedAt || item.created_at || item.date || null
+          const dateLabel = date ? new Date(date) : null
+          const label = dateLabel
+            ? `${dateLabel.toLocaleDateString()} ${dateLabel.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${item.type || ''}`
+            : id
+          return { id, raw: item, label, type: item.type }
+        }),
+    [entries],
+  )
+
+  const activeEntry =
+    availableEntries.find((item) => item.id === selectedEntryId)?.raw || availableEntries[0]?.raw || null
+
+  useEffect(() => {
+    if (!open) return
+    const fallbackId = availableEntries[0]?.id || ''
+    setSelectedEntryId((prev) => prev || fallbackId)
+  }, [availableEntries, open])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -50,10 +76,15 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    const timeEntryId = selectedEntryId || availableEntries[0]?.id
+
     await onSubmit(
       {
-        corrected_time: form.corrected_time,
+        proposed_clocked_at: form.corrected_time,
         reason: form.reason,
+        entry: activeEntry,
+        corrected_time: form.corrected_time,
+        timeEntryId,
       },
       () => setOpen(false),
       () => setForm({ corrected_time: '', reason: '' }),
@@ -75,10 +106,23 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {originalTime ? (
+          {availableEntries.length ? (
             <div className="space-y-2">
-              <Label>{t('adjustment.original')}</Label>
-              <Input value={originalTime} disabled />
+              <Label htmlFor="timeEntry">{t('adjustment.entryLabel', 'Registro a ajustar')}</Label>
+              <select
+                id="timeEntry"
+                name="timeEntry"
+                required
+                value={selectedEntryId || availableEntries[0]?.id || ''}
+                onChange={(event) => setSelectedEntryId(event.target.value)}
+                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                {availableEntries.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
 
@@ -87,7 +131,7 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime }) {
             <div className="group relative rounded-2xl border border-border/70 bg-gradient-to-r from-background/95 via-muted/60 to-background/90 shadow-[0_16px_60px_-40px_rgba(82,110,255,0.55)] transition hover:border-primary/60 hover:shadow-[0_20px_70px_-40px_rgba(82,110,255,0.65)]">
               <Input
                 id="corrected_time"
-              name="corrected_time"
+                name="corrected_time"
                 type="datetime-local"
                 value={form.corrected_time}
                 onChange={handleChange}
@@ -132,6 +176,7 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, originalTime }) {
               required
             />
           </div>
+
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <DialogClose asChild>

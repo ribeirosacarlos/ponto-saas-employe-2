@@ -143,6 +143,17 @@ export const isSameDayInZone = (left, right, { timeZone, locale } = {}) => {
   return Boolean(leftKey && rightKey && leftKey === rightKey)
 }
 
+export const toCompanyDate = (value, timeZone) => formatDateISO(value, { timeZone })
+
+export const isSameCompanyDay = (value, timeZone, targetDateStr) => {
+  if (!value || !targetDateStr) return false
+  const entryDate = toCompanyDate(value, timeZone)
+  return entryDate === targetDateStr
+}
+
+export const getCompanyTimezone = (maybeTz) =>
+  isValidTimeZone(maybeTz) ? maybeTz : DEFAULT_TIMEZONE
+
 export const formatRelative = (value, reference = new Date(), { locale, timeZone } = {}) => {
   const date = normalizeInput(value)
   const ref = normalizeInput(reference)

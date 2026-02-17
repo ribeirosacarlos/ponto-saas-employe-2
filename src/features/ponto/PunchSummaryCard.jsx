@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { AjusteModal } from '../../components/AjusteModal'
-import { getWorkedToday } from '../../lib/api'
+import { getWorkedToday } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 
@@ -15,6 +16,7 @@ export function PunchSummaryCard({
   nextType = 'in',
   sendingAdjustment,
   onAdjustment,
+  entries = [],
 }) {
   const token = useAuthStore((state) => state.token)
   const { formatTime } = useDateTime()
@@ -45,7 +47,6 @@ export function PunchSummaryCard({
       }
       try {
         const data = await getWorkedToday()
-        console.log('[PunchSummaryCard] worked-today response:', data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??
@@ -103,6 +104,7 @@ export function PunchSummaryCard({
             <p className="text-sm text-foreground/70">{t('dashboard.description')}</p>
           </div>
           <AjusteModal
+            entries={entries}
             onSubmit={onAdjustment}
             isSubmitting={sendingAdjustment}
             trigger={

@@ -1,9 +1,9 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  'https://api.jornafy.com/api'
+  (import.meta.env.DEV ? '/api' : 'https://api.jornafy.com/api')
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,6 +19,11 @@ api.interceptors.request.use((config) => {
 
 attachForbiddenInterceptor(api)
 
+
+const ENTRIES_CACHE_MS = 15 * 1000 // 15s cache to squash duplicate rapid requests
+const entriesCache = new Map()
+const entriesInflight = new Map()
+
 export async function loginRequest(email, password) {
   const { data } = await api.post('/v1/auth/login', { email, password })
   return {
@@ -33,7 +38,9 @@ export async function logoutRequest() {
   return data
 }
 
+// Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
+  console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')
   const { data } = await api.get('/v1/auth/me')
   const payload = data?.data || data || {}
   return {
@@ -42,19 +49,32 @@ export async function meRequest() {
   }
 }
 
-export async function clockRequest(type, coords = {}) {
-  const allowedTypes = ['in', 'out']
-  if (!allowedTypes.includes(type)) {
-    throw new Error(`Unsupported clock type "${type}". API now only accepts: ${allowedTypes.join(', ')}`)
-  }
-
-  const payload = { type }
+export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
+  const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
+  const payload = {}
 
   if (coords.latitude) payload.latitude = coords.latitude
   if (coords.longitude) payload.longitude = coords.longitude
+  if (coords.source) payload.source = coords.source
 
-  const { data } = await api.post('/v1/employee/clock', payload)
-  return data
+  const response = await api.post('/v1/employee/clock', payload)
+  const { data: rawData, status: httpStatus } = response
+  const payloadData = rawData?.data ?? rawData ?? {}
+
+  return {
+    status:
+      httpStatus === 202 || payloadData.status === 'adjustment_requested'
+        ? 'adjustment_requested'
+        : 'created',
+    httpStatus,
+    entry:
+      httpStatus === 201
+        ? payloadData.entry ?? payloadData.time_entry ?? payloadData.entry_data ?? payloadData
+        : null,
+    next_event: payloadData.next_event ?? payloadData.nextEvent ?? null,
+    adjustment: payloadData.adjustment ?? payloadData.adjustment_request ?? null,
+    raw: payloadData,
+  }
 }
 
 const parseEntriesResponse = (data, { page, perPage }) => {
@@ -98,7 +118,19 @@ export async function getEmployeeEntries({
   page = 1,
   perPage = 20,
   preferLatestPage = true,
+  forceRefresh = false,
 } = {}) {
+  const cacheKey = JSON.stringify({ from: from || null, to: to || null, page, perPage, preferLatestPage })
+
+  if (!forceRefresh) {
+    const cached = entriesCache.get(cacheKey)
+    if (cached && Date.now() - cached.time < ENTRIES_CACHE_MS) {
+      return cached.value
+    }
+    const inflight = entriesInflight.get(cacheKey)
+    if (inflight) return inflight
+  }
+
   const buildParams = (pageValue) => {
     const params = {}
     if (pageValue) params.page = pageValue
@@ -113,40 +145,46 @@ export async function getEmployeeEntries({
     return { data, pageValue }
   }
 
-  let response = await fetchPage(page)
-  let parsed = parseEntriesResponse(response.data, { page, perPage })
+  const loadEntries = async () => {
+    let response = await fetchPage(page)
+    let parsed = parseEntriesResponse(response.data, { page, perPage })
 
-  if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
-    const today = new Date()
-    const filterAllowsToday =
-      (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
-    const hasTodayEntry =
-      filterAllowsToday &&
-      parsed.data.some((entry) => {
-        const value = extractClockedAt(entry)
-        if (!value) return false
-        const dt = new Date(value)
-        return !isNaN(dt) && isSameDay(dt, today)
-      })
+    if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
+      const today = new Date()
+      const filterAllowsToday =
+        (!from || new Date(from) <= today) && (!to || new Date(to) >= today)
+      const hasTodayEntry =
+        filterAllowsToday &&
+        parsed.data.some((entry) => {
+          const value = extractClockedAt(entry)
+          if (!value) return false
+          const dt = new Date(value)
+          return !isNaN(dt) && isSameDay(dt, today)
+        })
 
-    // If the first page doesn't include today's records and there are more pages, fetch the last page.
-    if (!hasTodayEntry && parsed.meta.currentPage === 1) {
-      response = await fetchPage(parsed.meta.lastPage)
-      parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+      // If the first page doesn't include today's records and there are more pages, fetch the last page.
+      if (!hasTodayEntry && parsed.meta.currentPage === 1) {
+        response = await fetchPage(parsed.meta.lastPage)
+        parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+      }
     }
+
+    entriesCache.set(cacheKey, { value: parsed, time: Date.now() })
+    return parsed
   }
 
-  return parsed
+  const promise = loadEntries()
+  entriesInflight.set(cacheKey, promise)
+  try {
+    return await promise
+  } finally {
+    entriesInflight.delete(cacheKey)
+  }
 }
 
 export async function listEntries(page = 1) {
   const { data, meta } = await getEmployeeEntries({ page })
   return { data, meta }
-}
-
-export async function requestAdjustment(payload) {
-  const { data } = await api.post('/v1/employee/adjustments', payload)
-  return data
 }
 
 export async function breakRequest(action, coords = {}) {
@@ -162,22 +200,6 @@ export async function startBreak(coords = {}) {
 
 export async function endBreak(coords = {}) {
   return breakRequest('end', coords)
-}
-
-export async function getWorkedToday() {
-  const { data } = await api.get('/v1/employee/worked-today')
-  const payload = data?.data || data || {}
-
-  return {
-    ...payload,
-    workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
-    workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
-  }
-}
-
-export async function getOpenTimeEntryStatus() {
-  const { data } = await api.get('/v1/employee/time-entries/open-status')
-  return data?.data ?? data
 }
 
 export async function getCurrentEmployeeShift() {

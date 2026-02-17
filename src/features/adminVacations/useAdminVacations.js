@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { format, subMonths } from 'date-fns'
-import { listEmployees } from '../../lib/api'
+import { listEmployees } from '../../services/modules/employees'
 import { normalizeEmployee } from '../employees/useEmployeesManagement'
 import { listAbsencesByUser } from '../../services/absencesService'
 import {

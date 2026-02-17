@@ -17,7 +17,36 @@ export async function logoutRequest() {
   return data?.data || data
 }
 
+export async function acceptInvite(payload = {}) {
+  const { email, invite_code, password, password_confirmation } = payload
+  const { data } = await api.post('/v1/invites/accept', {
+    email,
+    invite_code,
+    password,
+    password_confirmation,
+  })
+  return data
+}
+
+export async function forgotPasswordRequest(email) {
+  const { data } = await api.post('/v1/forgot-password', { email })
+  return data
+}
+
+export async function resetPasswordRequest(payload = {}) {
+  const { token, email, password, password_confirmation } = payload
+  const { data } = await api.post('/v1/reset-password', {
+    token,
+    email,
+    password,
+    password_confirmation,
+  })
+  return data
+}
+
+// Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
+  console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')
   const { data } = await api.get('/v1/auth/me')
   return data?.data || data
 }

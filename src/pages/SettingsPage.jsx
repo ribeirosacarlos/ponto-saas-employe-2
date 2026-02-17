@@ -12,6 +12,7 @@ import { PreferencesCard } from '../components/settings/PreferencesCard'
 import { useAuthStore } from '../store/useAuth'
 
 const SETTINGS_TABS = ['plan', 'preferences']
+const TIMEZONE_ACCESS = { anyOf: ['admin', 'super_admin'] }
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -28,6 +29,10 @@ export default function Settings() {
   const canEditPreferences = useMemo(
     () => Array.isArray(roles) && roles.some((role) => ['admin', 'super_admin'].includes(role)),
     [roles],
+  )
+  const canEditTimezone = useMemo(
+    () => canRenderCard(capabilities, TIMEZONE_ACCESS),
+    [capabilities],
   )
 
   const renderPlanTab = () => (
@@ -144,7 +149,7 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card className="border border-border/80 bg-card/90">
+      <Card className="border border-border/80 bg-card/90 md:col-span-2">
         <CardHeader className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />

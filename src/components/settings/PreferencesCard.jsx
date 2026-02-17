@@ -83,7 +83,7 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
         variant: 'success',
       })
       setIsEditing(false)
-      if (onTimezoneSaved) onTimezoneSaved()
+      if (onTimezoneSaved) onTimezoneSaved(nextTimezone)
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -101,7 +101,7 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
   }
 
   return (
-    <Card className="border border-border/80 bg-card/90">
+    <Card className="relative z-30 border border-border/80 bg-card/90">
       <CardHeader className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
           <Globe2 className="h-5 w-5" />

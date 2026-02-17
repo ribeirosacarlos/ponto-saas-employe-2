@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui/use-toast'
-import { clockRequest, endBreak, listEntries, startBreak } from '../../lib/api'
+import { clockRequest, endBreak, listEntries, startBreak } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 
@@ -54,22 +54,50 @@ export function useClocking() {
   }, [logout, toast, t])
 
   const registerClock = useCallback(
-    async (type) => {
-      setClocking(type)
+    async (type, coords) => {
+      const actionType = type || ''
+      setClocking(actionType)
       setLastError(null)
       try {
-        const data = await clockRequest(type)
-        const savedAt = data.clocked_at || data.created_at
+        const result = await clockRequest(type, coords)
+        const savedAt = result?.entry?.clocked_at || result?.entry?.created_at
         const formattedTime = savedAt
           ? formatTime(savedAt, { hour12: false }) || t('dashboard.nowLabel')
           : t('dashboard.nowLabel')
+
+        if (result?.status === 'adjustment_requested') {
+          const adjustment = result?.adjustment ?? {}
+          const adjustmentId = adjustment.id || adjustment.uuid
+          const proposedType = adjustment.proposed_type ?? adjustment.proposedType ?? ''
+          const proposedAt = adjustment.proposed_clocked_at ?? adjustment.proposedClockedAt ?? ''
+          toast({
+            title: t(
+              'timeClock.adjustmentRequested.title',
+              'Fora da jornada / dia não trabalhado / dia completo.',
+            ),
+            description:
+              t(
+                'timeClock.adjustmentRequested.description',
+                'Enviamos uma solicitação de ajuste para aprovação.',
+              ) +
+              (adjustmentId
+                ? ` (#${adjustmentId} • ${proposedType || '?'} • ${proposedAt || '--'})`
+                : ''),
+            variant: 'warning',
+          })
+          setLocalBreak(false)
+          await refreshEntries()
+          return result
+        }
+
         toast({
-          title: t('toast.clockSuccess.title'),
-          description: t('toast.clockSuccess.description', { time: formattedTime }),
+          title: t('timeClock.clockSuccess.title', 'Ponto registrado com sucesso.'),
+          description: formattedTime ? t('toast.clockSuccess.description', { time: formattedTime }) : null,
           variant: 'success',
         })
         setLocalBreak(false)
         await refreshEntries()
+        return result
       } catch (error) {
         const message = error.response?.data?.message || error.message || ''
         setLastError(message)
@@ -99,6 +127,7 @@ export function useClocking() {
             variant: 'error',
           })
         }
+        return null
       } finally {
         setClocking('')
       }
@@ -154,7 +183,13 @@ export function useClocking() {
   )
 
   const todaysEntries = useMemo(
-    () => entries.filter((entry) => entry.clocked_at && isSameDay(entry.clocked_at, new Date())),
+    () =>
+      entries.filter(
+        (entry) =>
+          entry.clocked_at &&
+          isSameDay(entry.clocked_at, new Date()) &&
+          (entry.adjustment_status ?? entry.status) !== 'pending',
+      ),
     [entries, isSameDay],
   )
 
@@ -163,7 +198,13 @@ export function useClocking() {
     [entries],
   )
   const todaysWorkEntries = useMemo(
-    () => todaysEntries.filter((entry) => WORK_TYPES.includes(entry.type)),
+    () =>
+      todaysEntries.filter(
+        (entry) =>
+          WORK_TYPES.includes(entry.type) &&
+          (entry.adjustment_status ?? entry.status) !== 'pending' &&
+          entry.event_kind !== 'free',
+      ),
     [todaysEntries],
   )
 
