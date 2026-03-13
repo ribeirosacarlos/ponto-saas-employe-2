@@ -12,7 +12,10 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 
 export default function ActivateAccount() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('email') || ''
+  })
   const [inviteCode, setInviteCode] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
