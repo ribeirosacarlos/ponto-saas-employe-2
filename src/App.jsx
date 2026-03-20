@@ -19,6 +19,9 @@ import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import AdminCompanyTimezone from './pages/AdminCompanyTimezone.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
+import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
+import SuperAdminCompanies from './pages/SuperAdminCompanies.jsx'
+import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
 import AdminDocuments from './pages/AdminDocuments.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -36,7 +39,7 @@ import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
-import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
+import { PAGE_PATHS, ROUTES, resolvePageFromPath, getRouteParams } from './routes/config'
 import { NAV_ITEMS } from './config/nav.config'
 import { useIsMobile } from './hooks/useMediaQuery'
 import { useAccess } from './providers/AccessProvider.jsx'
@@ -63,9 +66,18 @@ export default function App() {
   const { t } = useTranslation()
   const { accessDeniedReason, lastDeniedMessage, clearAccessDenied } = useAccess()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const isSuperAdminOnlyNav = useMemo(
+    () => roles?.some((role) => String(role).toLowerCase() === 'super_admin'),
+    [roles],
+  )
   const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
+  )
+  const [currentRouteParams, setCurrentRouteParams] = useState(() =>
+    typeof window !== 'undefined'
+      ? getRouteParams(resolvePageFromPath(window.location.pathname), window.location.pathname)
+      : {},
   )
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
@@ -92,8 +104,10 @@ export default function App() {
           path: route?.path ?? item.path,
           requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
         }
-      }).filter((item) => canRenderCard(capabilities, item.requires)),
-    [capabilities, todayBadge],
+      })
+        .filter((item) => canRenderCard(capabilities, item.requires))
+        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true)),
+    [capabilities, isSuperAdminOnlyNav, todayBadge],
   )
 
   const desktopNavItems = useMemo(
@@ -127,6 +141,7 @@ export default function App() {
         window.history[method]({ page: allowedPage }, '', path)
       }
       setCurrentPage(allowedPage)
+      setCurrentRouteParams(getRouteParams(allowedPage, path))
       if (isMobile) {
         setSidebarOpen(false)
       }
@@ -154,6 +169,7 @@ export default function App() {
 
       if (pageFromPath === 'activateAccount' || pageFromPath === 'resetPassword' || pageFromPath === 'forgotPassword') {
         setCurrentPage(pageFromPath)
+        setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
         return
       }
 
@@ -176,6 +192,7 @@ export default function App() {
       return
     }
     setCurrentPage(allowedPage)
+    setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
   }, [canAccessPage, clearAccessDenied, navigateTo, token])
 
   useEffect(() => {
@@ -190,6 +207,7 @@ export default function App() {
           ? pageFromPath
           : 'login',
       )
+        setCurrentRouteParams({})
         return
       }
       const resolvedPage =
@@ -204,6 +222,7 @@ export default function App() {
         return
       }
       setCurrentPage(resolvedPage)
+      setCurrentRouteParams(getRouteParams(resolvedPage, window.location.pathname))
     }
 
     window.addEventListener('popstate', handlePopstate)
@@ -381,6 +400,24 @@ export default function App() {
         return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformCompanies':
         return <PlatformCompanies />
+      case 'superAdminDashboard':
+        return <SuperAdminDashboard />
+      case 'superAdminCompanies':
+        return (
+          <SuperAdminCompanies
+            onOpenCompany={(id) =>
+              navigateTo('superAdminCompanyDetails', false, { pathOverride: `/super-admin/companies/${id}` })
+            }
+          />
+        )
+      case 'superAdminCompanyDetails':
+        return (
+          <SuperAdminCompanyDetails
+            companyId={currentRouteParams.id}
+            onBack={() => navigateTo('superAdminCompanies')}
+            onSubscriptionUpdated={() => {}}
+          />
+        )
       case 'announcements':
         return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'equipo':

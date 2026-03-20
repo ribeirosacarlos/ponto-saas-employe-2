@@ -255,6 +255,7 @@ const ptBR = {
       sections: {
         workspace: 'Área de trabalho',
         admin: 'Administração',
+        superAdmin: 'Super Admin',
       },
       actions: {
         expand: 'Expandir barra lateral',
@@ -272,12 +273,25 @@ const ptBR = {
         team: 'Equipe',
         platformCompanies: 'Empresas',
         platformBillingPlans: 'Planos (Billing)',
+        superAdminDashboard: 'Dashboard',
+        superAdminCompanies: 'Empresas',
         settings: 'Configurações',
         calendar: 'Calendário',
         shifts: 'Jornadas',
         adjustments: 'Ajustes de ponto',
         closeTimesheet: 'Fechar folha',
         companyTimezone: 'Fuso horário da empresa',
+      },
+    },
+    superAdmin: {
+      nav: {
+        section: 'Super Admin',
+      },
+      shared: {
+        values: {
+          yes: 'Sim',
+          no: 'Não',
+        },
       },
     },
     adminTimezonePage: {
