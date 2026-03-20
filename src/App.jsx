@@ -45,6 +45,7 @@ import { useIsMobile } from './hooks/useMediaQuery'
 import { useAccess } from './providers/AccessProvider.jsx'
 import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
 import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
+import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
@@ -128,9 +129,21 @@ export default function App() {
     () => allNavItems.filter((item) => item.showInBottomNav),
     [allNavItems],
   )
-  const shouldEnableAdminOnboarding = token && currentPage === 'dashboard' && canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const shouldEnableAdminOnboarding =
+    token &&
+    currentPage === 'dashboard' &&
+    canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const shouldEnableEmployeeOnboarding =
+    token &&
+    currentPage === 'dashboard' &&
+    canRenderCard(capabilities, { anyOf: ['employee'] }) &&
+    !canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
   const { restartAdminOnboarding } = useAdminOnboarding({
     enabled: shouldEnableAdminOnboarding,
+    autoStart: true,
+  })
+  const { restartEmployeeOnboarding } = useEmployeeOnboarding({
+    enabled: shouldEnableEmployeeOnboarding,
     autoStart: true,
   })
 
@@ -398,6 +411,8 @@ export default function App() {
             onOpenAdminShifts={handleGoToAdminShifts}
             onOpenAdminReports={handleGoToAdminReports}
             onRestartAdminOnboarding={restartAdminOnboarding}
+            onOpenTimeClock={handleGoToTimeClock}
+            onRestartEmployeeOnboarding={restartEmployeeOnboarding}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={handleToggleSidebar}
           />

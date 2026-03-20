@@ -352,6 +352,53 @@ const es = {
         },
       },
     },
+    employeeOnboarding: {
+      actions: {
+        next: 'Siguiente',
+        previous: 'Anterior',
+        done: 'Finalizar',
+      },
+      panel: {
+        eyebrow: 'Primeros pasos',
+        title: 'Tu espacio del día',
+        subtitle: 'Aquí registras el punto, revisas tus horarios y ves ajustes.',
+        restart: 'Ver tutorial otra vez',
+        clock: {
+          title: 'Registrar punto',
+          description: 'Abre la pantalla de punto y haz tu marcación.',
+        },
+        history: {
+          title: 'Ver historial',
+          description: 'Consulta tus registros cuando lo necesites.',
+        },
+        adjustments: {
+          title: 'Pedir ajuste',
+          description: 'Usa este atajo para revisar o corregir un registro.',
+        },
+      },
+      steps: {
+        home: {
+          title: 'Bienvenido',
+          description: 'Este es tu espacio para seguir la rutina del punto.',
+        },
+        clock: {
+          title: 'Registrar punto',
+          description: 'Toca aquí para abrir la pantalla y registrar entrada o salida.',
+        },
+        history: {
+          title: 'Consultar registros',
+          description: 'Aquí revisas tus horarios y el historial del día.',
+        },
+        adjustments: {
+          title: 'Solicitar ajuste',
+          description: 'Si necesitas corregir algo, empieza por este atajo.',
+        },
+        final: {
+          title: 'Listo',
+          description: 'Todo bien. Si quieres revisar el tutorial luego, usa el botón del dashboard.',
+        },
+      },
+    },
     superAdmin: {
       nav: {
         section: 'Super Admin',
@@ -704,6 +751,7 @@ const es = {
         registeredAt: 'Registrado a las: {{time}}',
         adjustmentTag: 'Ajuste',
         adjustmentPendingTooltip: 'Solicitud de ajuste pendiente de aprobación',
+        adjustRequest: 'Solicitar ajuste',
         details: 'Detalles',
         opened: 'Abierto',
         none: 'Aún no hay registros',

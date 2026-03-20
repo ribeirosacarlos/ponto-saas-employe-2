@@ -355,6 +355,53 @@ const en = {
         },
       },
     },
+    employeeOnboarding: {
+      actions: {
+        next: 'Next',
+        previous: 'Previous',
+        done: 'Finish',
+      },
+      panel: {
+        eyebrow: 'First steps',
+        title: 'Your daily workspace',
+        subtitle: 'Use this area to clock in, check your records and review adjustments.',
+        restart: 'Replay tutorial',
+        clock: {
+          title: 'Clock in',
+          description: 'Open the clock screen and register your punch.',
+        },
+        history: {
+          title: 'View history',
+          description: 'Check your records whenever you need.',
+        },
+        adjustments: {
+          title: 'Request adjustment',
+          description: 'Use this shortcut to review or correct a record.',
+        },
+      },
+      steps: {
+        home: {
+          title: 'Welcome',
+          description: 'This is your space to follow your time routine.',
+        },
+        clock: {
+          title: 'Clock in',
+          description: 'Tap here to open the screen and register clock-in or clock-out.',
+        },
+        history: {
+          title: 'Check records',
+          description: 'This is where you review your times and daily history.',
+        },
+        adjustments: {
+          title: 'Request adjustment',
+          description: 'If something needs correction, start from this shortcut.',
+        },
+        final: {
+          title: 'Done',
+          description: 'You are set. To review the tour later, use the dashboard button.',
+        },
+      },
+    },
     superAdmin: {
       nav: {
         section: 'Super Admin',
@@ -706,6 +753,7 @@ const en = {
         registeredAt: 'Registered at: {{time}}',
         adjustmentTag: 'Adjustment',
         adjustmentPendingTooltip: 'Adjustment request pending approval',
+        adjustRequest: 'Request adjustment',
         details: 'Details',
         opened: 'Opened',
         none: 'No punches yet',
@@ -1567,6 +1615,26 @@ const en = {
       table: {
         headers: {
           breakReturn: 'Back from break',
+        },
+      },
+      adjustment: {
+        cta: 'Request adjustment',
+        modalTitle: 'Request adjustment',
+        modalDescription: 'Review the record and enter the correct time.',
+        date: 'Date',
+        originalTime: 'Original time',
+        type: 'Type',
+        desiredTime: 'Desired time',
+        reason: 'Reason',
+        reasonPlaceholder: 'Explain what happened...',
+        submit: 'Send request',
+        submitting: 'Sending...',
+        errorTitle: 'Could not send adjustment',
+        errorDescription: 'Please try again in a moment.',
+        missingEntry: 'Select a record to adjust.',
+        types: {
+          breakStart: 'Break start',
+          breakEnd: 'Break end',
         },
       },
     },

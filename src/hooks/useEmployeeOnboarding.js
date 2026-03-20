@@ -2,60 +2,51 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { driver } from 'driver.js'
 
-const STORAGE_KEY = 'onboarding_admin_completed'
-const POPOVER_CLASS = 'jornafy-onboarding-popover admin-onboarding-popover'
+const STORAGE_KEY = 'jornafy_employee_onboarding_completed'
+const POPOVER_CLASS = 'jornafy-onboarding-popover employee-onboarding-popover'
 const START_DELAY_MS = 320
 
 const buildTourSteps = (t) => [
   {
-    element: '[data-tour="dashboard-header"]',
+    element: '[data-tour="employee-home"]',
     popover: {
-      title: t('adminOnboarding.steps.dashboardHeader.title'),
-      description: t('adminOnboarding.steps.dashboardHeader.description'),
+      title: t('employeeOnboarding.steps.home.title'),
+      description: t('employeeOnboarding.steps.home.description'),
       side: 'bottom',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="menu-employees"]',
+    element: '[data-tour="employee-clock-button"]',
     popover: {
-      title: t('adminOnboarding.steps.menuEmployees.title'),
-      description: t('adminOnboarding.steps.menuEmployees.description'),
+      title: t('employeeOnboarding.steps.clock.title'),
+      description: t('employeeOnboarding.steps.clock.description'),
       side: 'bottom',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="add-employee"]',
+    element: '[data-tour="employee-history"]',
     popover: {
-      title: t('adminOnboarding.steps.addEmployee.title'),
-      description: t('adminOnboarding.steps.addEmployee.description'),
+      title: t('employeeOnboarding.steps.history.title'),
+      description: t('employeeOnboarding.steps.history.description'),
       side: 'bottom',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="work-schedule"]',
+    element: '[data-tour="employee-adjustments"]',
     popover: {
-      title: t('adminOnboarding.steps.workSchedule.title'),
-      description: t('adminOnboarding.steps.workSchedule.description'),
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: '[data-tour="reports"]',
-    popover: {
-      title: t('adminOnboarding.steps.reports.title'),
-      description: t('adminOnboarding.steps.reports.description'),
+      title: t('employeeOnboarding.steps.adjustments.title'),
+      description: t('employeeOnboarding.steps.adjustments.description'),
       side: 'bottom',
       align: 'start',
     },
   },
   {
     popover: {
-      title: t('adminOnboarding.steps.final.title'),
-      description: t('adminOnboarding.steps.final.description'),
+      title: t('employeeOnboarding.steps.final.title'),
+      description: t('employeeOnboarding.steps.final.description'),
       side: 'over',
       align: 'center',
     },
@@ -82,7 +73,7 @@ const resolveAvailableSteps = (steps) =>
     return Boolean(document.querySelector(step.element))
   })
 
-export function useAdminOnboarding({ enabled = false, autoStart = true } = {}) {
+export function useEmployeeOnboarding({ enabled = false, autoStart = true } = {}) {
   const { t } = useTranslation()
   const driverRef = useRef(null)
   const autoStartedRef = useRef(false)
@@ -114,9 +105,9 @@ export function useAdminOnboarding({ enabled = false, autoStart = true } = {}) {
       overlayOpacity: 0.14,
       stagePadding: 14,
       stageRadius: 24,
-      nextBtnText: t('adminOnboarding.actions.next'),
-      prevBtnText: t('adminOnboarding.actions.previous'),
-      doneBtnText: t('adminOnboarding.actions.done'),
+      nextBtnText: t('employeeOnboarding.actions.next'),
+      prevBtnText: t('employeeOnboarding.actions.previous'),
+      doneBtnText: t('employeeOnboarding.actions.done'),
       popoverClass: POPOVER_CLASS,
       steps,
       onDestroyed: () => {
@@ -146,11 +137,11 @@ export function useAdminOnboarding({ enabled = false, autoStart = true } = {}) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
 
-    window.restartAdminOnboarding = restart
+    window.restartEmployeeOnboarding = restart
 
     return () => {
-      if (window.restartAdminOnboarding === restart) {
-        delete window.restartAdminOnboarding
+      if (window.restartEmployeeOnboarding === restart) {
+        delete window.restartEmployeeOnboarding
       }
     }
   }, [restart])
@@ -184,10 +175,10 @@ export function useAdminOnboarding({ enabled = false, autoStart = true } = {}) {
   )
 
   return {
-    startAdminOnboarding: start,
-    restartAdminOnboarding: restart,
-    completeAdminOnboarding: () => setCompletionState(true),
-    resetAdminOnboarding: () => setCompletionState(false),
-    hasCompletedAdminOnboarding: getCompletionState(),
+    startEmployeeOnboarding: start,
+    restartEmployeeOnboarding: restart,
+    completeEmployeeOnboarding: () => setCompletionState(true),
+    resetEmployeeOnboarding: () => setCompletionState(false),
+    hasCompletedEmployeeOnboarding: getCompletionState(),
   }
 }

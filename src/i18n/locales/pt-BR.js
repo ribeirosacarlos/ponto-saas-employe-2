@@ -338,6 +338,53 @@ const ptBR = {
         },
       },
     },
+    employeeOnboarding: {
+      actions: {
+        next: 'Próximo',
+        previous: 'Anterior',
+        done: 'Finalizar',
+      },
+      panel: {
+        eyebrow: 'Primeiros passos',
+        title: 'Seu espaço do dia a dia',
+        subtitle: 'Aqui você registra o ponto, consulta seus horários e acompanha ajustes.',
+        restart: 'Rever tutorial',
+        clock: {
+          title: 'Registrar ponto',
+          description: 'Abra a tela de ponto e faça sua marcação.',
+        },
+        history: {
+          title: 'Ver histórico',
+          description: 'Consulte seus registros quando precisar.',
+        },
+        adjustments: {
+          title: 'Pedir ajuste',
+          description: 'Use este atalho para revisar ou pedir correção.',
+        },
+      },
+      steps: {
+        home: {
+          title: 'Bem-vindo',
+          description: 'Este é o seu espaço para acompanhar a rotina do ponto.',
+        },
+        clock: {
+          title: 'Registrar ponto',
+          description: 'Toque aqui para abrir a tela e registrar entrada ou saída.',
+        },
+        history: {
+          title: 'Consultar registros',
+          description: 'Aqui você vê seus horários e o histórico do dia.',
+        },
+        adjustments: {
+          title: 'Solicitar ajuste',
+          description: 'Se precisar corrigir algo, comece por este atalho.',
+        },
+        final: {
+          title: 'Pronto',
+          description: 'Tudo certo. Se quiser rever o tutorial depois, use o botão do dashboard.',
+        },
+      },
+    },
     superAdmin: {
       nav: {
         section: 'Super Admin',
@@ -690,6 +737,7 @@ const ptBR = {
         registeredAt: 'Registrado às: {{time}}',
         adjustmentTag: 'Ajuste',
         adjustmentPendingTooltip: 'Solicitação de ajuste pendente de aprovação',
+        adjustRequest: 'Solicitar ajuste',
         details: 'Detalhes',
         opened: 'Aberto',
         none: 'Ainda não há registros',
