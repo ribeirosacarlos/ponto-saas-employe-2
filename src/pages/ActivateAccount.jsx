@@ -13,6 +13,7 @@ import { BrandSignature } from '../components/BrandSignature'
 
 export default function ActivateAccount() {
   const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return ''
     const params = new URLSearchParams(window.location.search)
     return params.get('email') || ''
   })
@@ -80,7 +81,11 @@ export default function ActivateAccount() {
       })
 
       window.setTimeout(() => {
-        window.location.href = '/login'
+        const normalizedEmail = email.trim()
+        const loginUrl = normalizedEmail
+          ? `/login?email=${encodeURIComponent(normalizedEmail)}`
+          : '/login'
+        window.location.href = loginUrl
       }, 600)
     } catch (error) {
       const apiMessage = error?.response?.data?.message

@@ -44,8 +44,11 @@ import { NAV_ITEMS } from './config/nav.config'
 import { useIsMobile } from './hooks/useMediaQuery'
 import { useAccess } from './providers/AccessProvider.jsx'
 import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
+import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
+const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
+
 const getInitialSidebarCollapsed = () => {
   if (typeof window === 'undefined') return false
   const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -84,6 +87,7 @@ export default function App() {
   )
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
+  const [isHandlingPublicAuthRoute, setIsHandlingPublicAuthRoute] = useState(false)
 
   const formatMinutesToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return t('dashboardPage.badges.today')
@@ -124,6 +128,11 @@ export default function App() {
     () => allNavItems.filter((item) => item.showInBottomNav),
     [allNavItems],
   )
+  const shouldEnableAdminOnboarding = token && currentPage === 'dashboard' && canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const { restartAdminOnboarding } = useAdminOnboarding({
+    enabled: shouldEnableAdminOnboarding,
+    autoStart: true,
+  })
 
   const canAccessPage = useCallback(
     (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
@@ -171,11 +180,12 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      setIsHandlingPublicAuthRoute(false)
       clearAccessDenied()
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
 
-      if (pageFromPath === 'activateAccount' || pageFromPath === 'resetPassword' || pageFromPath === 'forgotPassword') {
+      if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
         setCurrentPage(pageFromPath)
         setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
         return
@@ -187,12 +197,20 @@ export default function App() {
 
     const pageFromPath =
       typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+
+    if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
+      setCurrentPage(pageFromPath)
+      setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
+      setIsHandlingPublicAuthRoute(true)
+      void logout()
+      return
+    }
+
+    setIsHandlingPublicAuthRoute(false)
     const defaultPage = getDefaultAuthenticatedPage()
     const nextPage =
       pageFromPath === 'login' ||
-      pageFromPath === 'activateAccount' ||
-      pageFromPath === 'resetPassword' ||
-      pageFromPath === 'forgotPassword'
+      PUBLIC_AUTH_PAGES.has(pageFromPath)
         ? defaultPage
         : pageFromPath
     const allowedPage = canAccessPage(nextPage) ? nextPage : defaultPage
@@ -209,24 +227,21 @@ export default function App() {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
-      setCurrentPage(
-        pageFromPath === 'activateAccount' ||
-        pageFromPath === 'resetPassword' ||
-        pageFromPath === 'forgotPassword'
-          ? pageFromPath
-          : 'login',
-      )
+        setCurrentPage(PUBLIC_AUTH_PAGES.has(pageFromPath) ? pageFromPath : 'login')
         setCurrentRouteParams({})
         return
       }
+      if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
+        setCurrentPage(pageFromPath)
+        setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
+        setIsHandlingPublicAuthRoute(true)
+        void logout()
+        return
+      }
+
       const defaultPage = getDefaultAuthenticatedPage()
       const resolvedPage =
-        pageFromPath === 'login' ||
-        pageFromPath === 'activateAccount' ||
-        pageFromPath === 'resetPassword' ||
-        pageFromPath === 'forgotPassword'
-          ? defaultPage
-          : pageFromPath
+        pageFromPath === 'login' || PUBLIC_AUTH_PAGES.has(pageFromPath) ? defaultPage : pageFromPath
       if (!canAccessPage(resolvedPage)) {
         navigateTo(defaultPage, true)
         return
@@ -326,6 +341,9 @@ export default function App() {
   const handleGoToDocuments = () => navigateTo('documents')
   const handleGoToVacations = () => navigateTo('vacations')
   const handleGoToAnnouncements = () => navigateTo('announcements')
+  const handleGoToEmployees = () => navigateTo('equipo')
+  const handleGoToAdminShifts = () => navigateTo('adminShifts')
+  const handleGoToAdminReports = () => navigateTo('adminAdjustments')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -376,6 +394,10 @@ export default function App() {
             onOpenDocuments={handleGoToDocuments}
             onOpenVacations={handleGoToVacations}
             onOpenAnnouncements={handleGoToAnnouncements}
+            onOpenEmployees={handleGoToEmployees}
+            onOpenAdminShifts={handleGoToAdminShifts}
+            onOpenAdminReports={handleGoToAdminReports}
+            onRestartAdminOnboarding={restartAdminOnboarding}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={handleToggleSidebar}
           />
@@ -471,6 +493,8 @@ export default function App() {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
+  const shouldRenderPublicAuthPage =
+    PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute)
 
   return (
     <div
@@ -487,7 +511,15 @@ export default function App() {
         <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
       <div className="relative z-10">
-        {token ? (
+        {shouldRenderPublicAuthPage ? (
+          currentPage === 'activateAccount' ? (
+            <ActivateAccount />
+          ) : currentPage === 'resetPassword' ? (
+            <ResetPassword />
+          ) : (
+            <ForgotPassword />
+          )
+        ) : token ? (
           <>
             {!isMobile ? (
               <DesktopSidebar
@@ -558,12 +590,6 @@ export default function App() {
               />
             ) : null}
           </>
-        ) : currentPage === 'activateAccount' ? (
-          <ActivateAccount />
-        ) : currentPage === 'resetPassword' ? (
-          <ResetPassword />
-        ) : currentPage === 'forgotPassword' ? (
-          <ForgotPassword />
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}

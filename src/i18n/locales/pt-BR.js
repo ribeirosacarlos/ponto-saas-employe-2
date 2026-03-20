@@ -283,6 +283,61 @@ const ptBR = {
         companyTimezone: 'Fuso horário da empresa',
       },
     },
+    adminOnboarding: {
+      actions: {
+        next: 'Próximo',
+        previous: 'Anterior',
+        done: 'Finalizar',
+      },
+      panel: {
+        eyebrow: 'Primeiros passos',
+        title: 'Atalhos para configurar o painel admin',
+        subtitle: 'Centralize o início da operação por aqui e reveja o tutorial sempre que precisar.',
+        restart: 'Rever tutorial',
+        employees: {
+          title: 'Colaboradores',
+          description: 'Acesse a gestão completa da equipe e acompanhe o cadastro dos perfis ativos.',
+        },
+        addEmployee: {
+          title: 'Cadastrar colaborador',
+          description: 'Comece o setup operacional criando o primeiro colaborador da empresa.',
+        },
+        shifts: {
+          title: 'Jornada',
+          description: 'Configure escalas, horários padrão e regras para o cálculo do ponto.',
+        },
+        reports: {
+          title: 'Relatórios',
+          description: 'Monitore ajustes e acompanhe rapidamente o que precisa de revisão.',
+        },
+      },
+      steps: {
+        dashboardHeader: {
+          title: 'Bem-vindo ao painel admin',
+          description: 'Aqui você acompanha a operação da empresa, acessa atalhos importantes e monitora os pontos mais críticos do dia.',
+        },
+        menuEmployees: {
+          title: 'Gestão de colaboradores',
+          description: 'Use este atalho para acessar a área de colaboradores, revisar a equipe e manter o cadastro sempre organizado.',
+        },
+        addEmployee: {
+          title: 'Cadastre o primeiro colaborador',
+          description: 'Este ponto leva você direto ao fluxo de cadastro para começar a montar a base da empresa no sistema.',
+        },
+        workSchedule: {
+          title: 'Configure as jornadas',
+          description: 'Defina jornadas, horários e regras que serão usadas no controle de ponto dos colaboradores.',
+        },
+        reports: {
+          title: 'Relatórios e acompanhamento',
+          description: 'Acompanhe ajustes, movimentações e indicadores para agir rápido quando algo sair do esperado.',
+        },
+        final: {
+          title: 'Tudo pronto',
+          description: 'Seu painel está preparado. Quando quiser rever este tour, use o botão "Rever tutorial" no dashboard.',
+        },
+      },
+    },
     superAdmin: {
       nav: {
         section: 'Super Admin',
