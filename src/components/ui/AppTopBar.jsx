@@ -39,6 +39,7 @@ export function AppTopBar({ icon, eyebrow, meta, title, subtitle, actions, filte
       {hasRightContent ? (
         <div
           className="
+            p-5
             -mx-4 px-4
             flex flex-wrap items-center gap-2
             min-w-0

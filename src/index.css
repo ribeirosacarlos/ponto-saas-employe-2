@@ -126,7 +126,7 @@
   }
 }
 
-.driver-active .admin-onboarding-popover.driver-popover {
+.driver-active .jornafy-onboarding-popover.driver-popover {
   max-width: 360px;
   border: 1px solid rgba(228, 232, 240, 0.95);
   border-radius: 18px;
@@ -139,7 +139,7 @@
   padding: 22px 22px 18px;
 }
 
-.dark .driver-active .admin-onboarding-popover.driver-popover {
+.dark .driver-active .jornafy-onboarding-popover.driver-popover {
   border-color: rgba(228, 232, 240, 0.95);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.995), rgba(250, 250, 252, 0.995));
   box-shadow:
@@ -148,27 +148,27 @@
   color: #202531;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-title {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-title {
   font-size: 1.02rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #2c313c;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-description {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-description {
   margin-top: 14px;
   color: #444c5c;
   line-height: 1.7;
   font-size: 0.98rem;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-progress-text {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-progress-text {
   color: #5f46e8;
   font-weight: 700;
   font-size: 0.95rem;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer {
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1px solid rgba(223, 228, 237, 0.95);
@@ -176,15 +176,15 @@
   align-items: center;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-navigation-btns {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-navigation-btns {
   display: flex;
   flex: 1;
   justify-content: flex-end;
   gap: 8px;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer button,
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-close-btn {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer button,
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-close-btn {
   border: 0;
   border-radius: 999px;
   transition:
@@ -195,8 +195,8 @@
     box-shadow 0.18s ease;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn,
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn,
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -210,32 +210,32 @@
   visibility: visible !important;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn {
   background: #f3f4f8 !important;
   color: #6b7280 !important;
   border: 1px solid #e5e7ef !important;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn {
   background: linear-gradient(135deg, #6d4cff, #5b44e6) !important;
   color: #ffffff !important;
   box-shadow: 0 18px 36px -22px rgba(91, 68, 230, 0.55) !important;
   border: 1px solid transparent !important;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn:hover,
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn:hover,
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-close-btn:hover {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-prev-btn:hover,
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-next-btn:hover,
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-close-btn:hover {
   transform: translateY(-1px);
   opacity: 0.96;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-btn-disabled {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-footer .driver-popover-btn-disabled {
   opacity: 0.5;
   box-shadow: none;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-close-btn {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-close-btn {
   right: 14px;
   top: 14px;
   width: 32px;
@@ -270,22 +270,22 @@
     0 24px 54px -34px rgba(129, 140, 248, 0.45);
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-arrow {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-arrow {
   border-width: 10px;
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-arrow-side-top {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-arrow-side-top {
   border-top-color: rgba(250, 250, 252, 0.995);
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-arrow-side-bottom {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-arrow-side-bottom {
   border-bottom-color: rgba(255, 255, 255, 0.995);
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-arrow-side-left {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-arrow-side-left {
   border-left-color: rgba(255, 255, 255, 0.995);
 }
 
-.driver-active .admin-onboarding-popover.driver-popover .driver-popover-arrow-side-right {
+.driver-active .jornafy-onboarding-popover.driver-popover .driver-popover-arrow-side-right {
   border-right-color: rgba(255, 255, 255, 0.995);
 }

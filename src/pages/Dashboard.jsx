@@ -22,6 +22,7 @@ import { getEmployeeVacationBalance } from '../services/vacationsService'
 import { listAnnouncements } from '../services/announcementsService'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { AdminOnboardingPanel } from '../components/dashboard/AdminOnboardingPanel'
+import { EmployeeOnboardingPanel } from '../components/dashboard/EmployeeOnboardingPanel'
 
 const DOCUMENT_CATEGORIES = {
   payroll: {
@@ -59,6 +60,8 @@ export default function Dashboard({
   onOpenAdminShifts,
   onOpenAdminReports,
   onRestartAdminOnboarding,
+  onOpenTimeClock,
+  onRestartEmployeeOnboarding,
 }) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
@@ -365,6 +368,10 @@ export default function Dashboard({
     () => canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] }),
     [capabilities],
   )
+  const isEmployeeWorkspace = useMemo(
+    () => canRenderCard(capabilities, { anyOf: ['employee'] }) && !isAdminWorkspace,
+    [capabilities, isAdminWorkspace],
+  )
   const visibleCards = useMemo(
     () => DASHBOARD_CARDS.filter((card) => canRenderCard(capabilities, card.requires)),
     [capabilities],
@@ -454,6 +461,15 @@ export default function Dashboard({
             onOpenShifts={onOpenAdminShifts}
             onOpenReports={onOpenAdminReports}
             onRestartOnboarding={onRestartAdminOnboarding}
+          />
+        ) : null}
+
+        {isEmployeeWorkspace ? (
+          <EmployeeOnboardingPanel
+            onOpenTimeClock={onOpenTimeClock}
+            onOpenHistory={onOpenHistory}
+            onOpenAdjustments={onOpenHistory}
+            onRestartOnboarding={onRestartEmployeeOnboarding}
           />
         ) : null}
 
