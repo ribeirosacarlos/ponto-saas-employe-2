@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   endOfDay,
   endOfMonth,
+  eachDayOfInterval,
   format,
   formatISO,
   isAfter,
@@ -26,8 +27,6 @@ import {
   Timer,
   UserRound,
 } from 'lucide-react'
-import autoTable from 'jspdf-autotable'
-import { jsPDF } from 'jspdf'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
@@ -44,10 +43,13 @@ import { PageContainer } from '../../components/ui/PageContainer'
 import { useToast } from '../../components/ui/use-toast'
 import { listEmployees } from '../../services/modules/employees'
 import { listTeamEntries } from '../../services/adminAdjustmentsService'
+import { getCurrentUser } from '../../services/authService'
 import { cn } from '../../lib/utils'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
+import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 
 const PAGE_SIZE = 30
+const EXPORT_PAGE_SIZE = 200
 
 const getLastMonthRange = () => {
   const today = new Date()
@@ -110,6 +112,17 @@ const normalizeEmployee = (employee: any = {}, index = 0) => ({
     `employee-${index}`,
   name: employee.name ?? employee.full_name ?? employee.fullName ?? '',
   email: employee.email ?? '',
+  company:
+    employee.company ||
+    employee.company_data ||
+    employee.companyData ||
+    (employee.company_name ? { name: employee.company_name } : undefined) ||
+    null,
+  shift:
+    employee.shift ||
+    (employee.shift_name ? { name: employee.shift_name } : undefined) ||
+    (employee.shiftName ? { name: employee.shiftName } : undefined) ||
+    null,
 })
 
 const buildTimesheetSummary = (entries = []) => {
@@ -173,12 +186,81 @@ const buildTimesheetSummary = (entries = []) => {
   }
 }
 
+const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc') => {
+  const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
+    const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
+    acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
+    return acc
+  }, {})
+
+  const sorter = (a: number, b: number) => (order === 'asc' ? a - b : b - a)
+
+  return Object.entries(groups)
+    .map(([dateKey, items]) => ({
+      dateKey,
+      items: [...items].sort((a, b) => {
+        const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+        const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+        return right - left
+      }),
+    }))
+    .sort((a, b) => {
+      const left = new Date(a.dateKey).getTime()
+      const right = new Date(b.dateKey).getTime()
+      return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
+    })
+}
+
+const firstNonEmpty = (...values: any[]) => values.find((value) => {
+  if (value === undefined || value === null) return false
+  const str = String(value).trim()
+  return Boolean(str)
+}) || ''
+
+const getCompanyName = (employee: any, user: any) =>
+  firstNonEmpty(
+    employee?.company?.name,
+    employee?.company_name,
+    employee?.companyName,
+    user?.company?.name,
+    user?.company_name,
+    user?.companyName,
+  )
+
+const getShiftName = (employee: any) =>
+  firstNonEmpty(
+    employee?.shift?.name,
+    employee?.shift?.title,
+    employee?.shift_name,
+    employee?.shiftName,
+    employee?.shift_title,
+    employee?.shiftTitle,
+  )
+
+const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string, to: string) => {
+  const start = parseISO(from)
+  const end = parseISO(to)
+  if (!isValid(start) || !isValid(end)) return days
+
+  const existing = new Set(days.map((day) => day.dateKey))
+  const allDays = eachDayOfInterval({ start, end })
+  allDays.forEach((day) => {
+    const key = format(day, 'yyyy-MM-dd')
+    if (!existing.has(key)) {
+      days.push({ dateKey: key, items: [] })
+    }
+  })
+
+  return days.sort((a, b) => new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime())
+}
+
 export default function CloseTimesheetPage() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
 
   const defaultRange = useMemo(() => getLastMonthRange(), [])
   const [employees, setEmployees] = useState<any[]>([])
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [employeesLoading, setEmployeesLoading] = useState(false)
   const [employeesError, setEmployeesError] = useState('')
   const [employeeSearch, setEmployeeSearch] = useState('')
@@ -200,7 +282,7 @@ export default function CloseTimesheetPage() {
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [entriesError, setEntriesError] = useState('')
   const [page, setPage] = useState(1)
-  const [exporting, setExporting] = useState<'standard' | 'detailed' | ''>('')
+  const [exporting, setExporting] = useState<'standard' | ''>('')
   const [locationEntry, setLocationEntry] = useState<any | null>(null)
 
   useEffect(() => {
@@ -239,6 +321,12 @@ export default function CloseTimesheetPage() {
     loadEmployees()
   }, [loadEmployees])
 
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => setCurrentUser(user))
+      .catch(() => setCurrentUser(null))
+  }, [])
+
   const selectedEmployee = useMemo(
     () => employees.find((emp) => emp.id === filters.employeeId) || null,
     [employees, filters.employeeId],
@@ -274,26 +362,7 @@ export default function CloseTimesheetPage() {
   }, [summary.duplicateMap])
 
   const groupedEntries = useMemo(() => {
-    const groups = normalizedEntries.reduce<Record<string, any[]>>((acc, entry) => {
-      const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
-      acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
-      return acc
-    }, {})
-
-    return Object.entries(groups)
-      .map(([dateKey, items]) => ({
-        dateKey,
-        items: [...items].sort((a, b) => {
-          const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
-          const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
-          return right - left
-        }),
-      }))
-      .sort((a, b) => {
-        const left = new Date(a.dateKey).getTime()
-        const right = new Date(b.dateKey).getTime()
-        return (isNaN(right) ? 0 : right) - (isNaN(left) ? 0 : left)
-      })
+    return groupEntriesByDate(normalizedEntries, 'desc')
   }, [normalizedEntries])
 
   const formatClock = useCallback(
@@ -380,7 +449,7 @@ export default function CloseTimesheetPage() {
     return `${suffix}_${name}_${fromLabel}_a_${toLabel}.pdf`
   }
 
-  const ensureEntriesBeforeExport = (variant: 'standard' | 'detailed') => {
+  const ensureEntriesBeforeExport = () => {
     if (!normalizedEntries.length) {
       toast({
         title: t('closeTimesheetPage.export.emptyTitle'),
@@ -388,125 +457,75 @@ export default function CloseTimesheetPage() {
       })
       return false
     }
-    setExporting(variant)
+    setExporting('standard')
     return true
   }
 
-  const addPaginationFooter = (doc: jsPDF) => {
-    const pageCount = doc.getNumberOfPages()
-    for (let pageIndex = 1; pageIndex <= pageCount; pageIndex += 1) {
-      doc.setPage(pageIndex)
-      doc.setFontSize(9)
-      doc.text(
-        t('closeTimesheetPage.export.pageCounter', { current: pageIndex, total: pageCount }),
-        doc.internal.pageSize.getWidth() - 28,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'right' },
-      )
+  const fetchEntriesForExport = useCallback(async () => {
+    const { from, to, employeeId } = appliedFilters
+    const params = {
+      userId: employeeId,
+      dateFrom: formatISO(startOfDay(parseISO(from))),
+      dateTo: formatISO(endOfDay(parseISO(to))),
+      perPage: EXPORT_PAGE_SIZE,
     }
-  }
 
-  const exportPdf = (detailed = false) => {
-    if (!ensureEntriesBeforeExport(detailed ? 'detailed' : 'standard')) return
+    let pageToLoad = 1
+    let keepFetching = true
+    const allEntries: any[] = []
+
+    while (keepFetching) {
+      const { data, meta: responseMeta } = await listTeamEntries({ ...params, page: pageToLoad })
+      allEntries.push(...(data || []))
+
+      const lastPage = responseMeta?.lastPage || responseMeta?.last_page
+      const total = responseMeta?.total
+      const perPage = responseMeta?.perPage || responseMeta?.per_page || params.perPage
+
+      if (lastPage) {
+        keepFetching = pageToLoad < lastPage
+      } else if (total) {
+        keepFetching = allEntries.length < total
+      } else {
+        keepFetching = (data?.length || 0) >= perPage
+      }
+
+      pageToLoad += 1
+    }
+
+    return allEntries
+  }, [appliedFilters])
+
+  const exportPdf = async () => {
+    if (!ensureEntriesBeforeExport()) return
     try {
-      const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      const allEntries = await fetchEntriesForExport()
+      const normalizedExportEntries = allEntries.map((entry: any, index: number) =>
+        normalizeEntry(entry, index),
+      )
+      const groupedForExport = groupEntriesByDate(normalizedExportEntries, 'asc')
+      const fullDays = addMissingDays([...groupedForExport], appliedFilters.from, appliedFilters.to)
       const employeeLabel =
         selectedEmployee?.name || selectedEmployee?.email || t('closeTimesheetPage.table.userFallback')
+      const companyLabel = getCompanyName(selectedEmployee, currentUser) || t('closeTimesheetPage.export.emptySlot')
+      const shiftLabel = getShiftName(selectedEmployee) || ''
       const periodLabel = `${formatDateLabel(appliedFilters.from)} - ${formatDateLabel(appliedFilters.to)}`
-      const issuedAt = new Date()
 
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(18)
-      doc.text(t('closeTimesheetPage.export.title'), 14, 18)
-
-      doc.setFontSize(11)
-      doc.text(t('closeTimesheetPage.export.company'), 14, 28)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      doc.text(`${t('closeTimesheetPage.export.employee')}: ${employeeLabel}`, 14, 36)
-      doc.text(`${t('closeTimesheetPage.export.period')}: ${periodLabel}`, 14, 42)
-      doc.text(
-        `${t('closeTimesheetPage.export.issuedAt')}: ${issuedAt.toLocaleString(i18n.language)}`,
-        14,
-        48,
-      )
-
-      autoTable(doc, {
-        startY: 55,
-        head: [[t('closeTimesheetPage.summary.title'), t('closeTimesheetPage.summary.value')]],
-        body: [
-          [t('closeTimesheetPage.summary.entries'), String(summary.totalEntries)],
-          [t('closeTimesheetPage.summary.days'), String(summary.daysWithRecords)],
-          [t('closeTimesheetPage.summary.hours'), formatMinutes(summary.totalMinutes)],
-          [t('closeTimesheetPage.summary.pending'), String(summary.pendingCount)],
-          [t('closeTimesheetPage.summary.duplicates'), String(summary.duplicateCount)],
-        ],
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: '#f6f8fb' },
-        theme: 'striped',
+      const blob = generateSimpleTimesheetPdf({
+        days: fullDays,
+        employeeLabel,
+        companyLabel,
+        shiftLabel,
+        periodLabel,
+        locale: i18n.language,
+        formatClock,
+        formatDateLabel,
+        t,
       })
 
-      let startY = (doc.lastAutoTable?.finalY || 64) + 8
-      groupedEntries.forEach((group) => {
-        const dateLabel = formatDateLabel(group.dateKey)
-        if (startY + 30 > doc.internal.pageSize.getHeight()) {
-          doc.addPage()
-          startY = 20
-        }
-
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(12)
-        doc.text(dateLabel, 14, startY)
-        doc.setFont('helvetica', 'normal')
-
-        const body = group.items.map((entry) => {
-          const timeLabel = formatClock(entry.clockedAt)
-          const typeLabel = (entry.type || '').toUpperCase()
-          const statusLabel = summary.pendingIds.has(entry.id)
-            ? t('closeTimesheetPage.table.status.pending')
-            : duplicatesSet.has(entry.clockedAt ? new Date(entry.clockedAt).toISOString() : '')
-              ? t('closeTimesheetPage.table.status.duplicate')
-              : t('closeTimesheetPage.table.status.ok')
-
-          const baseRow = [timeLabel, typeLabel, entry.source || '-', statusLabel]
-
-          if (!detailed) return baseRow
-          return [...baseRow, entry.latitude && entry.longitude ? `${entry.latitude}, ${entry.longitude}` : '—']
-        })
-
-        autoTable(doc, {
-          startY: startY + 4,
-          head: [
-            detailed
-              ? [
-                  t('closeTimesheetPage.table.headers.time'),
-                  t('closeTimesheetPage.table.headers.type'),
-                  t('closeTimesheetPage.table.headers.source'),
-                  t('closeTimesheetPage.table.headers.status'),
-                  t('closeTimesheetPage.table.headers.location'),
-                ]
-              : [
-                  t('closeTimesheetPage.table.headers.time'),
-                  t('closeTimesheetPage.table.headers.type'),
-                  t('closeTimesheetPage.table.headers.source'),
-                  t('closeTimesheetPage.table.headers.status'),
-                ],
-          ],
-          body,
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: '#eef2ff' },
-          theme: 'grid',
-        })
-
-        startY = (doc.lastAutoTable?.finalY || startY + 20) + 10
-      })
-
-      addPaginationFooter(doc)
-
-      const blob = doc.output('blob')
       downloadBlob({
         blob,
-        fallbackFilename: buildFilename(detailed ? 'folha-ponto_detalhado' : 'folha-ponto'),
+        fallbackFilename: buildFilename('folha-ponto'),
       })
 
       toast({
@@ -524,7 +543,6 @@ export default function CloseTimesheetPage() {
       setExporting('')
     }
   }
-
   const currentPage = meta?.currentPage || page || 1
   const lastPage = meta?.lastPage || meta?.last_page || null
   const total = meta?.total
@@ -773,7 +791,7 @@ export default function CloseTimesheetPage() {
                   type="button"
                   variant="outline"
                   disabled={exporting === 'standard' || !normalizedEntries.length}
-                  onClick={() => exportPdf(false)}
+                  onClick={() => exportPdf()}
                 >
                   {exporting === 'standard' ? (
                     <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
@@ -781,19 +799,6 @@ export default function CloseTimesheetPage() {
                     <Download className="mr-2 h-4 w-4" />
                   )}
                   {t('closeTimesheetPage.export.primary')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={exporting === 'detailed' || !normalizedEntries.length}
-                  onClick={() => exportPdf(true)}
-                >
-                  {exporting === 'detailed' ? (
-                    <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="mr-2 h-4 w-4" />
-                  )}
-                  {t('closeTimesheetPage.export.detailed')}
                 </Button>
               </div>
             </CardHeader>
