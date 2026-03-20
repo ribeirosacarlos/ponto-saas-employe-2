@@ -146,8 +146,8 @@ export async function restoreCompany(id) {
   return data?.data ?? data
 }
 
-export async function blockCompany(id) {
-  const { data } = await api.post(`/v1/platform/companies/${id}/block`)
+export async function blockCompany(id, payload = {}) {
+  const { data } = await api.post(`/v1/platform/companies/${id}/block`, payload)
   return data?.data ?? data
 }
 

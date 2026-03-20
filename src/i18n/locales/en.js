@@ -272,6 +272,7 @@ const en = {
       sections: {
         workspace: 'Workspace',
         admin: 'Administration',
+        superAdmin: 'Super Admin',
       },
       actions: {
         expand: 'Expand sidebar',
@@ -289,12 +290,25 @@ const en = {
         team: 'Team',
         platformCompanies: 'Companies',
         platformBillingPlans: 'Billing plans',
+        superAdminDashboard: 'Dashboard',
+        superAdminCompanies: 'Companies',
         settings: 'Settings',
         calendar: 'Calendar',
         shifts: 'Shifts',
         adjustments: 'Adjustments',
         closeTimesheet: 'Close timesheet',
         companyTimezone: 'Company timezone',
+      },
+    },
+    superAdmin: {
+      nav: {
+        section: 'Super Admin',
+      },
+      shared: {
+        values: {
+          yes: 'Yes',
+          no: 'No',
+        },
       },
     },
     adminShiftsPage: {
