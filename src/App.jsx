@@ -130,10 +130,18 @@ export default function App() {
     [capabilities],
   )
 
+  const getDefaultAuthenticatedPage = useCallback(() => {
+    if (canAccessPage('superAdminDashboard')) return 'superAdminDashboard'
+    if (canAccessPage('dashboard')) return 'dashboard'
+    if (canAccessPage('timeClock')) return 'timeClock'
+    return 'dashboard'
+  }, [canAccessPage])
+
   const navigateTo = useCallback(
     (page, replace = false, options = {}) => {
-      const targetPage = ROUTES[page] ? page : 'dashboard'
-      const allowedPage = canAccessPage(targetPage) ? targetPage : 'dashboard'
+      const defaultPage = getDefaultAuthenticatedPage()
+      const targetPage = ROUTES[page] ? page : defaultPage
+      const allowedPage = canAccessPage(targetPage) ? targetPage : defaultPage
       const basePath = options.pathOverride || PAGE_PATHS[allowedPage] || '/'
       const path = options.search ? `${basePath}${options.search}` : basePath
       const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
@@ -146,7 +154,7 @@ export default function App() {
         setSidebarOpen(false)
       }
     },
-    [canAccessPage, isMobile],
+    [canAccessPage, getDefaultAuthenticatedPage, isMobile],
   )
 
   useEffect(() => {
@@ -179,21 +187,22 @@ export default function App() {
 
     const pageFromPath =
       typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+    const defaultPage = getDefaultAuthenticatedPage()
     const nextPage =
       pageFromPath === 'login' ||
       pageFromPath === 'activateAccount' ||
       pageFromPath === 'resetPassword' ||
       pageFromPath === 'forgotPassword'
-        ? 'timeClock'
+        ? defaultPage
         : pageFromPath
-    const allowedPage = canAccessPage(nextPage) ? nextPage : 'dashboard'
+    const allowedPage = canAccessPage(nextPage) ? nextPage : defaultPage
     if (pageFromPath === 'login' || allowedPage !== pageFromPath) {
       navigateTo(allowedPage, true)
       return
     }
     setCurrentPage(allowedPage)
     setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
-  }, [canAccessPage, clearAccessDenied, navigateTo, token])
+  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, navigateTo, token])
 
   useEffect(() => {
     const handlePopstate = () => {
@@ -210,15 +219,16 @@ export default function App() {
         setCurrentRouteParams({})
         return
       }
+      const defaultPage = getDefaultAuthenticatedPage()
       const resolvedPage =
         pageFromPath === 'login' ||
         pageFromPath === 'activateAccount' ||
         pageFromPath === 'resetPassword' ||
         pageFromPath === 'forgotPassword'
-          ? 'timeClock'
+          ? defaultPage
           : pageFromPath
       if (!canAccessPage(resolvedPage)) {
-        navigateTo('dashboard', true)
+        navigateTo(defaultPage, true)
         return
       }
       setCurrentPage(resolvedPage)
@@ -227,7 +237,7 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopstate)
     return () => window.removeEventListener('popstate', handlePopstate)
-  }, [canAccessPage, navigateTo, token])
+  }, [canAccessPage, getDefaultAuthenticatedPage, navigateTo, token])
 
   useEffect(() => {
     if (isMobile) {
@@ -343,7 +353,7 @@ export default function App() {
         syncProfile(profile.user, profile.roles || [])
       }
       clearAccessDenied()
-      navigateTo('dashboard', true)
+      navigateTo(getDefaultAuthenticatedPage(), true)
     } catch (error) {
       const status = error?.response?.status
       if (status === 401) {
@@ -355,7 +365,7 @@ export default function App() {
         await logout()
       }
     }
-  }, [clearAccessDenied, logout, navigateTo, syncProfile, t, toast])
+  }, [clearAccessDenied, getDefaultAuthenticatedPage, logout, navigateTo, syncProfile, t, toast])
 
   const renderCurrentPage = () => {
     switch (currentPage) {
