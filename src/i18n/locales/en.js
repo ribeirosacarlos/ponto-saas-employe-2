@@ -300,6 +300,61 @@ const en = {
         companyTimezone: 'Company timezone',
       },
     },
+    adminOnboarding: {
+      actions: {
+        next: 'Next',
+        previous: 'Previous',
+        done: 'Finish',
+      },
+      panel: {
+        eyebrow: 'First steps',
+        title: 'Shortcuts to set up the admin workspace',
+        subtitle: 'Centralize the operational setup here and replay the tutorial whenever you need.',
+        restart: 'Replay tutorial',
+        employees: {
+          title: 'Employees',
+          description: 'Open the full team management area and keep employee records organized.',
+        },
+        addEmployee: {
+          title: 'Add employee',
+          description: 'Start the operational setup by creating the company’s first employee.',
+        },
+        shifts: {
+          title: 'Shifts',
+          description: 'Configure schedules, default hours and rules used by time tracking.',
+        },
+        reports: {
+          title: 'Reports',
+          description: 'Monitor adjustments and quickly review what needs attention.',
+        },
+      },
+      steps: {
+        dashboardHeader: {
+          title: 'Welcome to the admin workspace',
+          description: 'This is where you follow the company operation, open key shortcuts and monitor the most important daily signals.',
+        },
+        menuEmployees: {
+          title: 'Employee management',
+          description: 'Use this shortcut to access the employee area, review the team and keep records organized.',
+        },
+        addEmployee: {
+          title: 'Create the first employee',
+          description: 'This step takes you straight to the onboarding flow to start building the company base in the system.',
+        },
+        workSchedule: {
+          title: 'Set up work schedules',
+          description: 'Define shifts, hours and rules that will be used in employee time tracking.',
+        },
+        reports: {
+          title: 'Reports and follow-up',
+          description: 'Track adjustments, movements and indicators so you can react quickly when something needs review.',
+        },
+        final: {
+          title: 'All set',
+          description: 'Your workspace is ready. Whenever you want to review this tour, use the "Replay tutorial" button on the dashboard.',
+        },
+      },
+    },
     superAdmin: {
       nav: {
         section: 'Super Admin',

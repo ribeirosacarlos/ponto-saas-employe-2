@@ -44,6 +44,7 @@ import { NAV_ITEMS } from './config/nav.config'
 import { useIsMobile } from './hooks/useMediaQuery'
 import { useAccess } from './providers/AccessProvider.jsx'
 import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
+import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const getInitialSidebarCollapsed = () => {
@@ -124,6 +125,11 @@ export default function App() {
     () => allNavItems.filter((item) => item.showInBottomNav),
     [allNavItems],
   )
+  const shouldEnableAdminOnboarding = token && currentPage === 'dashboard' && canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const { restartAdminOnboarding } = useAdminOnboarding({
+    enabled: shouldEnableAdminOnboarding,
+    autoStart: true,
+  })
 
   const canAccessPage = useCallback(
     (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
@@ -326,6 +332,9 @@ export default function App() {
   const handleGoToDocuments = () => navigateTo('documents')
   const handleGoToVacations = () => navigateTo('vacations')
   const handleGoToAnnouncements = () => navigateTo('announcements')
+  const handleGoToEmployees = () => navigateTo('equipo')
+  const handleGoToAdminShifts = () => navigateTo('adminShifts')
+  const handleGoToAdminReports = () => navigateTo('adminAdjustments')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -376,6 +385,10 @@ export default function App() {
             onOpenDocuments={handleGoToDocuments}
             onOpenVacations={handleGoToVacations}
             onOpenAnnouncements={handleGoToAnnouncements}
+            onOpenEmployees={handleGoToEmployees}
+            onOpenAdminShifts={handleGoToAdminShifts}
+            onOpenAdminReports={handleGoToAdminReports}
+            onRestartAdminOnboarding={restartAdminOnboarding}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={handleToggleSidebar}
           />
