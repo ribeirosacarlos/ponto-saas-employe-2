@@ -71,7 +71,7 @@ export function EmployeeOnboardingPanel({
           </Button>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-5 p-5 grid gap-3 md:grid-cols-3">
           {ACTIONS.map((action) => {
             const Icon = action.icon
             const handleClick = {
