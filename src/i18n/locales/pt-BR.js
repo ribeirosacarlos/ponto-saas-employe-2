@@ -733,7 +733,7 @@ const ptBR = {
         yesterdayLabel: '{{type}} às {{time}} (ontem)',
       },
       lastPunch: {
-        title: 'Último pont12211212o',
+        title: 'Último ponto',
         registeredAt: 'Registrado às: {{time}}',
         adjustmentTag: 'Ajuste',
         adjustmentPendingTooltip: 'Solicitação de ajuste pendente de aprovação',
