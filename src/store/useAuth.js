@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { api } from '../services/http/api'
 import { loginRequest, logoutRequest } from '../services/modules/auth'
+import { clearAuthCache } from '../services/authService'
 import { emitAccessClear } from '../lib/accessDenied'
 import i18n from '../i18n/i18n.js'
 
@@ -28,6 +29,38 @@ if (initialAuth.token) {
   api.defaults.headers.common.Authorization = `Bearer ${initialAuth.token}`
 }
 
+const clearAccessibleCookies = () => {
+  if (typeof document === 'undefined') return
+
+  document.cookie.split(';').forEach((cookie) => {
+    const separatorIndex = cookie.indexOf('=')
+    const rawName = separatorIndex >= 0 ? cookie.slice(0, separatorIndex) : cookie
+    const name = rawName.trim()
+    if (!name) return
+
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+    document.cookie = `${name}=; max-age=0; path=/`
+  })
+}
+
+const clearPersistedAuthState = () => {
+  if (typeof window === 'undefined') return
+
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_KEY)
+  localStorage.removeItem(ROLES_KEY)
+  sessionStorage.clear()
+  clearAccessibleCookies()
+}
+
+const resetAuthState = (set) => {
+  clearAuthCache()
+  delete api.defaults.headers.common.Authorization
+  clearPersistedAuthState()
+  emitAccessClear()
+  set({ user: null, token: null, roles: [], error: null })
+}
+
 export const useAuthStore = create((set, get) => ({
   user: initialAuth.user,
   token: initialAuth.token,
@@ -44,6 +77,7 @@ export const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ loading: true, error: null })
     try {
+      resetAuthState(set)
       const data = await loginRequest(email, password)
       const { token, user, roles = [] } = data
       if (!token) {
@@ -81,12 +115,8 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.warn('Falha ao chamar logout na API', error)
     } finally {
-      api.defaults.headers.common.Authorization = undefined
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(USER_KEY)
-      localStorage.removeItem(ROLES_KEY)
-      emitAccessClear()
-      set({ user: null, token: null, roles: [], loading: false })
+      resetAuthState(set)
+      set({ loading: false })
     }
   },
   syncProfile: (user, roles = []) => {

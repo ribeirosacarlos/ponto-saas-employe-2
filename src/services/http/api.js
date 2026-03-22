@@ -10,6 +10,13 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
+  const requestUrl = String(config.url || '')
+  const isAuthRequest = ['/v1/auth/login', '/v1/auth/logout'].some((endpoint) => requestUrl.includes(endpoint))
+  if (isAuthRequest) {
+    delete config.headers.Authorization
+    return config
+  }
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
