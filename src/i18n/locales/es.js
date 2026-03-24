@@ -741,6 +741,8 @@ const es = {
         tag: 'Documentos',
         title: 'Documentación del colaborador',
         subtitle: 'Vista rápida de las carpetas principales.',
+        emptyState: 'No hay documentos disponibles.',
+        emptyStateSecondary: 'Aún no se han subido documentos.',
         defaultAction: 'Abrir',
         total_one: '{{count}} archivo',
         total_other: '{{count}} archivos',

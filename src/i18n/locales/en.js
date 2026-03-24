@@ -743,6 +743,8 @@ const en = {
         tag: 'Documents',
         title: 'Team member documents',
         subtitle: 'Quick preview of key folders.',
+        emptyState: 'No documents available.',
+        emptyStateSecondary: 'No documents have been uploaded yet.',
         defaultAction: 'Open',
         total_one: '{{count}} file',
         total_other: '{{count}} files',

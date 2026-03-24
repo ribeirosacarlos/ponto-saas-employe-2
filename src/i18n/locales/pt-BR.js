@@ -727,6 +727,8 @@ const ptBR = {
         tag: 'Documentos',
         title: 'Documentação do colaborador',
         subtitle: 'Prévia rápida das pastas principais.',
+        emptyState: 'Não há documentos disponíveis.',
+        emptyStateSecondary: 'Ainda não foram enviados documentos.',
         defaultAction: 'Abrir',
         total_one: '{{count}} arquivo',
         total_other: '{{count}} arquivos',

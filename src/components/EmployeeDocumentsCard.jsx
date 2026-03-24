@@ -129,9 +129,9 @@ export function EmployeeDocumentsCard({
           })
         ) : (
           <div className="rounded-2xl border border-border/70 bg-muted/60 px-3 py-6 text-center text-sm text-muted-foreground shadow-inner">
-            <p>{t('dashboardPage.documents.emptyState', 'No hay documentos disponibles.')}</p>
+            <p>{t('dashboardPage.documents.emptyState')}</p>
             <p className="mt-1 text-[11px] text-muted-foreground/70">
-              {t('dashboardPage.documents.emptyStateSecondary', 'Aún no se han subido documentos.')}
+              {t('dashboardPage.documents.emptyStateSecondary')}
             </p>
           </div>
         )}
