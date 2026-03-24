@@ -272,6 +272,7 @@ const en = {
       sections: {
         workspace: 'Workspace',
         admin: 'Administration',
+        superAdmin: 'Super Admin',
       },
       actions: {
         expand: 'Expand sidebar',
@@ -289,12 +290,127 @@ const en = {
         team: 'Team',
         platformCompanies: 'Companies',
         platformBillingPlans: 'Billing plans',
+        superAdminDashboard: 'Dashboard',
+        superAdminCompanies: 'Companies',
         settings: 'Settings',
         calendar: 'Calendar',
         shifts: 'Shifts',
         adjustments: 'Adjustments',
         closeTimesheet: 'Close timesheet',
         companyTimezone: 'Company timezone',
+      },
+    },
+    adminOnboarding: {
+      actions: {
+        next: 'Next',
+        previous: 'Previous',
+        done: 'Finish',
+      },
+      panel: {
+        eyebrow: 'First steps',
+        title: 'Shortcuts to set up the admin workspace',
+        subtitle: 'Centralize the operational setup here and replay the tutorial whenever you need.',
+        restart: 'Replay tutorial',
+        employees: {
+          title: 'Employees',
+          description: 'Open the full team management area and keep employee records organized.',
+        },
+        addEmployee: {
+          title: 'Add employee',
+          description: 'Start the operational setup by creating the company’s first employee.',
+        },
+        shifts: {
+          title: 'Shifts',
+          description: 'Configure schedules, default hours and rules used by time tracking.',
+        },
+        reports: {
+          title: 'Reports',
+          description: 'Monitor adjustments and quickly review what needs attention.',
+        },
+      },
+      steps: {
+        dashboardHeader: {
+          title: 'Welcome to the admin workspace',
+          description: 'This is where you follow the company operation, open key shortcuts and monitor the most important daily signals.',
+        },
+        menuEmployees: {
+          title: 'Employee management',
+          description: 'Use this shortcut to access the employee area, review the team and keep records organized.',
+        },
+        addEmployee: {
+          title: 'Create the first employee',
+          description: 'This step takes you straight to the onboarding flow to start building the company base in the system.',
+        },
+        workSchedule: {
+          title: 'Set up work schedules',
+          description: 'Define shifts, hours and rules that will be used in employee time tracking.',
+        },
+        reports: {
+          title: 'Reports and follow-up',
+          description: 'Track adjustments, movements and indicators so you can react quickly when something needs review.',
+        },
+        final: {
+          title: 'All set',
+          description: 'Your workspace is ready. Whenever you want to review this tour, use the "Replay tutorial" button on the dashboard.',
+        },
+      },
+    },
+    employeeOnboarding: {
+      actions: {
+        next: 'Next',
+        previous: 'Previous',
+        done: 'Finish',
+      },
+      panel: {
+        eyebrow: 'First steps',
+        title: 'Your daily workspace',
+        subtitle: 'Use this area to clock in, check your records and review adjustments.',
+        restart: 'Replay tutorial',
+        clock: {
+          title: 'Clock in',
+          description: 'Open the clock screen and register your punch.',
+        },
+        history: {
+          title: 'View history',
+          description: 'Check your records whenever you need.',
+        },
+        adjustments: {
+          title: 'Request adjustment',
+          description: 'Use this shortcut to review or correct a record.',
+        },
+      },
+      steps: {
+        home: {
+          title: 'Welcome',
+          description: 'This is your space to follow your time routine.',
+        },
+        clock: {
+          title: 'Clock in',
+          description: 'Tap here to open the screen and register clock-in or clock-out.',
+        },
+        history: {
+          title: 'Check records',
+          description: 'This is where you review your times and daily history.',
+        },
+        adjustments: {
+          title: 'Request adjustment',
+          description: 'If something needs correction, start from this shortcut.',
+        },
+        final: {
+          title: 'Done',
+          description: 'You are set. To review the tour later, use the dashboard button.',
+        },
+      },
+    },
+    superAdmin: {
+      nav: {
+        section: 'Super Admin',
+      },
+      shared: {
+        values: {
+          yes: 'Yes',
+          no: 'No',
+        },
       },
     },
     adminShiftsPage: {
@@ -637,6 +753,7 @@ const en = {
         registeredAt: 'Registered at: {{time}}',
         adjustmentTag: 'Adjustment',
         adjustmentPendingTooltip: 'Adjustment request pending approval',
+        adjustRequest: 'Request adjustment',
         details: 'Details',
         opened: 'Opened',
         none: 'No punches yet',
@@ -1502,6 +1619,26 @@ const en = {
           breakReturn: 'Back from break',
         },
       },
+      adjustment: {
+        cta: 'Request adjustment',
+        modalTitle: 'Request adjustment',
+        modalDescription: 'Review the record and enter the correct time.',
+        date: 'Date',
+        originalTime: 'Original time',
+        type: 'Type',
+        desiredTime: 'Desired time',
+        reason: 'Reason',
+        reasonPlaceholder: 'Explain what happened...',
+        submit: 'Send request',
+        submitting: 'Sending...',
+        errorTitle: 'Could not send adjustment',
+        errorDescription: 'Please try again in a moment.',
+        missingEntry: 'Select a record to adjust.',
+        types: {
+          breakStart: 'Break start',
+          breakEnd: 'Break end',
+        },
+      },
     },
 
     closeTimesheetPage: {
@@ -1556,9 +1693,19 @@ const en = {
         pageCounter: 'Page {{current}} of {{total}}',
         title: 'Timesheet',
         company: 'Company',
+        shift: 'Shift',
         employee: 'Employee',
         period: 'Period',
         issuedAt: 'Issued at',
+        columns: {
+          date: 'Date',
+          start: 'Clock-in',
+          breakStart: 'Break start',
+          breakEnd: 'Break end',
+          end: 'Clock-out',
+        },
+        shiftFallback: 'No shift linked',
+        emptySlot: '—',
         successTitle: 'PDF generated',
         successDescription: 'Download started successfully.',
         errorTitle: 'Export error',

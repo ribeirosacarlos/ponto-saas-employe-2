@@ -14,6 +14,7 @@ import { listEntries as listEmployeeEntries } from '../services/modules/employee
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
 import { useDateTime } from '../hooks/useDateTime'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { getCompanyTimezone, isSameCompanyDay, toCompanyDate } from '../lib/datetime'
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 
@@ -75,6 +76,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [isLastPunchExpanded, setIsLastPunchExpanded] = useState(true)
   const userMenuRef = useRef(null)
   const isMounted = useRef(true)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -124,8 +126,8 @@ export default function TimeClock({ onContinueToDashboard }) {
       : 'in'
   const shiftButtonLabel =
     nextActionType === 'out'
-      ? t('timeClock.actions.registerOut', 'Registrar saída')
-      : t('timeClock.actions.registerIn', 'Registrar entrada')
+      ? t('dashboard.nextLabel.out', 'Registrar saída')
+      : t('dashboard.nextLabel.in', 'Registrar entrada')
   const registeringLabel = t('timeClock.actions.registering')
   const primaryLoading = clocking === nextActionType
 
@@ -1115,7 +1117,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                           className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 md:flex"
                         >
                           <Pencil className="h-4 w-4" aria-hidden />
-                          {t('timeClock.lastPunch.adjustRequest', 'Solicitar ajuste de ponto')}
+                          {t('timeClock.lastPunch.adjustRequest')}
                         </button>
                       }
                     />
@@ -1154,7 +1156,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                             className="flex w-full items-center justify-center gap-2 px-2 py-[6px] text-[12px] font-semibold text-primary transition hover:bg-primary/8 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2"
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
-                            {t('timeClock.lastPunch.adjustRequest', 'Solicitar ajuste de ponto')}
+                            {t('timeClock.lastPunch.adjustRequest')}
                           </button>
                         }
                       />
@@ -1305,7 +1307,11 @@ export default function TimeClock({ onContinueToDashboard }) {
 
           <div
             className="flex flex-wrap items-center justify-between gap-2 rounded-[22px] border border-border/70 bg-background/85 px-3 py-2.5 text-[10px] text-muted-foreground leading-none shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}
+            style={
+              isMobile
+                ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }
+                : undefined
+            }
           >
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />

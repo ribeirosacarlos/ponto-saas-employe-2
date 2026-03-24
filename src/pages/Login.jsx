@@ -12,7 +12,11 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const params = new URLSearchParams(window.location.search)
+    return params.get('email') || ''
+  })
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const login = useAuthStore((state) => state.login)

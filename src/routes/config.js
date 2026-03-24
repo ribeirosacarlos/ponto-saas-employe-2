@@ -52,6 +52,18 @@ export const ROUTES = {
     path: '/platform/companies',
     guard: { anyOf: ['super_admin'] },
   },
+  superAdminDashboard: {
+    path: '/super-admin/dashboard',
+    guard: { anyOf: ['super_admin'] },
+  },
+  superAdminCompanies: {
+    path: '/super-admin/companies',
+    guard: { anyOf: ['super_admin'] },
+  },
+  superAdminCompanyDetails: {
+    path: '/super-admin/companies/:id',
+    guard: { anyOf: ['super_admin'] },
+  },
   announcements: {
     path: '/announcements',
     guard: { anyOf: ['employee'] },
@@ -60,15 +72,65 @@ export const ROUTES = {
 }
 
 const ROUTE_ENTRIES = Object.entries(ROUTES)
+const ROUTE_PARAM_MATCHERS = new Map()
 
 export const PAGE_PATHS = Object.fromEntries(ROUTE_ENTRIES.map(([key, route]) => [key, route.path]))
 
+const normalizePath = (path) => path.replace(/\/+$/, '') || '/'
+
+const compilePathPattern = (pattern) => {
+  const normalized = normalizePath(pattern)
+  const segments = normalized.split('/').filter(Boolean)
+  const paramNames = []
+  const regexParts = segments.map((segment) => {
+    if (segment.startsWith(':')) {
+      paramNames.push(segment.slice(1))
+      return '([^/]+)'
+    }
+    return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  })
+
+  const regex = new RegExp(`^/${regexParts.join('/')}$`)
+  return { regex, paramNames }
+}
+
+const getRouteMatcher = (pattern) => {
+  if (!ROUTE_PARAM_MATCHERS.has(pattern)) {
+    ROUTE_PARAM_MATCHERS.set(pattern, compilePathPattern(pattern))
+  }
+
+  return ROUTE_PARAM_MATCHERS.get(pattern)
+}
+
 export const resolvePageFromPath = (path) => {
   if (!path) return 'login'
-  const normalized = path.replace(/\/+$/, '') || '/'
+  const normalized = normalizePath(path)
   const matchedRoute = ROUTE_ENTRIES.find(([, route]) => {
     const candidates = [route.path, ...(route.aliases ?? [])]
-    return candidates.includes(normalized)
+    return candidates.some((candidate) => {
+      if (!candidate.includes(':')) return candidate === normalized
+      return getRouteMatcher(candidate).regex.test(normalized)
+    })
   })
   return matchedRoute?.[0] ?? 'login'
+}
+
+export const getRouteParams = (page, path) => {
+  if (!page || !path || !ROUTES[page]) return {}
+  const normalized = normalizePath(path)
+  const candidates = [ROUTES[page].path, ...(ROUTES[page].aliases ?? [])]
+
+  for (const candidate of candidates) {
+    if (!candidate.includes(':')) continue
+    const { regex, paramNames } = getRouteMatcher(candidate)
+    const match = normalized.match(regex)
+    if (!match) continue
+
+    return paramNames.reduce((acc, paramName, index) => {
+      acc[paramName] = decodeURIComponent(match[index + 1] || '')
+      return acc
+    }, {})
+  }
+
+  return {}
 }

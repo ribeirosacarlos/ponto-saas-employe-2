@@ -19,6 +19,9 @@ import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
 import AdminCompanyTimezone from './pages/AdminCompanyTimezone.jsx'
 import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
+import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
+import SuperAdminCompanies from './pages/SuperAdminCompanies.jsx'
+import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
 import AdminDocuments from './pages/AdminDocuments.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -36,13 +39,17 @@ import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from './auth/acl'
-import { PAGE_PATHS, ROUTES, resolvePageFromPath } from './routes/config'
+import { PAGE_PATHS, ROUTES, resolvePageFromPath, getRouteParams } from './routes/config'
 import { NAV_ITEMS } from './config/nav.config'
 import { useIsMobile } from './hooks/useMediaQuery'
 import { useAccess } from './providers/AccessProvider.jsx'
 import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
+import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
+import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
+const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
+
 const getInitialSidebarCollapsed = () => {
   if (typeof window === 'undefined') return false
   const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -63,15 +70,25 @@ export default function App() {
   const { t } = useTranslation()
   const { accessDeniedReason, lastDeniedMessage, clearAccessDenied } = useAccess()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const isSuperAdminOnlyNav = useMemo(
+    () => roles?.some((role) => String(role).toLowerCase() === 'super_admin'),
+    [roles],
+  )
   const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
     typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login',
+  )
+  const [currentRouteParams, setCurrentRouteParams] = useState(() =>
+    typeof window !== 'undefined'
+      ? getRouteParams(resolvePageFromPath(window.location.pathname), window.location.pathname)
+      : {},
   )
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
   )
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
+  const [isHandlingPublicAuthRoute, setIsHandlingPublicAuthRoute] = useState(false)
 
   const formatMinutesToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return t('dashboardPage.badges.today')
@@ -92,8 +109,10 @@ export default function App() {
           path: route?.path ?? item.path,
           requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
         }
-      }).filter((item) => canRenderCard(capabilities, item.requires)),
-    [capabilities, todayBadge],
+      })
+        .filter((item) => canRenderCard(capabilities, item.requires))
+        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true)),
+    [capabilities, isSuperAdminOnlyNav, todayBadge],
   )
 
   const desktopNavItems = useMemo(
@@ -110,16 +129,41 @@ export default function App() {
     () => allNavItems.filter((item) => item.showInBottomNav),
     [allNavItems],
   )
+  const shouldEnableAdminOnboarding =
+    token &&
+    currentPage === 'dashboard' &&
+    canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const shouldEnableEmployeeOnboarding =
+    token &&
+    currentPage === 'dashboard' &&
+    canRenderCard(capabilities, { anyOf: ['employee'] }) &&
+    !canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
+  const { restartAdminOnboarding } = useAdminOnboarding({
+    enabled: shouldEnableAdminOnboarding,
+    autoStart: true,
+  })
+  const { restartEmployeeOnboarding } = useEmployeeOnboarding({
+    enabled: shouldEnableEmployeeOnboarding,
+    autoStart: true,
+  })
 
   const canAccessPage = useCallback(
     (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
     [capabilities],
   )
 
+  const getDefaultAuthenticatedPage = useCallback(() => {
+    if (canAccessPage('superAdminDashboard')) return 'superAdminDashboard'
+    if (canAccessPage('dashboard')) return 'dashboard'
+    if (canAccessPage('timeClock')) return 'timeClock'
+    return 'dashboard'
+  }, [canAccessPage])
+
   const navigateTo = useCallback(
     (page, replace = false, options = {}) => {
-      const targetPage = ROUTES[page] ? page : 'dashboard'
-      const allowedPage = canAccessPage(targetPage) ? targetPage : 'dashboard'
+      const defaultPage = getDefaultAuthenticatedPage()
+      const targetPage = ROUTES[page] ? page : defaultPage
+      const allowedPage = canAccessPage(targetPage) ? targetPage : defaultPage
       const basePath = options.pathOverride || PAGE_PATHS[allowedPage] || '/'
       const path = options.search ? `${basePath}${options.search}` : basePath
       const method = replace || allowedPage !== page ? 'replaceState' : 'pushState'
@@ -127,11 +171,12 @@ export default function App() {
         window.history[method]({ page: allowedPage }, '', path)
       }
       setCurrentPage(allowedPage)
+      setCurrentRouteParams(getRouteParams(allowedPage, path))
       if (isMobile) {
         setSidebarOpen(false)
       }
     },
-    [canAccessPage, isMobile],
+    [canAccessPage, getDefaultAuthenticatedPage, isMobile],
   )
 
   useEffect(() => {
@@ -148,12 +193,14 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      setIsHandlingPublicAuthRoute(false)
       clearAccessDenied()
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
 
-      if (pageFromPath === 'activateAccount' || pageFromPath === 'resetPassword' || pageFromPath === 'forgotPassword') {
+      if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
         setCurrentPage(pageFromPath)
+        setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
         return
       }
 
@@ -163,52 +210,62 @@ export default function App() {
 
     const pageFromPath =
       typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
+
+    if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
+      setCurrentPage(pageFromPath)
+      setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
+      setIsHandlingPublicAuthRoute(true)
+      void logout()
+      return
+    }
+
+    setIsHandlingPublicAuthRoute(false)
+    const defaultPage = getDefaultAuthenticatedPage()
     const nextPage =
       pageFromPath === 'login' ||
-      pageFromPath === 'activateAccount' ||
-      pageFromPath === 'resetPassword' ||
-      pageFromPath === 'forgotPassword'
-        ? 'timeClock'
+      PUBLIC_AUTH_PAGES.has(pageFromPath)
+        ? defaultPage
         : pageFromPath
-    const allowedPage = canAccessPage(nextPage) ? nextPage : 'dashboard'
+    const allowedPage = canAccessPage(nextPage) ? nextPage : defaultPage
     if (pageFromPath === 'login' || allowedPage !== pageFromPath) {
       navigateTo(allowedPage, true)
       return
     }
     setCurrentPage(allowedPage)
-  }, [canAccessPage, clearAccessDenied, navigateTo, token])
+    setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
+  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, navigateTo, token])
 
   useEffect(() => {
     const handlePopstate = () => {
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
-      setCurrentPage(
-        pageFromPath === 'activateAccount' ||
-        pageFromPath === 'resetPassword' ||
-        pageFromPath === 'forgotPassword'
-          ? pageFromPath
-          : 'login',
-      )
+        setCurrentPage(PUBLIC_AUTH_PAGES.has(pageFromPath) ? pageFromPath : 'login')
+        setCurrentRouteParams({})
         return
       }
+      if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
+        setCurrentPage(pageFromPath)
+        setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
+        setIsHandlingPublicAuthRoute(true)
+        void logout()
+        return
+      }
+
+      const defaultPage = getDefaultAuthenticatedPage()
       const resolvedPage =
-        pageFromPath === 'login' ||
-        pageFromPath === 'activateAccount' ||
-        pageFromPath === 'resetPassword' ||
-        pageFromPath === 'forgotPassword'
-          ? 'timeClock'
-          : pageFromPath
+        pageFromPath === 'login' || PUBLIC_AUTH_PAGES.has(pageFromPath) ? defaultPage : pageFromPath
       if (!canAccessPage(resolvedPage)) {
-        navigateTo('dashboard', true)
+        navigateTo(defaultPage, true)
         return
       }
       setCurrentPage(resolvedPage)
+      setCurrentRouteParams(getRouteParams(resolvedPage, window.location.pathname))
     }
 
     window.addEventListener('popstate', handlePopstate)
     return () => window.removeEventListener('popstate', handlePopstate)
-  }, [canAccessPage, navigateTo, token])
+  }, [canAccessPage, getDefaultAuthenticatedPage, navigateTo, token])
 
   useEffect(() => {
     if (isMobile) {
@@ -297,6 +354,9 @@ export default function App() {
   const handleGoToDocuments = () => navigateTo('documents')
   const handleGoToVacations = () => navigateTo('vacations')
   const handleGoToAnnouncements = () => navigateTo('announcements')
+  const handleGoToEmployees = () => navigateTo('equipo')
+  const handleGoToAdminShifts = () => navigateTo('adminShifts')
+  const handleGoToAdminReports = () => navigateTo('adminAdjustments')
   const handleProfile = () => {
     toast({
       title: t('dashboardPage.toasts.profile.title'),
@@ -324,7 +384,7 @@ export default function App() {
         syncProfile(profile.user, profile.roles || [])
       }
       clearAccessDenied()
-      navigateTo('dashboard', true)
+      navigateTo(getDefaultAuthenticatedPage(), true)
     } catch (error) {
       const status = error?.response?.status
       if (status === 401) {
@@ -336,7 +396,7 @@ export default function App() {
         await logout()
       }
     }
-  }, [clearAccessDenied, logout, navigateTo, syncProfile, t, toast])
+  }, [clearAccessDenied, getDefaultAuthenticatedPage, logout, navigateTo, syncProfile, t, toast])
 
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -347,6 +407,12 @@ export default function App() {
             onOpenDocuments={handleGoToDocuments}
             onOpenVacations={handleGoToVacations}
             onOpenAnnouncements={handleGoToAnnouncements}
+            onOpenEmployees={handleGoToEmployees}
+            onOpenAdminShifts={handleGoToAdminShifts}
+            onOpenAdminReports={handleGoToAdminReports}
+            onRestartAdminOnboarding={restartAdminOnboarding}
+            onOpenTimeClock={handleGoToTimeClock}
+            onRestartEmployeeOnboarding={restartEmployeeOnboarding}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={handleToggleSidebar}
           />
@@ -381,6 +447,24 @@ export default function App() {
         return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformCompanies':
         return <PlatformCompanies />
+      case 'superAdminDashboard':
+        return <SuperAdminDashboard />
+      case 'superAdminCompanies':
+        return (
+          <SuperAdminCompanies
+            onOpenCompany={(id) =>
+              navigateTo('superAdminCompanyDetails', false, { pathOverride: `/super-admin/companies/${id}` })
+            }
+          />
+        )
+      case 'superAdminCompanyDetails':
+        return (
+          <SuperAdminCompanyDetails
+            companyId={currentRouteParams.id}
+            onBack={() => navigateTo('superAdminCompanies')}
+            onSubscriptionUpdated={() => {}}
+          />
+        )
       case 'announcements':
         return <Announcements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'equipo':
@@ -424,6 +508,8 @@ export default function App() {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
+  const shouldRenderPublicAuthPage =
+    PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute)
 
   return (
     <div
@@ -440,7 +526,15 @@ export default function App() {
         <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
       <div className="relative z-10">
-        {token ? (
+        {shouldRenderPublicAuthPage ? (
+          currentPage === 'activateAccount' ? (
+            <ActivateAccount />
+          ) : currentPage === 'resetPassword' ? (
+            <ResetPassword />
+          ) : (
+            <ForgotPassword />
+          )
+        ) : token ? (
           <>
             {!isMobile ? (
               <DesktopSidebar
@@ -511,12 +605,6 @@ export default function App() {
               />
             ) : null}
           </>
-        ) : currentPage === 'activateAccount' ? (
-          <ActivateAccount />
-        ) : currentPage === 'resetPassword' ? (
-          <ResetPassword />
-        ) : currentPage === 'forgotPassword' ? (
-          <ForgotPassword />
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />
         )}

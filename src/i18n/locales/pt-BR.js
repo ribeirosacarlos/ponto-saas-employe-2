@@ -255,6 +255,7 @@ const ptBR = {
       sections: {
         workspace: 'Área de trabalho',
         admin: 'Administração',
+        superAdmin: 'Super Admin',
       },
       actions: {
         expand: 'Expandir barra lateral',
@@ -272,12 +273,127 @@ const ptBR = {
         team: 'Equipe',
         platformCompanies: 'Empresas',
         platformBillingPlans: 'Planos (Billing)',
+        superAdminDashboard: 'Dashboard',
+        superAdminCompanies: 'Empresas',
         settings: 'Configurações',
         calendar: 'Calendário',
         shifts: 'Jornadas',
         adjustments: 'Ajustes de ponto',
         closeTimesheet: 'Fechar folha',
         companyTimezone: 'Fuso horário da empresa',
+      },
+    },
+    adminOnboarding: {
+      actions: {
+        next: 'Próximo',
+        previous: 'Anterior',
+        done: 'Finalizar',
+      },
+      panel: {
+        eyebrow: 'Primeiros passos',
+        title: 'Atalhos para configurar o painel admin',
+        subtitle: 'Centralize o início da operação por aqui e reveja o tutorial sempre que precisar.',
+        restart: 'Rever tutorial',
+        employees: {
+          title: 'Colaboradores',
+          description: 'Acesse a gestão completa da equipe e acompanhe o cadastro dos perfis ativos.',
+        },
+        addEmployee: {
+          title: 'Cadastrar colaborador',
+          description: 'Comece o setup operacional criando o primeiro colaborador da empresa.',
+        },
+        shifts: {
+          title: 'Jornada',
+          description: 'Configure escalas, horários padrão e regras para o cálculo do ponto.',
+        },
+        reports: {
+          title: 'Relatórios',
+          description: 'Monitore ajustes e acompanhe rapidamente o que precisa de revisão.',
+        },
+      },
+      steps: {
+        dashboardHeader: {
+          title: 'Bem-vindo ao painel admin',
+          description: 'Aqui você acompanha a operação da empresa, acessa atalhos importantes e monitora os pontos mais críticos do dia.',
+        },
+        menuEmployees: {
+          title: 'Gestão de colaboradores',
+          description: 'Use este atalho para acessar a área de colaboradores, revisar a equipe e manter o cadastro sempre organizado.',
+        },
+        addEmployee: {
+          title: 'Cadastre o primeiro colaborador',
+          description: 'Este ponto leva você direto ao fluxo de cadastro para começar a montar a base da empresa no sistema.',
+        },
+        workSchedule: {
+          title: 'Configure as jornadas',
+          description: 'Defina jornadas, horários e regras que serão usadas no controle de ponto dos colaboradores.',
+        },
+        reports: {
+          title: 'Relatórios e acompanhamento',
+          description: 'Acompanhe ajustes, movimentações e indicadores para agir rápido quando algo sair do esperado.',
+        },
+        final: {
+          title: 'Tudo pronto',
+          description: 'Seu painel está preparado. Quando quiser rever este tour, use o botão "Rever tutorial" no dashboard.',
+        },
+      },
+    },
+    employeeOnboarding: {
+      actions: {
+        next: 'Próximo',
+        previous: 'Anterior',
+        done: 'Finalizar',
+      },
+      panel: {
+        eyebrow: 'Primeiros passos',
+        title: 'Seu espaço do dia a dia',
+        subtitle: 'Aqui você registra o ponto, consulta seus horários e acompanha ajustes.',
+        restart: 'Rever tutorial',
+        clock: {
+          title: 'Registrar ponto',
+          description: 'Abra a tela de ponto e faça sua marcação.',
+        },
+        history: {
+          title: 'Ver histórico',
+          description: 'Consulte seus registros quando precisar.',
+        },
+        adjustments: {
+          title: 'Pedir ajuste',
+          description: 'Use este atalho para revisar ou pedir correção.',
+        },
+      },
+      steps: {
+        home: {
+          title: 'Bem-vindo',
+          description: 'Este é o seu espaço para acompanhar a rotina do ponto.',
+        },
+        clock: {
+          title: 'Registrar ponto',
+          description: 'Toque aqui para abrir a tela e registrar entrada ou saída.',
+        },
+        history: {
+          title: 'Consultar registros',
+          description: 'Aqui você vê seus horários e o histórico do dia.',
+        },
+        adjustments: {
+          title: 'Solicitar ajuste',
+          description: 'Se precisar corrigir algo, comece por este atalho.',
+        },
+        final: {
+          title: 'Pronto',
+          description: 'Tudo certo. Se quiser rever o tutorial depois, use o botão do dashboard.',
+        },
+      },
+    },
+    superAdmin: {
+      nav: {
+        section: 'Super Admin',
+      },
+      shared: {
+        values: {
+          yes: 'Sim',
+          no: 'Não',
+        },
       },
     },
     adminTimezonePage: {
@@ -621,6 +737,7 @@ const ptBR = {
         registeredAt: 'Registrado às: {{time}}',
         adjustmentTag: 'Ajuste',
         adjustmentPendingTooltip: 'Solicitação de ajuste pendente de aprovação',
+        adjustRequest: 'Solicitar ajuste',
         details: 'Detalhes',
         opened: 'Aberto',
         none: 'Ainda não há registros',
@@ -1610,9 +1727,19 @@ const ptBR = {
         pageCounter: 'Página {{current}} de {{total}}',
         title: 'Folha de ponto',
         company: 'Empresa',
+        shift: 'Escala',
         employee: 'Funcionario',
         period: 'Período',
         issuedAt: 'Data de emissao',
+        columns: {
+          date: 'Data',
+          start: 'Entrada',
+          breakStart: 'Saída para intervalo',
+          breakEnd: 'Retorno do intervalo',
+          end: 'Saída final',
+        },
+        shiftFallback: 'Sem escala vinculada',
+        emptySlot: '—',
         successTitle: 'PDF gerado',
         successDescription: 'Download iniciado com sucesso.',
         errorTitle: 'Erro ao exportar',

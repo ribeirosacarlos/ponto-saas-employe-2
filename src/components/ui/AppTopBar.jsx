@@ -1,8 +1,11 @@
-export function AppTopBar({ icon, eyebrow, meta, title, subtitle, actions, filters, rightMeta }) {
+export function AppTopBar({ icon, eyebrow, meta, title, subtitle, actions, filters, rightMeta, dataTour }) {
   const hasRightContent = Boolean(actions) || Boolean(rightMeta)
 
   return (
-    <header className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
+    <header
+      data-tour={dataTour}
+      className="flex flex-col gap-4 rounded-[24px] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.45)] backdrop-blur-xl sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between"
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner shadow-primary/20">
@@ -36,6 +39,7 @@ export function AppTopBar({ icon, eyebrow, meta, title, subtitle, actions, filte
       {hasRightContent ? (
         <div
           className="
+            p-5
             -mx-4 px-4
             flex flex-wrap items-center gap-2
             min-w-0

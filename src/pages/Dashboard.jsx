@@ -21,6 +21,8 @@ import { listMyDocuments, downloadDocument } from '../services/documentsService'
 import { getEmployeeVacationBalance } from '../services/vacationsService'
 import { listAnnouncements } from '../services/announcementsService'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import { AdminOnboardingPanel } from '../components/dashboard/AdminOnboardingPanel'
+import { EmployeeOnboardingPanel } from '../components/dashboard/EmployeeOnboardingPanel'
 
 const DOCUMENT_CATEGORIES = {
   payroll: {
@@ -54,6 +56,12 @@ export default function Dashboard({
   onOpenDocuments,
   onOpenVacations,
   onOpenAnnouncements,
+  onOpenEmployees,
+  onOpenAdminShifts,
+  onOpenAdminReports,
+  onRestartAdminOnboarding,
+  onOpenTimeClock,
+  onRestartEmployeeOnboarding,
 }) {
   const roles = useAuthStore((state) => state.roles)
   const { toast } = useToast()
@@ -356,6 +364,14 @@ export default function Dashboard({
     t('dashboardPage.absence.commentFallback', 'Sem justificativa informada.')
 
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const isAdminWorkspace = useMemo(
+    () => canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] }),
+    [capabilities],
+  )
+  const isEmployeeWorkspace = useMemo(
+    () => canRenderCard(capabilities, { anyOf: ['employee'] }) && !isAdminWorkspace,
+    [capabilities, isAdminWorkspace],
+  )
   const visibleCards = useMemo(
     () => DASHBOARD_CARDS.filter((card) => canRenderCard(capabilities, card.requires)),
     [capabilities],
@@ -415,6 +431,7 @@ export default function Dashboard({
     <div className="min-h-screen bg-transparent text-foreground transition-colors duration-300">
       <PageContainer className="py-5 sm:py-6 space-y-6">
         <AppTopBar
+          dataTour="dashboard-header"
           icon={<LayoutDashboard className="h-5 w-5" />}
           meta={dateTimeLabel}
           title={t('dashboardPage.title')}
@@ -437,6 +454,24 @@ export default function Dashboard({
             </div>
           }
         />
+
+        {isAdminWorkspace ? (
+          <AdminOnboardingPanel
+            onOpenEmployees={onOpenEmployees}
+            onOpenShifts={onOpenAdminShifts}
+            onOpenReports={onOpenAdminReports}
+            onRestartOnboarding={onRestartAdminOnboarding}
+          />
+        ) : null}
+
+        {isEmployeeWorkspace ? (
+          <EmployeeOnboardingPanel
+            onOpenTimeClock={onOpenTimeClock}
+            onOpenHistory={onOpenHistory}
+            onOpenAdjustments={onOpenHistory}
+            onRestartOnboarding={onRestartEmployeeOnboarding}
+          />
+        ) : null}
 
         {isAbsentToday ? (
           <section className="rounded-[22px] border border-rose-200/70 bg-rose-500/10 px-5 py-4 shadow-[0_18px_50px_-36px_rgba(244,63,94,0.35)] dark:border-rose-400/30 dark:bg-rose-500/10">
