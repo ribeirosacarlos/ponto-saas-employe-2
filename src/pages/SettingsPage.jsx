@@ -140,13 +140,6 @@ export default function Settings() {
               </div>
               <Switch checked={reminders} onCheckedChange={setReminders} />
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.preferences.reports')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.preferences.reportsHint')}</p>
-              </div>
-              <Switch checked={autoReports} onCheckedChange={setAutoReports} />
-            </div>
           </CardContent>
         </Card>
 
