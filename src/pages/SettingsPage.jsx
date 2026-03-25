@@ -48,7 +48,13 @@ export default function Settings() {
               </CardContent>
             </Card>
         ) : billing ? (
-            <PlanSummaryCard billing={billing} usage={usage} links={links} />
+            <PlanSummaryCard
+              billing={billing}
+              usage={usage}
+              links={links}
+              canManageBilling={canEditPreferences}
+              onOverviewReload={reload}
+            />
         ) : (
             <Card className="border border-border/80 bg-card/90">
               <CardHeader>

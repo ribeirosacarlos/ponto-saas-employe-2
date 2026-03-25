@@ -105,6 +105,49 @@ const en = {
         status: {
           unknown: 'Unknown status',
         },
+        extraEmployees: {
+          title: 'Confirm extra employees',
+          description: 'Your company is above the plan limit. Confirm the extra employees to apply the add-on only on the next invoice.',
+          successTitle: 'Extra employees synced for the next invoice',
+          successDescription: 'No immediate charge was made. The add-on will be applied only on the next billing cycle, with no proration.',
+          fields: {
+            included: 'Included in plan',
+            current: 'Active employees',
+            extra: 'Extra employees',
+            unitPrice: 'Price per extra employee',
+            nextInvoiceExtra: 'Expected add-on on next invoice',
+            nextInvoiceTotal: 'Expected recurring total',
+          },
+          notes: {
+            noImmediateCharge: 'There will be no immediate charge.',
+            nextBillingOnly: 'This change will apply only to the next invoice.',
+            noProration: 'There is no proration for this adjustment.',
+          },
+          actions: {
+            confirm: 'Confirm extra employees',
+            confirmModal: 'Confirm for next invoice',
+            syncing: 'Syncing...',
+          },
+          modal: {
+            title: 'Confirm extra employees',
+            description: 'Review the impact before syncing the extra employees to the next invoice.',
+            planLimit: 'Your plan includes up to {{limit}} employees.',
+            currentEmployees: 'Your company currently has {{current}} active employees.',
+            extraEmployees: 'There are {{extra}} extra employees.',
+            unitPrice: 'The add-on per employee is {{price}}.',
+            nextInvoiceExtra: 'The expected add-on on the next invoice is {{price}}.',
+          },
+          toast: {
+            successTitle: 'Extra employees synced',
+            successDescription: 'The change was saved for the next invoice.',
+            errorTitle: 'Could not sync extra employees',
+          },
+          errors: {
+            forbidden: 'You do not have permission to perform this action.',
+            unprocessable: 'Could not sync extra employees with the current subscription data.',
+            generic: 'An error occurred while syncing extra employees. Please try again.',
+          },
+        },
       },
       security: {
         title: 'Security',
