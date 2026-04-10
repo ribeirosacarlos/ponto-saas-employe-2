@@ -48,7 +48,13 @@ export default function Settings() {
               </CardContent>
             </Card>
         ) : billing ? (
-            <PlanSummaryCard billing={billing} usage={usage} links={links} />
+            <PlanSummaryCard
+              billing={billing}
+              usage={usage}
+              links={links}
+              canManageBilling={canEditPreferences}
+              onOverviewReload={reload}
+            />
         ) : (
             <Card className="border border-border/80 bg-card/90">
               <CardHeader>
@@ -133,13 +139,6 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">{t('settingsPage.preferences.remindersHint')}</p>
               </div>
               <Switch checked={reminders} onCheckedChange={setReminders} />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.preferences.reports')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.preferences.reportsHint')}</p>
-              </div>
-              <Switch checked={autoReports} onCheckedChange={setAutoReports} />
             </div>
           </CardContent>
         </Card>

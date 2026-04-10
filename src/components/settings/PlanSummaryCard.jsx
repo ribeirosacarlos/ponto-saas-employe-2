@@ -1,16 +1,29 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  AlertTriangle,
   BadgeCheck,
   CalendarClock,
   CreditCard,
   ExternalLink,
+  Loader2,
   Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { cn } from '../../lib/utils'
 import { useDateTime } from '../../hooks/useDateTime'
+import { useToast } from '../ui/use-toast'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import { syncExtraEmployees } from '../../services/settings/syncExtraEmployees'
 
 const STATUS_TONES = {
   active: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/70 dark:text-emerald-100',
@@ -29,12 +42,16 @@ const intervalLabel = (interval, t) => {
 
 const formatPrice = (plan, t) => {
   if (!plan?.price_cents || !plan.currency) return t('settingsPage.plan.labels.noPrice')
-  const formatter = new Intl.NumberFormat('pt-BR', {
+  return `${formatCents(plan.price_cents, plan.currency || 'BRL')} / ${intervalLabel(plan.billing_interval, t)}`
+}
+
+const formatCents = (value, currency = 'BRL') => {
+  if (value === null || value === undefined || value === '') return '—'
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: plan.currency || 'BRL',
+    currency,
     minimumFractionDigits: 2,
-  })
-  return `${formatter.format(plan.price_cents / 100)} / ${intervalLabel(plan.billing_interval, t)}`
+  }).format(Number(value) / 100)
 }
 
 const DetailItem = ({ label, value }) => {
@@ -66,7 +83,215 @@ const LimitsList = ({ limits, t }) => {
   )
 }
 
-export function PlanSummaryCard({ billing, usage, links }) {
+const ExtraEmployeesAlert = ({
+  employees,
+  currency,
+  onOverviewReload,
+  t,
+}) => {
+  const { toast } = useToast()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [syncState, setSyncState] = useState('idle')
+  const [syncError, setSyncError] = useState('')
+  const [syncResult, setSyncResult] = useState(null)
+
+  const limit = employees?.limit ?? 0
+  const current = employees?.current ?? 0
+  const extraEmployees = Math.max(0, current - limit)
+  const fallbackUnitPriceCents = 1500
+  const summary = syncResult?.summary || null
+  const effectiveCurrent = summary?.active_employees ?? current
+  const effectiveLimit = summary?.included_employees ?? limit
+  const effectiveExtraEmployees = summary?.extra_employees ?? extraEmployees
+  const unitPriceCents = summary?.extra_employee_price_cents ?? fallbackUnitPriceCents
+  const extraTotalCents = summary?.extra_total_cents ?? effectiveExtraEmployees * unitPriceCents
+  const totalPriceCents = summary?.total_price_cents ?? null
+  const isSyncing = syncState === 'syncing'
+  const isSuccess = syncState === 'success'
+
+  const handleSync = async () => {
+    setSyncState('syncing')
+    setSyncError('')
+
+    try {
+      const response = await syncExtraEmployees()
+      setSyncResult(response)
+      setSyncState('success')
+      setConfirmOpen(false)
+
+      toast({
+        title: t('settingsPage.plan.extraEmployees.toast.successTitle'),
+        description:
+          response?.message || t('settingsPage.plan.extraEmployees.toast.successDescription'),
+        variant: 'success',
+      })
+
+      await onOverviewReload?.()
+    } catch (err) {
+      const status = err?.response?.status
+      const apiMessage =
+        err?.response?.data?.message ||
+        err?.userFriendlyMessage ||
+        err?.message
+
+      const message =
+        status === 403
+          ? t('settingsPage.plan.extraEmployees.errors.forbidden')
+          : status === 422
+            ? apiMessage || t('settingsPage.plan.extraEmployees.errors.unprocessable')
+            : t('settingsPage.plan.extraEmployees.errors.generic')
+
+      setSyncState('error')
+      setSyncError(message)
+
+      toast({
+        title: t('settingsPage.plan.extraEmployees.toast.errorTitle'),
+        description: message,
+        variant: 'error',
+      })
+    }
+  }
+
+  return (
+    <>
+      <div
+        className={cn(
+          'rounded-2xl border p-4',
+          isSuccess
+            ? 'border-emerald-300/70 bg-emerald-500/10'
+            : 'border-amber-300/70 bg-amber-500/10',
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+              isSuccess
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-100'
+                : 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
+            )}
+          >
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">
+                {isSuccess
+                  ? t('settingsPage.plan.extraEmployees.successTitle')
+                  : t('settingsPage.plan.extraEmployees.title')}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {isSuccess
+                  ? t('settingsPage.plan.extraEmployees.successDescription')
+                  : t('settingsPage.plan.extraEmployees.description')}
+              </p>
+            </div>
+
+            <div className="grid gap-2 md:grid-cols-2">
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.included')}
+                value={effectiveLimit}
+              />
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.current')}
+                value={effectiveCurrent}
+              />
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.extra')}
+                value={effectiveExtraEmployees}
+              />
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.unitPrice')}
+                value={formatCents(unitPriceCents, currency)}
+              />
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.nextInvoiceExtra')}
+                value={formatCents(extraTotalCents, currency)}
+              />
+              <DetailItem
+                label={t('settingsPage.plan.extraEmployees.fields.nextInvoiceTotal')}
+                value={totalPriceCents !== null ? formatCents(totalPriceCents, currency) : '—'}
+              />
+            </div>
+
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>{t('settingsPage.plan.extraEmployees.notes.noImmediateCharge')}</p>
+              <p>{t('settingsPage.plan.extraEmployees.notes.nextBillingOnly')}</p>
+              <p>{t('settingsPage.plan.extraEmployees.notes.noProration')}</p>
+            </div>
+
+            {syncError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {syncError}
+              </div>
+            ) : null}
+
+            {!isSuccess ? (
+              <Button type="button" size="sm" onClick={() => setConfirmOpen(true)}>
+                {t('settingsPage.plan.extraEmployees.actions.confirm')}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={confirmOpen} onOpenChange={(open) => !isSyncing && setConfirmOpen(open)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('settingsPage.plan.extraEmployees.modal.title')}</DialogTitle>
+            <DialogDescription>
+              {t('settingsPage.plan.extraEmployees.modal.description')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-2">
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-3 text-sm text-foreground">
+              <p>{t('settingsPage.plan.extraEmployees.modal.planLimit', { limit })}</p>
+              <p>{t('settingsPage.plan.extraEmployees.modal.currentEmployees', { current })}</p>
+              <p>{t('settingsPage.plan.extraEmployees.modal.extraEmployees', { extra: extraEmployees })}</p>
+              <p>
+                {t('settingsPage.plan.extraEmployees.modal.unitPrice', {
+                  price: formatCents(unitPriceCents, currency),
+                })}
+              </p>
+              <p>
+                {t('settingsPage.plan.extraEmployees.modal.nextInvoiceExtra', {
+                  price: formatCents(extraTotalCents, currency),
+                })}
+              </p>
+            </div>
+
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>{t('settingsPage.plan.extraEmployees.notes.noImmediateCharge')}</p>
+              <p>{t('settingsPage.plan.extraEmployees.notes.nextBillingOnly')}</p>
+              <p>{t('settingsPage.plan.extraEmployees.notes.noProration')}</p>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" disabled={isSyncing}>
+                {t('common.actions.cancel')}
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={handleSync} disabled={isSyncing}>
+              {isSyncing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('settingsPage.plan.extraEmployees.actions.syncing')}
+                </>
+              ) : (
+                t('settingsPage.plan.extraEmployees.actions.confirmModal')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+export function PlanSummaryCard({ billing, usage, links, canManageBilling = false, onOverviewReload }) {
   const { t } = useTranslation()
   const { formatDateTime } = useDateTime()
 
@@ -99,6 +324,8 @@ export function PlanSummaryCard({ billing, usage, links }) {
         : null
 
   const limits = useMemo(() => plan.limits || null, [plan.limits])
+  const shouldShowExtraEmployeesAlert =
+    canManageBilling && Boolean(employees.over_limit) && hasLimit
 
   const openUrl = (url) => {
     if (!url || typeof window === 'undefined') return
@@ -189,6 +416,15 @@ export function PlanSummaryCard({ billing, usage, links }) {
             </div>
           ) : null}
         </div>
+
+        {shouldShowExtraEmployeesAlert ? (
+          <ExtraEmployeesAlert
+            employees={employees}
+            currency={plan.currency || 'BRL'}
+            onOverviewReload={onOverviewReload}
+            t={t}
+          />
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
           <Button

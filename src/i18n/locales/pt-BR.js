@@ -100,6 +100,49 @@ const ptBR = {
         status: {
           unknown: 'Status desconhecido',
         },
+        extraEmployees: {
+          title: 'Confirme os colaboradores extras',
+          description: 'Sua empresa ultrapassou o limite incluido no plano. Confirme os excedentes para aplicar o adicional apenas na proxima fatura.',
+          successTitle: 'Colaboradores extras sincronizados para a proxima cobranca',
+          successDescription: 'Nao houve cobranca imediata. O adicional sera aplicado somente no proximo ciclo, sem proracao.',
+          fields: {
+            included: 'Incluidos no plano',
+            current: 'Colaboradores ativos',
+            extra: 'Colaboradores excedentes',
+            unitPrice: 'Valor por colaborador extra',
+            nextInvoiceExtra: 'Adicional previsto na proxima fatura',
+            nextInvoiceTotal: 'Total recorrente previsto',
+          },
+          notes: {
+            noImmediateCharge: 'Nao havera cobranca imediata.',
+            nextBillingOnly: 'A alteracao sera aplicada somente na proxima cobranca.',
+            noProration: 'Nao ha proracao para este ajuste.',
+          },
+          actions: {
+            confirm: 'Confirmar colaboradores extras',
+            confirmModal: 'Confirmar para proxima cobranca',
+            syncing: 'Sincronizando...',
+          },
+          modal: {
+            title: 'Confirmar colaboradores extras',
+            description: 'Revise o impacto antes de sincronizar os colaboradores excedentes com a proxima cobranca.',
+            planLimit: 'Seu plano inclui ate {{limit}} colaboradores.',
+            currentEmployees: 'Sua empresa esta com {{current}} colaboradores ativos.',
+            extraEmployees: 'Ha {{extra}} colaboradores excedentes.',
+            unitPrice: 'O adicional por colaborador e de {{price}}.',
+            nextInvoiceExtra: 'O valor adicional esperado na proxima fatura e de {{price}}.',
+          },
+          toast: {
+            successTitle: 'Colaboradores extras sincronizados',
+            successDescription: 'A mudanca foi salva para a proxima cobranca.',
+            errorTitle: 'Nao foi possivel sincronizar os colaboradores extras',
+          },
+          errors: {
+            forbidden: 'Voce nao tem permissao para esta acao.',
+            unprocessable: 'Nao foi possivel sincronizar os colaboradores extras com os dados atuais da assinatura.',
+            generic: 'Ocorreu um erro ao sincronizar os colaboradores extras. Tente novamente.',
+          },
+        },
       },
       security: {
         title: 'Seguranca',

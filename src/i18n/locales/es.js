@@ -102,6 +102,49 @@ const es = {
         status: {
           unknown: 'Estado desconocido',
         },
+        extraEmployees: {
+          title: 'Confirmar colaboradores extra',
+          description: 'Tu empresa supero el limite incluido en el plan. Confirma los excedentes para aplicar el adicional solo en la proxima factura.',
+          successTitle: 'Colaboradores extra sincronizados para la proxima factura',
+          successDescription: 'No hubo cobro inmediato. El adicional se aplicara solo en el proximo ciclo, sin prorrateo.',
+          fields: {
+            included: 'Incluidos en el plan',
+            current: 'Colaboradores activos',
+            extra: 'Colaboradores excedentes',
+            unitPrice: 'Valor por colaborador extra',
+            nextInvoiceExtra: 'Adicional esperado en la proxima factura',
+            nextInvoiceTotal: 'Total recurrente esperado',
+          },
+          notes: {
+            noImmediateCharge: 'No habra cobro inmediato.',
+            nextBillingOnly: 'El cambio se aplicara solo en la proxima factura.',
+            noProration: 'No hay prorrateo para este ajuste.',
+          },
+          actions: {
+            confirm: 'Confirmar colaboradores extra',
+            confirmModal: 'Confirmar para la proxima factura',
+            syncing: 'Sincronizando...',
+          },
+          modal: {
+            title: 'Confirmar colaboradores extra',
+            description: 'Revisa el impacto antes de sincronizar los colaboradores excedentes con la proxima factura.',
+            planLimit: 'Tu plan incluye hasta {{limit}} colaboradores.',
+            currentEmployees: 'Tu empresa tiene {{current}} colaboradores activos.',
+            extraEmployees: 'Hay {{extra}} colaboradores excedentes.',
+            unitPrice: 'El adicional por colaborador es {{price}}.',
+            nextInvoiceExtra: 'El valor adicional esperado en la proxima factura es {{price}}.',
+          },
+          toast: {
+            successTitle: 'Colaboradores extra sincronizados',
+            successDescription: 'El cambio se guardo para la proxima factura.',
+            errorTitle: 'No se pudo sincronizar los colaboradores extra',
+          },
+          errors: {
+            forbidden: 'No tienes permiso para esta accion.',
+            unprocessable: 'No se pudo sincronizar los colaboradores extra con los datos actuales de la suscripcion.',
+            generic: 'Ocurrio un error al sincronizar los colaboradores extra. Intentalo nuevamente.',
+          },
+        },
       },
       security: {
         title: 'Seguridad',
