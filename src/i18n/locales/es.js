@@ -639,6 +639,9 @@ const es = {
       clockRateLimit: {
         title: 'Espera un momento',
       },
+      clockValidation: {
+        title: 'No fue posible registrar',
+      },
       clockError: {
         title: 'Error al registrar',
         description: 'No fue posible registrar el fichaje. Verifica permisos o inténtalo de nuevo.',
@@ -773,6 +776,7 @@ const es = {
         registerPoint: 'Registrar fichaje',
         logout: 'Salir de la aplicación',
         registering: 'Registrando...',
+        locating: 'Obteniendo ubicacion...',
       },
       summary: {
         title: 'Resumen del día',
@@ -846,6 +850,21 @@ const es = {
         periodLabel: 'Período:',
         reasonLabel: 'Motivo:',
         blockedLabel: 'Estás bloqueado para registrar el fichaje.',
+      },
+      geolocation: {
+        requiredTitle: 'Ubicacion obligatoria',
+        errors: {
+          permissionDenied:
+            'La ubicacion es obligatoria para registrar el fichaje. Permite el acceso a tu ubicacion y vuelve a intentarlo.',
+          permissionBlocked:
+            'El permiso de ubicacion ya fue bloqueado en el navegador. Habilitalo en la configuracion del sitio para registrar el fichaje.',
+          timeout:
+            'No fue posible obtener tu ubicacion a tiempo. La ubicacion es obligatoria para registrar el fichaje.',
+          unavailable:
+            'No fue posible obtener tu ubicacion. La ubicacion es obligatoria para registrar el fichaje.',
+          unsupported:
+            'Tu dispositivo o navegador no ofrece geolocalizacion. La ubicacion es obligatoria para registrar el fichaje.',
+        },
       },
     },
     dashboardPage: {

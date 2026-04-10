@@ -103,7 +103,7 @@ export function useClocking() {
         setLastError(message)
         if (error.response?.status === 422 && error.response?.data?.message) {
           toast({
-            title: t('toast.clockRateLimit.title'),
+            title: t('toast.clockValidation.title', t('toast.clockError.title')),
             description: error.response.data.message,
             variant: 'error',
           })

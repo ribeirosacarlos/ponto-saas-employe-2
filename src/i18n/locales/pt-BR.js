@@ -625,6 +625,9 @@ const ptBR = {
       clockRateLimit: {
         title: 'Aguarde um momento',
       },
+      clockValidation: {
+        title: 'Nao foi possivel registrar',
+      },
       clockError: {
         title: 'Erro ao registrar',
         description: 'Não foi possível registrar o ponto. Verifique permissões ou tente novamente.',
@@ -759,6 +762,7 @@ const ptBR = {
         registerPoint: 'Registrar ponto',
         logout: 'Sair da aplicação',
         registering: 'Registrando...',
+        locating: 'Obtendo localizacao...',
       },
       summary: {
         title: 'Resumo do dia',
@@ -832,6 +836,21 @@ const ptBR = {
         periodLabel: 'Período:',
         reasonLabel: 'Motivo:',
         blockedLabel: 'Você está bloqueado para registrar o ponto.',
+      },
+      geolocation: {
+        requiredTitle: 'Localizacao obrigatoria',
+        errors: {
+          permissionDenied:
+            'A localizacao e obrigatoria para registrar o ponto. Permita o acesso e tente novamente.',
+          permissionBlocked:
+            'A permissao de localizacao ja foi bloqueada no navegador. Libere o acesso nas configuracoes do site para registrar o ponto.',
+          timeout:
+            'Nao foi possivel obter sua localizacao a tempo. A localizacao e obrigatoria para registrar o ponto.',
+          unavailable:
+            'Nao foi possivel obter sua localizacao. A localizacao e obrigatoria para registrar o ponto.',
+          unsupported:
+            'Seu dispositivo ou navegador nao oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
+        },
       },
     },
     dashboardPage: {

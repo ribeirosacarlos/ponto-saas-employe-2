@@ -81,6 +81,7 @@ import { api } from '../http/api'
  * @property {number} [tolerance_minutes]
  * @property {number | null} [rounding_minutes]
  * @property {boolean} [geolocation_enabled]
+ * @property {boolean | null} [geolocation_required]
  * @property {boolean | null} [require_photo]
  */
 
@@ -190,6 +191,7 @@ const normalizeWorkday = (workday) => {
     rounding_minutes: payload.rounding_minutes ?? payload.roundingMinutes ?? null,
     tolerance_minutes: payload.tolerance_minutes ?? payload.toleranceMinutes ?? null,
     geolocation_enabled: payload.geolocation_enabled ?? payload.geolocationEnabled ?? null,
+    geolocation_required: payload.geolocation_required ?? payload.geolocationRequired ?? null,
     require_photo: payload.require_photo ?? payload.requirePhoto ?? null,
   }
 }

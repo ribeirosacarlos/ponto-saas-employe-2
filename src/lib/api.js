@@ -53,8 +53,8 @@ export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
   const payload = {}
 
-  if (coords.latitude) payload.latitude = coords.latitude
-  if (coords.longitude) payload.longitude = coords.longitude
+  if (Number.isFinite(Number(coords.latitude))) payload.latitude = Number(coords.latitude)
+  if (Number.isFinite(Number(coords.longitude))) payload.longitude = Number(coords.longitude)
   if (coords.source) payload.source = coords.source
 
   const response = await api.post('/v1/employee/clock', payload)

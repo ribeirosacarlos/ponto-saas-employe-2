@@ -46,13 +46,15 @@ const normalizeProposedType = (value) => {
   return ALLOWED_PROPOSED_TYPES.includes(normalized) ? normalized : null
 }
 
+const hasFiniteNumber = (value) => Number.isFinite(Number(value))
+
 export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   // Backward compatibility: previous signature was (type, coords). Type is ignored by the API now.
   const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
   const payload = {}
 
-  if (coords.latitude) payload.latitude = coords.latitude
-  if (coords.longitude) payload.longitude = coords.longitude
+  if (hasFiniteNumber(coords.latitude)) payload.latitude = Number(coords.latitude)
+  if (hasFiniteNumber(coords.longitude)) payload.longitude = Number(coords.longitude)
   if (coords.source) payload.source = coords.source
 
   const response = await api.post('/v1/employee/clock', payload)

@@ -642,6 +642,9 @@ const en = {
       clockRateLimit: {
         title: 'Please wait a moment',
       },
+      clockValidation: {
+        title: 'Unable to register',
+      },
       clockError: {
         title: 'Error registering',
         description: 'Could not register the punch. Check permissions or try again.',
@@ -776,6 +779,7 @@ const en = {
         registerPoint: 'Register point',
         logout: 'Logout',
         registering: 'Registering...',
+        locating: 'Getting location...',
       },
       summary: {
         title: 'Day summary',
@@ -848,6 +852,21 @@ const en = {
         periodLabel: 'Period:',
         reasonLabel: 'Reason:',
         blockedLabel: 'You are blocked from registering a punch.',
+      },
+      geolocation: {
+        requiredTitle: 'Location required',
+        errors: {
+          permissionDenied:
+            'Location is required to register this punch. Allow access to your location and try again.',
+          permissionBlocked:
+            'Location permission has already been blocked in the browser. Enable it in the site settings to register this punch.',
+          timeout:
+            'We could not get your location in time. Location is required to register this punch.',
+          unavailable:
+            'We could not get your location. Location is required to register this punch.',
+          unsupported:
+            'Your device or browser does not support geolocation. Location is required to register this punch.',
+        },
       },
     },
     dashboardPage: {

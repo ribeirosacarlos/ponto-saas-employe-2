@@ -13,10 +13,12 @@ import { canClockIn } from '../lib/canClockIn'
 import { listEntries as listEmployeeEntries } from '../services/modules/employee'
 import { getEmployeeOvertimeBalance } from '../services/modules/employees'
 import { getCurrentEmployeeShift } from '../services/modules/shifts'
+import { getSettingsOverview } from '../services/settings/getSettingsOverview'
 import { useDateTime } from '../hooks/useDateTime'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { getCompanyTimezone, isSameCompanyDay, toCompanyDate } from '../lib/datetime'
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
+import { GEOLOCATION_ERROR_CODES, getClockCoordinates, getClockSource } from '../lib/geolocation'
 
 const statusTokens = {
   idle: {
@@ -74,6 +76,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [openStatusLoading, setOpenStatusLoading] = useState(false)
   const [submittingOpenAdjustment, setSubmittingOpenAdjustment] = useState(false)
   const [isLastPunchExpanded, setIsLastPunchExpanded] = useState(true)
+  const [isSubmittingClock, setIsSubmittingClock] = useState(false)
+  const [clockActionError, setClockActionError] = useState('')
   const userMenuRef = useRef(null)
   const isMounted = useRef(true)
   const isMobile = useIsMobile()
@@ -129,7 +133,8 @@ export default function TimeClock({ onContinueToDashboard }) {
       ? t('dashboard.nextLabel.out', 'Registrar saída')
       : t('dashboard.nextLabel.in', 'Registrar entrada')
   const registeringLabel = t('timeClock.actions.registering')
-  const primaryLoading = clocking === nextActionType
+  const locatingLabel = t('timeClock.actions.locating', 'Obtendo localizacao...')
+  const primaryLoading = isSubmittingClock || clocking === nextActionType
 
   const formattedTime = formatTime(currentTime, { hour12: false })
   const formattedDate = formatDate(currentTime, {
@@ -380,6 +385,41 @@ export default function TimeClock({ onContinueToDashboard }) {
     t('timeClock.absence.commentFallback', 'Sem justificativa informada.')
 
   const isClockBlocked = !canClockIn({ isAbsentToday })
+  const visibleClockError = clockActionError || lastError
+
+  const getGeolocationErrorMessage = useCallback(
+    (code) => {
+      switch (code) {
+        case GEOLOCATION_ERROR_CODES.PERMISSION_DENIED:
+          return t(
+            'timeClock.geolocation.errors.permissionDenied',
+            'A localizacao e obrigatoria para registrar o ponto. Permita o acesso e tente novamente.',
+          )
+        case GEOLOCATION_ERROR_CODES.PERMISSION_BLOCKED:
+          return t(
+            'timeClock.geolocation.errors.permissionBlocked',
+            'A permissao de localizacao ja foi bloqueada no navegador. Libere o acesso nas configuracoes do site para registrar o ponto.',
+          )
+        case GEOLOCATION_ERROR_CODES.TIMEOUT:
+          return t(
+            'timeClock.geolocation.errors.timeout',
+            'Nao foi possivel obter sua localizacao a tempo. A localizacao e obrigatoria para registrar o ponto.',
+          )
+        case GEOLOCATION_ERROR_CODES.UNSUPPORTED:
+          return t(
+            'timeClock.geolocation.errors.unsupported',
+            'Seu dispositivo ou navegador nao oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
+          )
+        case GEOLOCATION_ERROR_CODES.POSITION_UNAVAILABLE:
+        default:
+          return t(
+            'timeClock.geolocation.errors.unavailable',
+            'Nao foi possivel obter sua localizacao. A localizacao e obrigatoria para registrar o ponto.',
+          )
+      }
+    },
+    [t],
+  )
 
   useEffect(() => {
     let active = true
@@ -875,6 +915,10 @@ export default function TimeClock({ onContinueToDashboard }) {
   }
 
   const handlePrimaryAction = async () => {
+    if (isSubmittingClock || primaryLoading) {
+      return
+    }
+
     if (isClockBlocked) {
       toast({
         title: t('timeClock.absence.blockTitle', 'Registro bloqueado'),
@@ -886,9 +930,52 @@ export default function TimeClock({ onContinueToDashboard }) {
       })
       return
     }
-    const result = await registerClock(nextActionType)
+
+    setClockActionError('')
+    setIsSubmittingClock(true)
+
+    let result = null
+
+    try {
+      const settings = await getSettingsOverview()
+      const geolocationRequired = settings?.workday?.geolocation_required === true
+      const source = getClockSource()
+      let coordinates = null
+
+      try {
+        coordinates = await getClockCoordinates({ required: geolocationRequired })
+      } catch (error) {
+        if (geolocationRequired) {
+          const message = getGeolocationErrorMessage(error?.code)
+          setClockActionError(message)
+          toast({
+            title: t('timeClock.geolocation.requiredTitle', 'Localizacao obrigatoria'),
+            description: message,
+            variant: 'error',
+          })
+          return
+        }
+      }
+
+      result = await registerClock(nextActionType, {
+        source,
+        ...(coordinates || {}),
+      })
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        t('toast.clockError.description', 'Nao foi possivel registrar o ponto. Verifique permissoes ou tente novamente.')
+      setClockActionError(message)
+    } finally {
+      setIsSubmittingClock(false)
+    }
+
     if (result?.status === 'created' && result?.next_event) {
       setOpenEntryStatus((prev) => ({ ...(prev || {}), next_event: result.next_event, open: false }))
+    }
+    if (!result) {
+      return
     }
     await fetchRecentEntries()
     await refreshOpenStatus()
@@ -1232,7 +1319,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                   onClick={handlePrimaryAction}
                   className="h-11 w-full rounded-full text-[14px] shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
                 >
-                  {primaryLoading ? registeringLabel : shiftButtonLabel}
+                  {primaryLoading ? (isSubmittingClock && !clocking ? locatingLabel : registeringLabel) : shiftButtonLabel}
                 </Button>
                 <Button
                   variant="secondary"
@@ -1242,8 +1329,8 @@ export default function TimeClock({ onContinueToDashboard }) {
                   {t('timeClock.actions.goDashboard')}
                 </Button>
               </div>
-              {lastError ? (
-                <p className="text-xs font-semibold text-rose-500 sm:text-sm">{lastError}</p>
+              {visibleClockError ? (
+                <p className="text-xs font-semibold text-rose-500 sm:text-sm">{visibleClockError}</p>
               ) : null}
             </div>
 

@@ -9,6 +9,7 @@ import { cn } from '../lib/utils'
 import { PlanSummaryCard } from '../components/settings/PlanSummaryCard'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { PreferencesCard } from '../components/settings/PreferencesCard'
+import { GeolocationSettingsCard } from '../components/settings/GeolocationSettingsCard'
 import { useAuthStore } from '../store/useAuth'
 
 const SETTINGS_TABS = ['plan', 'preferences']
@@ -118,6 +119,7 @@ export default function Settings() {
   const renderPreferencesTab = () => (
       <div className="grid gap-4 md:grid-cols-2">
         <PreferencesCard company={company} canEdit={canEditPreferences} onTimezoneSaved={reload} />
+        <GeolocationSettingsCard canEdit={canEditPreferences} />
         <Card className="border border-border/80 bg-card/90">
           <CardHeader>
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
