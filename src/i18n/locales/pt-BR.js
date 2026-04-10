@@ -1690,7 +1690,7 @@ const ptBR = {
           thisMonth: 'Este mês',
           last30Days: 'Últimos 30 dias',
         },
-        employee: 'Funcionario',
+        employee: 'Funcionário',
         searchPlaceholder: 'Buscar por nome ou email',
         empty: 'Selecione um funcionario para visualizar.',
         from: 'Data inicial',
@@ -1728,7 +1728,7 @@ const ptBR = {
         title: 'Folha de ponto',
         company: 'Empresa',
         shift: 'Escala',
-        employee: 'Funcionario',
+        employee: 'Funcionário',
         period: 'Período',
         issuedAt: 'Data de emissao',
         columns: {

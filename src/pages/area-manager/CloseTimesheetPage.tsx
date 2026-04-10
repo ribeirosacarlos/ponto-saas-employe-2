@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   endOfDay,
   endOfMonth,
@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   CalendarRange,
+  ChevronDown,
   Clock3,
   Download,
   FileText,
@@ -26,6 +27,7 @@ import {
   Search,
   Timer,
   UserRound,
+  X,
 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
@@ -284,6 +286,9 @@ export default function CloseTimesheetPage() {
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState<'standard' | ''>('')
   const [locationEntry, setLocationEntry] = useState<any | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
+  const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
+  const employeeComboboxRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
@@ -291,6 +296,17 @@ export default function CloseTimesheetPage() {
     }, 250)
     return () => window.clearTimeout(handler)
   }, [employeeSearch])
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!employeeComboboxRef.current?.contains(event.target as Node)) {
+        setEmployeeComboboxOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [])
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -340,6 +356,19 @@ export default function CloseTimesheetPage() {
       return target.includes(query)
     })
   }, [debouncedSearch, employees])
+
+  const activeQuickRange = useMemo(() => {
+    const lastMonth = quickRanges.lastMonth()
+    if (filters.from === lastMonth.from && filters.to === lastMonth.to) return 'lastMonth'
+
+    const thisMonth = quickRanges.thisMonth()
+    if (filters.from === thisMonth.from && filters.to === thisMonth.to) return 'thisMonth'
+
+    const last30Days = quickRanges.last30Days()
+    if (filters.from === last30Days.from && filters.to === last30Days.to) return 'last30Days'
+
+    return ''
+  }, [filters.from, filters.to])
 
   const canSearch =
     Boolean(filters.employeeId) &&
@@ -397,6 +426,7 @@ export default function CloseTimesheetPage() {
   const handleSearch = useCallback(
     async (pageToLoad = 1) => {
       if (!canSearch) return
+      setHasSearched(true)
       setLoadingEntries(true)
       setEntriesError('')
       try {
@@ -547,7 +577,6 @@ export default function CloseTimesheetPage() {
   const lastPage = meta?.lastPage || meta?.last_page || null
   const total = meta?.total
   const canGoNext = lastPage ? currentPage < lastPage : total ? currentPage * PAGE_SIZE < total : true
-  const hasSearched = Boolean(appliedFilters.employeeId)
 
   return (
     <div className="relative min-h-screen">
@@ -560,123 +589,62 @@ export default function CloseTimesheetPage() {
             subtitle={t('closeTimesheetPage.subtitle')}
           />
 
-          <Card className="border-dashed">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="overflow-visible border-dashed">
+            <CardHeader className="space-y-1 pb-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Filter className="h-4 w-4" />
                 <span>{t('closeTimesheetPage.filters.title')}</span>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickRange('lastMonth')}
-                >
-                  {t('closeTimesheetPage.filters.quick.lastMonth')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickRange('thisMonth')}
-                >
-                  {t('closeTimesheetPage.filters.quick.thisMonth')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickRange('last30Days')}
-                >
-                  {t('closeTimesheetPage.filters.quick.last30Days')}
-                </Button>
+              <div>
+                <CardTitle className="text-base">{t('closeTimesheetPage.table.title')}</CardTitle>
+                <p className="text-xs text-muted-foreground">{t('closeTimesheetPage.table.subtitle')}</p>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {t('closeTimesheetPage.filters.employee')}
-                  </label>
-                  <div className="flex flex-col gap-2 rounded-[18px] border border-border/70 bg-background/80 p-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          value={employeeSearch}
-                          onChange={(event) => setEmployeeSearch(event.target.value)}
-                          placeholder={t('closeTimesheetPage.filters.searchPlaceholder')}
-                          className="pl-9"
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-48 space-y-2 overflow-auto pr-1">
-                      {employeesLoading ? (
-                        <div className="space-y-2">
-                          {[1, 2, 3].map((item) => (
-                            <div
-                              key={item}
-                              className="h-10 w-full animate-pulse rounded-lg bg-muted/70"
-                            />
-                          ))}
-                        </div>
-                      ) : employeesError ? (
-                        <div className="flex items-center gap-2 rounded-lg border border-amber-200/70 bg-amber-500/10 px-3 py-2 text-amber-700">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="text-sm">{employeesError}</span>
-                        </div>
-                      ) : filteredEmployees.length ? (
-                        filteredEmployees.map((emp) => (
-                          <button
-                            key={emp.id}
-                            type="button"
-                            onClick={() =>
-                              setFilters((prev) => ({
-                                ...prev,
-                                employeeId: emp.id,
-                              }))
-                            }
-                            className={cn(
-                              'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition',
-                              emp.id === filters.employeeId
-                                ? 'border-primary/60 bg-primary/10 text-primary'
-                                : 'border-border/70 hover:border-primary/30 hover:bg-muted/60',
-                            )}
-                          >
-                            <UserRound className="h-4 w-4 shrink-0" />
-                            <div className="flex flex-1 flex-col">
-                              <span className="text-sm font-medium">{emp.name || emp.email}</span>
-                              <span className="text-xs text-muted-foreground">{emp.email}</span>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {t('closeTimesheetPage.filters.empty')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+            <CardContent className="space-y-3 pt-1">
+              <div className="flex gap-2 sm:flex-nowrap">
+                {([
+                  ['lastMonth', t('closeTimesheetPage.filters.quick.lastMonth')],
+                  ['thisMonth', t('closeTimesheetPage.filters.quick.thisMonth')],
+                  ['last30Days', t('closeTimesheetPage.filters.quick.last30Days')],
+                ] as const).map(([key, label]) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    size="sm"
+                    variant={activeQuickRange === key ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => handleQuickRange(key)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
 
-                <div className="grid gap-3 rounded-[18px] border border-border/70 bg-background/80 p-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">
-                      {t('closeTimesheetPage.filters.from')}
-                    </label>
+              <div className="grid gap-2 rounded-[18px] border border-border/70 bg-background/70 p-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t('closeTimesheetPage.filters.from')}
+                  </label>
+                  <div className="relative">
                     <Input
                       type="date"
                       value={filters.from}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, from: event.target.value }))
                       }
+                      className="h-10 pr-10"
                     />
+                    <CalendarRange className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">
-                      {t('closeTimesheetPage.filters.to')}
-                    </label>
+                </div>
+                <div className="hidden items-center justify-center pb-3 text-sm font-semibold text-muted-foreground sm:flex">
+                  →
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t('closeTimesheetPage.filters.to')}
+                  </label>
+                  <div className="relative">
                     <Input
                       type="date"
                       value={filters.to}
@@ -684,150 +652,267 @@ export default function CloseTimesheetPage() {
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, to: event.target.value }))
                       }
+                      className="h-10 pr-10"
                     />
+                    <CalendarRange className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   </div>
-                  <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="text-sm text-muted-foreground">
-                      {t('closeTimesheetPage.filters.hint')}
+                </div>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t('closeTimesheetPage.filters.employee')}
+                  </label>
+                  <div ref={employeeComboboxRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setEmployeeComboboxOpen((prev) => !prev)}
+                    className={cn(
+                      'flex h-10 w-full items-center gap-3 rounded-xl border border-border/80 bg-background/80 px-3 py-2 text-left text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-input/70',
+                      employeeComboboxOpen && 'border-ring',
+                    )}
+                  >
+                    <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      {selectedEmployee ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate font-semibold text-foreground">
+                            {selectedEmployee.name || selectedEmployee.email}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+                            <span className="truncate">{selectedEmployee.email}</span>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setFilters((prev) => ({ ...prev, employeeId: '' }))
+                                setEmployeeSearch('')
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+                                  setFilters((prev) => ({ ...prev, employeeId: '' }))
+                                  setEmployeeSearch('')
+                                }
+                              }}
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-background/80"
+                            >
+                              <X className="h-3 w-3" />
+                            </span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {t('closeTimesheetPage.filters.searchPlaceholder')}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                        employeeComboboxOpen && 'rotate-180',
+                      )}
+                    />
+                  </button>
+
+                  {employeeComboboxOpen ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] backdrop-blur-xl">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          autoFocus
+                          value={employeeSearch}
+                          onChange={(event) => setEmployeeSearch(event.target.value)}
+                          placeholder={t('closeTimesheetPage.filters.searchPlaceholder')}
+                          className="h-10 pl-9"
+                        />
+                      </div>
+
+                      <div className="mt-2 max-h-64 space-y-2 overflow-auto pr-1">
+                        {employeesLoading ? (
+                          <div className="space-y-2">
+                            {[1, 2, 3].map((item) => (
+                              <div
+                                key={item}
+                                className="h-10 w-full animate-pulse rounded-xl bg-muted/70"
+                              />
+                            ))}
+                          </div>
+                        ) : employeesError ? (
+                          <div className="flex items-center gap-2 rounded-xl border border-amber-200/70 bg-amber-500/10 px-3 py-3 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <span className="text-sm">{employeesError}</span>
+                          </div>
+                        ) : filteredEmployees.length ? (
+                          filteredEmployees.map((emp) => (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => {
+                                setFilters((prev) => ({ ...prev, employeeId: emp.id }))
+                                setEmployeeComboboxOpen(false)
+                              }}
+                              className={cn(
+                                'flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition',
+                                emp.id === filters.employeeId
+                                  ? 'border-primary/60 bg-primary/10'
+                                  : 'border-border/70 bg-background/70 hover:border-primary/30 hover:bg-muted/60',
+                              )}
+                            >
+                              <UserRound
+                                className={cn(
+                                  'mt-0.5 h-4 w-4 shrink-0',
+                                  emp.id === filters.employeeId ? 'text-primary' : 'text-muted-foreground',
+                                )}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-semibold text-foreground">
+                                  {emp.name || emp.email}
+                                </div>
+                                <div className="truncate text-xs text-muted-foreground">
+                                  {emp.email}
+                                </div>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="rounded-xl border border-dashed border-border/70 bg-muted/40 px-3 py-4 text-sm text-muted-foreground">
+                            {t('closeTimesheetPage.filters.empty')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                  </div>
+                </div>
+                <div className="flex w-full gap-2 lg:w-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 lg:min-w-[112px] lg:flex-none"
+                    onClick={() => {
+                      setFilters({
+                        employeeId: '',
+                        from: defaultRange.from,
+                        to: defaultRange.to,
+                      })
+                      setEmployeeSearch('')
+                      setEmployeeComboboxOpen(false)
+                      setHasSearched(false)
+                    }}
+                  >
+                    {t('closeTimesheetPage.filters.reset')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="flex-[1.4] lg:min-w-[148px]"
+                    onClick={() => handleSearch(1)}
+                    disabled={!canSearch || loadingEntries}
+                  >
+                    {loadingEntries ? (
+                      <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-2 h-4 w-4" />
+                    )}
+                    {t('closeTimesheetPage.filters.submit')}
+                  </Button>
+                </div>
+              </div>
+
+              {hasSearched ? (
+                <div className="space-y-4 border-t border-border/70 pt-5">
+                  <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground">
+                        {t('closeTimesheetPage.summary.entries')}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xl font-semibold leading-none">{summary.totalEntries}</span>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <CalendarRange className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xl font-semibold leading-none">{summary.daysWithRecords}</span>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground">
+                        {t('closeTimesheetPage.summary.hours')}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <Timer className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xl font-semibold leading-none">{formatMinutes(summary.totalMinutes)}</span>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground">
+                        {t('closeTimesheetPage.summary.inconsistencies')}
+                      </p>
+                      <div className="mt-1.5 flex items-start gap-1.5 text-amber-600 dark:text-amber-100">
+                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <div className="text-xs leading-5">
+                          <div>{t('closeTimesheetPage.summary.pendingCount', { count: summary.pendingCount })}</div>
+                          <div>{t('closeTimesheetPage.summary.duplicateCount', { count: summary.duplicateCount })}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t('closeTimesheetPage.table.title')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t('closeTimesheetPage.table.subtitle')}
+                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setFilters({
-                            employeeId: '',
-                            from: defaultRange.from,
-                            to: defaultRange.to,
-                          })
-                        }
+                        disabled={exporting === 'standard' || !normalizedEntries.length}
+                        onClick={() => exportPdf()}
                       >
-                        <RefreshCcw className="mr-2 h-4 w-4" />
-                        {t('closeTimesheetPage.filters.reset')}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleSearch(1)}
-                        disabled={!canSearch || loadingEntries}
-                      >
-                        {loadingEntries ? (
+                        {exporting === 'standard' ? (
                           <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <Search className="mr-2 h-4 w-4" />
+                          <Download className="mr-2 h-4 w-4" />
                         )}
-                        {t('closeTimesheetPage.filters.submit')}
+                        {t('closeTimesheetPage.export.primary')}
                       </Button>
                     </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {hasSearched ? (
-            <div className="grid gap-4 lg:grid-cols-4">
-              <Card>
-                <CardContent className="space-y-1 py-5">
-                  <p className="text-sm text-muted-foreground">
-                    {t('closeTimesheetPage.summary.entries')}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-2xl font-semibold">{summary.totalEntries}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="space-y-1 py-5">
-                  <p className="text-sm text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
-                  <div className="flex items-center gap-2">
-                    <CalendarRange className="h-4 w-4 text-primary" />
-                    <span className="text-2xl font-semibold">{summary.daysWithRecords}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="space-y-1 py-5">
-                  <p className="text-sm text-muted-foreground">
-                    {t('closeTimesheetPage.summary.hours')}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Timer className="h-4 w-4 text-primary" />
-                    <span className="text-2xl font-semibold">{formatMinutes(summary.totalMinutes)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="space-y-1 py-5">
-                  <p className="text-sm text-muted-foreground">
-                    {t('closeTimesheetPage.summary.inconsistencies')}
-                  </p>
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <AlertCircle className="h-4 w-4" />
-                    <div className="text-sm">
-                      <div>{t('closeTimesheetPage.summary.pendingCount', { count: summary.pendingCount })}</div>
-                      <div>{t('closeTimesheetPage.summary.duplicateCount', { count: summary.duplicateCount })}</div>
+                  {loadingEntries ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((item) => (
+                        <div key={item} className="h-16 w-full animate-pulse rounded-xl bg-muted/70" />
+                      ))}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
-
-          <Card className="overflow-hidden">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                  <FileText className="h-4 w-4 text-primary" />
-                  {t('closeTimesheetPage.table.title')}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {t('closeTimesheetPage.table.subtitle')}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={exporting === 'standard' || !normalizedEntries.length}
-                  onClick={() => exportPdf()}
-                >
-                  {exporting === 'standard' ? (
-                    <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : entriesError ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-rose-200/70 bg-rose-500/10 px-4 py-3 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100">
+                      <AlertCircle className="h-5 w-5" />
+                      <div className="space-y-1">
+                        <p className="font-medium">{t('closeTimesheetPage.states.entriesErrorTitle')}</p>
+                        <p className="text-sm">{entriesError}</p>
+                      </div>
+                    </div>
+                  ) : groupedEntries.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 px-4 py-8 text-center text-muted-foreground">
+                      {t('closeTimesheetPage.states.empty')}
+                    </div>
                   ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
-                  {t('closeTimesheetPage.export.primary')}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loadingEntries ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-16 w-full animate-pulse rounded-xl bg-muted/70" />
-                  ))}
-                </div>
-              ) : entriesError ? (
-                <div className="flex items-center gap-3 rounded-xl border border-rose-200/70 bg-rose-500/10 px-4 py-3 text-rose-700">
-                  <AlertCircle className="h-5 w-5" />
-                  <div className="space-y-1">
-                    <p className="font-medium">{t('closeTimesheetPage.states.entriesErrorTitle')}</p>
-                    <p className="text-sm">{entriesError}</p>
-                  </div>
-                </div>
-              ) : hasSearched && groupedEntries.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 px-4 py-8 text-center text-muted-foreground">
-                  {t('closeTimesheetPage.states.empty')}
-                </div>
-              ) : !hasSearched ? (
-                <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 px-4 py-6 text-center text-muted-foreground">
-                  {t('closeTimesheetPage.states.waitingEmployee')}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {groupedEntries.map((group) => (
+                    <div className="space-y-6">
+                      {groupedEntries.map((group) => (
                     <div key={group.dateKey} className="space-y-2 rounded-2xl border border-border/60 bg-card/70 p-3">
                       <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1003,7 +1088,9 @@ export default function CloseTimesheetPage() {
                     </div>
                   </div>
                 </div>
-              )}
+                  )}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>

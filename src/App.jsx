@@ -49,6 +49,12 @@ import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
+const NAV_GROUP_ORDER = {
+  workspace: 0,
+  admin: 1,
+  superAdmin: 2,
+}
+const ADMIN_LAST_ITEM_IDS = new Set(['settings'])
 
 const getInitialSidebarCollapsed = () => {
   if (typeof window === 'undefined') return false
@@ -111,8 +117,26 @@ export default function App() {
         }
       })
         .filter((item) => canRenderCard(capabilities, item.requires))
-        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true)),
-    [capabilities, isSuperAdminOnlyNav, todayBadge],
+        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true))
+        .sort((left, right) => {
+          const groupOrder =
+            (NAV_GROUP_ORDER[left.group] ?? Number.MAX_SAFE_INTEGER) -
+            (NAV_GROUP_ORDER[right.group] ?? Number.MAX_SAFE_INTEGER)
+
+          if (groupOrder !== 0) return groupOrder
+
+          const leftIsAdminLast = left.group === 'admin' && ADMIN_LAST_ITEM_IDS.has(left.id)
+          const rightIsAdminLast = right.group === 'admin' && ADMIN_LAST_ITEM_IDS.has(right.id)
+
+          if (leftIsAdminLast !== rightIsAdminLast) {
+            return leftIsAdminLast ? 1 : -1
+          }
+
+          return t(left.labelKey).localeCompare(t(right.labelKey), undefined, {
+            sensitivity: 'base',
+          })
+        }),
+    [capabilities, isSuperAdminOnlyNav, t, todayBadge],
   )
 
   const desktopNavItems = useMemo(
