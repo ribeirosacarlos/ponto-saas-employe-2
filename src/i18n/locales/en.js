@@ -1768,6 +1768,10 @@ const en = {
         },
         shiftFallback: 'No shift linked',
         emptySlot: '—',
+        summary: {
+          daysWithRecords: '{{count}} day(s) with records',
+          totalEntries: '{{count}} punch(es)',
+        },
         successTitle: 'PDF generated',
         successDescription: 'Download started successfully.',
         errorTitle: 'Export error',

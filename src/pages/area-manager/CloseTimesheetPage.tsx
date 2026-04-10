@@ -45,8 +45,8 @@ import { PageContainer } from '../../components/ui/PageContainer'
 import { useToast } from '../../components/ui/use-toast'
 import { listEmployees } from '../../services/modules/employees'
 import { listTeamEntries } from '../../services/adminAdjustmentsService'
-import { getCurrentUser } from '../../services/authService'
 import { cn } from '../../lib/utils'
+import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 
@@ -259,10 +259,10 @@ const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string,
 export default function CloseTimesheetPage() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
+  const authUser = useAuthStore((state) => state.user)
 
   const defaultRange = useMemo(() => getLastMonthRange(), [])
   const [employees, setEmployees] = useState<any[]>([])
-  const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [employeesLoading, setEmployeesLoading] = useState(false)
   const [employeesError, setEmployeesError] = useState('')
   const [employeeSearch, setEmployeeSearch] = useState('')
@@ -336,12 +336,6 @@ export default function CloseTimesheetPage() {
   useEffect(() => {
     loadEmployees()
   }, [loadEmployees])
-
-  useEffect(() => {
-    getCurrentUser()
-      .then((user) => setCurrentUser(user))
-      .catch(() => setCurrentUser(null))
-  }, [])
 
   const selectedEmployee = useMemo(
     () => employees.find((emp) => emp.id === filters.employeeId) || null,
@@ -537,7 +531,7 @@ export default function CloseTimesheetPage() {
       const fullDays = addMissingDays([...groupedForExport], appliedFilters.from, appliedFilters.to)
       const employeeLabel =
         selectedEmployee?.name || selectedEmployee?.email || t('closeTimesheetPage.table.userFallback')
-      const companyLabel = getCompanyName(selectedEmployee, currentUser) || t('closeTimesheetPage.export.emptySlot')
+      const companyLabel = getCompanyName(selectedEmployee, authUser)
       const shiftLabel = getShiftName(selectedEmployee) || ''
       const periodLabel = `${formatDateLabel(appliedFilters.from)} - ${formatDateLabel(appliedFilters.to)}`
 

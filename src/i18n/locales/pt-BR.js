@@ -1802,6 +1802,10 @@ const ptBR = {
         },
         shiftFallback: 'Sem escala vinculada',
         emptySlot: '—',
+        summary: {
+          daysWithRecords: '{{count}} dia(s) com registro',
+          totalEntries: '{{count}} marcacao(oes)',
+        },
         successTitle: 'PDF gerado',
         successDescription: 'Download iniciado com sucesso.',
         errorTitle: 'Erro ao exportar',
