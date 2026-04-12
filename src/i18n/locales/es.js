@@ -180,6 +180,63 @@ const es = {
           errorDescription: 'No se pudo guardar la zona horaria.',
         },
       },
+      locationValidation: {
+        eyebrow: 'Geolocalizacion',
+        title: 'Validacion de ubicacion',
+        description:
+          'Define la ubicacion de la empresa y el radio permitido para identificar registros realizados fuera del area esperada.',
+        helper:
+          'Esta validacion no bloquea el registro del fichaje. Solo sirve para alertas futuras en la visualizacion de registros.',
+        fields: {
+          locationValidationEnabled: 'Activar validacion de ubicacion',
+          locationValidationEnabledHint:
+            'Cuando esta activa, los registros podran compararse con la ubicacion base de la empresa para generar alertas futuras.',
+          companyLatitude: 'Latitud de la empresa',
+          companyLongitude: 'Longitud de la empresa',
+          allowedRadiusMeters: 'Radio permitido en metros',
+        },
+        placeholders: {
+          companyLatitude: 'Ej.: -23.5505200',
+          companyLongitude: 'Ej.: -46.6333080',
+          allowedRadiusMeters: 'Ej.: 100',
+        },
+        alerts: {
+          incomplete: 'La ubicacion de la empresa aun no fue configurada completamente.',
+          enabledWithoutCoordinates:
+            'La validacion de ubicacion esta activada, pero la latitud y la longitud de la empresa aun no fueron configuradas.',
+        },
+        actions: {
+          save: 'Guardar',
+          saving: 'Guardando...',
+          reload: 'Recargar',
+        },
+        states: {
+          loading: 'Cargando configuracion de ubicacion...',
+          saved: 'Configuracion de ubicacion guardada con exito.',
+          errorTitle: 'Error al cargar',
+        },
+        errors: {
+          load: 'No fue posible cargar la configuracion de ubicacion.',
+        },
+        validation: {
+          latitudeRequired: 'Informa la latitud de la empresa.',
+          latitudeNumber: 'La latitud debe ser un numero valido.',
+          latitudeRange: 'La latitud debe estar entre -90 y 90.',
+          longitudeRequired: 'Informa la longitud de la empresa.',
+          longitudeNumber: 'La longitud debe ser un numero valido.',
+          longitudeRange: 'La longitud debe estar entre -180 y 180.',
+          radiusRequired: 'Informa el radio permitido.',
+          radiusNumber: 'El radio debe ser un numero valido.',
+          radiusInteger: 'El radio debe ser un numero entero.',
+          radiusRange: 'El radio debe estar entre 10 y 5000 metros.',
+        },
+        toast: {
+          successTitle: 'Configuracion guardada',
+          successDescription: 'La validacion de ubicacion de la empresa fue actualizada.',
+          errorTitle: 'Error al guardar',
+          errorDescription: 'No fue posible guardar la configuracion de ubicacion.',
+        },
+      },
       security: {
         title: 'Seguridad / Cumplimiento',
         subtitle: 'Controles esenciales de la cuenta.',
@@ -1830,6 +1887,8 @@ const es = {
         viewLocation: 'Ver ubicacion',
         locationTitle: 'Ubicacion de la marcacion',
         locationDescription: 'Coordenadas registradas para esta marcacion.',
+        distanceFromCompany: 'Distancia de la empresa',
+        distanceValue: '{{distance}} m',
         openMaps: 'Abrir en Maps',
         records: 'registros',
         pagination: 'Pagina {{page}} de {{total}}',
@@ -1849,6 +1908,10 @@ const es = {
           pending: 'Pendiente',
           duplicate: 'Duplicado',
           ok: 'Completo',
+        },
+        locationStatus: {
+          inside: 'Dentro de la empresa',
+          outside: 'Fuera de la empresa',
         },
       },
     },

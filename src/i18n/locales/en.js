@@ -183,6 +183,63 @@ const en = {
           errorDescription: 'Could not save timezone.',
         },
       },
+      locationValidation: {
+        eyebrow: 'Geolocation',
+        title: 'Location validation',
+        description:
+          'Define the company location and allowed radius to identify records created outside the expected area.',
+        helper:
+          'This validation does not block punch registration. It only serves future alerts in record views.',
+        fields: {
+          locationValidationEnabled: 'Enable location validation',
+          locationValidationEnabledHint:
+            'When enabled, records can be compared against the company base location to generate future alerts.',
+          companyLatitude: 'Company latitude',
+          companyLongitude: 'Company longitude',
+          allowedRadiusMeters: 'Allowed radius in meters',
+        },
+        placeholders: {
+          companyLatitude: 'Example: -23.5505200',
+          companyLongitude: 'Example: -46.6333080',
+          allowedRadiusMeters: 'Example: 100',
+        },
+        alerts: {
+          incomplete: 'The company location has not been fully configured yet.',
+          enabledWithoutCoordinates:
+            'Location validation is enabled, but the company latitude and longitude have not been configured yet.',
+        },
+        actions: {
+          save: 'Save',
+          saving: 'Saving...',
+          reload: 'Reload',
+        },
+        states: {
+          loading: 'Loading location settings...',
+          saved: 'Location settings saved successfully.',
+          errorTitle: 'Error loading data',
+        },
+        errors: {
+          load: 'Unable to load location settings.',
+        },
+        validation: {
+          latitudeRequired: 'Enter the company latitude.',
+          latitudeNumber: 'Latitude must be a valid number.',
+          latitudeRange: 'Latitude must be between -90 and 90.',
+          longitudeRequired: 'Enter the company longitude.',
+          longitudeNumber: 'Longitude must be a valid number.',
+          longitudeRange: 'Longitude must be between -180 and 180.',
+          radiusRequired: 'Enter the allowed radius.',
+          radiusNumber: 'Radius must be a valid number.',
+          radiusInteger: 'Radius must be an integer.',
+          radiusRange: 'Radius must be between 10 and 5000 meters.',
+        },
+        toast: {
+          successTitle: 'Settings saved',
+          successDescription: 'The company location validation settings were updated.',
+          errorTitle: 'Error saving',
+          errorDescription: 'Unable to save location settings.',
+        },
+      },
       security: {
         title: 'Security / Compliance',
         subtitle: 'Essential account controls.',
@@ -1788,6 +1845,8 @@ const en = {
         viewLocation: 'View location',
         locationTitle: 'Clock-in location',
         locationDescription: 'Coordinates captured for this punch.',
+        distanceFromCompany: 'Distance from company',
+        distanceValue: '{{distance}} m',
         openMaps: 'Open in Maps',
         records: 'records',
         pagination: 'Page {{page}} of {{total}}',
@@ -1807,6 +1866,10 @@ const en = {
           pending: 'Pending',
           duplicate: 'Duplicated',
           ok: 'Complete',
+        },
+        locationStatus: {
+          inside: 'Inside company',
+          outside: 'Outside company',
         },
       },
     },

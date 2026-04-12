@@ -43,6 +43,7 @@ import {
 } from '../../components/ui/dialog'
 import { PageContainer } from '../../components/ui/PageContainer'
 import { useToast } from '../../components/ui/use-toast'
+import { fetchAdminLocationSettings } from '../../services/adminLocationSettingsService'
 import { listEmployees } from '../../services/modules/employees'
 import { listTeamEntries } from '../../services/adminAdjustmentsService'
 import { cn } from '../../lib/utils'
@@ -88,6 +89,35 @@ const formatMinutes = (minutes?: number) => {
   const hours = String(Math.floor(total / 60)).padStart(2, '0')
   const mins = String(Math.max(0, Math.round(total % 60))).padStart(2, '0')
   return `${hours}:${mins}`
+}
+
+const hasFiniteCoordinates = (latitude?: number | null, longitude?: number | null) =>
+  Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))
+
+const calculateDistanceInMeters = (
+  latitudeA?: number | null,
+  longitudeA?: number | null,
+  latitudeB?: number | null,
+  longitudeB?: number | null,
+) => {
+  if (!hasFiniteCoordinates(latitudeA, longitudeA) || !hasFiniteCoordinates(latitudeB, longitudeB)) {
+    return null
+  }
+
+  const toRadians = (value: number) => (value * Math.PI) / 180
+  const earthRadiusInMeters = 6371000
+  const lat1 = Number(latitudeA)
+  const lon1 = Number(longitudeA)
+  const lat2 = Number(latitudeB)
+  const lon2 = Number(longitudeB)
+  const deltaLat = toRadians(lat2 - lat1)
+  const deltaLon = toRadians(lon2 - lon1)
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLon / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return Math.round(earthRadiusInMeters * c)
 }
 
 const normalizeEntry = (entry: any = {}, index = 0) => {
@@ -286,6 +316,7 @@ export default function CloseTimesheetPage() {
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState<'standard' | ''>('')
   const [locationEntry, setLocationEntry] = useState<any | null>(null)
+  const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
   const employeeComboboxRef = useRef<HTMLDivElement | null>(null)
@@ -337,6 +368,25 @@ export default function CloseTimesheetPage() {
     loadEmployees()
   }, [loadEmployees])
 
+  useEffect(() => {
+    let active = true
+
+    const loadLocationSettings = async () => {
+      try {
+        const response = await fetchAdminLocationSettings()
+        if (active) setLocationSettings(response)
+      } catch {
+        if (active) setLocationSettings(null)
+      }
+    }
+
+    loadLocationSettings()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const selectedEmployee = useMemo(
     () => employees.find((emp) => emp.id === filters.employeeId) || null,
     [employees, filters.employeeId],
@@ -387,6 +437,21 @@ export default function CloseTimesheetPage() {
   const groupedEntries = useMemo(() => {
     return groupEntriesByDate(normalizedEntries, 'desc')
   }, [normalizedEntries])
+
+  const companyLocation = useMemo(() => {
+    if (
+      locationSettings?.location_validation_enabled !== true ||
+      !hasFiniteCoordinates(locationSettings?.company_latitude, locationSettings?.company_longitude)
+    ) {
+      return null
+    }
+
+    return {
+      latitude: Number(locationSettings.company_latitude),
+      longitude: Number(locationSettings.company_longitude),
+      allowedRadiusMeters: Number(locationSettings.allowed_radius_meters) || 0,
+    }
+  }, [locationSettings])
 
   const formatClock = useCallback(
     (value?: string) => {
@@ -934,6 +999,18 @@ export default function CloseTimesheetPage() {
                               const clockKey = entry.clockedAt ? new Date(entry.clockedAt).toISOString() : ''
                               const isPending = summary.pendingIds.has(entry.id)
                               const isDuplicate = duplicatesSet.has(clockKey)
+                              const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
+                              const distanceFromCompany = companyLocation
+                                ? calculateDistanceInMeters(
+                                    entry.latitude,
+                                    entry.longitude,
+                                    companyLocation.latitude,
+                                    companyLocation.longitude,
+                                  )
+                                : null
+                              const isOutsideCompany =
+                                distanceFromCompany !== null &&
+                                distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
                               const statusLabel = isPending
                                 ? t('closeTimesheetPage.table.status.pending')
                                 : isDuplicate
@@ -982,7 +1059,22 @@ export default function CloseTimesheetPage() {
                                     </div>
                                   </td>
                                   <td className="px-3 py-3 align-middle">
-                                    {entry.latitude && entry.longitude ? (
+                                    {hasCoordinates ? (
+                                      <div className="flex flex-col items-start gap-2">
+                                        {distanceFromCompany !== null ? (
+                                          <span
+                                            className={cn(
+                                              'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                                              isOutsideCompany
+                                                ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
+                                                : 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
+                                            )}
+                                          >
+                                            {isOutsideCompany
+                                              ? t('closeTimesheetPage.table.locationStatus.outside')
+                                              : t('closeTimesheetPage.table.locationStatus.inside')}
+                                          </span>
+                                        ) : null}
                                       <Dialog
                                         open={locationEntry?.id === entry.id}
                                         onOpenChange={(open) => !open && setLocationEntry(null)}
@@ -992,7 +1084,7 @@ export default function CloseTimesheetPage() {
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            className="flex items-center gap-2 text-primary"
+                                            className="flex items-center gap-2 px-0 text-primary hover:bg-transparent"
                                             onClick={() => setLocationEntry(entry)}
                                           >
                                             <MapPin className="h-4 w-4" />
@@ -1015,6 +1107,18 @@ export default function CloseTimesheetPage() {
                                               <span className="font-medium">Longitude</span>
                                               <span>{entry.longitude}</span>
                                             </div>
+                                            {distanceFromCompany !== null ? (
+                                              <div className="flex items-center justify-between text-sm">
+                                                <span className="font-medium">
+                                                  {t('closeTimesheetPage.table.distanceFromCompany')}
+                                                </span>
+                                                <span>
+                                                  {t('closeTimesheetPage.table.distanceValue', {
+                                                    distance: distanceFromCompany,
+                                                  })}
+                                                </span>
+                                              </div>
+                                            ) : null}
                                             <a
                                               href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
                                               target="_blank"
@@ -1027,6 +1131,7 @@ export default function CloseTimesheetPage() {
                                           </div>
                                         </DialogContent>
                                       </Dialog>
+                                      </div>
                                     ) : (
                                       <span className="text-sm text-muted-foreground">—</span>
                                     )}

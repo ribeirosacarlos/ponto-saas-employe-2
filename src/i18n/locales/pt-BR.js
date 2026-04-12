@@ -188,6 +188,63 @@ const ptBR = {
         criticalTitle: 'Acesso administrativo',
         criticalDescription: 'Gerencie quem pode administrar billing, planos e configuracoes sensiveis.',
       },
+      locationValidation: {
+        eyebrow: 'Geolocalizacao',
+        title: 'Validacao de localizacao',
+        description:
+          'Defina a localizacao da empresa e o raio permitido para identificar registros realizados fora da area esperada.',
+        helper:
+          'Essa validacao nao bloqueia o registro do ponto. Ela serve apenas para alertas na visualizacao dos registros.',
+        fields: {
+          locationValidationEnabled: 'Ativar validacao de localizacao',
+          locationValidationEnabledHint:
+            'Quando ativo, os registros poderao ser comparados com a localizacao base da empresa para gerar alertas futuros.',
+          companyLatitude: 'Latitude da empresa',
+          companyLongitude: 'Longitude da empresa',
+          allowedRadiusMeters: 'Raio permitido em metros',
+        },
+        placeholders: {
+          companyLatitude: 'Ex.: -23.5505200',
+          companyLongitude: 'Ex.: -46.6333080',
+          allowedRadiusMeters: 'Ex.: 100',
+        },
+        alerts: {
+          incomplete: 'A localizacao da empresa ainda nao foi configurada completamente.',
+          enabledWithoutCoordinates:
+            'A validacao de localizacao esta ativada, mas a latitude e a longitude da empresa ainda nao foram configuradas.',
+        },
+        actions: {
+          save: 'Salvar',
+          saving: 'Salvando...',
+          reload: 'Recarregar',
+        },
+        states: {
+          loading: 'Carregando configuracao de localizacao...',
+          saved: 'Configuracao de localizacao salva com sucesso.',
+          errorTitle: 'Erro ao carregar',
+        },
+        errors: {
+          load: 'Nao foi possivel carregar a configuracao de localizacao.',
+        },
+        validation: {
+          latitudeRequired: 'Informe a latitude da empresa.',
+          latitudeNumber: 'A latitude deve ser um numero valido.',
+          latitudeRange: 'A latitude deve estar entre -90 e 90.',
+          longitudeRequired: 'Informe a longitude da empresa.',
+          longitudeNumber: 'A longitude deve ser um numero valido.',
+          longitudeRange: 'A longitude deve estar entre -180 e 180.',
+          radiusRequired: 'Informe o raio permitido.',
+          radiusNumber: 'O raio deve ser um numero valido.',
+          radiusInteger: 'O raio deve ser um numero inteiro.',
+          radiusRange: 'O raio deve estar entre 10 e 5000 metros.',
+        },
+        toast: {
+          successTitle: 'Configuracao salva',
+          successDescription: 'A validacao de localizacao da empresa foi atualizada.',
+          errorTitle: 'Erro ao salvar',
+          errorDescription: 'Nao foi possivel salvar a configuracao de localizacao.',
+        },
+      },
       actions: {
         manage: 'Gerenciar',
         view: 'Ver',
@@ -1822,6 +1879,8 @@ const ptBR = {
         viewLocation: 'Ver coordenadas',
         locationTitle: 'Local da batida',
         locationDescription: 'Coordenadas registradas para esta batida.',
+        distanceFromCompany: 'Distância da empresa',
+        distanceValue: '{{distance}} m',
         openMaps: 'Abrir no Maps',
         records: 'registros',
         pagination: 'Página {{page}} de {{total}}',
@@ -1841,6 +1900,10 @@ const ptBR = {
           pending: 'Pendente',
           duplicate: 'Duplicado',
           ok: 'Completo',
+        },
+        locationStatus: {
+          inside: 'Dentro da empresa',
+          outside: 'Fora da empresa',
         },
       },
     },
