@@ -288,9 +288,36 @@ export function GeolocationSettingsCard({ canEdit }) {
   }
 
   const hasClockRequirementChanges = requiredOnClock !== initialRequiredOnClock
+  const validationEnabled = formValues.location_validation_enabled === true
+  const statusCards = [
+    {
+      key: 'validation',
+      label: t('settingsPage.locationValidation.fields.locationValidationEnabled'),
+      value: validationEnabled
+        ? t('settingsPage.preferences.enabled', 'Ativo')
+        : t('settingsPage.preferences.disabled', 'Inativo'),
+      tone: validationEnabled ? 'text-emerald-700' : 'text-muted-foreground',
+    },
+    {
+      key: 'configured',
+      label: t('settingsPage.locationValidation.states.configuration', 'Configuracao'),
+      value: isConfigured
+        ? t('settingsPage.locationValidation.states.configured', 'Completa')
+        : t('settingsPage.locationValidation.states.notConfigured', 'Incompleta'),
+      tone: isConfigured ? 'text-emerald-700' : 'text-amber-700',
+    },
+    {
+      key: 'radius',
+      label: t('settingsPage.locationValidation.fields.allowedRadiusMeters'),
+      value: formValues.allowed_radius_meters
+        ? `${formValues.allowed_radius_meters} m`
+        : t('settingsPage.locationValidation.states.notDefined', 'Nao definido'),
+      tone: 'text-foreground',
+    },
+  ]
 
   return (
-    <Card className="border border-border/80 bg-card/90">
+    <Card className="border border-border/80 bg-card/90 shadow-[0_24px_70px_-46px_rgba(72,88,140,0.28)]">
       <CardHeader className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
           <MapPin className="h-5 w-5" />
@@ -308,8 +335,20 @@ export function GeolocationSettingsCard({ canEdit }) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <AlertBox variant="info">
+      <CardContent className="space-y-5">
+        <div className="grid gap-3 md:grid-cols-3">
+          {statusCards.map((item) => (
+            <div
+              key={item.key}
+              className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 shadow-[0_12px_30px_-24px_rgba(72,88,140,0.35)]"
+            >
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
+              <p className={cn('mt-1 text-sm font-semibold', item.tone)}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <AlertBox variant="info" className="rounded-2xl">
           {t('settingsPage.locationValidation.helper')}
         </AlertBox>
 
@@ -363,106 +402,132 @@ export function GeolocationSettingsCard({ canEdit }) {
 
         {submitError && !error ? <AlertBox variant="error">{submitError}</AlertBox> : null}
 
-        <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="company-geolocation-required">
-                {t(
-                  'settingsPage.geolocation.fieldLabel',
-                  'Exigir geolocalizacao ao registrar ponto',
-                )}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {featureAvailable
-                  ? t(
-                      'settingsPage.geolocation.fieldHint',
-                      'Quando ativo, o colaborador precisa permitir localizacao para bater o ponto.',
-                    )
-                  : t(
-                      'settingsPage.geolocation.unavailable',
-                      'O plano atual da empresa nao suporta geolocalizacao obrigatoria no registro.',
-                    )}
-              </p>
+        <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-background to-muted/30 p-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <MapPin className="h-4 w-4" />
             </div>
-            <Switch
-              id="company-geolocation-required"
-              checked={requiredOnClock}
-              disabled={!canEdit || clockRequirementLoading || clockRequirementSaving || !featureAvailable}
-              aria-label={t(
-                'settingsPage.geolocation.fieldLabel',
-                'Exigir geolocalizacao ao registrar ponto',
-              )}
-              onCheckedChange={setRequiredOnClock}
-            />
-          </div>
+            <div className="min-w-0 flex-1 space-y-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('settingsPage.geolocation.sectionLabel', 'Registro de ponto')}
+                  </p>
+                  <Label htmlFor="company-geolocation-required" className="text-base font-semibold text-foreground">
+                    {t(
+                      'settingsPage.geolocation.fieldLabel',
+                      'Exigir geolocalizacao ao registrar ponto',
+                    )}
+                  </Label>
+                  <p className="max-w-[52ch] text-sm text-muted-foreground">
+                    {featureAvailable
+                      ? t(
+                          'settingsPage.geolocation.fieldHint',
+                          'Quando ativo, o colaborador precisa permitir localizacao para bater o ponto.',
+                        )
+                      : t(
+                          'settingsPage.geolocation.unavailable',
+                          'O plano atual da empresa nao suporta geolocalizacao obrigatoria no registro.',
+                        )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 self-start rounded-full border border-border/70 bg-background/80 px-3 py-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {requiredOnClock
+                      ? t('settingsPage.preferences.enabled', 'Ativo')
+                      : t('settingsPage.preferences.disabled', 'Inativo')}
+                  </span>
+                  <Switch
+                    id="company-geolocation-required"
+                    checked={requiredOnClock}
+                    disabled={!canEdit || clockRequirementLoading || clockRequirementSaving || !featureAvailable}
+                    aria-label={t(
+                      'settingsPage.geolocation.fieldLabel',
+                      'Exigir geolocalizacao ao registrar ponto',
+                    )}
+                    onCheckedChange={setRequiredOnClock}
+                  />
+                </div>
+              </div>
 
-          {clockRequirementLoading ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              {t(
-                'settingsPage.geolocation.states.loading',
-                'Carregando configuracao de geolocalizacao no registro de ponto...',
-              )}
-            </p>
-          ) : null}
+              {clockRequirementLoading ? (
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    'settingsPage.geolocation.states.loading',
+                    'Carregando configuracao de geolocalizacao no registro de ponto...',
+                  )}
+                </p>
+              ) : null}
 
-          {clockRequirementError ? (
-            <p className="mt-3 text-sm text-rose-600 dark:text-rose-300">{clockRequirementError}</p>
-          ) : null}
+              {clockRequirementError ? (
+                <p className="text-sm text-rose-600 dark:text-rose-300">{clockRequirementError}</p>
+              ) : null}
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleSaveClockRequirement}
-              disabled={
-                !canEdit ||
-                clockRequirementLoading ||
-                clockRequirementSaving ||
-                !hasClockRequirementChanges ||
-                !featureAvailable
-              }
-            >
-              {clockRequirementSaving ? (
-                <>
-                  <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                  {t('settingsPage.geolocation.actions.saving', 'Salvando...')}
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {t('settingsPage.geolocation.actions.save', 'Salvar exigencia')}
-                </>
-              )}
-            </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSaveClockRequirement}
+                  disabled={
+                    !canEdit ||
+                    clockRequirementLoading ||
+                    clockRequirementSaving ||
+                    !hasClockRequirementChanges ||
+                    !featureAvailable
+                  }
+                >
+                  {clockRequirementSaving ? (
+                    <>
+                      <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                      {t('settingsPage.geolocation.actions.saving', 'Salvando...')}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {t('settingsPage.geolocation.actions.save', 'Salvar exigencia')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="location-validation-enabled">
-                  {t('settingsPage.locationValidation.fields.locationValidationEnabled')}
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  {t('settingsPage.locationValidation.fields.locationValidationEnabledHint')}
-                </p>
-              </div>
+        <form className="space-y-4 rounded-2xl border border-border/70 bg-gradient-to-br from-background to-muted/30 p-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                {t('settingsPage.locationValidation.sectionLabel', 'Perimetro da empresa')}
+              </p>
+              <Label htmlFor="location-validation-enabled" className="text-base font-semibold text-foreground">
+                {t('settingsPage.locationValidation.fields.locationValidationEnabled')}
+              </Label>
+              <p className="max-w-[56ch] text-sm text-muted-foreground">
+                {t('settingsPage.locationValidation.fields.locationValidationEnabledHint')}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 self-start rounded-full border border-border/70 bg-background/80 px-3 py-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {validationEnabled
+                  ? t('settingsPage.preferences.enabled', 'Ativo')
+                  : t('settingsPage.preferences.disabled', 'Inativo')}
+              </span>
               <Switch
                 id="location-validation-enabled"
-                checked={formValues.location_validation_enabled}
+                checked={validationEnabled}
                 disabled={!canEdit || isLoading || isSaving}
                 aria-label={t('settingsPage.locationValidation.fields.locationValidationEnabled')}
                 onCheckedChange={handleSwitchChange}
               />
             </div>
-            {fieldErrors.location_validation_enabled ? (
-              <p className="mt-2 text-sm text-rose-600 dark:text-rose-300">
-                {fieldErrors.location_validation_enabled}
-              </p>
-            ) : null}
           </div>
+
+          {fieldErrors.location_validation_enabled ? (
+            <p className="text-sm text-rose-600 dark:text-rose-300">
+              {fieldErrors.location_validation_enabled}
+            </p>
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -479,6 +544,7 @@ export function GeolocationSettingsCard({ canEdit }) {
                 value={formValues.company_latitude}
                 onChange={handleChange('company_latitude')}
                 disabled={!canEdit || isLoading || isSaving}
+                className="h-12 rounded-2xl bg-background/90"
               />
               {fieldErrors.company_latitude ? (
                 <p className="text-sm text-rose-600 dark:text-rose-300">{fieldErrors.company_latitude}</p>
@@ -499,6 +565,7 @@ export function GeolocationSettingsCard({ canEdit }) {
                 value={formValues.company_longitude}
                 onChange={handleChange('company_longitude')}
                 disabled={!canEdit || isLoading || isSaving}
+                className="h-12 rounded-2xl bg-background/90"
               />
               {fieldErrors.company_longitude ? (
                 <p className="text-sm text-rose-600 dark:text-rose-300">{fieldErrors.company_longitude}</p>
@@ -522,14 +589,21 @@ export function GeolocationSettingsCard({ canEdit }) {
               value={formValues.allowed_radius_meters}
               onChange={handleChange('allowed_radius_meters')}
               disabled={!canEdit || isLoading || isSaving}
+              className="h-12 rounded-2xl bg-background/90"
             />
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'settingsPage.locationValidation.radiusHint',
+                'Use um raio entre 10 e 5000 metros para definir a area esperada da empresa.',
+              )}
+            </p>
             {fieldErrors.allowed_radius_meters ? (
               <p className="text-sm text-rose-600 dark:text-rose-300">{fieldErrors.allowed_radius_meters}</p>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={!canEdit || isLoading || isSaving || !hasChanges}>
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+            <Button type="submit" disabled={!canEdit || isLoading || isSaving || !hasChanges} className="min-w-[132px] rounded-2xl">
               {isSaving ? (
                 <>
                   <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
@@ -548,6 +622,7 @@ export function GeolocationSettingsCard({ canEdit }) {
               variant="outline"
               onClick={handleReload}
               disabled={!canEdit || isLoading || isSaving}
+              className="rounded-2xl"
             >
               <RefreshCcw className={cn('mr-2 h-4 w-4', isLoading ? 'animate-spin' : '')} />
               {t('settingsPage.locationValidation.actions.reload')}

@@ -426,21 +426,10 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
           />
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!links?.customer_portal_url}
-            onClick={() => openUrl(links?.customer_portal_url)}
-            title={
-              links?.customer_portal_url ? undefined : t('settingsPage.plan.actions.portalDisabled')
-            }
-          >
-            <ExternalLink className="h-4 w-4" />
-            {t('settingsPage.plan.actions.portal')}
-          </Button>
-        </div>
+        {/*
+          Botao "Portal do Cliente" oculto temporariamente.
+          A funcionalidade ainda nao deve ficar visivel na interface.
+        */}
       </CardContent>
     </Card>
   )

@@ -120,50 +120,10 @@ export default function Settings() {
       <div className="grid gap-4 md:grid-cols-2">
         <PreferencesCard company={company} canEdit={canEditPreferences} onTimezoneSaved={reload} />
         <GeolocationSettingsCard canEdit={canEditPreferences} />
-        <Card className="border border-border/80 bg-card/90">
-          <CardHeader>
-            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-              {t('settingsPage.preferences.notifications')}
-            </p>
-            <CardTitle className="text-xl">{t('settingsPage.preferences.notificationsTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.preferences.email')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.preferences.emailHint')}</p>
-              </div>
-              <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.preferences.reminders')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.preferences.remindersHint')}</p>
-              </div>
-              <Switch checked={reminders} onCheckedChange={setReminders} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/80 bg-card/90">
-          <CardHeader className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                {t('settingsPage.preferences.critical')}
-              </p>
-              <CardTitle className="text-xl">{t('settingsPage.preferences.criticalTitle')}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">{t('settingsPage.preferences.criticalDescription')}</p>
-            <Button type="button" variant="destructive" className="rounded-xl" size="sm">
-              {t('settingsPage.actions.manageAccess')}
-            </Button>
-          </CardContent>
-        </Card>
+        {/*
+          Cards ocultos temporariamente.
+          "Notificacoes e alertas" e "Acesso administrativo" ainda nao possuem funcionalidade ativa.
+        */}
       </div>
   )
 
