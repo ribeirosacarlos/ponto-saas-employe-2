@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Pencil, Plus, RefreshCcw, Search, Trash2, Users } from 'lucide-react'
+import {
+  AlertTriangle,
+  CalendarCheck,
+  CreditCard,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  Search,
+  ShieldAlert,
+  Trash2,
+  Users,
+} from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -19,6 +31,9 @@ import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
 import { getEmployee } from '../services/modules/employees'
+import { useSettingsOverview } from '../hooks/useSettingsOverview'
+import { createExtraEmployeesCheckoutSession } from '../services/settings/createExtraEmployeesCheckoutSession'
+import { cn } from '../lib/utils'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager'] }
 const ROLE_OPTIONS = ['admin', 'manager', 'area_manager', 'employee']
@@ -42,11 +57,107 @@ const buildAssignForm = (employee = {}) => ({
   start_date: new Date().toISOString().slice(0, 10),
 })
 
+const ExtraEmployeesNotice = ({
+  extraEmployees,
+  onPay,
+  isPaying,
+  t,
+  formatDate,
+}) => {
+  if (!extraEmployees?.has_pending_payment) return null
+
+  const overdue = Boolean(extraEmployees.payment_overdue)
+  const Icon = overdue ? ShieldAlert : AlertTriangle
+
+  return (
+    <section
+      className={cn(
+        'rounded-3xl border p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5',
+        overdue ? 'border-rose-300/70 bg-rose-500/10' : 'border-amber-300/70 bg-amber-500/10',
+      )}
+    >
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+              overdue
+                ? 'bg-rose-500/15 text-rose-700 dark:text-rose-100'
+                : 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">
+                {overdue
+                  ? t('equipoPage.extraEmployees.overdueTitle')
+                  : t('equipoPage.extraEmployees.pendingTitle')}
+              </p>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-1 text-[11px] font-semibold',
+                  overdue
+                    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-100'
+                    : 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
+                )}
+              >
+                {overdue
+                  ? t('equipoPage.extraEmployees.badges.overdue')
+                  : t('equipoPage.extraEmployees.badges.pending')}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {t('equipoPage.extraEmployees.description', {
+                count: extraEmployees.pending_quantity ?? 0,
+              })}
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1">
+                {t('equipoPage.extraEmployees.pendingQuantity', {
+                  count: extraEmployees.pending_quantity ?? 0,
+                })}
+              </span>
+              <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1">
+                {t('equipoPage.extraEmployees.paidAllowance', {
+                  count: extraEmployees.paid_allowance ?? 0,
+                })}
+              </span>
+              {extraEmployees.payment_due_at ? (
+                <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1">
+                  {t('equipoPage.extraEmployees.dueAt', {
+                    date: formatDate(extraEmployees.payment_due_at),
+                  })}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <Button type="button" onClick={onPay} disabled={isPaying} className="rounded-full px-4">
+          {isPaying ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t('equipoPage.extraEmployees.redirecting')}
+            </>
+          ) : (
+            <>
+              <CreditCard className="h-4 w-4" />
+              {t('equipoPage.extraEmployees.payAction')}
+            </>
+          )}
+        </Button>
+      </div>
+    </section>
+  )
+}
 
 export default function Equipo() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const roles = useAuthStore((state) => state.roles)
+  const { data: settingsOverview, reload: reloadOverview } = useSettingsOverview()
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasManagementAccess = useMemo(
     () => canRenderCard(capabilities, MANAGEMENT_REQUIRES),
@@ -67,6 +178,7 @@ export default function Equipo() {
 
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [showShiftPreview, setShowShiftPreview] = useState(false)
+  const [isPayingExtraEmployees, setIsPayingExtraEmployees] = useState(false)
 
   const roleOptions = useMemo(
     () =>
@@ -174,6 +286,17 @@ export default function Equipo() {
     return `${parts[0] || '--'}:${parts[1] || '00'}`
   }
 
+  const formatOverviewDate = (value) => {
+    if (!value) return '--'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+    return date.toLocaleDateString(i18n.language, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
   const selectedEditShift = useMemo(
     () => shifts.find((shift) => shift.id === editForm.shift_id),
     [shifts, editForm.shift_id],
@@ -204,15 +327,40 @@ export default function Equipo() {
       } else {
         setPage(1)
       }
+      await reloadOverview()
       return
     }
 
     const emailError = result.error?.response?.data?.errors?.email?.[0]
+    const roleError = result.error?.response?.data?.errors?.role?.[0]
     toast({
       title: t('equipoPage.toasts.createError.title'),
-      description: emailError || t('equipoPage.toasts.createError.description'),
+      description: roleError || emailError || t('equipoPage.toasts.createError.description'),
       variant: 'error',
     })
+  }
+
+  const handleExtraEmployeesCheckout = async () => {
+    setIsPayingExtraEmployees(true)
+    try {
+      const response = await createExtraEmployeesCheckoutSession()
+      if (!response?.url) {
+        throw new Error(t('equipoPage.extraEmployees.errors.missingUrl'))
+      }
+
+      await reloadOverview()
+      window.location.assign(response.url)
+    } catch (err) {
+      toast({
+        title: t('equipoPage.extraEmployees.errors.title'),
+        description:
+          err?.response?.data?.message ||
+          err?.message ||
+          t('equipoPage.extraEmployees.errors.description'),
+        variant: 'error',
+      })
+      setIsPayingExtraEmployees(false)
+    }
   }
 
   const handleEditOpen = async (employee) => {
@@ -289,6 +437,7 @@ export default function Equipo() {
       setDeleteTarget(null)
       const targetPage = page > 1 && employees.length === 1 ? page - 1 : page
       await refreshEmployees(targetPage)
+      await reloadOverview()
       return
     }
 
@@ -415,6 +564,14 @@ export default function Equipo() {
               </Button>
             </>
           }
+        />
+
+        <ExtraEmployeesNotice
+          extraEmployees={settingsOverview?.usage?.extra_employees}
+          onPay={handleExtraEmployeesCheckout}
+          isPaying={isPayingExtraEmployees}
+          t={t}
+          formatDate={formatOverviewDate}
         />
 
         <section className="rounded-3xl border border-border/80 bg-card/95 p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5">

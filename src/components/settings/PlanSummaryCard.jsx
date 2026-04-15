@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
   BadgeCheck,
   CalendarClock,
   CreditCard,
-  ExternalLink,
   Loader2,
+  ShieldAlert,
   Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
@@ -14,16 +14,7 @@ import { Button } from '../ui/button'
 import { cn } from '../../lib/utils'
 import { useDateTime } from '../../hooks/useDateTime'
 import { useToast } from '../ui/use-toast'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog'
-import { syncExtraEmployees } from '../../services/settings/syncExtraEmployees'
+import { createExtraEmployeesCheckoutSession } from '../../services/settings/createExtraEmployeesCheckoutSession'
 
 const STATUS_TONES = {
   active: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/70 dark:text-emerald-100',
@@ -46,7 +37,7 @@ const formatPrice = (plan, t) => {
 }
 
 const formatCents = (value, currency = 'BRL') => {
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === null || value === undefined || value === '') return '--'
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency,
@@ -83,215 +74,124 @@ const LimitsList = ({ limits, t }) => {
   )
 }
 
-const ExtraEmployeesAlert = ({
-  employees,
-  currency,
+const ExtraEmployeesPendingAlert = ({
+  extraEmployees,
+  canManageBilling,
   onOverviewReload,
   t,
+  formatDateTime,
 }) => {
   const { toast } = useToast()
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [syncState, setSyncState] = useState('idle')
-  const [syncError, setSyncError] = useState('')
-  const [syncResult, setSyncResult] = useState(null)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
-  const limit = employees?.limit ?? 0
-  const current = employees?.current ?? 0
-  const extraEmployees = Math.max(0, current - limit)
-  const fallbackUnitPriceCents = 1500
-  const summary = syncResult?.summary || null
-  const effectiveCurrent = summary?.active_employees ?? current
-  const effectiveLimit = summary?.included_employees ?? limit
-  const effectiveExtraEmployees = summary?.extra_employees ?? extraEmployees
-  const unitPriceCents = summary?.extra_employee_price_cents ?? fallbackUnitPriceCents
-  const extraTotalCents = summary?.extra_total_cents ?? effectiveExtraEmployees * unitPriceCents
-  const totalPriceCents = summary?.total_price_cents ?? null
-  const isSyncing = syncState === 'syncing'
-  const isSuccess = syncState === 'success'
+  if (!extraEmployees?.has_pending_payment) return null
 
-  const handleSync = async () => {
-    setSyncState('syncing')
-    setSyncError('')
+  const tone = extraEmployees.payment_overdue
+    ? {
+        container: 'border-rose-300/70 bg-rose-500/10',
+        icon: 'bg-rose-500/15 text-rose-700 dark:text-rose-100',
+        badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-100',
+        Icon: ShieldAlert,
+      }
+    : {
+        container: 'border-amber-300/70 bg-amber-500/10',
+        icon: 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
+        badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
+        Icon: AlertTriangle,
+      }
 
+  const handleCheckout = async () => {
+    setIsRedirecting(true)
     try {
-      const response = await syncExtraEmployees()
-      setSyncResult(response)
-      setSyncState('success')
-      setConfirmOpen(false)
-
-      toast({
-        title: t('settingsPage.plan.extraEmployees.toast.successTitle'),
-        description:
-          response?.message || t('settingsPage.plan.extraEmployees.toast.successDescription'),
-        variant: 'success',
-      })
+      const response = await createExtraEmployeesCheckoutSession()
+      if (!response?.url) {
+        throw new Error(t('settingsPage.plan.extraEmployees.errors.missingUrl'))
+      }
 
       await onOverviewReload?.()
+      window.location.assign(response.url)
     } catch (err) {
-      const status = err?.response?.status
-      const apiMessage =
-        err?.response?.data?.message ||
-        err?.userFriendlyMessage ||
-        err?.message
-
-      const message =
-        status === 403
-          ? t('settingsPage.plan.extraEmployees.errors.forbidden')
-          : status === 422
-            ? apiMessage || t('settingsPage.plan.extraEmployees.errors.unprocessable')
-            : t('settingsPage.plan.extraEmployees.errors.generic')
-
-      setSyncState('error')
-      setSyncError(message)
-
       toast({
-        title: t('settingsPage.plan.extraEmployees.toast.errorTitle'),
-        description: message,
+        title: t('settingsPage.plan.extraEmployees.toast.checkoutErrorTitle'),
+        description:
+          err?.response?.data?.message ||
+          err?.message ||
+          t('settingsPage.plan.extraEmployees.errors.checkout'),
         variant: 'error',
       })
+      setIsRedirecting(false)
     }
   }
 
   return (
-    <>
-      <div
-        className={cn(
-          'rounded-2xl border p-4',
-          isSuccess
-            ? 'border-emerald-300/70 bg-emerald-500/10'
-            : 'border-amber-300/70 bg-amber-500/10',
-        )}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
-              isSuccess
-                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-100'
-                : 'bg-amber-500/15 text-amber-700 dark:text-amber-100',
-            )}
-          >
-            <AlertTriangle className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1 space-y-3">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">
-                {isSuccess
-                  ? t('settingsPage.plan.extraEmployees.successTitle')
-                  : t('settingsPage.plan.extraEmployees.title')}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isSuccess
-                  ? t('settingsPage.plan.extraEmployees.successDescription')
-                  : t('settingsPage.plan.extraEmployees.description')}
-              </p>
-            </div>
-
-            <div className="grid gap-2 md:grid-cols-2">
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.included')}
-                value={effectiveLimit}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.current')}
-                value={effectiveCurrent}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.extra')}
-                value={effectiveExtraEmployees}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.unitPrice')}
-                value={formatCents(unitPriceCents, currency)}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.nextInvoiceExtra')}
-                value={formatCents(extraTotalCents, currency)}
-              />
-              <DetailItem
-                label={t('settingsPage.plan.extraEmployees.fields.nextInvoiceTotal')}
-                value={totalPriceCents !== null ? formatCents(totalPriceCents, currency) : '—'}
-              />
-            </div>
-
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>{t('settingsPage.plan.extraEmployees.notes.noImmediateCharge')}</p>
-              <p>{t('settingsPage.plan.extraEmployees.notes.nextBillingOnly')}</p>
-              <p>{t('settingsPage.plan.extraEmployees.notes.noProration')}</p>
-            </div>
-
-            {syncError ? (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {syncError}
-              </div>
-            ) : null}
-
-            {!isSuccess ? (
-              <Button type="button" size="sm" onClick={() => setConfirmOpen(true)}>
-                {t('settingsPage.plan.extraEmployees.actions.confirm')}
-              </Button>
-            ) : null}
-          </div>
+    <div className={cn('rounded-2xl border p-4', tone.container)}>
+      <div className="flex items-start gap-3">
+        <div className={cn('mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl', tone.icon)}>
+          <tone.Icon className="h-5 w-5" />
         </div>
-      </div>
-
-      <Dialog open={confirmOpen} onOpenChange={(open) => !isSyncing && setConfirmOpen(open)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('settingsPage.plan.extraEmployees.modal.title')}</DialogTitle>
-            <DialogDescription>
-              {t('settingsPage.plan.extraEmployees.modal.description')}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 pt-2">
-            <div className="rounded-xl border border-border/70 bg-muted/30 p-3 text-sm text-foreground">
-              <p>{t('settingsPage.plan.extraEmployees.modal.planLimit', { limit })}</p>
-              <p>{t('settingsPage.plan.extraEmployees.modal.currentEmployees', { current })}</p>
-              <p>{t('settingsPage.plan.extraEmployees.modal.extraEmployees', { extra: extraEmployees })}</p>
-              <p>
-                {t('settingsPage.plan.extraEmployees.modal.unitPrice', {
-                  price: formatCents(unitPriceCents, currency),
-                })}
-              </p>
-              <p>
-                {t('settingsPage.plan.extraEmployees.modal.nextInvoiceExtra', {
-                  price: formatCents(extraTotalCents, currency),
-                })}
-              </p>
-            </div>
-
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>{t('settingsPage.plan.extraEmployees.notes.noImmediateCharge')}</p>
-              <p>{t('settingsPage.plan.extraEmployees.notes.nextBillingOnly')}</p>
-              <p>{t('settingsPage.plan.extraEmployees.notes.noProration')}</p>
-            </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">
+              {extraEmployees.payment_overdue
+                ? t('settingsPage.plan.extraEmployees.overdueTitle')
+                : t('settingsPage.plan.extraEmployees.pendingTitle')}
+            </p>
+            <span className={cn('rounded-full px-2 py-1 text-[11px] font-semibold', tone.badge)}>
+              {extraEmployees.payment_overdue
+                ? t('settingsPage.plan.extraEmployees.badges.overdue')
+                : t('settingsPage.plan.extraEmployees.badges.pending')}
+            </span>
           </div>
 
-          <DialogFooter className="pt-2">
-            <DialogClose asChild>
-              <Button type="button" variant="ghost" disabled={isSyncing}>
-                {t('common.actions.cancel')}
-              </Button>
-            </DialogClose>
-            <Button type="button" onClick={handleSync} disabled={isSyncing}>
-              {isSyncing ? (
+          <p className="text-sm text-muted-foreground">
+            {t('settingsPage.plan.extraEmployees.pendingDescription', {
+              count: extraEmployees.pending_quantity ?? 0,
+            })}
+          </p>
+
+          <div className="grid gap-2 md:grid-cols-3">
+            <DetailItem
+              label={t('settingsPage.plan.extraEmployees.fields.pendingQuantity')}
+              value={extraEmployees.pending_quantity ?? 0}
+            />
+            <DetailItem
+              label={t('settingsPage.plan.extraEmployees.fields.dueAt')}
+              value={extraEmployees.payment_due_at ? formatDateTime(extraEmployees.payment_due_at) : null}
+            />
+            <DetailItem
+              label={t('settingsPage.plan.extraEmployees.fields.paidAllowance')}
+              value={extraEmployees.paid_allowance ?? 0}
+            />
+          </div>
+
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <p>{t('settingsPage.plan.extraEmployees.notes.pendingKeepsQuantity')}</p>
+            <p>
+              {extraEmployees.payment_overdue
+                ? t('settingsPage.plan.extraEmployees.notes.overdueBlocksNewEmployees')
+                : t('settingsPage.plan.extraEmployees.notes.pendingAllowsGrace')}
+            </p>
+          </div>
+
+          {canManageBilling ? (
+            <Button type="button" size="sm" onClick={handleCheckout} disabled={isRedirecting}>
+              {isRedirecting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('settingsPage.plan.extraEmployees.actions.syncing')}
+                  {t('settingsPage.plan.extraEmployees.actions.redirecting')}
                 </>
               ) : (
-                t('settingsPage.plan.extraEmployees.actions.confirmModal')
+                t('settingsPage.plan.extraEmployees.actions.payNow')
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          ) : null}
+        </div>
+      </div>
+    </div>
   )
 }
 
-export function PlanSummaryCard({ billing, usage, links, canManageBilling = false, onOverviewReload }) {
+export function PlanSummaryCard({ billing, usage, canManageBilling = false, onOverviewReload }) {
   const { t } = useTranslation()
   const { formatDateTime } = useDateTime()
 
@@ -300,6 +200,7 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
   const plan = billing?.plan || {}
   const subscription = billing?.subscription || {}
   const employees = usage?.employees || {}
+  const extraEmployees = usage?.extra_employees || {}
 
   const hasLimit = employees.limit !== null && employees.limit !== undefined
   const usagePercent = hasLimit
@@ -314,7 +215,8 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
     subscription.subscription_status ||
     t('settingsPage.plan.status.unknown')
 
-  const nextDate = subscription.trial_ends_at || subscription.current_period_end || subscription.subscription_ends_at
+  const nextDate =
+    subscription.trial_ends_at || subscription.current_period_end || subscription.subscription_ends_at
   const nextDateLabel = subscription.trial_ends_at
     ? t('settingsPage.plan.labels.trialEnds')
     : subscription.current_period_end
@@ -322,15 +224,6 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
       : subscription.subscription_ends_at
         ? t('settingsPage.plan.labels.periodEnds')
         : null
-
-  const limits = useMemo(() => plan.limits || null, [plan.limits])
-  const shouldShowExtraEmployeesAlert =
-    canManageBilling && Boolean(employees.over_limit) && hasLimit
-
-  const openUrl = (url) => {
-    if (!url || typeof window === 'undefined') return
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
 
   return (
     <Card className="border border-border/80 bg-card/90">
@@ -347,9 +240,7 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
               <CardTitle className="text-xl font-semibold text-foreground">
                 {plan.name || t('settingsPage.plan.unknown')}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t('settingsPage.plan.subtitle')}
-              </p>
+              <p className="text-sm text-muted-foreground">{t('settingsPage.plan.subtitle')}</p>
             </div>
           </div>
           {statusLabel ? (
@@ -368,10 +259,7 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
 
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
-          <DetailItem
-            label={t('settingsPage.plan.labels.price')}
-            value={formatPrice(plan, t)}
-          />
+          <DetailItem label={t('settingsPage.plan.labels.price')} value={formatPrice(plan, t)} />
           <DetailItem
             label={t('settingsPage.plan.labels.interval')}
             value={intervalLabel(plan.billing_interval, t)}
@@ -417,19 +305,37 @@ export function PlanSummaryCard({ billing, usage, links, canManageBilling = fals
           ) : null}
         </div>
 
-        {shouldShowExtraEmployeesAlert ? (
-          <ExtraEmployeesAlert
-            employees={employees}
-            currency={plan.currency || 'BRL'}
-            onOverviewReload={onOverviewReload}
-            t={t}
+        <div className="grid gap-3 md:grid-cols-3">
+          <DetailItem
+            label={t('settingsPage.plan.extraEmployees.fields.pendingQuantity')}
+            value={extraEmployees.pending_quantity ?? 0}
           />
-        ) : null}
+          <DetailItem
+            label={t('settingsPage.plan.extraEmployees.fields.paidAllowance')}
+            value={extraEmployees.paid_allowance ?? 0}
+          />
+          <DetailItem
+            label={t('settingsPage.plan.labels.nextCharge')}
+            value={
+              extraEmployees.payment_due_at ? (
+                <span className="inline-flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  {formatDateTime(extraEmployees.payment_due_at)}
+                </span>
+              ) : null
+            }
+          />
+        </div>
 
-        {/*
-          Botao "Portal do Cliente" oculto temporariamente.
-          A funcionalidade ainda nao deve ficar visivel na interface.
-        */}
+        <ExtraEmployeesPendingAlert
+          extraEmployees={extraEmployees}
+          canManageBilling={canManageBilling}
+          onOverviewReload={onOverviewReload}
+          t={t}
+          formatDateTime={formatDateTime}
+        />
+
+        <LimitsList limits={plan.limits || null} t={t} />
       </CardContent>
     </Card>
   )

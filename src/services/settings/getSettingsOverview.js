@@ -99,8 +99,18 @@ import { api } from '../http/api'
  */
 
 /**
+ * @typedef {Object} SettingsUsageExtraEmployees
+ * @property {boolean} [has_pending_payment]
+ * @property {number} [pending_quantity]
+ * @property {string | null} [payment_due_at]
+ * @property {boolean} [payment_overdue]
+ * @property {number} [paid_allowance]
+ */
+
+/**
  * @typedef {Object} SettingsUsage
  * @property {SettingsUsageEmployees} [employees]
+ * @property {SettingsUsageExtraEmployees} [extra_employees]
  */
 
 /**
@@ -200,12 +210,21 @@ const normalizeUsage = (usage) => {
   if (!usage) return null
   const payload = usage || {}
   const employees = payload.employees || {}
+  const extraEmployees = payload.extra_employees ?? payload.extraEmployees ?? {}
   return {
     ...payload,
     employees: {
       current: employees.current ?? 0,
       limit: employees.limit ?? null,
       over_limit: employees.over_limit ?? employees.overLimit ?? false,
+    },
+    extra_employees: {
+      has_pending_payment:
+        extraEmployees.has_pending_payment ?? extraEmployees.hasPendingPayment ?? false,
+      pending_quantity: extraEmployees.pending_quantity ?? extraEmployees.pendingQuantity ?? 0,
+      payment_due_at: parseDate(extraEmployees.payment_due_at ?? extraEmployees.paymentDueAt),
+      payment_overdue: extraEmployees.payment_overdue ?? extraEmployees.paymentOverdue ?? false,
+      paid_allowance: extraEmployees.paid_allowance ?? extraEmployees.paidAllowance ?? 0,
     },
   }
 }
