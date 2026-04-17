@@ -30,6 +30,7 @@ import { AppTopBar } from '../components/ui/AppTopBar'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { normalizeEmployee, useEmployeesManagement } from '../features/employees/useEmployeesManagement'
+import { useAreas } from '../hooks/useAreas'
 import { getEmployee } from '../services/modules/employees'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { createExtraEmployeesCheckoutSession } from '../services/settings/createExtraEmployeesCheckoutSession'
@@ -37,11 +38,14 @@ import { cn } from '../lib/utils'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager'] }
 const ROLE_OPTIONS = ['admin', 'manager', 'area_manager', 'employee']
+const MANAGED_AREAS_ROLES = new Set(['manager', 'area_manager'])
 
 const buildCreateForm = () => ({
   name: '',
   email: '',
   role: 'employee',
+  area_id: '',
+  managed_area_ids: [],
   shift_id: '',
 })
 
@@ -49,6 +53,17 @@ const buildEditForm = (employee = {}) => ({
   name: employee.name || '',
   email: employee.email || '',
   role: employee.role || 'employee',
+  area_id:
+    employee.area_id !== null && employee.area_id !== undefined && employee.area_id !== ''
+      ? String(employee.area_id)
+      : employee.areaId !== null && employee.areaId !== undefined && employee.areaId !== ''
+        ? String(employee.areaId)
+        : '',
+  managed_area_ids: Array.isArray(employee.managed_area_ids)
+    ? employee.managed_area_ids.map((value) => String(value))
+    : Array.isArray(employee.managedAreaIds)
+      ? employee.managedAreaIds.map((value) => String(value))
+      : [],
   shift_id: employee.shift_id ?? employee.shiftId ?? '',
 })
 
@@ -153,6 +168,40 @@ const ExtraEmployeesNotice = ({
   )
 }
 
+const roleSupportsManagedAreas = (role) => MANAGED_AREAS_ROLES.has(role)
+
+const normalizeFormRoleState = (nextRole, previousForm) => ({
+  ...previousForm,
+  role: nextRole,
+  managed_area_ids: roleSupportsManagedAreas(nextRole)
+    ? previousForm.managed_area_ids || []
+    : [],
+})
+
+const buildEmployeePayload = (form) => {
+  const payload = {
+    name: form.name.trim(),
+    email: form.email.trim(),
+    role: form.role,
+  }
+
+  if (form.area_id) {
+    payload.area_id = form.area_id
+  }
+
+  if (form.shift_id) {
+    payload.shift_id = form.shift_id
+  }
+
+  if (roleSupportsManagedAreas(form.role)) {
+    payload.managed_area_ids = Array.isArray(form.managed_area_ids)
+      ? form.managed_area_ids.filter(Boolean)
+      : []
+  }
+
+  return payload
+}
+
 export default function Equipo() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
@@ -163,6 +212,17 @@ export default function Equipo() {
     () => canRenderCard(capabilities, MANAGEMENT_REQUIRES),
     [capabilities],
   )
+  const { areas, loading: areasLoading, reload: reloadAreas } = useAreas({
+    enabled: hasManagementAccess,
+    autoLoad: false,
+    onError: (message) => {
+      toast({
+        title: t('equipoPage.toasts.areasError.title'),
+        description: message || t('equipoPage.toasts.areasError.description'),
+        variant: 'error',
+      })
+    },
+  })
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState(buildCreateForm)
@@ -252,7 +312,10 @@ export default function Equipo() {
     if (createOpen || editOpen || assignOpen) {
       ensureShifts()
     }
-  }, [assignOpen, createOpen, editOpen, ensureShifts])
+    if (createOpen || editOpen) {
+      reloadAreas()
+    }
+  }, [assignOpen, createOpen, editOpen, ensureShifts, reloadAreas])
 
   useEffect(() => {
     if (createOpen) {
@@ -298,20 +361,13 @@ export default function Equipo() {
   }
 
   const selectedEditShift = useMemo(
-    () => shifts.find((shift) => shift.id === editForm.shift_id),
+    () => shifts.find((shift) => String(shift.id) === String(editForm.shift_id)),
     [shifts, editForm.shift_id],
   )
 
   const handleCreateSubmit = async (event) => {
     event.preventDefault()
-    const payload = {
-      name: createForm.name.trim(),
-      email: createForm.email.trim(),
-      role: createForm.role,
-    }
-    if (createForm.shift_id) {
-      payload.shift_id = createForm.shift_id
-    }
+    const payload = buildEmployeePayload(createForm)
 
     const result = await createEmployeeEntry(payload)
     if (result.ok) {
@@ -394,14 +450,7 @@ export default function Equipo() {
   const handleEditSubmit = async (event) => {
     event.preventDefault()
     if (!selectedEmployee?.id) return
-    const payload = {
-      name: editForm.name.trim(),
-      email: editForm.email.trim(),
-      role: editForm.role,
-    }
-    if (editForm.shift_id) {
-      payload.shift_id = editForm.shift_id
-    }
+    const payload = buildEmployeePayload(editForm)
 
     const result = await updateEmployeeEntry(selectedEmployee.id, payload)
     if (result.ok) {
@@ -490,6 +539,82 @@ export default function Equipo() {
         t('equipoPage.toasts.assignError.description'),
       variant: 'error',
     })
+  }
+
+  const handleRoleChange = (setter) => (event) => {
+    const nextRole = event.target.value
+    setter((prev) => normalizeFormRoleState(nextRole, prev))
+  }
+
+  const handleManagedAreasChange = (setter) => (event) => {
+    const values = Array.from(event.target.selectedOptions || []).map((option) => option.value)
+    setter((prev) => ({ ...prev, managed_area_ids: values }))
+  }
+
+  const renderAreaFields = (form, setter, prefix, disabled = false) => {
+    const showManagedAreas = roleSupportsManagedAreas(form.role)
+
+    return (
+      <>
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-area`}>{t('equipoPage.form.areaLabel')}</Label>
+          <select
+            id={`${prefix}-area`}
+            name="area_id"
+            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            value={form.area_id}
+            onChange={(event) =>
+              setter((prev) => ({ ...prev, area_id: event.target.value }))
+            }
+            required={form.role === 'employee'}
+            disabled={disabled}
+          >
+            <option value="">{t('equipoPage.form.areaPlaceholder')}</option>
+            {areasLoading ? (
+              <option value="" disabled>
+                {t('equipoPage.areas.loading')}
+              </option>
+            ) : areas.length === 0 ? (
+              <option value="" disabled>
+                {t('equipoPage.areas.empty')}
+              </option>
+            ) : (
+              areas.map((area) => (
+                <option key={area.id} value={String(area.id)}>
+                  {area.name || t('equipoPage.areas.unnamed')}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        {showManagedAreas ? (
+          <div className="space-y-2">
+            <Label htmlFor={`${prefix}-managed-areas`}>
+              {t('equipoPage.form.managedAreasLabel')}
+            </Label>
+            <select
+              id={`${prefix}-managed-areas`}
+              name="managed_area_ids"
+              multiple
+              className="min-h-32 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              value={form.managed_area_ids}
+              onChange={handleManagedAreasChange(setter)}
+              disabled={disabled || areasLoading || areas.length === 0}
+            >
+              {areas.map((area) => (
+                <option key={area.id} value={String(area.id)}>
+                  {area.name || t('equipoPage.areas.unnamed')}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {t('equipoPage.form.managedAreasHint')}
+            </p>
+          </div>
+        ) : null}
+      </>
+    )
   }
 
   if (!hasManagementAccess) {
@@ -657,6 +782,9 @@ export default function Equipo() {
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                               <span>{formatRole(employee.role)}</span>
+                              <span>
+                                {employee.area_name || employee.areaName || t('equipoPage.table.emptyArea')}
+                              </span>
                               <span>{formatDate(employee.createdAt)}</span>
                               {employee.shiftId || employee.shiftName ? (
                                 <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
@@ -713,6 +841,7 @@ export default function Equipo() {
                         <th className="px-3 py-3">{t('equipoPage.table.headers.name')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.email')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.role')}</th>
+                        <th className="px-3 py-3">{t('equipoPage.table.headers.area')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.createdAt')}</th>
                         <th className="px-3 py-3 text-right">{t('equipoPage.table.headers.actions')}</th>
                       </tr>
@@ -743,6 +872,19 @@ export default function Equipo() {
                               {employee.email || t('equipoPage.table.emptyEmail')}
                             </td>
                             <td className="px-3 py-4">{formatRole(employee.role)}</td>
+                            <td className="px-3 py-4">
+                              <div className="space-y-1">
+                                <p>{employee.area_name || employee.areaName || t('equipoPage.table.emptyArea')}</p>
+                                {Array.isArray(employee.managed_areas) && employee.managed_areas.length > 0 ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    {employee.managed_areas
+                                      .map((area) => area?.name)
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </td>
                             <td className="px-3 py-4">{formatDate(employee.createdAt)}</td>
                             <td className="px-3 py-4">
                               <div className="flex flex-wrap justify-end gap-2">
@@ -866,7 +1008,7 @@ export default function Equipo() {
                 name="role"
                 className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={createForm.role}
-                onChange={(event) => setCreateForm((prev) => ({ ...prev, role: event.target.value }))}
+                onChange={handleRoleChange(setCreateForm)}
               >
                 {roleOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -875,6 +1017,7 @@ export default function Equipo() {
                 ))}
               </select>
             </div>
+            {renderAreaFields(createForm, setCreateForm, 'create')}
             <div className="space-y-2">
               <Label htmlFor="create-shift">{t('equipoPage.form.shiftLabel')}</Label>
               <select
@@ -966,7 +1109,7 @@ export default function Equipo() {
                 name="role"
                 className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={editForm.role}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, role: event.target.value }))}
+                onChange={handleRoleChange(setEditForm)}
                 disabled={editLoading}
               >
                 {roleOptions.map((option) => (
@@ -976,6 +1119,7 @@ export default function Equipo() {
                 ))}
               </select>
             </div>
+            {renderAreaFields(editForm, setEditForm, 'edit', editLoading)}
             <div className="space-y-2">
               <Label htmlFor="edit-shift">{t('equipoPage.form.shiftLabel')}</Label>
               <select

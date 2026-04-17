@@ -381,6 +381,7 @@ const en = {
         superAdminCompanies: 'Companies',
         settings: 'Settings',
         calendar: 'Calendar',
+        areas: 'Areas',
         shifts: 'Shifts',
         adjustments: 'Adjustments',
         closeTimesheet: 'Close timesheet',
@@ -561,8 +562,70 @@ const en = {
             title: 'Delete error',
             description: 'We could not remove this shift now.',
           },
+      },
+    },
+    adminAreasPage: {
+      title: 'Areas',
+      subtitle: 'Create and manage company areas.',
+      actions: {
+        refresh: 'Refresh',
+        create: 'New area',
+        edit: 'Edit',
+        delete: 'Delete',
+      },
+      card: {
+        identifier: 'ID {{id}}',
+      },
+      states: {
+        noPermissionTitle: 'Restricted access',
+        noPermissionDescription: 'Only admins can manage areas.',
+        errorTitle: 'Failed to load areas',
+        emptyTitle: 'No areas created',
+        emptyDescription: 'Create the first area to organize the team.',
+        cardFallback: 'Area',
+      },
+      dialog: {
+        createTitle: 'New area',
+        editTitle: 'Edit area',
+        description: 'Define the area name.',
+        deleteTitle: 'Delete area',
+        deleteDescription: 'Do you want to delete the area {{name}}?',
+      },
+      form: {
+        nameLabel: 'Area name',
+        namePlaceholder: 'e.g. Operations',
+      },
+      toasts: {
+        loadError: {
+          title: 'Failed to load areas',
+          description: 'We could not load the areas.',
+        },
+        nameRequired: {
+          title: 'Enter an area name',
+          description: 'Provide a name to continue.',
+        },
+        created: {
+          title: 'Area created',
+          description: 'The area has been created.',
+        },
+        updated: {
+          title: 'Area updated',
+          description: 'Changes saved successfully.',
+        },
+        saveError: {
+          title: 'Failed to save area',
+          description: 'We could not save the area.',
+        },
+        deleted: {
+          title: 'Area deleted',
+          description: 'The area {{name}} has been removed.',
+        },
+        deleteError: {
+          title: 'Failed to delete area',
+          description: 'We could not delete the area.',
         },
       },
+    },
     adminTimezonePage: {
       title: 'Company timezone',
       subtitle:
@@ -1558,11 +1621,13 @@ const en = {
         emptyDescription: 'Try a different search or add a new employee.',
         emptyName: 'Name unavailable',
         emptyEmail: 'Email unavailable',
+        emptyArea: 'No area',
         emptyDate: 'No date',
         headers: {
           name: 'Name',
           email: 'Email',
           role: 'Role',
+          area: 'Area',
           createdAt: 'Created at',
           actions: 'Actions',
         },
@@ -1594,6 +1659,10 @@ const en = {
         nameLabel: 'Name',
         emailLabel: 'Email',
         roleLabel: 'Role',
+        areaLabel: 'Area',
+        areaPlaceholder: 'Select an area',
+        managedAreasLabel: 'Managed areas',
+        managedAreasHint: 'Hold Ctrl or Cmd to select multiple areas.',
         shiftLabel: 'Shift',
         shiftPlaceholder: 'Select a shift',
         passwordLabel: 'Password (optional)',
@@ -1623,6 +1692,11 @@ const en = {
         empty: 'No shifts available',
         unnamed: 'Unnamed shift',
       },
+      areas: {
+        loading: 'Loading areas...',
+        empty: 'No areas available',
+        unnamed: 'Unnamed area',
+      },
       extraEmployees: {
         pendingTitle: 'Pending payment for extra employees',
         overdueTitle: 'Overdue payment for extra employees',
@@ -1650,6 +1724,10 @@ const en = {
         shiftsError: {
           title: 'Failed to load shifts',
           description: 'We could not load shifts.',
+        },
+        areasError: {
+          title: 'Failed to load areas',
+          description: 'We could not load areas.',
         },
         createSuccess: {
           title: 'Employee created',

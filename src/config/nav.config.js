@@ -107,6 +107,15 @@ export const NAV_ITEMS = [
     showInDesktop: true,
   },
   {
+    id: 'adminAreas',
+    labelKey: 'sidebar.items.areas',
+    icon: Building2,
+    page: 'adminAreas',
+    group: 'admin',
+    showInDrawer: true,
+    showInDesktop: true,
+  },
+  {
     id: 'adminDocuments',
     labelKey: 'sidebar.items.documents',
     icon: FileText,

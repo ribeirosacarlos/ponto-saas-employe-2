@@ -23,6 +23,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
 import SuperAdminCompanies from './pages/SuperAdminCompanies.jsx'
 import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
+import AdminAreas from './pages/AdminAreas.jsx'
 import AdminDocuments from './pages/AdminDocuments.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
@@ -461,6 +462,8 @@ export default function App() {
         return <AdminDocuments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminShifts':
         return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminAreas':
+        return <AdminAreas sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
         return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminCompanyTimezone':

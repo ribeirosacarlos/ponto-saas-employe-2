@@ -378,6 +378,7 @@ const es = {
         superAdminCompanies: 'Empresas',
         settings: 'Configuración',
         calendar: 'Calendario',
+        areas: 'Areas',
         shifts: 'Jornadas',
         adjustments: 'Ajustes',
         closeTimesheet: 'Cerrar hoja',
@@ -557,6 +558,68 @@ const es = {
         deleteError: {
           title: 'Error al eliminar',
           description: 'No pudimos remover esta jornada ahora.',
+        },
+      },
+    },
+    adminAreasPage: {
+      title: 'Areas',
+      subtitle: 'Crea y gestiona las areas de la empresa.',
+      actions: {
+        refresh: 'Actualizar',
+        create: 'Nueva area',
+        edit: 'Editar',
+        delete: 'Eliminar',
+      },
+      card: {
+        identifier: 'ID {{id}}',
+      },
+      states: {
+        noPermissionTitle: 'Acceso restringido',
+        noPermissionDescription: 'Solo administradores pueden gestionar areas.',
+        errorTitle: 'Error al cargar areas',
+        emptyTitle: 'No hay areas creadas',
+        emptyDescription: 'Crea la primera area para organizar el equipo.',
+        cardFallback: 'Area',
+      },
+      dialog: {
+        createTitle: 'Nueva area',
+        editTitle: 'Editar area',
+        description: 'Define el nombre del area.',
+        deleteTitle: 'Eliminar area',
+        deleteDescription: 'Quieres eliminar el area {{name}}?',
+      },
+      form: {
+        nameLabel: 'Nombre del area',
+        namePlaceholder: 'Ej.: Operaciones',
+      },
+      toasts: {
+        loadError: {
+          title: 'Error al cargar areas',
+          description: 'No se pudieron cargar las areas.',
+        },
+        nameRequired: {
+          title: 'Ingresa el nombre del area',
+          description: 'Define un nombre para continuar.',
+        },
+        created: {
+          title: 'Area creada',
+          description: 'El area fue creada.',
+        },
+        updated: {
+          title: 'Area actualizada',
+          description: 'Los cambios fueron guardados.',
+        },
+        saveError: {
+          title: 'Error al guardar area',
+          description: 'No se pudo guardar el area.',
+        },
+        deleted: {
+          title: 'Area eliminada',
+          description: 'El area {{name}} fue removida.',
+        },
+        deleteError: {
+          title: 'Error al eliminar area',
+          description: 'No se pudo eliminar el area.',
         },
       },
     },
@@ -1556,11 +1619,13 @@ const es = {
         emptyDescription: 'Prueba otra busqueda o crea un nuevo colaborador.',
         emptyName: 'Nombre no disponible',
         emptyEmail: 'Correo no disponible',
+        emptyArea: 'Sin area',
         emptyDate: 'Sin fecha',
         headers: {
           name: 'Nombre',
           email: 'Correo',
           role: 'Rol',
+          area: 'Area',
           createdAt: 'Creado en',
           actions: 'Acciones',
         },
@@ -1592,6 +1657,10 @@ const es = {
         nameLabel: 'Nombre',
         emailLabel: 'Correo',
         roleLabel: 'Rol',
+        areaLabel: 'Area',
+        areaPlaceholder: 'Selecciona un area',
+        managedAreasLabel: 'Areas gestionadas',
+        managedAreasHint: 'Mantén Ctrl o Cmd para seleccionar varias areas.',
         shiftLabel: 'Jornada',
         shiftPlaceholder: 'Selecciona una jornada',
         passwordLabel: 'Contrasena (opcional)',
@@ -1621,6 +1690,11 @@ const es = {
         empty: 'No hay jornadas disponibles',
         unnamed: 'Jornada sin nombre',
       },
+      areas: {
+        loading: 'Cargando areas...',
+        empty: 'No hay areas disponibles',
+        unnamed: 'Area sin nombre',
+      },
       extraEmployees: {
         pendingTitle: 'Pago pendiente de colaboradores extra',
         overdueTitle: 'Pago vencido de colaboradores extra',
@@ -1648,6 +1722,10 @@ const es = {
         shiftsError: {
           title: 'Error al cargar jornadas',
           description: 'No se pudo cargar las jornadas.',
+        },
+        areasError: {
+          title: 'Error al cargar areas',
+          description: 'No se pudieron cargar las areas.',
         },
         createSuccess: {
           title: 'Colaborador creado',

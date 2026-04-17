@@ -6,6 +6,7 @@ import {
   listEmployees,
   updateEmployee,
 } from '../../services/modules/employees'
+import { normalizeArea } from '../../services/modules/areas'
 import { listShifts } from '../../services/modules/shifts'
 
 const ROLE_PRIORITY = ['admin', 'manager', 'area_manager', 'employee']
@@ -76,6 +77,54 @@ export const normalizeEmployee = (employee = {}, index = 0) => {
     employee?.shift_label ??
     ''
 
+  const directArea = employee?.area ? normalizeArea(employee.area, 0) : null
+  const areaId =
+    employee?.area_id ??
+    employee?.areaId ??
+    directArea?.id ??
+    employee?.department_id ??
+    ''
+
+  const areaName =
+    directArea?.name ??
+    employee?.area_name ??
+    employee?.areaName ??
+    employee?.department_name ??
+    ''
+
+  const managedAreaItemsSource =
+    employee?.managed_areas ??
+    employee?.managedAreas ??
+    employee?.areas_managed ??
+    employee?.areasManaged ??
+    []
+
+  const managedAreas = Array.isArray(managedAreaItemsSource)
+    ? managedAreaItemsSource
+        .map((area, areaIndex) => {
+          if (area && typeof area === 'object') return normalizeArea(area, areaIndex)
+          if (area === null || area === undefined || area === '') return null
+          return normalizeArea({ id: area }, areaIndex)
+        })
+        .filter(Boolean)
+    : []
+
+  const managedAreaIdsSource =
+    employee?.managed_area_ids ??
+    employee?.managedAreaIds ??
+    employee?.managed_areas_ids ??
+    employee?.managedAreasIds
+
+  const managed_area_ids = Array.from(
+    new Set(
+      (
+        Array.isArray(managedAreaIdsSource)
+          ? managedAreaIdsSource
+          : managedAreas.map((area) => area.id)
+      ).filter((value) => value !== null && value !== undefined && value !== ''),
+    ),
+  )
+
   return {
     ...employee,
     id,
@@ -92,6 +141,14 @@ export const normalizeEmployee = (employee = {}, index = 0) => {
     shift_name: shiftName,
     shiftId,
     shiftName,
+    area_id: areaId,
+    area_name: areaName,
+    areaId,
+    areaName,
+    managed_area_ids,
+    managedAreaIds: managed_area_ids,
+    managed_areas: managedAreas,
+    managedAreas,
   }
 }
 
