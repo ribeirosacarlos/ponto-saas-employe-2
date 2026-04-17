@@ -915,39 +915,39 @@ export default function CloseTimesheetPage() {
 
               {hasSearched ? (
                 <div className="space-y-4 border-t border-border/70 pt-5">
-                  <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-                      <p className="text-xs text-muted-foreground">
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-[11px] leading-none text-muted-foreground">
                         {t('closeTimesheetPage.summary.entries')}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xl font-semibold leading-none">{summary.totalEntries}</span>
+                        <FileText className="h-3 w-3 text-primary" />
+                        <span className="text-lg font-semibold leading-none">{summary.totalEntries}</span>
                       </div>
                     </div>
-                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-                      <p className="text-xs text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-[11px] leading-none text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <CalendarRange className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xl font-semibold leading-none">{summary.daysWithRecords}</span>
+                        <CalendarRange className="h-3 w-3 text-primary" />
+                        <span className="text-lg font-semibold leading-none">{summary.daysWithRecords}</span>
                       </div>
                     </div>
-                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-[11px] leading-none text-muted-foreground">
                         {t('closeTimesheetPage.summary.hours')}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <Timer className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xl font-semibold leading-none">{formatMinutes(summary.totalMinutes)}</span>
+                        <Timer className="h-3 w-3 text-primary" />
+                        <span className="text-lg font-semibold leading-none">{formatMinutes(summary.totalMinutes)}</span>
                       </div>
                     </div>
-                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-[11px] leading-none text-muted-foreground">
                         {t('closeTimesheetPage.summary.inconsistencies')}
                       </p>
                       <div className="mt-1.5 flex items-start gap-1.5 text-amber-600 dark:text-amber-100">
-                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <div className="text-xs leading-5">
+                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        <div className="text-[11px] leading-4">
                           <div>{t('closeTimesheetPage.summary.pendingCount', { count: summary.pendingCount })}</div>
                           <div>{t('closeTimesheetPage.summary.duplicateCount', { count: summary.duplicateCount })}</div>
                         </div>
@@ -955,12 +955,12 @@ export default function CloseTimesheetPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="text-sm font-semibold leading-tight text-foreground">
                         {t('closeTimesheetPage.table.title')}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {t('closeTimesheetPage.table.subtitle')}
                       </p>
                     </div>
@@ -970,11 +970,12 @@ export default function CloseTimesheetPage() {
                         variant="outline"
                         disabled={exporting === 'standard' || !normalizedEntries.length}
                         onClick={() => exportPdf()}
+                        className="h-8 rounded-md px-3 text-xs"
                       >
                         {exporting === 'standard' ? (
-                          <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                          <RefreshCcw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <Download className="mr-2 h-4 w-4" />
+                          <Download className="mr-1.5 h-3.5 w-3.5" />
                         )}
                         {t('closeTimesheetPage.export.primary')}
                       </Button>
@@ -1000,28 +1001,27 @@ export default function CloseTimesheetPage() {
                       {t('closeTimesheetPage.states.empty')}
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                       {groupedEntries.map((group) => (
-                    <div key={group.dateKey} className="space-y-2 rounded-2xl border border-border/60 bg-card/70 p-3">
-                      <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          <CalendarRange className="h-4 w-4 text-primary" />
+                    <div key={group.dateKey} className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
+                      <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold sm:text-sm">
+                          <CalendarRange className="h-3.5 w-3.5 text-primary" />
                           <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[11px] text-muted-foreground">
                           {group.items.length} {t('closeTimesheetPage.table.records')}
                         </span>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full min-w-[720px] border-separate border-spacing-y-2">
+                        <table className="w-full min-w-[680px] table-fixed">
                           <thead>
-                            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.date')}</th>
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.time')}</th>
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.type')}</th>
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.user')}</th>
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.location')}</th>
-                              <th className="px-3 py-2">{t('closeTimesheetPage.table.headers.notes')}</th>
+                            <tr className="border-b border-border/60 text-left text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                              <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.time')}</th>
+                              <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.type')}</th>
+                              <th className="min-w-[200px] px-3 py-2">{t('closeTimesheetPage.table.headers.user')}</th>
+                              <th className="min-w-[210px] px-3 py-2">{t('closeTimesheetPage.table.headers.location')}</th>
+                              <th className="w-[110px] px-3 py-2">{t('closeTimesheetPage.table.headers.notes')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1049,52 +1049,40 @@ export default function CloseTimesheetPage() {
                               return (
                                 <tr
                                   key={entry.id}
-                                  className="rounded-xl border border-border/60 bg-background/80 text-sm shadow-[0_18px_50px_-32px_rgba(62,82,152,0.55)]"
+                                  className="border-b border-border/50 bg-background/55 text-xs last:border-b-0"
                                 >
-                                  <td className="px-3 py-3 align-middle text-foreground">
-                                    <div className="font-medium leading-tight">
-                                      {entry.clockedAt
-                                        ? format(new Date(entry.clockedAt), 'dd/MM/yyyy')
-                                        : t('closeTimesheetPage.table.noDate')}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {entry.clockedAt
-                                        ? format(new Date(entry.clockedAt), 'EEE', { locale: undefined })
-                                        : ''}
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-3 align-middle">
-                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                                  <td className="px-3 py-2 align-middle">
+                                    <span className="inline-flex min-w-[58px] justify-center rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
                                       {formatClock(entry.clockedAt)}
                                     </span>
                                   </td>
-                                  <td className="px-3 py-3 align-middle">
+                                  <td className="px-3 py-2 align-middle">
                                     <span
                                       className={cn(
-                                        'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase',
+                                        'inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold uppercase leading-none',
                                         entry.type === 'in'
-                                          ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-200/60'
-                                          : 'bg-sky-500/10 text-sky-700 border border-sky-200/70',
+                                          ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700'
+                                          : 'border-sky-200/70 bg-sky-500/10 text-sky-700',
                                       )}
                                     >
                                       {entry.type || t('closeTimesheetPage.table.noType')}
                                     </span>
                                   </td>
-                                  <td className="px-3 py-3 align-middle">
-                                    <div className="font-medium">
+                                  <td className="px-3 py-2 align-middle">
+                                    <div className="truncate font-medium leading-tight">
                                       {entry.user?.name || t('closeTimesheetPage.table.userFallback')}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">
+                                    <div className="truncate text-[11px] text-muted-foreground">
                                       {entry.user?.email || ''}
                                     </div>
                                   </td>
-                                  <td className="px-3 py-3 align-middle">
+                                  <td className="px-3 py-2 align-middle">
                                     {hasCoordinates ? (
-                                      <div className="flex flex-col items-start gap-2">
+                                      <div className="flex flex-col items-start gap-1.5">
                                         {distanceFromCompany !== null ? (
                                           <span
                                             className={cn(
-                                              'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                                              'rounded-md border px-2 py-1 text-[11px] font-semibold leading-none',
                                               isOutsideCompany
                                                 ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
                                                 : 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
@@ -1114,10 +1102,10 @@ export default function CloseTimesheetPage() {
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            className="flex items-center gap-2 px-0 text-primary hover:bg-transparent"
+                                            className="h-auto gap-1.5 px-0 py-0 text-[11px] text-primary hover:bg-transparent"
                                             onClick={() => setLocationEntry(entry)}
                                           >
-                                            <MapPin className="h-4 w-4" />
+                                            <MapPin className="h-3.5 w-3.5" />
                                             {t('closeTimesheetPage.table.viewLocation')}
                                           </Button>
                                         </DialogTrigger>
@@ -1163,18 +1151,18 @@ export default function CloseTimesheetPage() {
                                       </Dialog>
                                       </div>
                                     ) : (
-                                      <span className="text-sm text-muted-foreground">â€”</span>
+                                      <span className="text-[11px] text-muted-foreground">â€”</span>
                                     )}
                                   </td>
-                                  <td className="px-3 py-3 align-middle">
+                                  <td className="px-3 py-2 align-middle">
                                     <span
                                       className={cn(
-                                        'rounded-full px-2.5 py-1 text-xs font-semibold',
+                                        'inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold leading-none',
                                         isPending
-                                          ? 'bg-amber-500/10 text-amber-700 border border-amber-200/70'
+                                          ? 'border-amber-200/70 bg-amber-500/10 text-amber-700'
                                           : isDuplicate
-                                            ? 'bg-rose-500/10 text-rose-700 border border-rose-200/70'
-                                            : 'bg-emerald-500/10 text-emerald-700 border border-emerald-200/70',
+                                            ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
+                                            : 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
                                       )}
                                     >
                                       {statusLabel}
