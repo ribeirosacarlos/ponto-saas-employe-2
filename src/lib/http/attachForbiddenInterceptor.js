@@ -1,5 +1,6 @@
 import i18n from '../../i18n/i18n'
 import { emitAccessDenied, resolveAccessDenial } from '../accessDenied'
+import { resolvePageFromPath } from '../../routes/config'
 
 const AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/logout']
 const ACCESS_EXCEPTIONS = ['/v1/billing/checkout-session', '/v1/platform/billing/companies']
@@ -30,7 +31,16 @@ export function attachForbiddenInterceptor(axiosInstance) {
         error.userFriendlyMessage = message
 
         if (hasToken && !isAuthRequest && !isAccessException) {
-          emitAccessDenied({ reason, message })
+          const routePath = typeof window !== 'undefined' ? window.location.pathname : ''
+          emitAccessDenied({
+            reason,
+            message,
+            title,
+            page: resolvePageFromPath(routePath),
+            routePath,
+            requestUrl: requestUrl,
+            requestMethod: String(error.config?.method || 'get').toUpperCase(),
+          })
         }
       }
 

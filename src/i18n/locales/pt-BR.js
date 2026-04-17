@@ -596,6 +596,10 @@ const ptBR = {
       },
       card: {
         identifier: 'ID {{id}}',
+        employeeCount: '{{count}} colaborador(es)',
+        membersLabel: 'Colaboradores',
+        moreMembers: '+{{count}} selecionado(s)',
+        emptyMembers: 'Nenhum colaborador vinculado a esta area.',
       },
       states: {
         noPermissionTitle: 'Acesso restrito',
@@ -608,18 +612,30 @@ const ptBR = {
       dialog: {
         createTitle: 'Nova area',
         editTitle: 'Editar area',
-        description: 'Defina o nome da area.',
+        description: 'Defina o nome da area e vincule os colaboradores pela mesma tela.',
         deleteTitle: 'Excluir area',
         deleteDescription: 'Deseja excluir a area {{name}}?',
       },
       form: {
         nameLabel: 'Nome da area',
         namePlaceholder: 'Ex.: Operacoes',
+        employeesLabel: 'Colaboradores da area',
+        employeesHint:
+          'Use Ctrl ou Cmd para selecionar varios colaboradores. Ao salvar, o frontend atualiza o area_id de cada colaborador pelo fluxo ja existente.',
+        employeesSearchPlaceholder: 'Buscar colaborador pelo nome',
+        emptySearch: 'Nenhum colaborador encontrado para essa busca.',
+        selectedCount: '{{count}} selecionado(s)',
+        linkedPreviewLabel: 'Vinculos selecionados',
+        employeeFallback: 'Colaborador sem nome',
       },
       toasts: {
         loadError: {
           title: 'Erro ao carregar areas',
           description: 'Nao foi possivel carregar as areas.',
+        },
+        employeesLoadError: {
+          title: 'Erro ao carregar colaboradores',
+          description: 'Nao foi possivel carregar os colaboradores para vincular a area.',
         },
         nameRequired: {
           title: 'Informe o nome da area',
@@ -1643,8 +1659,8 @@ const ptBR = {
         nameLabel: 'Nome',
         emailLabel: 'E-mail',
         roleLabel: 'Role',
-        areaLabel: 'Area',
-        areaPlaceholder: 'Selecione uma area',
+        areaLabel: 'Area principal',
+        areaPlaceholder: 'Selecione a area principal',
         managedAreasLabel: 'Areas gerenciadas',
         managedAreasHint: 'Segure Ctrl ou Cmd para selecionar mais de uma area.',
         shiftLabel: 'Jornada',

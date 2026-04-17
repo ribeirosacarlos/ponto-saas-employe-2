@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
+  Check,
   Loader2,
   Pencil,
   Plus,
   RefreshCcw,
   Trash2,
+  X,
+  Users,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -24,16 +27,60 @@ import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
+import { normalizeEmployee } from '../features/employees/useEmployeesManagement'
 import { useAreas } from '../hooks/useAreas'
-import { createArea, deleteArea, updateArea } from '../services/modules/areas'
+import {
+  createArea,
+  deleteArea,
+  updateArea,
+} from '../services/modules/areas'
+import {
+  listAllEmployees,
+  updateEmployee,
+} from '../services/modules/employees'
 import { cn } from '../lib/utils'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['admin', 'super_admin'] }
+const MANAGED_AREAS_ROLES = new Set(['manager', 'area_manager'])
 
-const buildAreaForm = (area = null) => ({
+const buildAreaForm = (area = null, linkedEmployees = []) => ({
   id: area?.id ?? '',
   name: area?.name ?? '',
+  employeeIds: linkedEmployees.map((employee) => String(employee.id)),
 })
+
+const sortEmployeesByName = (employees = []) =>
+  [...employees].sort((left, right) => {
+    const leftLabel = `${left?.name || ''} ${left?.email || ''}`.trim()
+    const rightLabel = `${right?.name || ''} ${right?.email || ''}`.trim()
+    return leftLabel.localeCompare(rightLabel, undefined, { sensitivity: 'base' })
+  })
+
+const isManagedAreasRole = (role) => MANAGED_AREAS_ROLES.has(role)
+
+function buildEmployeeUpdatePayload(employee, areaId) {
+  const payload = {
+    name: employee?.name || '',
+    email: employee?.email || '',
+    role: employee?.role || 'employee',
+    area_id: areaId,
+  }
+
+  const shiftId = employee?.shift_id ?? employee?.shiftId
+  if (shiftId) {
+    payload.shift_id = shiftId
+  }
+
+  if (isManagedAreasRole(employee?.role)) {
+    payload.managed_area_ids = Array.isArray(employee?.managed_area_ids)
+      ? employee.managed_area_ids.filter(Boolean)
+      : Array.isArray(employee?.managedAreaIds)
+        ? employee.managedAreaIds.filter(Boolean)
+        : []
+  }
+
+  return payload
+}
 
 export default function AdminAreas() {
   const { t } = useTranslation()
@@ -55,24 +102,171 @@ export default function AdminAreas() {
     },
   })
 
+  const [directoryEmployees, setDirectoryEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formMode, setFormMode] = useState('create')
   const [formState, setFormState] = useState(() => buildAreaForm())
+  const [initialEmployeeIds, setInitialEmployeeIds] = useState([])
+  const [employeeSearch, setEmployeeSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
+  const employeeById = useMemo(
+    () => new Map(directoryEmployees.map((employee) => [String(employee.id), employee])),
+    [directoryEmployees],
+  )
+
+  const employeesByAreaId = useMemo(() => {
+    const grouped = new Map()
+
+    directoryEmployees.forEach((employee) => {
+      if (employee?.area_id === null || employee?.area_id === undefined || employee?.area_id === '') {
+        return
+      }
+
+      const key = String(employee.area_id)
+      if (!grouped.has(key)) {
+        grouped.set(key, [])
+      }
+      grouped.get(key).push(employee)
+    })
+
+    grouped.forEach((employees, key) => {
+      grouped.set(key, sortEmployeesByName(employees))
+    })
+
+    return grouped
+  }, [directoryEmployees])
+
+  const employeeOptions = useMemo(
+    () => sortEmployeesByName(directoryEmployees),
+    [directoryEmployees],
+  )
+
+  const filteredEmployeeOptions = useMemo(() => {
+    const query = employeeSearch.trim().toLowerCase()
+    if (!query) return employeeOptions
+
+    return employeeOptions.filter((employee) =>
+      String(employee?.name || '').toLowerCase().includes(query),
+    )
+  }, [employeeOptions, employeeSearch])
+
+  const selectedEmployees = useMemo(
+    () =>
+      formState.employeeIds
+        .map((employeeId) => employeeById.get(String(employeeId)))
+        .filter(Boolean),
+    [employeeById, formState.employeeIds],
+  )
+
+  const reloadEmployees = useCallback(async () => {
+    if (!hasManagementAccess) return { ok: false }
+
+    setEmployeesLoading(true)
+    try {
+      const response = await listAllEmployees({ perPage: 100 })
+      setDirectoryEmployees(
+        (Array.isArray(response) ? response : []).map((employee, index) =>
+          normalizeEmployee(employee, index),
+        ),
+      )
+      return { ok: true }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('adminAreasPage.toasts.employeesLoadError.description')
+
+      toast({
+        title: t('adminAreasPage.toasts.employeesLoadError.title'),
+        description: message,
+        variant: 'error',
+      })
+
+      return { ok: false, error: err }
+    } finally {
+      setEmployeesLoading(false)
+    }
+  }, [hasManagementAccess, t, toast])
+
+  const reloadAll = useCallback(async () => {
+    await Promise.all([reload(), reloadEmployees()])
+  }, [reload, reloadEmployees])
+
+  useEffect(() => {
+    if (!hasManagementAccess) return
+    reloadEmployees()
+  }, [hasManagementAccess, reloadEmployees])
+
   const handleOpenCreate = () => {
     setFormMode('create')
+    setInitialEmployeeIds([])
+    setEmployeeSearch('')
     setFormState(buildAreaForm())
     setDialogOpen(true)
   }
 
   const handleOpenEdit = (area) => {
+    const linkedEmployees = employeesByAreaId.get(String(area?.id)) || []
+    const linkedEmployeeIds = linkedEmployees.map((employee) => String(employee.id))
+
     setFormMode('edit')
-    setFormState(buildAreaForm(area))
+    setInitialEmployeeIds(linkedEmployeeIds)
+    setEmployeeSearch('')
+    setFormState(buildAreaForm(area, linkedEmployees))
     setDialogOpen(true)
   }
+
+  const syncEmployeesForArea = useCallback(
+    async (targetAreaId, nextEmployeeIds, previousEmployeeIds = []) => {
+      const normalizedAreaId = String(targetAreaId)
+      const nextIds = new Set((nextEmployeeIds || []).map((value) => String(value)))
+      const previousIds = new Set((previousEmployeeIds || []).map((value) => String(value)))
+
+      const updates = []
+
+      nextIds.forEach((employeeId) => {
+        const employee = employeeById.get(employeeId)
+        if (!employee) return
+
+        const currentAreaId =
+          employee?.area_id !== null && employee?.area_id !== undefined && employee?.area_id !== ''
+            ? String(employee.area_id)
+            : null
+
+        if (currentAreaId === normalizedAreaId) return
+
+        updates.push(
+          updateEmployee(employee.id, buildEmployeeUpdatePayload(employee, normalizedAreaId)),
+        )
+      })
+
+      previousIds.forEach((employeeId) => {
+        if (nextIds.has(employeeId)) return
+
+        const employee = employeeById.get(employeeId)
+        if (!employee) return
+
+        const currentAreaId =
+          employee?.area_id !== null && employee?.area_id !== undefined && employee?.area_id !== ''
+            ? String(employee.area_id)
+            : null
+
+        if (currentAreaId !== normalizedAreaId) return
+
+        updates.push(
+          updateEmployee(employee.id, buildEmployeeUpdatePayload(employee, null)),
+        )
+      })
+
+      if (updates.length === 0) return
+      await Promise.all(updates)
+    },
+    [employeeById],
+  )
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -88,15 +282,22 @@ export default function AdminAreas() {
 
     setSaving(true)
     try {
-      if (formMode === 'edit' && formState.id) {
-        await updateArea(formState.id, { name: formState.name.trim() })
-      } else {
-        await createArea({ name: formState.name.trim() })
-      }
+      const payload = { name: formState.name.trim() }
+      const savedArea =
+        formMode === 'edit' && formState.id
+          ? await updateArea(formState.id, payload)
+          : await createArea(payload)
 
-      await reload()
+      const savedAreaId = savedArea?.id || formState.id
+      await syncEmployeesForArea(savedAreaId, formState.employeeIds, initialEmployeeIds)
+      await reloadAll()
+
       setDialogOpen(false)
+      setFormMode('create')
+      setInitialEmployeeIds([])
+      setEmployeeSearch('')
       setFormState(buildAreaForm())
+
       toast({
         title:
           formMode === 'edit'
@@ -127,7 +328,7 @@ export default function AdminAreas() {
     setDeleting(true)
     try {
       await deleteArea(deleteTarget.id)
-      await reload()
+      await reloadAll()
       toast({
         title: t('adminAreasPage.toasts.deleted.title'),
         description: t('adminAreasPage.toasts.deleted.description', {
@@ -149,6 +350,18 @@ export default function AdminAreas() {
     }
   }
 
+  const handleEmployeeToggle = (employeeId) => {
+    const normalizedEmployeeId = String(employeeId)
+    setFormState((prev) => {
+      const currentIds = Array.isArray(prev.employeeIds) ? prev.employeeIds : []
+      const nextIds = currentIds.includes(normalizedEmployeeId)
+        ? currentIds.filter((value) => value !== normalizedEmployeeId)
+        : [...currentIds, normalizedEmployeeId]
+
+      return { ...prev, employeeIds: nextIds }
+    })
+  }
+
   const renderContent = () => {
     if (!hasManagementAccess) {
       return (
@@ -161,13 +374,13 @@ export default function AdminAreas() {
       )
     }
 
-    if (loading) {
+    if (loading || employeesLoading) {
       return (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((item) => (
             <div
               key={item}
-              className="h-36 animate-pulse rounded-2xl border border-border/70 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
+              className="h-40 animate-pulse rounded-2xl border border-border/70 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
             />
           ))}
         </div>
@@ -184,7 +397,7 @@ export default function AdminAreas() {
             size="sm"
             variant="outline"
             className="mt-3 rounded-full px-3 text-xs"
-            onClick={reload}
+            onClick={reloadAll}
           >
             {t('adminAreasPage.actions.refresh')}
           </Button>
@@ -212,50 +425,90 @@ export default function AdminAreas() {
 
     return (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {areas.map((area) => (
-          <div
-            key={area.id}
-            className="rounded-2xl border border-border/70 bg-card/95 p-4 shadow-[0_30px_90px_-70px_rgba(62,82,152,0.45)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <Building2 className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-foreground">
-                      {area.name || t('adminAreasPage.states.cardFallback')}
-                    </p>
+        {areas.map((area) => {
+          const linkedEmployees = employeesByAreaId.get(String(area.id)) || []
+          const previewNames = linkedEmployees.slice(0, 3).map((employee) => employee.name).filter(Boolean)
+
+          return (
+            <div
+              key={area.id}
+              className="rounded-2xl border border-border/70 bg-card/95 p-4 shadow-[0_30px_90px_-70px_rgba(62,82,152,0.45)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <Building2 className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-foreground">
+                        {area.name || t('adminAreasPage.states.cardFallback')}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t('adminAreasPage.card.employeeCount', {
+                          count: linkedEmployees.length,
+                        })}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="rounded-full px-3 text-xs"
-                onClick={() => handleOpenEdit(area)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                {t('adminAreasPage.actions.edit')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                className="rounded-full px-3 text-xs"
-                onClick={() => setDeleteTarget(area)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {t('adminAreasPage.actions.delete')}
-              </Button>
+              <div className="mt-3 rounded-xl border border-border/70 bg-muted/35 p-2.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  {t('adminAreasPage.card.membersLabel')}
+                </div>
+                {previewNames.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {previewNames.map((name) => (
+                      <span
+                        key={`${area.id}-${name}`}
+                        className="rounded-full border border-border/70 bg-background/80 px-2.5 py-0.5 text-[11px] leading-5 text-foreground"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                    {linkedEmployees.length > previewNames.length ? (
+                      <span className="rounded-full border border-border/70 bg-background/80 px-2.5 py-0.5 text-[11px] leading-5 text-muted-foreground">
+                        {t('adminAreasPage.card.moreMembers', {
+                          count: linkedEmployees.length - previewNames.length,
+                        })}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+                    {t('adminAreasPage.card.emptyMembers')}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full px-3 text-xs"
+                  onClick={() => handleOpenEdit(area)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {t('adminAreasPage.actions.edit')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="rounded-full px-3 text-xs"
+                  onClick={() => setDeleteTarget(area)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('adminAreasPage.actions.delete')}
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     )
   }
@@ -273,10 +526,15 @@ export default function AdminAreas() {
               type="button"
               variant="outline"
               className="rounded-full border-border bg-background/80 px-3 text-sm"
-              onClick={reload}
-              disabled={loading}
+              onClick={reloadAll}
+              disabled={loading || employeesLoading}
             >
-              <RefreshCcw className={cn('h-4 w-4 text-primary', loading && 'animate-spin')} />
+              <RefreshCcw
+                className={cn(
+                  'h-4 w-4 text-primary',
+                  (loading || employeesLoading) && 'animate-spin',
+                )}
+              />
               {t('adminAreasPage.actions.refresh')}
             </Button>
             <Button
@@ -300,11 +558,13 @@ export default function AdminAreas() {
           setDialogOpen(open)
           if (!open) {
             setFormMode('create')
+            setInitialEmployeeIds([])
+            setEmployeeSearch('')
             setFormState(buildAreaForm())
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'edit'
@@ -330,6 +590,91 @@ export default function AdminAreas() {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="area-employees">{t('adminAreasPage.form.employeesLabel')}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {t('adminAreasPage.form.selectedCount', {
+                    count: formState.employeeIds.length,
+                  })}
+                </span>
+              </div>
+              <Input
+                id="area-employees-search"
+                value={employeeSearch}
+                onChange={(event) => setEmployeeSearch(event.target.value)}
+                placeholder={t('adminAreasPage.form.employeesSearchPlaceholder')}
+                disabled={employeesLoading || saving}
+                className="h-10 rounded-lg px-3 text-sm"
+              />
+              <div
+                id="area-employees"
+                className="max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-background/70 p-1.5 shadow-sm"
+              >
+                {filteredEmployeeOptions.length > 0 ? (
+                  filteredEmployeeOptions.map((employee) => {
+                    const employeeId = String(employee.id)
+                    const isSelected = formState.employeeIds.includes(employeeId)
+
+                    return (
+                      <button
+                        key={employeeId}
+                        type="button"
+                        className={cn(
+                          'flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left text-sm transition',
+                          isSelected
+                            ? 'border-primary/40 bg-primary/10 text-foreground'
+                            : 'border-transparent bg-muted/40 text-foreground hover:border-border hover:bg-muted/70',
+                        )}
+                        onClick={() => handleEmployeeToggle(employeeId)}
+                        disabled={employeesLoading || saving}
+                      >
+                        <span className="truncate">
+                          {employee.name || t('adminAreasPage.form.employeeFallback')}
+                        </span>
+                        <span
+                          className={cn(
+                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background text-transparent',
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </span>
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/70 px-3 py-6 text-center text-sm text-muted-foreground">
+                    {t('adminAreasPage.form.emptySearch')}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {selectedEmployees.length > 0 ? (
+              <div className="rounded-2xl border border-border/70 bg-muted/35 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  {t('adminAreasPage.form.linkedPreviewLabel')}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {selectedEmployees.map((employee) => (
+                    <button
+                      key={`selected-${employee.id}`}
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] text-foreground transition hover:border-primary/30 hover:bg-background"
+                      onClick={() => handleEmployeeToggle(employee.id)}
+                    >
+                      {employee.name || employee.email || t('adminAreasPage.form.employeeFallback')}
+                      <X className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex items-center justify-end gap-3 pt-2">
               <DialogClose asChild>
                 <Button type="button" variant="ghost">

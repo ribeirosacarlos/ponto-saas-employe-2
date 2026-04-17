@@ -575,6 +575,10 @@ const en = {
       },
       card: {
         identifier: 'ID {{id}}',
+        employeeCount: '{{count}} employee(s)',
+        membersLabel: 'Employees',
+        moreMembers: '+{{count}} selected',
+        emptyMembers: 'No employees linked to this area.',
       },
       states: {
         noPermissionTitle: 'Restricted access',
@@ -587,18 +591,30 @@ const en = {
       dialog: {
         createTitle: 'New area',
         editTitle: 'Edit area',
-        description: 'Define the area name.',
+        description: 'Set the area name and manage linked employees in the same flow.',
         deleteTitle: 'Delete area',
         deleteDescription: 'Do you want to delete the area {{name}}?',
       },
       form: {
         nameLabel: 'Area name',
         namePlaceholder: 'e.g. Operations',
+        employeesLabel: 'Area employees',
+        employeesHint:
+          'Use Ctrl or Cmd to select multiple employees. On save, the frontend updates each employee area_id through the existing employee flow.',
+        employeesSearchPlaceholder: 'Search employee by name',
+        emptySearch: 'No employees found for this search.',
+        selectedCount: '{{count}} selected',
+        linkedPreviewLabel: 'Selected links',
+        employeeFallback: 'Unnamed employee',
       },
       toasts: {
         loadError: {
           title: 'Failed to load areas',
           description: 'We could not load the areas.',
+        },
+        employeesLoadError: {
+          title: 'Failed to load employees',
+          description: 'We could not load employees for area linking.',
         },
         nameRequired: {
           title: 'Enter an area name',
@@ -1659,8 +1675,8 @@ const en = {
         nameLabel: 'Name',
         emailLabel: 'Email',
         roleLabel: 'Role',
-        areaLabel: 'Area',
-        areaPlaceholder: 'Select an area',
+        areaLabel: 'Primary area',
+        areaPlaceholder: 'Select the primary area',
         managedAreasLabel: 'Managed areas',
         managedAreasHint: 'Hold Ctrl or Cmd to select multiple areas.',
         shiftLabel: 'Shift',

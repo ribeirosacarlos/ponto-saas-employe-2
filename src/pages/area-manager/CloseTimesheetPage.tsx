@@ -319,6 +319,7 @@ export default function CloseTimesheetPage() {
   const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
+  const [employeeComboboxOpenUpward, setEmployeeComboboxOpenUpward] = useState(false)
   const employeeComboboxRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -338,6 +339,29 @@ export default function CloseTimesheetPage() {
     document.addEventListener('mousedown', handlePointerDown)
     return () => document.removeEventListener('mousedown', handlePointerDown)
   }, [])
+
+  useEffect(() => {
+    if (!employeeComboboxOpen || !employeeComboboxRef.current || typeof window === 'undefined') return
+
+    const updateComboboxDirection = () => {
+      const rect = employeeComboboxRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const viewportHeight = window.innerHeight
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      const estimatedDropdownHeight = 360
+
+      setEmployeeComboboxOpenUpward(
+        spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow,
+      )
+    }
+
+    updateComboboxDirection()
+    window.addEventListener('resize', updateComboboxDirection)
+
+    return () => window.removeEventListener('resize', updateComboboxDirection)
+  }, [employeeComboboxOpen])
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -778,7 +802,14 @@ export default function CloseTimesheetPage() {
                   </button>
 
                   {employeeComboboxOpen ? (
-                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] backdrop-blur-xl">
+                    <div
+                      className={cn(
+                        'absolute left-0 right-0 z-30 rounded-[18px] border border-border/70 bg-card/95 p-3 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] backdrop-blur-xl',
+                        employeeComboboxOpenUpward
+                          ? 'bottom-[calc(100%+0.5rem)]'
+                          : 'top-[calc(100%+0.5rem)]',
+                      )}
+                    >
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
@@ -790,7 +821,7 @@ export default function CloseTimesheetPage() {
                         />
                       </div>
 
-                      <div className="mt-2 max-h-64 space-y-2 overflow-auto pr-1">
+                      <div className="mt-2 max-h-[min(16rem,calc(100vh-14rem))] space-y-2 overflow-auto pr-1">
                         {employeesLoading ? (
                           <div className="space-y-2">
                             {[1, 2, 3].map((item) => (

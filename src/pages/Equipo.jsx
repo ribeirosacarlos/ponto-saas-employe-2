@@ -183,10 +183,7 @@ const buildEmployeePayload = (form) => {
     name: form.name.trim(),
     email: form.email.trim(),
     role: form.role,
-  }
-
-  if (form.area_id) {
-    payload.area_id = form.area_id
+    area_id: form.area_id || null,
   }
 
   if (form.shift_id) {
@@ -338,7 +335,7 @@ export default function Equipo() {
     if (Number.isNaN(date.getTime())) return t('equipoPage.table.emptyDate')
     return date.toLocaleDateString(i18n.language, {
       day: '2-digit',
-      month: 'short',
+      month: '2-digit',
       year: 'numeric',
     })
   }
@@ -389,9 +386,16 @@ export default function Equipo() {
 
     const emailError = result.error?.response?.data?.errors?.email?.[0]
     const roleError = result.error?.response?.data?.errors?.role?.[0]
+    const areaError = result.error?.response?.data?.errors?.area_id?.[0]
+    const managedAreasError = result.error?.response?.data?.errors?.managed_area_ids?.[0]
     toast({
       title: t('equipoPage.toasts.createError.title'),
-      description: roleError || emailError || t('equipoPage.toasts.createError.description'),
+      description:
+        managedAreasError ||
+        areaError ||
+        roleError ||
+        emailError ||
+        t('equipoPage.toasts.createError.description'),
       variant: 'error',
     })
   }
@@ -467,9 +471,17 @@ export default function Equipo() {
     }
 
     const emailError = result.error?.response?.data?.errors?.email?.[0]
+    const roleError = result.error?.response?.data?.errors?.role?.[0]
+    const areaError = result.error?.response?.data?.errors?.area_id?.[0]
+    const managedAreasError = result.error?.response?.data?.errors?.managed_area_ids?.[0]
     toast({
       title: t('equipoPage.toasts.updateError.title'),
-      description: emailError || t('equipoPage.toasts.updateError.description'),
+      description:
+        managedAreasError ||
+        areaError ||
+        roleError ||
+        emailError ||
+        t('equipoPage.toasts.updateError.description'),
       variant: 'error',
     })
   }
@@ -785,6 +797,14 @@ export default function Equipo() {
                               <span>
                                 {employee.area_name || employee.areaName || t('equipoPage.table.emptyArea')}
                               </span>
+                              {Array.isArray(employee.managed_areas) && employee.managed_areas.length > 0 ? (
+                                <span>
+                                  {employee.managed_areas
+                                    .map((area) => area?.name)
+                                    .filter(Boolean)
+                                    .join(', ')}
+                                </span>
+                              ) : null}
                               <span>{formatDate(employee.createdAt)}</span>
                               {employee.shiftId || employee.shiftName ? (
                                 <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
@@ -1072,7 +1092,7 @@ export default function Equipo() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('equipoPage.modals.editTitle')}</DialogTitle>
             <DialogDescription>{t('equipoPage.modals.editDescription')}</DialogDescription>

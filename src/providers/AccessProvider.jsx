@@ -9,6 +9,7 @@ import {
 const AccessContext = createContext({
   accessDeniedReason: null,
   lastDeniedMessage: '',
+  lastDeniedContext: null,
   setAccessDenied: () => {},
   clearAccessDenied: () => {},
 })
@@ -16,15 +17,25 @@ const AccessContext = createContext({
 export function AccessProvider({ children }) {
   const [accessDeniedReason, setAccessDeniedReason] = useState(null)
   const [lastDeniedMessage, setLastDeniedMessage] = useState('')
+  const [lastDeniedContext, setLastDeniedContext] = useState(null)
 
-  const setAccessDenied = useCallback(({ reason, message } = {}) => {
+  const setAccessDenied = useCallback((payload = {}) => {
+    const { reason, message, routePath, requestUrl, requestMethod, page, title } = payload
     setAccessDeniedReason(reason || ACCESS_DENIED_REASONS.FORBIDDEN)
     setLastDeniedMessage(message || '')
+    setLastDeniedContext({
+      routePath: routePath || '',
+      requestUrl: requestUrl || '',
+      requestMethod: requestMethod || '',
+      page: page || '',
+      title: title || '',
+    })
   }, [])
 
   const clearAccessDenied = useCallback(() => {
     setAccessDeniedReason(null)
     setLastDeniedMessage('')
+    setLastDeniedContext(null)
   }, [])
 
   useEffect(() => {
@@ -36,10 +47,11 @@ export function AccessProvider({ children }) {
     () => ({
       accessDeniedReason,
       lastDeniedMessage,
+      lastDeniedContext,
       setAccessDenied,
       clearAccessDenied,
     }),
-    [accessDeniedReason, clearAccessDenied, lastDeniedMessage, setAccessDenied],
+    [accessDeniedReason, clearAccessDenied, lastDeniedContext, lastDeniedMessage, setAccessDenied],
   )
 
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>

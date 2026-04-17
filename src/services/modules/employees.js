@@ -27,6 +27,35 @@ export async function listEmployees(page = 1, filters = {}) {
   return { data: employees, meta }
 }
 
+export async function listAllEmployees(filters = {}) {
+  const perPage =
+    filters.perPage ??
+    filters.per_page ??
+    100
+
+  const collected = []
+  let page = 1
+  let lastPage = 1
+
+  do {
+    const response = await listEmployees(page, { ...filters, perPage })
+    collected.push(...(Array.isArray(response?.data) ? response.data : []))
+
+    const nextLastPage = Number(response?.meta?.lastPage ?? response?.meta?.last_page ?? 0)
+    if (Number.isFinite(nextLastPage) && nextLastPage > 0) {
+      lastPage = nextLastPage
+    } else if (!response?.data?.length || response.data.length < perPage) {
+      lastPage = page
+    } else {
+      lastPage = page + 1
+    }
+
+    page += 1
+  } while (page <= lastPage && page <= 50)
+
+  return collected
+}
+
 export async function createEmployee(payload) {
   const { data } = await api.post('/v1/admin/employees', payload)
   return data?.data || data
