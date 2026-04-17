@@ -174,8 +174,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     })
     return Array.from(map.entries()).map(([value, user]) => ({
       value,
-      label: user?.name || user?.email || value,
-      email: user?.email,
+      label: user?.name || t('adminAdjustmentsPage.table.userFallback', 'Colaborador'),
     }))
   }, [adjustments, teamEntries, t])
 
@@ -486,7 +485,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                     </option>
                     {userOptions.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label} {option.email ? `(${option.email})` : ''}
+                        {option.label}
                       </option>
                     ))}
                   </select>

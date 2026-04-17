@@ -457,7 +457,7 @@ export default function AdminAreas() {
               <div className="mt-3 rounded-xl border border-border/70 bg-muted/35 p-2.5">
                 <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   <Users className="h-3 w-3" />
-                  {t('adminAreasPage.card.membersLabel')}
+                  {t('adminAreasPage.card.membersLabel')} ({linkedEmployees.length})
                 </div>
                 {previewNames.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -667,7 +667,7 @@ export default function AdminAreas() {
                       className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] text-foreground transition hover:border-primary/30 hover:bg-background"
                       onClick={() => handleEmployeeToggle(employee.id)}
                     >
-                      {employee.name || employee.email || t('adminAreasPage.form.employeeFallback')}
+                      {employee.name || t('adminAreasPage.form.employeeFallback')}
                       <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   ))}

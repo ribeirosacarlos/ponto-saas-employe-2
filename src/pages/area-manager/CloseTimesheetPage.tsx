@@ -157,6 +157,9 @@ const normalizeEmployee = (employee: any = {}, index = 0) => ({
     null,
 })
 
+const getEmployeeDisplayName = (employee?: { name?: string; email?: string } | null) =>
+  employee?.name || 'Colaborador'
+
 const buildTimesheetSummary = (entries = []) => {
   const duplicateMap = new Map()
   const pendingIds = new Set()
@@ -759,30 +762,27 @@ export default function CloseTimesheetPage() {
                       {selectedEmployee ? (
                         <div className="flex items-center gap-1.5 overflow-hidden">
                           <span className="truncate text-[11px] font-semibold text-foreground">
-                            {selectedEmployee.name || selectedEmployee.email}
+                            {getEmployeeDisplayName(selectedEmployee)}
                           </span>
-                          <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            <span className="truncate">{selectedEmployee.email}</span>
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(event) => {
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFilters((prev) => ({ ...prev, employeeId: '' }))
+                              setEmployeeSearch('')
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
                                 event.stopPropagation()
                                 setFilters((prev) => ({ ...prev, employeeId: '' }))
                                 setEmployeeSearch('')
-                              }}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault()
-                                  event.stopPropagation()
-                                  setFilters((prev) => ({ ...prev, employeeId: '' }))
-                                  setEmployeeSearch('')
-                                }
-                              }}
-                              className="inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-background/80"
-                            >
-                              <X className="h-3 w-3" />
-                            </span>
+                              }
+                            }}
+                            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-background/80"
+                          >
+                            <X className="h-3 w-3" />
                           </span>
                         </div>
                       ) : (
@@ -858,10 +858,7 @@ export default function CloseTimesheetPage() {
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-xs font-semibold text-foreground">
-                                  {emp.name || emp.email}
-                                </div>
-                                <div className="truncate text-[11px] text-muted-foreground">
-                                  {emp.email}
+                                  {getEmployeeDisplayName(emp)}
                                 </div>
                               </div>
                             </button>

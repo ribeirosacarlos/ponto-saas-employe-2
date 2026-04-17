@@ -458,14 +458,7 @@ export default function AdminDocuments() {
 
   const emptyState = !loading && documents.length === 0
   const buildEmployeeLabel = (employee) => {
-    const baseName =
-      employee?.name || employee?.email || t('documentsPage.admin.labels.employeeFallback')
-    const emailSuffix =
-      employee?.name && employee?.email && employee.email !== employee.name
-        ? ` (${employee.email})`
-        : ''
-    const roleLabel = formatRole(employee?.role)
-    return `${baseName}${emailSuffix} - ${roleLabel}`
+    return employee?.name || t('documentsPage.admin.labels.employeeFallback')
   }
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
