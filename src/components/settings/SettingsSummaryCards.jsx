@@ -35,9 +35,11 @@ const getStatusTone = (status) => {
 export function SettingsSummaryCards({ billing, flags, usage }) {
   const plan = billing?.plan
   const subscription = billing?.subscription
-  const employees = usage?.employees || {}
-  const hasLimit = employees.limit !== null && employees.limit !== undefined
-  const usagePercent = hasLimit ? Math.min(100, Math.round((employees.current / (employees.limit || 1)) * 100)) : null
+  const billableUsers = usage?.billable_users || usage?.employees || {}
+  const hasLimit = billableUsers.limit !== null && billableUsers.limit !== undefined
+  const usagePercent = hasLimit
+    ? Math.min(100, Math.round((billableUsers.current / (billableUsers.limit || 1)) * 100))
+    : null
 
   const daysRemaining = subscription?.trial_days_remaining ?? subscription?.billing_days_remaining ?? null
   const daysLabel = subscription?.trial_days_remaining !== undefined && subscription?.trial_days_remaining !== null
@@ -78,9 +80,9 @@ export function SettingsSummaryCards({ billing, flags, usage }) {
     {
       id: 'usage',
       icon: Users,
-      title: 'Colaboradores',
-      value: hasLimit ? `${employees.current || 0} / ${employees.limit}` : `${employees.current || 0}`,
-      helper: employees.over_limit ? 'Acima do limite' : hasLimit ? 'Uso de licença' : 'Limite não definido',
+      title: 'Usuários contabilizados',
+      value: hasLimit ? `${billableUsers.current || 0} / ${billableUsers.limit}` : `${billableUsers.current || 0}`,
+      helper: billableUsers.over_limit ? 'Acima do limite' : hasLimit ? 'Uso do plano' : 'Limite não definido',
       progress: usagePercent,
     },
   ]

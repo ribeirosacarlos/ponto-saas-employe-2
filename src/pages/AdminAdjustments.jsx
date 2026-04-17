@@ -570,7 +570,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                   <p className="text-xs text-muted-foreground">
                     {t(
                       'adminAdjustmentsPage.teamEntries.description',
-                      'Ultimas batidas registradas pelos colaboradores da area.',
+                      'Ultimas batidas registradas pelos usuarios da equipe.',
                     )}
                   </p>
                 </div>

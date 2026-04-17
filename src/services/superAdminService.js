@@ -31,8 +31,14 @@ export const normalizeSuperAdminDashboard = (payload = {}) => {
       atRisk: data?.companies?.at_risk ?? 0,
     },
     employees: {
-      total: data?.employees?.total ?? 0,
-      activeLast30Days: data?.employees?.active_last_30_days ?? 0,
+      total:
+        data?.billable_users?.total ??
+        data?.employees?.total ??
+        0,
+      activeLast30Days:
+        data?.billable_users?.active_last_30_days ??
+        data?.employees?.active_last_30_days ??
+        0,
     },
     timeEntries: {
       today: data?.time_entries?.today ?? 0,
@@ -68,8 +74,18 @@ export const normalizeSuperAdminCompany = (company = {}, index = 0) => ({
   planName: company?.plan_name ?? company?.planName ?? '',
   planSlug: company?.plan_slug ?? company?.planSlug ?? '',
   planPriceCents: company?.plan_price_cents ?? company?.planPriceCents ?? null,
-  employeesCount: company?.employees_count ?? company?.employeesCount ?? 0,
-  activeEmployees30d: company?.active_employees_30d ?? company?.activeEmployees30d ?? 0,
+  employeesCount:
+    company?.billable_users_count ??
+    company?.billableUsersCount ??
+    company?.employees_count ??
+    company?.employeesCount ??
+    0,
+  activeEmployees30d:
+    company?.active_billable_users_30d ??
+    company?.activeBillableUsers30d ??
+    company?.active_employees_30d ??
+    company?.activeEmployees30d ??
+    0,
   timeEntriesToday: company?.time_entries_today ?? company?.timeEntriesToday ?? 0,
   timeEntries30d: company?.time_entries_30d ?? company?.timeEntries30d ?? 0,
   lastActivityAt: company?.last_activity_at ?? company?.lastActivityAt ?? null,

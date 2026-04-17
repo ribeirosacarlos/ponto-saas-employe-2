@@ -88,8 +88,8 @@ const es = {
           limits: 'Limites',
         },
         usage: {
-          withLimit: '{{current}} de {{limit}} colaboradores registrados',
-          withoutLimit: '{{current}} colaboradores registrados',
+          withLimit: '{{current}} de {{limit}} usuarios contabilizados en el plan',
+          withoutLimit: '{{current}} usuarios contabilizados en el plan',
           overLimit: 'Por encima del limite',
           percent: '{{percent}}% de capacidad',
         },
@@ -103,9 +103,9 @@ const es = {
           unknown: 'Estado desconocido',
         },
         extraEmployees: {
-          pendingTitle: 'Pago pendiente de colaboradores extra',
-          overdueTitle: 'Pago vencido de colaboradores extra',
-          pendingDescription: 'Hay {{count}} colaborador(es) extra esperando pago para convertirse en capacidad comprada.',
+          pendingTitle: 'Pago pendiente de usuarios extra contabilizados',
+          overdueTitle: 'Pago vencido de usuarios extra contabilizados',
+          pendingDescription: 'Hay {{count}} usuario(s) extra contabilizado(s) esperando pago para convertirse en capacidad comprada.',
           badges: {
             pending: 'Pendiente',
             overdue: 'Vencido',
@@ -116,9 +116,9 @@ const es = {
             paidAllowance: 'Capacidad extra pagada',
           },
           notes: {
-            pendingKeepsQuantity: 'Reducir empleados antes del pago no disminuye la pendiente abierta.',
-            pendingAllowsGrace: 'Mientras siga dentro del plazo, la empresa puede mantener hasta 3 employees extra pendientes.',
-            overdueBlocksNewEmployees: 'Cuando vence el plazo, solo se bloquean nuevas creaciones con role employee.',
+            pendingKeepsQuantity: 'Reducir usuarios antes del pago no disminuye la pendiente abierta.',
+            pendingAllowsGrace: 'Mientras siga dentro del plazo, la empresa puede mantener hasta 3 usuarios extra contabilizados pendientes.',
+            overdueBlocksNewEmployees: 'Cuando vence el plazo, el uso extra del plan puede bloquearse hasta completar el pago.',
           },
           actions: {
             payNow: 'Pagar extras en Stripe',
@@ -740,7 +740,7 @@ const es = {
       },
       teamEntries: {
         title: 'Marcaciones del equipo',
-        description: 'Últimas marcaciones enviadas por los colaboradores.',
+        description: 'Ultimas marcaciones enviadas por los usuarios del equipo.',
         error: 'No se pudieron cargar las marcaciones.',
         empty: 'Aún no hay marcaciones.',
       },
@@ -758,7 +758,7 @@ const es = {
     toast: {
       sessionExpired: {
         title: 'Sesión expirada',
-        description: 'Inicia sesión de nuevo o usa un usuario con permiso de empleado.',
+        description: 'Inicia sesión de nuevo o usa un usuario con acceso al reloj.',
       },
       fetchEntriesError: {
         title: 'Error al buscar marcaciones',
@@ -1721,14 +1721,14 @@ const es = {
         unnamed: 'Area sin nombre',
       },
       extraEmployees: {
-        pendingTitle: 'Pago pendiente de colaboradores extra',
-        overdueTitle: 'Pago vencido de colaboradores extra',
+        pendingTitle: 'Pago pendiente de usuarios extra contabilizados',
+        overdueTitle: 'Pago vencido de usuarios extra contabilizados',
         badges: {
           pending: 'Pendiente',
           overdue: 'Vencido',
         },
         description:
-          'Hay {{count}} colaborador(es) extra esperando pago. Cuando se pague, esta cantidad pasa a ser capacidad extra comprada de la empresa.',
+          'Hay {{count}} usuario(s) extra contabilizado(s) esperando pago. Cuando se pague, esta cantidad pasa a ser capacidad extra comprada de la empresa.',
         pendingQuantity: '{{count}} pendiente(s)',
         paidAllowance: '{{count}} extras pagados',
         dueAt: 'Vence el {{date}}',

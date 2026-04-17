@@ -199,12 +199,12 @@ export function PlanSummaryCard({ billing, usage, canManageBilling = false, onOv
 
   const plan = billing?.plan || {}
   const subscription = billing?.subscription || {}
-  const employees = usage?.employees || {}
+  const billableUsers = usage?.billable_users || usage?.employees || {}
   const extraEmployees = usage?.extra_employees || {}
 
-  const hasLimit = employees.limit !== null && employees.limit !== undefined
+  const hasLimit = billableUsers.limit !== null && billableUsers.limit !== undefined
   const usagePercent = hasLimit
-    ? Math.min(100, Math.round((employees.current / (employees.limit || 1)) * 100))
+    ? Math.min(100, Math.round((billableUsers.current / (billableUsers.limit || 1)) * 100))
     : null
 
   const statusKey = (subscription.status || subscription.subscription_status || '').toLowerCase()
@@ -276,12 +276,12 @@ export function PlanSummaryCard({ billing, usage, canManageBilling = false, onOv
               <Users className="h-4 w-4 text-primary" />
               {hasLimit
                 ? t('settingsPage.plan.usage.withLimit', {
-                    current: employees.current ?? 0,
-                    limit: employees.limit ?? 0,
+                    current: billableUsers.current ?? 0,
+                    limit: billableUsers.limit ?? 0,
                   })
-                : t('settingsPage.plan.usage.withoutLimit', { current: employees.current ?? 0 })}
+                : t('settingsPage.plan.usage.withoutLimit', { current: billableUsers.current ?? 0 })}
             </div>
-            {employees.over_limit ? (
+            {billableUsers.over_limit ? (
               <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-100">
                 {t('settingsPage.plan.usage.overLimit')}
               </span>
@@ -293,7 +293,7 @@ export function PlanSummaryCard({ billing, usage, canManageBilling = false, onOv
                 <div
                   className={cn(
                     'h-2 rounded-full transition-all',
-                    employees.over_limit ? 'bg-amber-500' : 'bg-primary',
+                    billableUsers.over_limit ? 'bg-amber-500' : 'bg-primary',
                   )}
                   style={{ width: `${usagePercent}%` }}
                 />

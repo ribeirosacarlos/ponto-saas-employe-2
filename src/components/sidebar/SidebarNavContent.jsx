@@ -202,7 +202,7 @@ export function SidebarNavContent({
             aria-hidden={!adminExpanded}
             className={cn(
               'overflow-hidden transition-[max-height,opacity] duration-200',
-              adminExpanded ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0',
+              adminExpanded ? 'max-h-[999px] opacity-100' : 'max-h-0 opacity-0',
             )}
           >
             <div className="space-y-1 pt-1">
@@ -266,7 +266,7 @@ export function SidebarNavContent({
             aria-hidden={!superAdminExpanded}
             className={cn(
               'overflow-hidden transition-[max-height,opacity] duration-200',
-              superAdminExpanded ? 'max-h-[220px] opacity-100' : 'max-h-0 opacity-0',
+              superAdminExpanded ? 'max-h-[999px] opacity-100' : 'max-h-0 opacity-0',
             )}
           >
             <div className="space-y-1 pt-1">

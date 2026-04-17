@@ -86,8 +86,8 @@ const ptBR = {
           limits: 'Limites',
         },
         usage: {
-          withLimit: '{{current}} de {{limit}} colaboradores cadastrados',
-          withoutLimit: '{{current}} colaboradores cadastrados',
+          withLimit: '{{current}} de {{limit}} usuarios contabilizados no plano',
+          withoutLimit: '{{current}} usuarios contabilizados no plano',
           overLimit: 'Acima do limite',
           percent: '{{percent}}% da capacidade',
         },
@@ -101,9 +101,9 @@ const ptBR = {
           unknown: 'Status desconhecido',
         },
         extraEmployees: {
-          pendingTitle: 'Pagamento pendente de colaboradores extras',
-          overdueTitle: 'Pagamento vencido de colaboradores extras',
-          pendingDescription: 'Ha {{count}} colaborador(es) extra aguardando quitacao para virar capacidade comprada.',
+          pendingTitle: 'Pagamento pendente de usuarios extras contabilizados',
+          overdueTitle: 'Pagamento vencido de usuarios extras contabilizados',
+          pendingDescription: 'Ha {{count}} usuario(s) extra aguardando quitacao para virar capacidade comprada.',
           badges: {
             pending: 'Pendente',
             overdue: 'Vencido',
@@ -114,9 +114,9 @@ const ptBR = {
             paidAllowance: 'Capacidade extra quitada',
           },
           notes: {
-            pendingKeepsQuantity: 'Reduzir employees antes do pagamento nao diminui a pendencia aberta.',
-            pendingAllowsGrace: 'Enquanto estiver no prazo, a empresa pode manter ate 3 employees extras pendentes.',
-            overdueBlocksNewEmployees: 'Quando o prazo vence, o bloqueio vale apenas para novas criacoes com role employee.',
+            pendingKeepsQuantity: 'Reduzir usuarios antes do pagamento nao diminui a pendencia aberta.',
+            pendingAllowsGrace: 'Enquanto estiver no prazo, a empresa pode manter ate 3 usuarios extras pendentes.',
+            overdueBlocksNewEmployees: 'Quando o prazo vence, novas contabilizacoes extras no plano podem ser bloqueadas ate a quitacao.',
           },
           actions: {
             payNow: 'Pagar extras no Stripe',
@@ -126,7 +126,7 @@ const ptBR = {
             checkoutErrorTitle: 'Nao foi possivel abrir o checkout',
           },
           errors: {
-            checkout: 'Ocorreu um erro ao iniciar o pagamento dos colaboradores extras.',
+            checkout: 'Ocorreu um erro ao iniciar o pagamento dos usuarios extras contabilizados.',
             missingUrl: 'A resposta do checkout nao retornou uma URL valida.',
           },
         },
@@ -726,7 +726,7 @@ const ptBR = {
       },
       teamEntries: {
         title: 'Batidas da equipe',
-        description: 'Últimas batidas registradas pelos colaboradores da area.',
+        description: 'Ultimas batidas registradas pelos usuarios da equipe.',
         error: 'Não foi possível carregar as batidas.',
         empty: 'Nenhuma batida encontrada ainda.',
       },
@@ -744,7 +744,7 @@ const ptBR = {
     toast: {
       sessionExpired: {
         title: 'Sessão expirada',
-        description: 'Faça login novamente ou use um usuário com permissão de funcionário.',
+        description: 'Faça login novamente ou use um usuário com acesso ao ponto.',
       },
       fetchEntriesError: {
         title: 'Erro ao buscar batidas',
@@ -1707,14 +1707,14 @@ const ptBR = {
         unnamed: 'Area sem nome',
       },
       extraEmployees: {
-        pendingTitle: 'Pagamento pendente de colaboradores extras',
-        overdueTitle: 'Pagamento vencido de colaboradores extras',
+        pendingTitle: 'Pagamento pendente de usuarios extras contabilizados',
+        overdueTitle: 'Pagamento vencido de usuarios extras contabilizados',
         badges: {
           pending: 'Pendente',
           overdue: 'Vencido',
         },
         description:
-          'Ha {{count}} colaborador(es) extra aguardando pagamento. Ao quitar, essa quantidade vira capacidade extra comprada da empresa.',
+          'Ha {{count}} usuario(s) extra aguardando pagamento. Ao quitar, essa quantidade vira capacidade extra comprada da empresa.',
         pendingQuantity: '{{count}} pendente(s)',
         paidAllowance: '{{count}} extras quitados',
         dueAt: 'Vencimento em {{date}}',

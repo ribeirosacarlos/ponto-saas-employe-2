@@ -91,8 +91,8 @@ const en = {
           limits: 'Limits',
         },
         usage: {
-          withLimit: '{{current}} of {{limit}} teammates',
-          withoutLimit: '{{current}} teammates',
+          withLimit: '{{current}} of {{limit}} users counted in the plan',
+          withoutLimit: '{{current}} users counted in the plan',
           overLimit: 'Over the limit',
           percent: '{{percent}}% of capacity',
         },
@@ -106,9 +106,9 @@ const en = {
           unknown: 'Unknown status',
         },
         extraEmployees: {
-          pendingTitle: 'Pending payment for extra employees',
-          overdueTitle: 'Overdue payment for extra employees',
-          pendingDescription: 'There are {{count}} extra employee(s) waiting for payment before becoming purchased capacity.',
+          pendingTitle: 'Pending payment for extra counted users',
+          overdueTitle: 'Overdue payment for extra counted users',
+          pendingDescription: 'There are {{count}} extra counted user(s) waiting for payment before becoming purchased capacity.',
           badges: {
             pending: 'Pending',
             overdue: 'Overdue',
@@ -119,9 +119,9 @@ const en = {
             paidAllowance: 'Paid extra capacity',
           },
           notes: {
-            pendingKeepsQuantity: 'Removing employees before payment does not reduce the open pending quantity.',
-            pendingAllowsGrace: 'While still within the deadline, the company can keep up to 3 pending extra employees.',
-            overdueBlocksNewEmployees: 'Once overdue, only new user creation with role employee is blocked.',
+            pendingKeepsQuantity: 'Removing users before payment does not reduce the open pending quantity.',
+            pendingAllowsGrace: 'While still within the deadline, the company can keep up to 3 pending extra counted users.',
+            overdueBlocksNewEmployees: 'Once overdue, new extra plan usage may be blocked until payment is completed.',
           },
           actions: {
             payNow: 'Pay extras in Stripe',
@@ -131,7 +131,7 @@ const en = {
             checkoutErrorTitle: 'Could not open checkout',
           },
           errors: {
-            checkout: 'An error occurred while starting payment for extra employees.',
+            checkout: 'An error occurred while starting payment for extra counted users.',
             missingUrl: 'Checkout response did not include a valid URL.',
           },
         },
@@ -743,7 +743,7 @@ const en = {
       },
       teamEntries: {
         title: 'Team punches',
-        description: 'Latest punches from employees you manage.',
+        description: 'Latest punches from users in your team.',
         error: 'Unable to load team punches.',
         empty: 'No punches found yet.',
       },
@@ -761,7 +761,7 @@ const en = {
       toast: {
         sessionExpired: {
           title: 'Session expired',
-          description: 'Log in again or use a user with employee permissions.',
+          description: 'Log in again or use a user with time clock access.',
         },
       fetchEntriesError: {
         title: 'Error fetching punches',
@@ -1723,14 +1723,14 @@ const en = {
         unnamed: 'Unnamed area',
       },
       extraEmployees: {
-        pendingTitle: 'Pending payment for extra employees',
-        overdueTitle: 'Overdue payment for extra employees',
+        pendingTitle: 'Pending payment for extra counted users',
+        overdueTitle: 'Overdue payment for extra counted users',
         badges: {
           pending: 'Pending',
           overdue: 'Overdue',
         },
         description:
-          'There are {{count}} extra employee(s) waiting for payment. Once paid, this quantity becomes purchased extra capacity for the company.',
+          'There are {{count}} extra counted user(s) waiting for payment. Once paid, this quantity becomes purchased extra capacity for the company.',
         pendingQuantity: '{{count}} pending',
         paidAllowance: '{{count}} paid extras',
         dueAt: 'Due on {{date}}',

@@ -302,7 +302,7 @@ export default function SuperAdminDashboard() {
                   <p className="mt-1">
                     {t(
                       'superAdmin.dashboard.notes.employeeDescription',
-                      'O backend considera employee como usuarios vinculados por company_id.',
+                      'O backend deve considerar usuarios contabilizados no plano e usuarios com ponto, nao apenas a role employee.',
                     )}
                   </p>
                 </div>

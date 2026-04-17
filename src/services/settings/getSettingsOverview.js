@@ -110,6 +110,7 @@ import { api } from '../http/api'
 /**
  * @typedef {Object} SettingsUsage
  * @property {SettingsUsageEmployees} [employees]
+ * @property {SettingsUsageEmployees} [billable_users]
  * @property {SettingsUsageExtraEmployees} [extra_employees]
  */
 
@@ -210,13 +211,30 @@ const normalizeUsage = (usage) => {
   if (!usage) return null
   const payload = usage || {}
   const employees = payload.employees || {}
+  const billableUsers = payload.billable_users ?? payload.billableUsers ?? payload.time_tracking_users ?? payload.timeTrackingUsers ?? null
+  const usageUsers = billableUsers || employees
   const extraEmployees = payload.extra_employees ?? payload.extraEmployees ?? {}
   return {
     ...payload,
     employees: {
-      current: employees.current ?? 0,
-      limit: employees.limit ?? null,
-      over_limit: employees.over_limit ?? employees.overLimit ?? false,
+      current: employees.current ?? usageUsers.current ?? 0,
+      limit: employees.limit ?? usageUsers.limit ?? null,
+      over_limit:
+        employees.over_limit ??
+        employees.overLimit ??
+        usageUsers.over_limit ??
+        usageUsers.overLimit ??
+        false,
+    },
+    billable_users: {
+      current: usageUsers.current ?? employees.current ?? 0,
+      limit: usageUsers.limit ?? employees.limit ?? null,
+      over_limit:
+        usageUsers.over_limit ??
+        usageUsers.overLimit ??
+        employees.over_limit ??
+        employees.overLimit ??
+        false,
     },
     extra_employees: {
       has_pending_payment:
