@@ -607,7 +607,7 @@ const ptBR = {
         totalAreas: 'Total de areas',
         totalEmployees: 'Total de colaboradores',
         emptyAreas: 'Areas sem colaboradores',
-        busiestArea: 'Area com mais colaboradores',
+        busiestArea: 'Área com mais colaboradores',
         noEmployees: 'Nenhuma',
       },
       states: {
@@ -616,7 +616,7 @@ const ptBR = {
         errorTitle: 'Erro ao carregar areas',
         emptyTitle: 'Nenhuma area cadastrada',
         emptyDescription: 'Crie a primeira area para organizar a equipe.',
-        cardFallback: 'Area',
+        cardFallback: 'Área',
       },
       dialog: {
         createTitle: 'Nova area',
@@ -651,11 +651,11 @@ const ptBR = {
           description: 'Defina um nome para continuar.',
         },
         created: {
-          title: 'Area criada',
+          title: 'Área criada',
           description: 'A nova area foi cadastrada.',
         },
         updated: {
-          title: 'Area atualizada',
+          title: 'Área atualizada',
           description: 'As alteracoes foram salvas.',
         },
         saveError: {
@@ -663,7 +663,7 @@ const ptBR = {
           description: 'Nao foi possivel salvar a area.',
         },
         deleted: {
-          title: 'Area excluida',
+          title: 'Área excluida',
           description: 'A area {{name}} foi removida.',
         },
         deleteError: {
@@ -1190,7 +1190,7 @@ const ptBR = {
     announcementsPage: {
       tag: 'Empresa',
       title: 'Comunicados',
-      subtitle: 'Mensagens enviadas pelo Admin e Area Manager.',
+      subtitle: 'Mensagens enviadas pelo Admin e Área Manager.',
       helper: {
         updated: 'Atualizado pelo RH',
         pendingBadge: '{{count}} pendentes',
@@ -1244,7 +1244,7 @@ const ptBR = {
       },
       sender: {
         admin: 'Admin',
-        areaManager: 'Area Manager',
+        areaManager: 'Área Manager',
         default: 'Equipe',
       },
     },
@@ -1636,7 +1636,7 @@ const ptBR = {
           name: 'Nome',
           email: 'E-mail',
           role: 'Perfil',
-          area: 'Area',
+          area: 'Área',
           createdAt: 'Criado em',
           actions: 'Ações',
         },
@@ -1664,15 +1664,15 @@ const ptBR = {
         deactivating: 'Removendo...',
         retry: 'Tentar novamente',
       },
-      form: {
-        nameLabel: 'Nome',
-        emailLabel: 'E-mail',
-        roleLabel: 'Perfil de acesso',
-        areaLabel: 'Area principal',
-        areaPlaceholder: 'Selecione a area principal',
-        managedAreasLabel: 'Areas gerenciadas',
-        managedAreasHint: 'Segure Ctrl ou Cmd para selecionar mais de uma area.',
-        shiftLabel: 'Jornada',
+        form: {
+          nameLabel: 'Nome',
+          emailLabel: 'E-mail',
+          roleLabel: 'Perfil de acesso',
+          areaLabel: 'Área principal',
+          areaPlaceholder: 'Selecione a area principal (opcional)',
+          managedAreasLabel: 'Areas gerenciadas',
+          managedAreasHint: 'Segure Ctrl ou Cmd para selecionar mais de uma area.',
+          shiftLabel: 'Jornada',
         shiftPlaceholder: 'Selecione uma jornada',
         passwordLabel: 'Senha (opcional)',
         passwordPlaceholder: 'Defina uma nova senha',
@@ -1704,7 +1704,7 @@ const ptBR = {
       areas: {
         loading: 'Carregando areas...',
         empty: 'Nenhuma area disponivel',
-        unnamed: 'Area sem nome',
+        unnamed: 'Área sem nome',
       },
       extraEmployees: {
         pendingTitle: 'Pagamento pendente de usuarios extras contabilizados',

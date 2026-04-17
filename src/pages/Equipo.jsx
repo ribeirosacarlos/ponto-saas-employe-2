@@ -578,7 +578,6 @@ export default function Equipo() {
             onChange={(event) =>
               setter((prev) => ({ ...prev, area_id: event.target.value }))
             }
-            required={form.role === 'employee'}
             disabled={disabled}
           >
             <option value="">{t('equipoPage.form.areaPlaceholder')}</option>
