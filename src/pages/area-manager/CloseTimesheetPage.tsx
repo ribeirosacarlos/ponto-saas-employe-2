@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   endOfDay,
   endOfMonth,
@@ -673,18 +673,22 @@ export default function CloseTimesheetPage() {
           />
 
           <Card className="overflow-visible border-dashed">
-            <CardHeader className="space-y-1 pb-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Filter className="h-4 w-4" />
-                <span>{t('closeTimesheetPage.filters.title')}</span>
+            <CardHeader className="flex flex-row items-center justify-between gap-3 pb-0">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                  <Filter className="h-3 w-3" />
+                  <span>{t('closeTimesheetPage.filters.title')}</span>
+                </div>
+                <CardTitle className="mt-0.5 text-xs font-semibold">{t('closeTimesheetPage.table.title')}</CardTitle>
               </div>
-              <div>
-                <CardTitle className="text-base">{t('closeTimesheetPage.table.title')}</CardTitle>
-                <p className="text-xs text-muted-foreground">{t('closeTimesheetPage.table.subtitle')}</p>
-              </div>
+              <p className="hidden text-[11px] text-muted-foreground lg:block">
+                {t('closeTimesheetPage.table.subtitle')}
+              </p>
             </CardHeader>
-            <CardContent className="space-y-3 pt-1">
-              <div className="flex gap-2 sm:flex-nowrap">
+            <CardContent className="space-y-2 pt-2">
+              <div className="grid gap-2 xl:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] xl:items-end">
+              <div className="space-y-1.5">
+              <div className="inline-flex w-full flex-wrap items-center gap-1 rounded-lg border border-border/70 bg-background/80 p-1 sm:flex-nowrap">
                 {([
                   ['lastMonth', t('closeTimesheetPage.filters.quick.lastMonth')],
                   ['thisMonth', t('closeTimesheetPage.filters.quick.thisMonth')],
@@ -694,8 +698,8 @@ export default function CloseTimesheetPage() {
                     key={key}
                     type="button"
                     size="sm"
-                    variant={activeQuickRange === key ? 'default' : 'outline'}
-                    className="flex-1"
+                    variant={activeQuickRange === key ? 'default' : 'ghost'}
+                    className="h-7 flex-1 rounded-md px-2 text-[11px]"
                     onClick={() => handleQuickRange(key)}
                   >
                     {label}
@@ -703,31 +707,25 @@ export default function CloseTimesheetPage() {
                 ))}
               </div>
 
-              <div className="grid gap-2 rounded-[18px] border border-border/70 bg-background/70 p-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    {t('closeTimesheetPage.filters.from')}
-                  </label>
-                  <div className="relative">
+              <div className="grid gap-1.5 rounded-lg border border-border/70 bg-background/70 p-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  {t('closeTimesheetPage.filters.from')}
+                </span>
+                  <div className="relative min-w-0">
                     <Input
                       type="date"
                       value={filters.from}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, from: event.target.value }))
                       }
-                      className="h-10 pr-10"
+                      className="h-8 rounded-md pr-8 text-[11px]"
                     />
-                    <CalendarRange className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  </div>
+                    <CalendarRange className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                 </div>
-                <div className="hidden items-center justify-center pb-3 text-sm font-semibold text-muted-foreground sm:flex">
-                  →
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
+                <span className="text-[10px] font-medium text-muted-foreground">
                     {t('closeTimesheetPage.filters.to')}
-                  </label>
-                  <div className="relative">
+                </span>
+                  <div className="relative min-w-0">
                     <Input
                       type="date"
                       value={filters.to}
@@ -735,16 +733,16 @@ export default function CloseTimesheetPage() {
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, to: event.target.value }))
                       }
-                      className="h-10 pr-10"
+                      className="h-8 rounded-md pr-8 text-[11px]"
                     />
-                    <CalendarRange className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <CalendarRange className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                   </div>
-                </div>
+              </div>
               </div>
 
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
+              <div className="grid gap-1.5 self-start xl:grid-cols-[minmax(16rem,1fr)_auto] xl:items-end">
+                <div className="min-w-0 space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">
                     {t('closeTimesheetPage.filters.employee')}
                   </label>
                   <div ref={employeeComboboxRef} className="relative">
@@ -752,18 +750,18 @@ export default function CloseTimesheetPage() {
                     type="button"
                     onClick={() => setEmployeeComboboxOpen((prev) => !prev)}
                     className={cn(
-                      'flex h-10 w-full items-center gap-3 rounded-xl border border-border/80 bg-background/80 px-3 py-2 text-left text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-input/70',
+                      'flex h-8 w-full items-center gap-2 rounded-md border border-border/80 bg-background/80 px-2.5 py-1.5 text-left text-[11px] text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-input/70',
                       employeeComboboxOpen && 'border-ring',
                     )}
                   >
-                    <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
+                    <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1 overflow-hidden">
                       {selectedEmployee ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate font-semibold text-foreground">
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <span className="truncate text-[11px] font-semibold text-foreground">
                             {selectedEmployee.name || selectedEmployee.email}
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+                          <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                             <span className="truncate">{selectedEmployee.email}</span>
                             <span
                               role="button"
@@ -788,14 +786,14 @@ export default function CloseTimesheetPage() {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">
+                        <span className="block truncate whitespace-nowrap text-muted-foreground">
                           {t('closeTimesheetPage.filters.searchPlaceholder')}
                         </span>
                       )}
                     </div>
                     <ChevronDown
                       className={cn(
-                        'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                        'h-3 w-3 shrink-0 text-muted-foreground transition-transform',
                         employeeComboboxOpen && 'rotate-180',
                       )}
                     />
@@ -811,13 +809,13 @@ export default function CloseTimesheetPage() {
                       )}
                     >
                       <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           autoFocus
                           value={employeeSearch}
                           onChange={(event) => setEmployeeSearch(event.target.value)}
                           placeholder={t('closeTimesheetPage.filters.searchPlaceholder')}
-                          className="h-10 pl-9"
+                          className="h-9 pl-8 text-xs"
                         />
                       </div>
 
@@ -827,14 +825,14 @@ export default function CloseTimesheetPage() {
                             {[1, 2, 3].map((item) => (
                               <div
                                 key={item}
-                                className="h-10 w-full animate-pulse rounded-xl bg-muted/70"
+                                className="h-9 w-full animate-pulse rounded-lg bg-muted/70"
                               />
                             ))}
                           </div>
                         ) : employeesError ? (
-                          <div className="flex items-center gap-2 rounded-xl border border-amber-200/70 bg-amber-500/10 px-3 py-3 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
-                            <span className="text-sm">{employeesError}</span>
+                          <div className="flex items-center gap-2 rounded-lg border border-amber-200/70 bg-amber-500/10 px-3 py-2.5 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span className="text-xs">{employeesError}</span>
                           </div>
                         ) : filteredEmployees.length ? (
                           filteredEmployees.map((emp) => (
@@ -846,7 +844,7 @@ export default function CloseTimesheetPage() {
                                 setEmployeeComboboxOpen(false)
                               }}
                               className={cn(
-                                'flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition',
+                                'flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition',
                                 emp.id === filters.employeeId
                                   ? 'border-primary/60 bg-primary/10'
                                   : 'border-border/70 bg-background/70 hover:border-primary/30 hover:bg-muted/60',
@@ -854,15 +852,15 @@ export default function CloseTimesheetPage() {
                             >
                               <UserRound
                                 className={cn(
-                                  'mt-0.5 h-4 w-4 shrink-0',
+                                  'mt-0.5 h-3.5 w-3.5 shrink-0',
                                   emp.id === filters.employeeId ? 'text-primary' : 'text-muted-foreground',
                                 )}
                               />
                               <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold text-foreground">
+                                <div className="truncate text-xs font-semibold text-foreground">
                                   {emp.name || emp.email}
                                 </div>
-                                <div className="truncate text-xs text-muted-foreground">
+                                <div className="truncate text-[11px] text-muted-foreground">
                                   {emp.email}
                                 </div>
                               </div>
@@ -878,12 +876,12 @@ export default function CloseTimesheetPage() {
                   ) : null}
                   </div>
                 </div>
-                <div className="flex w-full gap-2 lg:w-auto">
+                <div className="flex w-full gap-1.5 xl:w-auto">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="flex-1 lg:min-w-[112px] lg:flex-none"
+                    className="h-8 flex-1 rounded-md px-2.5 text-[11px] xl:min-w-[80px] xl:flex-none"
                     onClick={() => {
                       setFilters({
                         employeeId: '',
@@ -900,18 +898,19 @@ export default function CloseTimesheetPage() {
                   <Button
                     type="button"
                     size="sm"
-                    className="flex-[1.4] lg:min-w-[148px]"
+                    className="h-8 flex-[1.1] rounded-md px-2.5 text-[11px] xl:min-w-[88px]"
                     onClick={() => handleSearch(1)}
                     disabled={!canSearch || loadingEntries}
                   >
                     {loadingEntries ? (
-                      <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                      <RefreshCcw className="mr-1 h-3 w-3 animate-spin" />
                     ) : (
-                      <Search className="mr-2 h-4 w-4" />
+                      <Search className="mr-1 h-3 w-3" />
                     )}
                     {t('closeTimesheetPage.filters.submit')}
                   </Button>
                 </div>
+              </div>
               </div>
 
               {hasSearched ? (
@@ -1164,7 +1163,7 @@ export default function CloseTimesheetPage() {
                                       </Dialog>
                                       </div>
                                     ) : (
-                                      <span className="text-sm text-muted-foreground">—</span>
+                                      <span className="text-sm text-muted-foreground">â€”</span>
                                     )}
                                   </td>
                                   <td className="px-3 py-3 align-middle">
