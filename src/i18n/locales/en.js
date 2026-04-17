@@ -577,8 +577,17 @@ const en = {
         identifier: 'ID {{id}}',
         employeeCount: '{{count}} employee(s)',
         membersLabel: 'Employees',
+        emptyBadge: 'Empty',
+        memberCountBadge: '{{count}}',
         moreMembers: '+{{count}} selected',
         emptyMembers: 'No employees linked to this area.',
+      },
+      metrics: {
+        totalAreas: 'Total areas',
+        totalEmployees: 'Total employees',
+        emptyAreas: 'Areas without employees',
+        busiestArea: 'Area with most employees',
+        noEmployees: 'None',
       },
       states: {
         noPermissionTitle: 'Restricted access',

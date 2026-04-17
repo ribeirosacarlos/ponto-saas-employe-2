@@ -58,6 +58,20 @@ const sortEmployeesByName = (employees = []) =>
 
 const isManagedAreasRole = (role) => MANAGED_AREAS_ROLES.has(role)
 
+const getInitials = (value, fallback = 'AR') => {
+  const parts = String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (!parts.length) return fallback
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+}
+
 function buildEmployeeUpdatePayload(employee, areaId) {
   const payload = {
     name: employee?.name || '',
@@ -161,6 +175,41 @@ export default function AdminAreas() {
         .filter(Boolean),
     [employeeById, formState.employeeIds],
   )
+
+  const areaMetrics = useMemo(() => {
+    const totalAreas = areas.length
+    let totalEmployees = 0
+    let emptyAreas = 0
+    let busiestArea = null
+
+    areas.forEach((area) => {
+      const linkedEmployees = employeesByAreaId.get(String(area.id)) || []
+      const linkedCount = linkedEmployees.length
+
+      totalEmployees += linkedCount
+
+      if (linkedCount === 0) {
+        emptyAreas += 1
+      }
+
+      if (!busiestArea || linkedCount > busiestArea.count) {
+        busiestArea = {
+          name: area.name || t('adminAreasPage.states.cardFallback'),
+          count: linkedCount,
+        }
+      }
+    })
+
+    return {
+      totalAreas,
+      totalEmployees,
+      emptyAreas,
+      busiestAreaName:
+        busiestArea?.count > 0
+          ? busiestArea.name
+          : t('adminAreasPage.metrics.noEmployees'),
+    }
+  }, [areas, employeesByAreaId, t])
 
   const reloadEmployees = useCallback(async () => {
     if (!hasManagementAccess) return { ok: false }
@@ -376,13 +425,26 @@ export default function AdminAreas() {
 
     if (loading || employeesLoading) {
       return (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="h-40 animate-pulse rounded-2xl border border-border/70 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={`metric-${item}`}
+                className="h-16 animate-pulse rounded-xl border border-border/70 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
+              />
+            ))}
+          </div>
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+          >
+            {[1, 2, 3].map((item) => (
+              <div
+                key={`card-${item}`}
+                className="h-56 animate-pulse rounded-2xl border border-border/70 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
+              />
+            ))}
+          </div>
         </div>
       )
     }
@@ -424,91 +486,139 @@ export default function AdminAreas() {
     }
 
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {areas.map((area) => {
-          const linkedEmployees = employeesByAreaId.get(String(area.id)) || []
-          const previewNames = linkedEmployees.slice(0, 3).map((employee) => employee.name).filter(Boolean)
+      <div className="space-y-4">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-border/70 bg-card/95 px-3 py-2.5 shadow-[0_18px_40px_-40px_rgba(62,82,152,0.38)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {t('adminAreasPage.metrics.totalAreas')}
+            </p>
+            <p className="mt-1 text-xl font-semibold leading-none text-foreground">{areaMetrics.totalAreas}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/95 px-3 py-2.5 shadow-[0_18px_40px_-40px_rgba(62,82,152,0.38)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {t('adminAreasPage.metrics.totalEmployees')}
+            </p>
+            <p className="mt-1 text-xl font-semibold leading-none text-foreground">{areaMetrics.totalEmployees}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/95 px-3 py-2.5 shadow-[0_18px_40px_-40px_rgba(62,82,152,0.38)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {t('adminAreasPage.metrics.emptyAreas')}
+            </p>
+            <p className="mt-1 text-xl font-semibold leading-none text-foreground">{areaMetrics.emptyAreas}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/95 px-3 py-2.5 shadow-[0_18px_40px_-40px_rgba(62,82,152,0.38)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {t('adminAreasPage.metrics.busiestArea')}
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold leading-5 text-foreground">
+              {areaMetrics.busiestAreaName}
+            </p>
+          </div>
+        </div>
 
-          return (
-            <div
-              key={area.id}
-              className="rounded-2xl border border-border/70 bg-card/95 p-4 shadow-[0_30px_90px_-70px_rgba(62,82,152,0.45)]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <Building2 className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-foreground">
-                        {area.name || t('adminAreasPage.states.cardFallback')}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {t('adminAreasPage.card.employeeCount', {
-                          count: linkedEmployees.length,
-                        })}
-                      </p>
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+        >
+          {areas.map((area) => {
+            const linkedEmployees = employeesByAreaId.get(String(area.id)) || []
+            const memberCount = linkedEmployees.length
+            const hasEmployees = memberCount > 0
+
+            return (
+              <div
+                key={area.id}
+                className="flex min-h-[248px] flex-col rounded-2xl border border-border/70 bg-card/95 p-4 shadow-[0_30px_90px_-70px_rgba(62,82,152,0.45)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Building2 className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-foreground">
+                          {area.name || t('adminAreasPage.states.cardFallback')}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('adminAreasPage.card.employeeCount', { count: memberCount })}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="mt-3 rounded-xl border border-border/70 bg-muted/35 p-2.5">
-                <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  <Users className="h-3 w-3" />
-                  {t('adminAreasPage.card.membersLabel')} ({linkedEmployees.length})
+                  <span
+                    className={cn(
+                      'inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-[11px] font-semibold',
+                      hasEmployees
+                        ? 'border-primary/35 bg-primary/12 text-primary'
+                        : 'border-border/70 bg-muted/70 text-muted-foreground',
+                    )}
+                  >
+                    {hasEmployees
+                      ? t('adminAreasPage.card.memberCountBadge', { count: memberCount })
+                      : t('adminAreasPage.card.emptyBadge')}
+                  </span>
                 </div>
-                {previewNames.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {previewNames.map((name) => (
-                      <span
-                        key={`${area.id}-${name}`}
-                        className="rounded-full border border-border/70 bg-background/80 px-2.5 py-0.5 text-[11px] leading-5 text-foreground"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                    {linkedEmployees.length > previewNames.length ? (
-                      <span className="rounded-full border border-border/70 bg-background/80 px-2.5 py-0.5 text-[11px] leading-5 text-muted-foreground">
-                        {t('adminAreasPage.card.moreMembers', {
-                          count: linkedEmployees.length - previewNames.length,
-                        })}
-                      </span>
-                    ) : null}
+
+                <div className="mt-4 border-t border-border/70 pt-4">
+                  <div className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    <Users className="h-3.5 w-3.5" />
+                    {t('adminAreasPage.card.membersLabel')}
                   </div>
-                ) : (
-                  <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-                    {t('adminAreasPage.card.emptyMembers')}
-                  </p>
-                )}
-              </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full px-3 text-xs"
-                  onClick={() => handleOpenEdit(area)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  {t('adminAreasPage.actions.edit')}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
-                  className="rounded-full px-3 text-xs"
-                  onClick={() => setDeleteTarget(area)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {t('adminAreasPage.actions.delete')}
-                </Button>
+                  {hasEmployees ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {linkedEmployees.map((employee) => {
+                        const employeeName =
+                          employee.name || t('adminAreasPage.form.employeeFallback')
+
+                        return (
+                          <span
+                            key={`${area.id}-${employee.id}`}
+                            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 py-1 pl-1 pr-3 text-[11px] text-foreground"
+                          >
+                            <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                              {getInitials(employeeName, 'CL')}
+                            </span>
+                            <span className="max-w-[150px] truncate">{employeeName}</span>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-[13px] italic leading-5 text-muted-foreground">
+                      {t('adminAreasPage.card.emptyMembers')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full px-3 text-xs"
+                    onClick={() => handleOpenEdit(area)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    {t('adminAreasPage.actions.edit')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-full px-3 text-xs"
+                    onClick={() => setDeleteTarget(area)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t('adminAreasPage.actions.delete')}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     )
   }

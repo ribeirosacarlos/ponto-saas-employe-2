@@ -598,8 +598,17 @@ const ptBR = {
         identifier: 'ID {{id}}',
         employeeCount: '{{count}} colaborador(es)',
         membersLabel: 'Colaboradores',
+        emptyBadge: 'Vazio',
+        memberCountBadge: '{{count}}',
         moreMembers: '+{{count}} selecionado(s)',
         emptyMembers: 'Nenhum colaborador vinculado a esta area.',
+      },
+      metrics: {
+        totalAreas: 'Total de areas',
+        totalEmployees: 'Total de colaboradores',
+        emptyAreas: 'Areas sem colaboradores',
+        busiestArea: 'Area com mais colaboradores',
+        noEmployees: 'Nenhuma',
       },
       states: {
         noPermissionTitle: 'Acesso restrito',
@@ -1626,7 +1635,7 @@ const ptBR = {
         headers: {
           name: 'Nome',
           email: 'E-mail',
-          role: 'Role',
+          role: 'Perfil',
           area: 'Area',
           createdAt: 'Criado em',
           actions: 'Ações',
@@ -1658,7 +1667,7 @@ const ptBR = {
       form: {
         nameLabel: 'Nome',
         emailLabel: 'E-mail',
-        roleLabel: 'Role',
+        roleLabel: 'Perfil de acesso',
         areaLabel: 'Area principal',
         areaPlaceholder: 'Selecione a area principal',
         managedAreasLabel: 'Areas gerenciadas',

@@ -574,8 +574,17 @@ const es = {
         identifier: 'ID {{id}}',
         employeeCount: '{{count}} colaborador(es)',
         membersLabel: 'Colaboradores',
+        emptyBadge: 'Vacia',
+        memberCountBadge: '{{count}}',
         moreMembers: '+{{count}} seleccionado(s)',
         emptyMembers: 'No hay colaboradores vinculados a esta area.',
+      },
+      metrics: {
+        totalAreas: 'Total de areas',
+        totalEmployees: 'Total de colaboradores',
+        emptyAreas: 'Areas sin colaboradores',
+        busiestArea: 'Area con mas colaboradores',
+        noEmployees: 'Ninguna',
       },
       states: {
         noPermissionTitle: 'Acceso restringido',
