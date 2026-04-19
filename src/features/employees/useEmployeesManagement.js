@@ -181,15 +181,6 @@ export function useEmployeesManagement({
     shift: false,
   })
 
-  const fallbackShifts = useMemo(
-    () => [
-      { id: 'shift-morning', name: t?.('employeesPage.shifts.morning') || 'Morning' },
-      { id: 'shift-evening', name: t?.('employeesPage.shifts.evening') || 'Evening' },
-      { id: 'shift-overnight', name: t?.('employeesPage.shifts.overnight') || 'Overnight' },
-    ],
-    [t],
-  )
-
   const loadEmployees = useCallback(
     async (targetPage = 1, currentFilters = {}) => {
       if (!enabled) return { ok: false }
@@ -239,17 +230,17 @@ export function useEmployeesManagement({
           }),
         )
       } else {
-        setShifts(fallbackShifts)
+        setShifts([])
       }
       return { ok: true }
     } catch (err) {
-      setShifts(fallbackShifts)
+      setShifts([])
       onShiftsError?.(err)
       return { ok: false, error: err }
     } finally {
       setShiftsLoading(false)
     }
-  }, [enabled, fallbackShifts, onShiftsError])
+  }, [enabled, onShiftsError])
 
   const ensureShifts = useCallback(async () => {
     if (!enabled || shiftsLoading || shifts.length) return { ok: false }
