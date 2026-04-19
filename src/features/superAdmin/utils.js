@@ -156,7 +156,7 @@ export const resolveSuperAdminError = (error, t, fallback) => {
     return t('superAdmin.shared.errors.unauthorized', 'Sua sessao expirou. Entre novamente.')
   }
   if (status === 403) {
-    return t('superAdmin.shared.errors.forbidden', 'Voce nao tem permissao para acessar esta area.')
+    return t('superAdmin.shared.errors.forbidden', 'Voce não tem permissao para acessar esta area.')
   }
   return (
     error?.response?.data?.message ||

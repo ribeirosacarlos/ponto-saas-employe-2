@@ -360,12 +360,12 @@ export default function Vacations() {
                           <p className="text-sm font-semibold">
                             {startLabel && endLabel
                               ? `${startLabel} - ${endLabel}`
-                              : t('vacationsPage.history.periodFallback', 'Periodo nao informado')}
+                              : t('vacationsPage.history.periodFallback', 'Periodo não informado')}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {days
                               ? t('vacationsPage.history.days', '{{count}} dias', { count: days })
-                              : t('vacationsPage.history.daysEmpty', 'Dias nao informados')}
+                              : t('vacationsPage.history.daysEmpty', 'Dias não informados')}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -444,7 +444,7 @@ export default function Vacations() {
                           <p className="text-xs text-muted-foreground">
                             {absence.startDate
                               ? formatDateLabel(absence.startDate, i18n.language)
-                              : t('vacationsPage.absences.dateFallback', 'Data nao informada')}
+                              : t('vacationsPage.absences.dateFallback', 'Data não informada')}
                           </p>
                         </div>
                         {absence.status ? renderStatusPill(absence.status) : null}

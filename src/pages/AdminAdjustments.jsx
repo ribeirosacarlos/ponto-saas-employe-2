@@ -391,7 +391,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
               {t('equipoPage.states.noPermissionTitle')}
             </p>
             <p className="mt-1">
-              {t('equipoPage.states.noPermissionDescription', 'Voce nao tem permissao para acessar.')}
+              {t('equipoPage.states.noPermissionDescription', 'Voce não tem permissao para acessar.')}
             </p>
           </div>
         </PageContainer>
@@ -611,7 +611,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                         <span className="text-[11px] text-muted-foreground">{typeLabel(entry.type)}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {entry.user?.email || t('adminAdjustmentsPage.table.userEmailFallback', 'Email nao informado')}
+                        {entry.user?.email || t('adminAdjustmentsPage.table.userEmailFallback', 'Email não informado')}
                       </p>
                       <p className="mt-2 text-xs text-foreground">
                         {formatDateTime(entry.clockedAt, t('adminAdjustmentsPage.table.unset', 'Nao informado'))}

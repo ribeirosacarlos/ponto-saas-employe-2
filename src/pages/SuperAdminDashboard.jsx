@@ -83,7 +83,7 @@ export default function SuperAdminDashboard() {
     return (
       <PageContainer className="py-6">
         <div className="rounded-2xl border border-border/70 bg-card/95 px-4 py-6 text-sm text-muted-foreground">
-          {t('superAdmin.shared.errors.forbidden', 'Voce nao tem permissao para acessar esta area.')}
+          {t('superAdmin.shared.errors.forbidden', 'Voce não tem permissao para acessar esta area.')}
         </div>
       </PageContainer>
     )
@@ -150,7 +150,7 @@ export default function SuperAdminDashboard() {
           <p className="mt-1">
             {t(
               'superAdmin.dashboard.states.emptyDescription',
-              'O dashboard ainda nao retornou indicadores para exibir.',
+              'O dashboard ainda não retornou indicadores para exibir.',
             )}
           </p>
         </div>
@@ -291,7 +291,7 @@ export default function SuperAdminDashboard() {
                   <p className="mt-1">
                     {t(
                       'superAdmin.dashboard.notes.mrrDescription',
-                      'Os valores exibidos sao estimativas de receita, nao faturamento realizado.',
+                      'Os valores exibidos sao estimativas de receita, não faturamento realizado.',
                     )}
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export default function SuperAdminDashboard() {
                   <p className="mt-1">
                     {t(
                       'superAdmin.dashboard.notes.employeeDescription',
-                      'O backend deve considerar usuarios contabilizados no plano e usuarios com ponto, nao apenas a role employee.',
+                      'O backend deve considerar usuarios contabilizados no plano e usuarios com ponto, não apenas a role employee.',
                     )}
                   </p>
                 </div>

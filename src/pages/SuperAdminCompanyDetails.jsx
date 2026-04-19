@@ -211,7 +211,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
     return (
       <PageContainer className="py-6">
         <div className="rounded-2xl border border-border/70 bg-card/95 px-4 py-6 text-sm text-muted-foreground">
-          {t('superAdmin.shared.errors.forbidden', 'Voce nao tem permissao para acessar esta area.')}
+          {t('superAdmin.shared.errors.forbidden', 'Voce não tem permissao para acessar esta area.')}
         </div>
       </PageContainer>
     )

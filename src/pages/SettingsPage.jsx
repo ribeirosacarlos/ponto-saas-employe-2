@@ -122,7 +122,7 @@ export default function Settings() {
         <GeolocationSettingsCard canEdit={canEditPreferences} />
         {/*
           Cards ocultos temporariamente.
-          "Notificacoes e alertas" e "Acesso administrativo" ainda nao possuem funcionalidade ativa.
+          "Notificacoes e alertas" e "Acesso administrativo" ainda não possuem funcionalidade ativa.
         */}
       </div>
   )

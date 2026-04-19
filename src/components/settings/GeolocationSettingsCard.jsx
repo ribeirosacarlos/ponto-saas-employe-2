@@ -427,7 +427,7 @@ export function GeolocationSettingsCard({ canEdit }) {
                         )
                       : t(
                           'settingsPage.geolocation.unavailable',
-                          'O plano atual da empresa nao suporta geolocalizacao obrigatoria no registro.',
+                          'O plano atual da empresa não suporta geolocalizacao obrigatoria no registro.',
                         )}
                   </p>
                 </div>

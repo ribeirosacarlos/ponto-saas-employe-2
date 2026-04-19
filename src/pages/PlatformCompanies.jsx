@@ -682,7 +682,7 @@ export default function PlatformCompanies() {
             <p className="mt-1">
               {t(
                 'equipoPage.states.noPermissionDescription',
-                'Voce nao tem acesso a esta pagina.',
+                'Voce não tem acesso a esta pagina.',
               )}
             </p>
           </div>

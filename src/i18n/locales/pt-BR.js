@@ -50,7 +50,7 @@ const ptBR = {
       errors: {
         noCompany: 'Nenhuma empresa vinculada ao usuario.',
         load: 'Nao foi possivel carregar a assinatura atual.',
-        forbidden: 'Seu perfil nao possui acesso a dados de assinatura.',
+        forbidden: 'Seu perfil não possui acesso a dados de assinatura.',
       },
       tabs: {
         plan: 'Plano',
@@ -114,7 +114,7 @@ const ptBR = {
             paidAllowance: 'Capacidade extra quitada',
           },
           notes: {
-            pendingKeepsQuantity: 'Reduzir usuarios antes do pagamento nao diminui a pendencia aberta.',
+            pendingKeepsQuantity: 'Reduzir usuarios antes do pagamento não diminui a pendencia aberta.',
             pendingAllowsGrace: 'Enquanto estiver no prazo, a empresa pode manter ate 3 usuarios extras pendentes.',
             overdueBlocksNewEmployees: 'Quando o prazo vence, novas contabilizacoes extras no plano podem ser bloqueadas ate a quitacao.',
           },
@@ -127,7 +127,7 @@ const ptBR = {
           },
           errors: {
             checkout: 'Ocorreu um erro ao iniciar o pagamento dos usuarios extras contabilizados.',
-            missingUrl: 'A resposta do checkout nao retornou uma URL valida.',
+            missingUrl: 'A resposta do checkout não retornou uma URL valida.',
           },
         },
       },
@@ -181,7 +181,7 @@ const ptBR = {
         description:
           'Defina a localizacao da empresa e o raio permitido para identificar registros realizados fora da area esperada.',
         helper:
-          'Essa validacao nao bloqueia o registro do ponto. Ela serve apenas para alertas na visualizacao dos registros.',
+          'Essa validacao não bloqueia o registro do ponto. Ela serve apenas para alertas na visualizacao dos registros.',
         fields: {
           locationValidationEnabled: 'Ativar validacao de localizacao',
           locationValidationEnabledHint:
@@ -196,9 +196,9 @@ const ptBR = {
           allowedRadiusMeters: 'Ex.: 100',
         },
         alerts: {
-          incomplete: 'A localizacao da empresa ainda nao foi configurada completamente.',
+          incomplete: 'A localizacao da empresa ainda não foi configurada completamente.',
           enabledWithoutCoordinates:
-            'A validacao de localizacao esta ativada, mas a latitude e a longitude da empresa ainda nao foram configuradas.',
+            'A validacao de localizacao esta ativada, mas a latitude e a longitude da empresa ainda não foram configuradas.',
         },
         actions: {
           save: 'Salvar',
@@ -981,7 +981,7 @@ const ptBR = {
           unavailable:
             'Nao foi possivel obter sua localizacao. A localizacao e obrigatoria para registrar o ponto.',
           unsupported:
-            'Seu dispositivo ou navegador nao oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
+            'Seu dispositivo ou navegador não oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
         },
       },
     },
@@ -1723,7 +1723,7 @@ const ptBR = {
         errors: {
           title: 'Nao foi possivel abrir o checkout',
           description: 'Tente novamente em instantes.',
-          missingUrl: 'A resposta do checkout nao retornou uma URL valida.',
+          missingUrl: 'A resposta do checkout não retornou uma URL valida.',
         },
       },
       toasts: {

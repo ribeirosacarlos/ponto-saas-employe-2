@@ -482,7 +482,7 @@ export default function AdminVacations() {
               {t('equipoPage.states.noPermissionTitle')}
             </p>
             <p className="mt-1">
-              {t('equipoPage.states.noPermissionDescription', 'Voce nao tem permissao para acessar.')}
+              {t('equipoPage.states.noPermissionDescription', 'Voce não tem permissao para acessar.')}
             </p>
           </div>
         </PageContainer>
@@ -724,12 +724,12 @@ export default function AdminVacations() {
                                         <p className="text-sm font-semibold">
                                           {startLabel && endLabel
                                             ? `${startLabel} - ${endLabel}`
-                                            : t('vacationsPage.history.periodFallback', 'Periodo nao informado')}
+                                            : t('vacationsPage.history.periodFallback', 'Periodo não informado')}
                                         </p>
                                         <p className="mt-1 text-xs text-muted-foreground">
                                           {days
                                             ? t('vacationsPage.history.days', '{{count}} dias', { count: days })
-                                            : t('vacationsPage.history.daysEmpty', 'Dias nao informados')}
+                                            : t('vacationsPage.history.daysEmpty', 'Dias não informados')}
                                         </p>
                                       </div>
                                       {renderStatusPill(request.status || 'pending')}
@@ -820,7 +820,7 @@ export default function AdminVacations() {
                                       <p className="mt-1 text-xs text-muted-foreground">
                                         {absence.date
                                           ? formatDateLabel(absence.date, i18n.language)
-                                          : t('vacationsPage.absences.dateFallback', 'Data nao informada')}
+                                          : t('vacationsPage.absences.dateFallback', 'Data não informada')}
                                       </p>
                                     </div>
                                   </div>
@@ -871,7 +871,7 @@ export default function AdminVacations() {
                       approvalTarget.endDate,
                       i18n.language,
                     )}`
-                  : t('vacationsPage.history.periodFallback', 'Periodo nao informado')}
+                  : t('vacationsPage.history.periodFallback', 'Periodo não informado')}
               </p>
               {approvalTarget?.requestedDays ? (
                 <p className="mt-1 text-xs text-muted-foreground">

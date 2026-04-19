@@ -39,7 +39,7 @@ export default function SubscribePage({ message, onRetry }) {
     if (!companyId) {
       toast({
         title: t('access.subscription.checkoutErrorTitle', 'Nao foi possivel iniciar o checkout'),
-        description: t('access.subscription.companyMissing', 'Empresa nao encontrada. Entre novamente e tente de novo.'),
+        description: t('access.subscription.companyMissing', 'Empresa não encontrada. Entre novamente e tente de novo.'),
         variant: 'error',
       })
       return

@@ -408,7 +408,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         case GEOLOCATION_ERROR_CODES.UNSUPPORTED:
           return t(
             'timeClock.geolocation.errors.unsupported',
-            'Seu dispositivo ou navegador nao oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
+            'Seu dispositivo ou navegador não oferece geolocalizacao. A localizacao e obrigatoria para registrar o ponto.',
           )
         case GEOLOCATION_ERROR_CODES.POSITION_UNAVAILABLE:
         default:
@@ -924,7 +924,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         title: t('timeClock.absence.blockTitle', 'Registro bloqueado'),
         description: t(
           'timeClock.absence.blockDescription',
-          'Voce esta em ausencia hoje e nao pode registrar o ponto.',
+          'Voce esta em ausencia hoje e não pode registrar o ponto.',
         ),
         variant: 'error',
       })
