@@ -360,6 +360,7 @@ const ptBR = {
         team: 'Equipe',
         platformCompanies: 'Empresas',
         platformBillingPlans: 'Planos (Billing)',
+        auditLogs: 'Auditoria',
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Empresas',
         settings: 'Configurações',

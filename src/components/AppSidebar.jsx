@@ -63,7 +63,7 @@ export function AppSidebar({
         return {
           ...item,
           path: route?.path ?? item.path,
-          requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
+          requires: item.requires ?? route?.guard ?? (route?.isPublic ? { public: true } : undefined),
         }
       }),
     [],

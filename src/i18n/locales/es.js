@@ -374,6 +374,7 @@ const es = {
         team: 'Equipo',
         platformCompanies: 'Empresas',
         platformBillingPlans: 'Planes (Billing)',
+        auditLogs: 'Auditoría',
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Empresas',
         settings: 'Configuración',

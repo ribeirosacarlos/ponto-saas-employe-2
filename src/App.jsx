@@ -22,6 +22,7 @@ import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
 import SuperAdminCompanies from './pages/SuperAdminCompanies.jsx'
 import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails.jsx'
+import AuditLogs from './pages/AuditLogs.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
 import AdminAreas from './pages/AdminAreas.jsx'
 import AdminDocuments from './pages/AdminDocuments.jsx'
@@ -116,7 +117,7 @@ export default function App() {
           badge: item.id === 'dashboard' ? todayBadge : item.badge,
           badgeKey: item.id === 'dashboard' ? undefined : item.badgeKey,
           path: route?.path ?? item.path,
-          requires: route?.guard ?? (route?.isPublic ? { public: true } : item.requires),
+          requires: item.requires ?? route?.guard ?? (route?.isPublic ? { public: true } : undefined),
         }
       })
         .filter((item) => canRenderCard(capabilities, item.requires))
@@ -482,6 +483,8 @@ export default function App() {
         return <AdminAreas sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAnnouncements':
         return <AdminAnnouncements sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'auditLogs':
+        return <AuditLogs />
       case 'adminCompanyTimezone':
         return <AdminCompanyTimezone sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'closeTimesheet':

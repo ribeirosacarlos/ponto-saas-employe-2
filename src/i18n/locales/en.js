@@ -377,6 +377,7 @@ const en = {
         team: 'Team',
         platformCompanies: 'Companies',
         platformBillingPlans: 'Billing plans',
+        auditLogs: 'Audit logs',
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Companies',
         settings: 'Settings',

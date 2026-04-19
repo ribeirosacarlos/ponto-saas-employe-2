@@ -39,6 +39,10 @@ export const ROUTES = {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  auditLogs: {
+    path: '/audit-logs',
+    guard: { anyOf: ['admin', 'super_admin'] },
+  },
   closeTimesheet: {
     path: '/area-manager/payroll-close',
     aliases: ['/area-manager/close-timesheet'],
