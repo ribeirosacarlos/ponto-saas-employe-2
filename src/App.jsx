@@ -39,6 +39,7 @@ import { Card, CardContent } from './components/ui/card.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './services/modules/employee'
 import { getCurrentUser, clearAuthCache } from './services/authService'
+import { listAuditLogs } from './services/auditLogsService'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
 import { cn } from './lib/utils'
@@ -99,6 +100,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
   const [isHandlingPublicAuthRoute, setIsHandlingPublicAuthRoute] = useState(false)
+  const [companyAuditAccess, setCompanyAuditAccess] = useState(null)
 
   const formatMinutesToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return t('dashboardPage.badges.today')
@@ -107,6 +109,15 @@ export default function App() {
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
   }, [t])
+
+  const isSuperAdmin = useMemo(
+    () => roles?.some((role) => String(role).toLowerCase() === 'super_admin'),
+    [roles],
+  )
+  const isCompanyAdmin = useMemo(
+    () => roles?.some((role) => String(role).toLowerCase() === 'admin'),
+    [roles],
+  )
 
   const allNavItems = useMemo(
     () =>
@@ -122,6 +133,10 @@ export default function App() {
       })
         .filter((item) => canRenderCard(capabilities, item.requires))
         .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true))
+        .filter((item) => {
+          if (item.id !== 'auditLogsAdmin') return true
+          return companyAuditAccess === true
+        })
         .sort((left, right) => {
           const groupOrder =
             (NAV_GROUP_ORDER[left.group] ?? Number.MAX_SAFE_INTEGER) -
@@ -140,7 +155,7 @@ export default function App() {
             sensitivity: 'base',
           })
         }),
-    [capabilities, isSuperAdminOnlyNav, t, todayBadge],
+    [capabilities, companyAuditAccess, isSuperAdminOnlyNav, t, todayBadge],
   )
 
   const desktopNavItems = useMemo(
@@ -176,8 +191,13 @@ export default function App() {
   })
 
   const canAccessPage = useCallback(
-    (page) => canRenderCard(capabilities, ROUTES[page]?.guard),
-    [capabilities],
+    (page) => {
+      if (page === 'auditLogs' && !isSuperAdmin && isCompanyAdmin && companyAuditAccess === false) {
+        return false
+      }
+      return canRenderCard(capabilities, ROUTES[page]?.guard)
+    },
+    [capabilities, companyAuditAccess, isCompanyAdmin, isSuperAdmin],
   )
 
   const getDefaultAuthenticatedPage = useCallback(() => {
@@ -221,6 +241,7 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      setCompanyAuditAccess(null)
       setIsHandlingPublicAuthRoute(false)
       clearAccessDenied()
       const pageFromPath =
@@ -262,6 +283,46 @@ export default function App() {
     setCurrentPage(allowedPage)
     setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
   }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, navigateTo, token])
+
+  useEffect(() => {
+    if (!token) {
+      setCompanyAuditAccess(null)
+      return
+    }
+
+    if (isSuperAdmin) {
+      setCompanyAuditAccess(true)
+      return
+    }
+
+    if (!isCompanyAdmin) {
+      setCompanyAuditAccess(false)
+      return
+    }
+
+    let active = true
+
+    const verifyAuditAccess = async () => {
+      try {
+        await listAuditLogs('admin', { page: 1, per_page: 1 })
+        if (!active) return
+        setCompanyAuditAccess(true)
+      } catch (error) {
+        if (!active) return
+        if (error?.response?.status === 403) {
+          setCompanyAuditAccess(false)
+          return
+        }
+        setCompanyAuditAccess(true)
+      }
+    }
+
+    verifyAuditAccess()
+
+    return () => {
+      active = false
+    }
+  }, [isCompanyAdmin, isSuperAdmin, token])
 
   useEffect(() => {
     const handlePopstate = () => {
