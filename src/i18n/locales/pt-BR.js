@@ -484,6 +484,50 @@ const ptBR = {
           no: 'Não',
         },
       },
+      companyDetails: {
+        administrativeSettings: {
+          tag: 'Configuracoes',
+          title: 'Configuracoes Administrativas',
+          description:
+            'Controle o timezone da empresa e a liberacao da auditoria para administradores da operacao.',
+          helper:
+            'As alteracoes valem para a empresa selecionada e seguem as validacoes do backend da plataforma.',
+          summary: {
+            timezone: 'Timezone atual',
+            audit: 'Auditoria para admins',
+          },
+          fields: {
+            timezoneLabel: 'Timezone da empresa',
+            timezoneHint:
+              'Use a lista retornada pela API para definir como datas e horarios da empresa devem ser interpretados.',
+            auditLabel: 'Permitir visualizacao da auditoria para admins da empresa',
+            auditHint:
+              'Quando desabilitado, apenas o super admin podera consultar os logs de auditoria.',
+          },
+          values: {
+            enabled: 'Liberada',
+            disabled: 'Bloqueada',
+          },
+          actions: {
+            save: 'Salvar',
+            saving: 'Salvando...',
+            reload: 'Recarregar',
+          },
+          states: {
+            errorTitle: 'Erro ao carregar configuracoes',
+            saved: 'Configuracoes administrativas salvas com sucesso.',
+          },
+          toast: {
+            successTitle: 'Configuracoes salvas',
+            successDescription: 'As configuracoes administrativas da empresa foram atualizadas.',
+            errorTitle: 'Erro ao salvar',
+            errorDescription: 'Nao foi possivel salvar as configuracoes administrativas.',
+          },
+          validation: {
+            atLeastOne: 'Altere ao menos uma configuracao antes de salvar.',
+          },
+        },
+      },
     },
     adminTimezonePage: {
       title: 'Fuso horário da empresa',

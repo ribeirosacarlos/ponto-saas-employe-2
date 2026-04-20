@@ -501,6 +501,50 @@ const en = {
           no: 'No',
         },
       },
+      companyDetails: {
+        administrativeSettings: {
+          tag: 'Settings',
+          title: 'Administrative Settings',
+          description:
+            'Control the company timezone and audit visibility for company administrators.',
+          helper:
+            'Changes apply to the selected company and follow the platform backend validations.',
+          summary: {
+            timezone: 'Current timezone',
+            audit: 'Audit for admins',
+          },
+          fields: {
+            timezoneLabel: 'Company timezone',
+            timezoneHint:
+              'Use the API-provided list to define how the company dates and times should be interpreted.',
+            auditLabel: 'Allow audit log access for company admins',
+            auditHint:
+              'When disabled, only the super admin will be able to consult audit logs.',
+          },
+          values: {
+            enabled: 'Allowed',
+            disabled: 'Blocked',
+          },
+          actions: {
+            save: 'Save',
+            saving: 'Saving...',
+            reload: 'Reload',
+          },
+          states: {
+            errorTitle: 'Error loading settings',
+            saved: 'Administrative settings saved successfully.',
+          },
+          toast: {
+            successTitle: 'Settings saved',
+            successDescription: 'The company administrative settings were updated.',
+            errorTitle: 'Error saving',
+            errorDescription: 'Unable to save the administrative settings.',
+          },
+          validation: {
+            atLeastOne: 'Change at least one setting before saving.',
+          },
+        },
+      },
     },
     adminShiftsPage: {
       title: 'Work shifts',

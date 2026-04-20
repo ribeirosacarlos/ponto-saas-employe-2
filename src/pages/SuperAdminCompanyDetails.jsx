@@ -20,6 +20,7 @@ import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { getCompany, blockCompany, unblockCompany } from '../services/platformCompaniesService'
+import { AdministrativeSettingsCard } from '../components/super-admin/AdministrativeSettingsCard'
 import {
   getCompanySubscription,
   listBillingPlans,
@@ -125,6 +126,23 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
     t,
   )
   const healthMeta = getHealthStatusMeta(company?.raw?.health_status, t)
+
+  const handleAdministrativeSettingsSaved = useCallback((settings) => {
+    if (!settings?.timezone) return
+
+    setCompany((current) => {
+      if (!current) return current
+
+      return {
+        ...current,
+        timezone: settings.timezone,
+        raw: {
+          ...current.raw,
+          timezone: settings.timezone,
+        },
+      }
+    })
+  }, [])
 
   const handleBlockConfirm = async () => {
     if (!companyId) return
@@ -404,6 +422,12 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
               />
             </CardContent>
           </Card>
+
+          <AdministrativeSettingsCard
+            companyId={companyId}
+            enabled={hasAccess && Boolean(company)}
+            onSaved={handleAdministrativeSettingsSaved}
+          />
         </div>
       ) : null}
 

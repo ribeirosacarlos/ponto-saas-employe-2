@@ -498,6 +498,50 @@ const es = {
           no: 'No',
         },
       },
+      companyDetails: {
+        administrativeSettings: {
+          tag: 'Configuraciones',
+          title: 'Configuraciones Administrativas',
+          description:
+            'Controla la zona horaria de la empresa y la liberacion de auditoria para los administradores de la operacion.',
+          helper:
+            'Los cambios aplican a la empresa seleccionada y siguen las validaciones del backend de la plataforma.',
+          summary: {
+            timezone: 'Timezone actual',
+            audit: 'Auditoria para admins',
+          },
+          fields: {
+            timezoneLabel: 'Timezone de la empresa',
+            timezoneHint:
+              'Usa la lista devuelta por la API para definir como deben interpretarse las fechas y horas de la empresa.',
+            auditLabel: 'Permitir visualizacion de auditoria para admins de la empresa',
+            auditHint:
+              'Cuando este deshabilitado, solo el super admin podra consultar los logs de auditoria.',
+          },
+          values: {
+            enabled: 'Liberada',
+            disabled: 'Bloqueada',
+          },
+          actions: {
+            save: 'Guardar',
+            saving: 'Guardando...',
+            reload: 'Recargar',
+          },
+          states: {
+            errorTitle: 'Error al cargar configuraciones',
+            saved: 'Configuraciones administrativas guardadas con exito.',
+          },
+          toast: {
+            successTitle: 'Configuraciones guardadas',
+            successDescription: 'Las configuraciones administrativas de la empresa fueron actualizadas.',
+            errorTitle: 'Error al guardar',
+            errorDescription: 'No fue posible guardar las configuraciones administrativas.',
+          },
+          validation: {
+            atLeastOne: 'Cambia al menos una configuracion antes de guardar.',
+          },
+        },
+      },
     },
     adminShiftsPage: {
       title: 'Jornadas de trabajo',
