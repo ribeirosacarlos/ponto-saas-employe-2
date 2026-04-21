@@ -34,6 +34,7 @@ import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
+import { HelpContactDialog } from './components/HelpContactDialog.jsx'
 import { Button } from './components/ui/button.jsx'
 import { Card, CardContent } from './components/ui/card.jsx'
 import { useAuthStore } from './store/useAuth.js'
@@ -98,6 +99,7 @@ export default function App() {
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
   )
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
   const [todayBadge, setTodayBadge] = useState(t('dashboardPage.badges.today'))
   const [isHandlingPublicAuthRoute, setIsHandlingPublicAuthRoute] = useState(false)
   const [companyAuditAccess, setCompanyAuditAccess] = useState(null)
@@ -454,10 +456,7 @@ export default function App() {
     })
   }
   const handleHelp = () => {
-    toast({
-      title: t('dashboardPage.toasts.help.title'),
-      description: t('dashboardPage.toasts.help.description'),
-    })
+    setHelpDialogOpen(true)
   }
   const handleLogout = async () => {
     await logout()
@@ -757,6 +756,7 @@ export default function App() {
                 onNavigate={navigateTo}
               />
             ) : null}
+            <HelpContactDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
           </>
         ) : (
           <Login onGoToTimeClock={handleGoToTimeClock} />

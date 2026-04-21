@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button'
 import { Switch } from '../components/ui/switch'
 import { cn } from '../lib/utils'
 import { PlanSummaryCard } from '../components/settings/PlanSummaryCard'
+import { SubscriptionManagementCard } from '../components/settings/SubscriptionManagementCard'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { PreferencesCard } from '../components/settings/PreferencesCard'
 import { GeolocationSettingsCard } from '../components/settings/GeolocationSettingsCard'
@@ -32,87 +33,91 @@ export default function Settings() {
   )
 
   const renderPlanTab = () => (
-      <div className="grid gap-4 md:grid-cols-2">
-        {isLoading ? (
-            <Card className="border border-border/80 bg-card/90">
-              <CardHeader>
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          {isLoading ? (
+              <Card className="border border-border/80 bg-card/90">
+                <CardHeader>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('settingsPage.plan.title')}
+                  </p>
+                  <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t('settingsPage.loading')}
+                  </div>
+                </CardContent>
+              </Card>
+          ) : billing ? (
+              <PlanSummaryCard
+                billing={billing}
+                usage={usage}
+                links={links}
+                canManageBilling={canEditPreferences}
+                onOverviewReload={reload}
+              />
+          ) : (
+              <Card className="border border-border/80 bg-card/90">
+                <CardHeader>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('settingsPage.plan.title')}
+                  </p>
+                  <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {error ? (
+                      <div className="rounded-xl border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
+                        {error}
+                      </div>
+                  ) : (
+                      <p className="text-sm text-muted-foreground">{t('settingsPage.plan.empty')}</p>
+                  )}
+                  {error ? (
+                      <Button type="button" variant="outline" size="sm" onClick={reload}>
+                        {t('settingsPage.preferences.actions.reload')}
+                      </Button>
+                  ) : null}
+                </CardContent>
+              </Card>
+          )}
+          <Card className="border border-border/80 bg-card/90">
+            <CardHeader className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                  {t('settingsPage.plan.title')}
+                  {t('settingsPage.security.title')}
                 </p>
-                <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('settingsPage.loading')}
+                <CardTitle className="text-xl">{t('settingsPage.security.heading')}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/40 px-3 py-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t('settingsPage.security.mfa')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.security.mfaHint')}</p>
                 </div>
-              </CardContent>
-            </Card>
-        ) : billing ? (
-            <PlanSummaryCard
-              billing={billing}
-              usage={usage}
-              links={links}
-              canManageBilling={canEditPreferences}
-              onOverviewReload={reload}
-            />
-        ) : (
-            <Card className="border border-border/80 bg-card/90">
-              <CardHeader>
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                  {t('settingsPage.plan.title')}
-                </p>
-                <CardTitle className="text-xl">{t('settingsPage.plan.unknown')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {error ? (
-                    <div className="rounded-xl border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
-                      {error}
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">{t('settingsPage.plan.empty')}</p>
-                )}
-                {error ? (
-                    <Button type="button" variant="outline" size="sm" onClick={reload}>
-                      {t('settingsPage.preferences.actions.reload')}
-                    </Button>
-                ) : null}
-              </CardContent>
-            </Card>
-        )}
-        <Card className="border border-border/80 bg-card/90">
-          <CardHeader className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                {t('settingsPage.security.title')}
-              </p>
-              <CardTitle className="text-xl">{t('settingsPage.security.heading')}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/40 px-3 py-2">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.security.mfa')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.security.mfaHint')}</p>
+                <Button type="button" variant="outline" size="sm">
+                  {t('settingsPage.actions.manage')}
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm">
-                {t('settingsPage.actions.manage')}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/40 px-3 py-2">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t('settingsPage.security.sessions')}</p>
-                <p className="text-xs text-muted-foreground">{t('settingsPage.security.sessionsHint')}</p>
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/40 px-3 py-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t('settingsPage.security.sessions')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.security.sessionsHint')}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm">
+                  {t('settingsPage.actions.view')}
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm">
-                {t('settingsPage.actions.view')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        <SubscriptionManagementCard canManage={canEditPreferences} />
       </div>
   )
 
