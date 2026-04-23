@@ -306,7 +306,11 @@ export default function App() {
 
     const verifyAuditAccess = async () => {
       try {
-        await listAuditLogs('admin', { page: 1, per_page: 1 })
+        await listAuditLogs(
+          'admin',
+          { page: 1, per_page: 1 },
+          { skipAccessDeniedHandling: true },
+        )
         if (!active) return
         setCompanyAuditAccess(true)
       } catch (error) {

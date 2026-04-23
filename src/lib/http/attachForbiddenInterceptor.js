@@ -11,6 +11,10 @@ export function attachForbiddenInterceptor(axiosInstance) {
     (error) => {
       const status = error?.response?.status
       if (status === 403) {
+        if (error?.config?.skipAccessDeniedHandling) {
+          return Promise.reject(error)
+        }
+
         const data = error.response.data && typeof error.response.data === 'object' ? error.response.data : {}
         const message = data.message || i18n.t('errors.forbidden.description')
         const { reason } = resolveAccessDenial(message)

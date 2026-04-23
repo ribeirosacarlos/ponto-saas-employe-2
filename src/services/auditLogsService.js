@@ -71,10 +71,11 @@ const normalizePaginated = (payload = {}, page = 1, perPage = 20) => {
 
 const resolveBasePath = (scope = 'admin') => SCOPE_BASE_PATHS[scope] || SCOPE_BASE_PATHS.admin
 
-export async function listAuditLogs(scope = 'admin', params = {}) {
+export async function listAuditLogs(scope = 'admin', params = {}, requestConfig = {}) {
   const page = params?.page ?? 1
   const perPage = params?.per_page ?? params?.perPage ?? 20
   const { data } = await api.get(resolveBasePath(scope), {
+    ...requestConfig,
     params: compactParams({
       ...params,
       per_page: perPage,
