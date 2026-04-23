@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
+  Check,
   CalendarCheck,
+  ChevronDown,
   CreditCard,
   Loader2,
   Pencil,
@@ -71,6 +73,178 @@ const buildAssignForm = (employee = {}) => ({
   shift_id: employee.shift_id ?? employee.shiftId ?? '',
   start_date: new Date().toISOString().slice(0, 10),
 })
+
+const parseAreaSearch = (items = [], query = '') => {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) return items
+
+  return items.filter((item) => String(item.name || '').toLowerCase().includes(normalizedQuery))
+}
+
+function ManagedAreasMultiSelect({
+  id,
+  label,
+  value = [],
+  options = [],
+  onChange,
+  hint,
+  placeholder,
+  searchPlaceholder,
+  emptyLabel,
+  clearLabel,
+  selectedCountLabel,
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const rootRef = useRef(null)
+
+  const selectedValues = useMemo(() => value.map((item) => String(item)), [value])
+  const visibleOptions = useMemo(() => parseAreaSearch(options, query), [options, query])
+  const selectedOptions = useMemo(
+    () => options.filter((option) => selectedValues.includes(String(option.id))),
+    [options, selectedValues],
+  )
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [open])
+
+  const toggleValue = (nextValue) => {
+    const normalizedValue = String(nextValue)
+    const exists = selectedValues.includes(normalizedValue)
+    const nextSelection = exists
+      ? selectedValues.filter((item) => item !== normalizedValue)
+      : [...selectedValues, normalizedValue]
+
+    onChange(nextSelection)
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div ref={rootRef} className="relative">
+        <button
+          id={id}
+          type="button"
+          disabled={disabled}
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+          className={cn(
+            'flex min-h-12 w-full items-center gap-3 rounded-xl border border-border/80 bg-background/85 px-3 py-2 text-left shadow-[0_14px_35px_-26px_rgba(92,134,255,0.65)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            open && 'border-ring',
+            disabled && 'cursor-not-allowed opacity-60',
+          )}
+        >
+          <div className="min-w-0 flex-1">
+            {selectedOptions.length ? (
+              <div className="flex flex-wrap gap-2">
+                {selectedOptions.slice(0, 3).map((area) => (
+                  <span
+                    key={area.id}
+                    className="inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground"
+                  >
+                    {area.name || placeholder}
+                  </span>
+                ))}
+                {selectedOptions.length > 3 ? (
+                  <span className="inline-flex items-center rounded-full border border-border/70 bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    {selectedCountLabel.replace('{{count}}', String(selectedOptions.length))}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">{placeholder}</span>
+            )}
+          </div>
+          <ChevronDown
+            className={cn('h-4 w-4 shrink-0 text-muted-foreground transition', open && 'rotate-180')}
+          />
+        </button>
+
+        {open ? (
+          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[20px] border border-border/70 bg-card/95 p-3 shadow-[0_28px_80px_-42px_rgba(62,82,152,0.38)] backdrop-blur-xl">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10"
+              autoFocus
+            />
+
+            <div className="mt-3 max-h-64 space-y-2 overflow-auto pr-1">
+              {visibleOptions.length ? (
+                visibleOptions.map((area) => {
+                  const areaId = String(area.id)
+                  const selected = selectedValues.includes(areaId)
+
+                  return (
+                    <button
+                      key={areaId}
+                      type="button"
+                      onClick={() => toggleValue(areaId)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition',
+                        selected
+                          ? 'border-primary/30 bg-primary/10 text-foreground'
+                          : 'border-border/70 bg-background/75 hover:border-ring hover:bg-muted/70',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition',
+                          selected
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border bg-background text-transparent',
+                        )}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {area.name || placeholder}
+                      </span>
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="rounded-xl border border-dashed border-border/70 bg-background/50 px-3 py-6 text-center text-sm text-muted-foreground">
+                  {emptyLabel}
+                </div>
+              )}
+            </div>
+
+            {selectedOptions.length ? (
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                <span className="text-xs text-muted-foreground">
+                  {selectedCountLabel.replace('{{count}}', String(selectedOptions.length))}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2.5 text-xs"
+                  onClick={() => onChange([])}
+                >
+                  {clearLabel}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
+  )
+}
 
 const ExtraEmployeesNotice = ({
   extraEmployees,
@@ -558,8 +732,7 @@ export default function Equipo() {
     setter((prev) => normalizeFormRoleState(nextRole, prev))
   }
 
-  const handleManagedAreasChange = (setter) => (event) => {
-    const values = Array.from(event.target.selectedOptions || []).map((option) => option.value)
+  const handleManagedAreasChange = (setter) => (values) => {
     setter((prev) => ({ ...prev, managed_area_ids: values }))
   }
 
@@ -600,29 +773,20 @@ export default function Equipo() {
         </div>
 
         {showManagedAreas ? (
-          <div className="space-y-2">
-            <Label htmlFor={`${prefix}-managed-areas`}>
-              {t('equipoPage.form.managedAreasLabel')}
-            </Label>
-            <select
+          <ManagedAreasMultiSelect
               id={`${prefix}-managed-areas`}
-              name="managed_area_ids"
-              multiple
-              className="min-h-32 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={form.managed_area_ids}
+              label={t('equipoPage.form.managedAreasLabel')}
+              placeholder={t('equipoPage.form.managedAreasPlaceholder')}
+              searchPlaceholder={t('equipoPage.form.managedAreasSearchPlaceholder')}
+              emptyLabel={t('equipoPage.form.managedAreasEmpty')}
+              clearLabel={t('equipoPage.form.managedAreasClear')}
+              selectedCountLabel={t('equipoPage.form.managedAreasSelectedCount')}
+              options={areas}
               onChange={handleManagedAreasChange(setter)}
+              hint={t('equipoPage.form.managedAreasHint')}
               disabled={disabled || areasLoading || areas.length === 0}
-            >
-              {areas.map((area) => (
-                <option key={area.id} value={String(area.id)}>
-                  {area.name || t('equipoPage.areas.unnamed')}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              {t('equipoPage.form.managedAreasHint')}
-            </p>
-          </div>
+            />
         ) : null}
       </>
     )
