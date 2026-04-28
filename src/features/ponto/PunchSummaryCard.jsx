@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
-import { AjusteModal } from '../../components/AjusteModal'
+import { EntryAdjustmentModal } from '../../components/EntryAdjustmentModal'
 import { getWorkedToday } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
@@ -103,8 +103,19 @@ export function PunchSummaryCard({
             <CardTitle className="text-xl">{t('dashboard.myPoint')}</CardTitle>
             <p className="text-sm text-foreground/70">{t('dashboard.description')}</p>
           </div>
-          <AjusteModal
+          <EntryAdjustmentModal
+            entry={lastPunch}
             entries={entries}
+            defaultDate={
+              lastPunch?.clocked_at || lastPunch?.clockedAt || lastPunch?.created_at || lastPunch?.date
+                ? new Date(
+                    lastPunch.clocked_at ||
+                      lastPunch.clockedAt ||
+                      lastPunch.created_at ||
+                      lastPunch.date,
+                  )
+                : new Date()
+            }
             onSubmit={onAdjustment}
             isSubmitting={sendingAdjustment}
             trigger={

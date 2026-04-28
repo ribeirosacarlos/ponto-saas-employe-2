@@ -26,6 +26,7 @@ import {
   RefreshCcw,
   Search,
   Timer,
+  Trash2,
   UserRound,
   X,
 } from 'lucide-react'
@@ -35,6 +36,7 @@ import { Input } from '../../components/ui/input'
 import { AppTopBar } from '../../components/ui/AppTopBar'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -43,9 +45,10 @@ import {
 } from '../../components/ui/dialog'
 import { PageContainer } from '../../components/ui/PageContainer'
 import { useToast } from '../../components/ui/use-toast'
+import { canRenderCard, getCapabilitiesFromRoles } from '../../auth/acl'
 import { fetchAdminLocationSettings } from '../../services/adminLocationSettingsService'
 import { listEmployees } from '../../services/modules/employees'
-import { listTeamEntries } from '../../services/adminAdjustmentsService'
+import { deleteTimeEntry, listTeamEntries } from '../../services/adminAdjustmentsService'
 import { cn } from '../../lib/utils'
 import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
@@ -53,6 +56,7 @@ import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 
 const PAGE_SIZE = 30
 const EXPORT_PAGE_SIZE = 200
+const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 
 const getLastMonthRange = () => {
   const today = new Date()
@@ -91,8 +95,30 @@ const formatMinutes = (minutes?: number) => {
   return `${hours}:${mins}`
 }
 
-const hasFiniteCoordinates = (latitude?: number | null, longitude?: number | null) =>
-  Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))
+const isPendingApprovalAdjustment = (entry: any = {}) => {
+  const source = String(entry?.source ?? entry?.proposed_source ?? entry?.proposedSource ?? '')
+    .trim()
+    .toLowerCase()
+  const adjustmentStatus = String(entry?.adjustment_status ?? entry?.status ?? entry?.state ?? '')
+    .trim()
+    .toLowerCase()
+
+  return (
+    ['adjustment', 'proposed_adjustment'].includes(source) &&
+    adjustmentStatus === 'pending'
+  )
+}
+
+const isPresentCoordinate = (value?: number | string | null) => {
+  if (value === undefined || value === null) return false
+  if (typeof value === 'string' && value.trim() === '') return false
+  return Number.isFinite(Number(value))
+}
+
+const hasFiniteCoordinates = (
+  latitude?: number | string | null,
+  longitude?: number | string | null,
+) => isPresentCoordinate(latitude) && isPresentCoordinate(longitude)
 
 const calculateDistanceInMeters = (
   latitudeA?: number | null,
@@ -125,6 +151,7 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
   return {
     ...entry,
     id: entry.id ?? entry.uuid ?? entry.entry_id ?? `timesheet-entry-${index}`,
+    timeEntryId: entry.timeEntryId ?? entry.id ?? entry.time_entry_id ?? entry.uuid ?? null,
     clockedAt: clock,
     type: entry.type ?? entry.event_type ?? entry.kind ?? '',
     latitude: entry.latitude ?? null,
@@ -293,6 +320,13 @@ export default function CloseTimesheetPage() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const authUser = useAuthStore((state) => state.user)
+  const roles = useAuthStore((state) => state.roles)
+  const logout = useAuthStore((state) => state.logout)
+  const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
+  const canDeleteTimeEntries = useMemo(
+    () => canRenderCard(capabilities, DELETE_TIME_ENTRY_REQUIRES),
+    [capabilities],
+  )
 
   const defaultRange = useMemo(() => getLastMonthRange(), [])
   const [employees, setEmployees] = useState<any[]>([])
@@ -319,6 +353,8 @@ export default function CloseTimesheetPage() {
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState<'standard' | ''>('')
   const [locationEntry, setLocationEntry] = useState<any | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
+  const [deletingEntryId, setDeletingEntryId] = useState<string | number | null>(null)
   const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
@@ -490,6 +526,19 @@ export default function CloseTimesheetPage() {
     [i18n.language, t],
   )
 
+  const formatEntryType = useCallback(
+    (value?: string) => {
+      const normalized = String(value || '')
+        .trim()
+        .toLowerCase()
+
+      if (normalized === 'in') return t('types.in')
+      if (normalized === 'out') return t('types.out')
+      return value || t('closeTimesheetPage.table.noType')
+    },
+    [t],
+  )
+
   const formatDateLabel = useCallback(
     (value?: string) => {
       if (!value || value === 'unknown') return t('closeTimesheetPage.table.unknownDate')
@@ -554,6 +603,80 @@ export default function CloseTimesheetPage() {
     const nextPage = direction === 'next' ? (page || 1) + 1 : Math.max(1, (page || 1) - 1)
     await handleSearch(nextPage)
   }
+
+  const handleDeleteTimeEntry = useCallback(async () => {
+    if (!deleteTarget?.timeEntryId) return
+
+    const timeEntryId = deleteTarget.timeEntryId
+    setDeletingEntryId(timeEntryId)
+
+    try {
+      const response = await deleteTimeEntry(timeEntryId)
+      toast({
+        title: t('closeTimesheetPage.delete.successTitle', 'Registro excluído'),
+        description:
+          response?.message ||
+          t('closeTimesheetPage.delete.successDescription', 'Registro de ponto excluído com sucesso.'),
+        variant: 'success',
+      })
+      setEntries((prev) =>
+        prev.filter((entry) => {
+          const entryTimeEntryId =
+            entry?.timeEntryId ?? entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? null
+          return String(entryTimeEntryId) !== String(timeEntryId)
+        }),
+      )
+      setMeta((prev) => {
+        if (!prev) return prev
+
+        const currentTotal = Number(prev.total)
+        const nextTotal = Number.isFinite(currentTotal) ? Math.max(0, currentTotal - 1) : prev.total
+
+        return {
+          ...prev,
+          total: nextTotal,
+        }
+      })
+      setDeleteTarget(null)
+    } catch (error: any) {
+      const status = error?.response?.status
+
+      if (status === 401) {
+        toast({
+          title: t('toast.sessionExpired.title'),
+          description: error?.response?.data?.message || t('toast.sessionExpired.description'),
+          variant: 'error',
+        })
+        setDeleteTarget(null)
+        await logout()
+        return
+      }
+
+      const description =
+        status === 403
+          ? t(
+              'closeTimesheetPage.delete.forbiddenDescription',
+              'Você não tem permissão para excluir este registro.',
+            )
+          : status === 404
+            ? t(
+                'closeTimesheetPage.delete.notFoundDescription',
+                'Registro não encontrado ou já removido.',
+              )
+            : t(
+                'closeTimesheetPage.delete.errorDescription',
+                'Não foi possível excluir o registro de ponto.',
+              )
+
+      toast({
+        title: t('closeTimesheetPage.delete.errorTitle', 'Erro ao excluir registro'),
+        description,
+        variant: 'error',
+      })
+    } finally {
+      setDeletingEntryId(null)
+    }
+  }, [deleteTarget, logout, t, toast])
 
   const buildFilename = (suffix = 'folha-ponto') => {
     const name =
@@ -1013,12 +1136,17 @@ export default function CloseTimesheetPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[680px] table-fixed">
                           <thead>
-                            <tr className="border-b border-border/60 text-left text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                            <tr className="border-b border-border/60 text-center text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                               <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.time')}</th>
                               <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.type')}</th>
                               <th className="min-w-[200px] px-3 py-2">{t('closeTimesheetPage.table.headers.user')}</th>
                               <th className="min-w-[210px] px-3 py-2">{t('closeTimesheetPage.table.headers.location')}</th>
                               <th className="w-[110px] px-3 py-2">{t('closeTimesheetPage.table.headers.notes')}</th>
+                              {canDeleteTimeEntries ? (
+                              <th className="w-[132px] px-3 py-2">
+                                  {t('closeTimesheetPage.table.headers.actions', 'Ações')}
+                                </th>
+                              ) : null}
                             </tr>
                           </thead>
                           <tbody>
@@ -1026,6 +1154,7 @@ export default function CloseTimesheetPage() {
                               const clockKey = entry.clockedAt ? new Date(entry.clockedAt).toISOString() : ''
                               const isPending = summary.pendingIds.has(entry.id)
                               const isDuplicate = duplicatesSet.has(clockKey)
+                              const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
                               const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
                               const distanceFromCompany = companyLocation
                                 ? calculateDistanceInMeters(
@@ -1038,11 +1167,15 @@ export default function CloseTimesheetPage() {
                               const isOutsideCompany =
                                 distanceFromCompany !== null &&
                                 distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
-                              const statusLabel = isPending
-                                ? t('closeTimesheetPage.table.status.pending')
-                                : isDuplicate
-                                  ? t('closeTimesheetPage.table.status.duplicate')
-                                  : t('closeTimesheetPage.table.status.ok')
+                              const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
+                              const isDeletingEntry = deletingEntryId === entry.timeEntryId
+                              const statusLabel = hasPendingAdjustment
+                                ? t('closeTimesheetPage.table.status.adjustmentPending')
+                                : isPending
+                                  ? t('closeTimesheetPage.table.status.pending')
+                                  : isDuplicate
+                                    ? t('closeTimesheetPage.table.status.duplicate')
+                                    : t('closeTimesheetPage.table.status.ok')
                               return (
                                 <tr
                                   key={entry.id}
@@ -1062,20 +1195,20 @@ export default function CloseTimesheetPage() {
                                           : 'border-sky-200/70 bg-sky-500/10 text-sky-700',
                                       )}
                                     >
-                                      {entry.type || t('closeTimesheetPage.table.noType')}
+                                      {formatEntryType(entry.type)}
                                     </span>
                                   </td>
                                   <td className="px-3 py-2 align-middle">
-                                    <div className="truncate font-medium leading-tight">
+                                    <div className="truncate text-center font-medium leading-tight">
                                       {entry.user?.name || t('closeTimesheetPage.table.userFallback')}
                                     </div>
-                                    <div className="truncate text-[11px] text-muted-foreground">
+                                    <div className="truncate text-center text-[11px] text-muted-foreground">
                                       {entry.user?.email || ''}
                                     </div>
                                   </td>
                                   <td className="px-3 py-2 align-middle">
                                     {hasCoordinates ? (
-                                      <div className="flex flex-col items-start gap-1.5">
+                                      <div className="flex flex-col items-center gap-1.5">
                                         {distanceFromCompany !== null ? (
                                           <span
                                             className={cn(
@@ -1148,14 +1281,16 @@ export default function CloseTimesheetPage() {
                                       </Dialog>
                                       </div>
                                     ) : (
-                                      <span className="text-[11px] text-muted-foreground">â€”</span>
+                                      <span className="text-[11px] text-muted-foreground">-</span>
                                     )}
                                   </td>
                                   <td className="px-3 py-2 align-middle">
                                     <span
                                       className={cn(
-                                        'inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold leading-none',
-                                        isPending
+                                        'inline-flex min-w-[124px] justify-center rounded-md border px-2 py-1 text-center text-[11px] font-semibold leading-none',
+                                        hasPendingAdjustment
+                                          ? 'border-sky-200/70 bg-sky-500/10 text-sky-700'
+                                          : isPending
                                           ? 'border-amber-200/70 bg-amber-500/10 text-amber-700'
                                           : isDuplicate
                                             ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
@@ -1165,6 +1300,29 @@ export default function CloseTimesheetPage() {
                                       {statusLabel}
                                     </span>
                                   </td>
+                                  {canDeleteTimeEntries ? (
+                                    <td className="px-3 py-2 align-middle">
+                                      <div className="flex justify-center">
+                                        {canDeleteEntry ? (
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="h-7 gap-1.5 px-2.5 text-[11px]"
+                                            disabled={isDeletingEntry}
+                                            onClick={() => setDeleteTarget(entry)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                            {isDeletingEntry
+                                              ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                                              : t('closeTimesheetPage.delete.action', 'Excluir')}
+                                          </Button>
+                                        ) : (
+                                          <span className="text-[11px] text-muted-foreground">—</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  ) : null}
                                 </tr>
                               )
                             })}
@@ -1209,6 +1367,36 @@ export default function CloseTimesheetPage() {
           </Card>
         </div>
       </PageContainer>
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('closeTimesheetPage.delete.title', 'Excluir registro de ponto')}</DialogTitle>
+            <DialogDescription>
+              {t(
+                'closeTimesheetPage.delete.description',
+                'Tem certeza que deseja excluir este registro de ponto? Esta ação removerá o ponto das listagens e relatórios.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={Boolean(deletingEntryId)}>
+                {t('common.actions.cancel', 'Cancelar')}
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTimeEntry}
+              disabled={Boolean(deletingEntryId) || !deleteTarget?.timeEntryId}
+            >
+              {deletingEntryId
+                ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                : t('closeTimesheetPage.delete.confirm', 'Excluir')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

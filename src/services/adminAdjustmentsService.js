@@ -32,6 +32,7 @@ const normalizeAdjustment = (item = {}, index = 0) => {
 const normalizeTeamEntry = (entry = {}, index = 0) => ({
   ...entry,
   id: entry.id ?? entry.uuid ?? `team-entry-${index}`,
+  timeEntryId: entry.id ?? entry.time_entry_id ?? entry.timeEntryId ?? entry.uuid ?? null,
   userId: entry.user_id ?? entry.userId ?? entry.employee_id ?? null,
   clockedAt: entry.clocked_at ?? entry.clockedAt ?? entry.date ?? entry.timestamp ?? null,
   type: entry.type ?? entry.event_type ?? entry.kind ?? entry.status ?? '',
@@ -103,4 +104,12 @@ export async function listTeamEntries({
   const { data } = await api.get('/v1/area-manager/team/entries', { params })
   const { items, meta } = normalizePaginated(data, page, perPage)
   return { data: items.map((entry, index) => normalizeTeamEntry(entry, index)), meta }
+}
+
+export async function deleteTimeEntry(timeEntryId) {
+  if (!timeEntryId) return null
+  const { data } = await api.delete(`/v1/admin/time-entries/${timeEntryId}`, {
+    skipAccessDeniedHandling: true,
+  })
+  return data?.data ?? data ?? null
 }

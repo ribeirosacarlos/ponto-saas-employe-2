@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Clock3 } from 'lucide-react'
 import { useToast } from '../ui/use-toast'
 import { Button } from '../ui/button'
-import { AjusteModal } from '../AjusteModal'
+import { EntryAdjustmentModal } from '../EntryAdjustmentModal'
 import { useClocking } from '../../features/ponto/useClocking'
 import { requestAdjustment } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
@@ -46,6 +46,17 @@ export function TimeTrackingCard({ onOpenHistory }) {
     },
     [entries],
   )
+
+  const latestAdjustableEntry = useMemo(() => {
+    const source = todaysEntries.length ? todaysEntries : entries
+    if (!source.length) return null
+
+    return [...source].sort((a, b) => {
+      const left = new Date(a.clocked_at || a.clockedAt || a.created_at || a.date || 0).getTime()
+      const right = new Date(b.clocked_at || b.clockedAt || b.created_at || b.date || 0).getTime()
+      return right - left
+    })[0]
+  }, [entries, todaysEntries])
 
   const daySummaries = useMemo(() => {
     const grouped = entries.reduce((acc, entry) => {
@@ -248,8 +259,22 @@ export function TimeTrackingCard({ onOpenHistory }) {
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-end">
-        <AjusteModal
+        <EntryAdjustmentModal
+          entry={latestAdjustableEntry}
           entries={entries}
+          defaultDate={
+            latestAdjustableEntry?.clocked_at ||
+            latestAdjustableEntry?.clockedAt ||
+            latestAdjustableEntry?.created_at ||
+            latestAdjustableEntry?.date
+              ? new Date(
+                  latestAdjustableEntry.clocked_at ||
+                    latestAdjustableEntry.clockedAt ||
+                    latestAdjustableEntry.created_at ||
+                    latestAdjustableEntry.date,
+                )
+              : new Date()
+          }
           onSubmit={handleAdjustment}
           isSubmitting={sendingAdjustment}
           trigger={

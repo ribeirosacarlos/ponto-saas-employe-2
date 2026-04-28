@@ -497,20 +497,9 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     if (!hasManagementAccess) {
       return (
         <div className="rounded-2xl border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-base font-semibold text-foreground">
-                {t('adminShiftsPage.states.emptyTitle')}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t('adminShiftsPage.states.emptyDescription')}
-              </p>
-            </div>
-            <Button onClick={handleOpenCreate}>
-              <Plus className="h-4 w-4" />
-              {t('adminShiftsPage.actions.create')}
-            </Button>
-          </div>
+          <p className="text-base font-semibold text-foreground">
+            {t('adminShiftsPage.states.noPermission')}
+          </p>
         </div>
       )
     }
@@ -569,6 +558,12 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
         subtitle={t('adminShiftsPage.subtitle')}
         actions={
           <>
+            {hasManagementAccess ? (
+              <Button onClick={handleOpenCreate} className="rounded-full px-3 text-sm">
+                <Plus className="h-4 w-4" />
+                {t('adminShiftsPage.actions.create')}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               onClick={loadShifts}
