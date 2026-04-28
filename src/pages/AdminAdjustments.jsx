@@ -28,6 +28,7 @@ const STATUS_STYLES = {
 }
 
 const STATUS_OPTIONS = ['all', 'pending', 'approved', 'rejected']
+const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
 
 const TYPE_LABELS = {
   in: 'types.in',
@@ -37,6 +38,20 @@ const TYPE_LABELS = {
 }
 
 const getStatusClass = (status) => STATUS_STYLES[status] || 'border-slate-200/70 bg-slate-100 text-slate-600'
+const readFiltersFromSearch = () => {
+  if (typeof window === 'undefined') {
+    return { status: 'pending', userId: '' }
+  }
+
+  const params = new URLSearchParams(window.location.search)
+  const status = params.get('status') || 'pending'
+  const userId = params.get('userId') || ''
+
+  return {
+    status: STATUS_OPTIONS.includes(status) ? status : 'pending',
+    userId,
+  }
+}
 
 export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar = () => {} }) {
   const { t, i18n } = useTranslation()
@@ -46,7 +61,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, MANAGEMENT_REQUIRES), [capabilities])
 
-  const [filters, setFilters] = useState({ status: 'pending', userId: '' })
+  const [filters, setFilters] = useState(readFiltersFromSearch)
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
 
@@ -60,6 +75,20 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const [teamMeta, setTeamMeta] = useState(null)
   const [teamLoading, setTeamLoading] = useState(false)
   const [teamError, setTeamError] = useState('')
+
+  const publishAdjustmentSync = useCallback((adjustment) => {
+    if (typeof window === 'undefined' || !adjustment?.id) return
+
+    window.localStorage.setItem(
+      ADJUSTMENT_SYNC_KEY,
+      JSON.stringify({
+        timeEntryId: adjustment.id,
+        userId: adjustment.userId || '',
+        clockedAt: adjustment.originalTime || adjustment.correctedTime || '',
+        updatedAt: Date.now(),
+      }),
+    )
+  }, [])
 
   const statusLabel = useCallback(
     (status) => {
@@ -152,6 +181,20 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     loadTeam(1)
   }, [hasAccess, loadTeam])
 
+  useEffect(() => {
+    const syncFiltersFromSearch = () => {
+      setFilters((prev) => {
+        const next = readFiltersFromSearch()
+        if (prev.status === next.status && prev.userId === next.userId) return prev
+        return next
+      })
+      setPage(1)
+    }
+
+    window.addEventListener('popstate', syncFiltersFromSearch)
+    return () => window.removeEventListener('popstate', syncFiltersFromSearch)
+  }, [])
+
   const filteredAdjustments = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return adjustments
@@ -182,12 +225,15 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     if (!id) return
     setActionLoading((prev) => ({ ...prev, [id]: 'approve' }))
     try {
-      await approveAdminAdjustment(id)
+      const updatedAdjustment = await approveAdminAdjustment(id)
+      publishAdjustmentSync(updatedAdjustment)
+      setAdjustments((prev) =>
+        prev.map((item) => (String(item.id) === String(id) ? { ...item, ...updatedAdjustment } : item)),
+      )
       toast({
         title: t('adminAdjustmentsPage.actions.approveSuccess', 'Ajuste aprovado'),
         description: t('adminAdjustmentsPage.actions.approveDescription', 'Status atualizado para aprovado.'),
       })
-      loadAdjustments(page)
     } catch (err) {
       toast({
         title: t('adminAdjustmentsPage.actions.approveError', 'Nao foi possivel aprovar'),
@@ -210,12 +256,15 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     if (!id) return
     setActionLoading((prev) => ({ ...prev, [id]: 'reject' }))
     try {
-      await rejectAdminAdjustment(id)
+      const updatedAdjustment = await rejectAdminAdjustment(id)
+      publishAdjustmentSync(updatedAdjustment)
+      setAdjustments((prev) =>
+        prev.map((item) => (String(item.id) === String(id) ? { ...item, ...updatedAdjustment } : item)),
+      )
       toast({
         title: t('adminAdjustmentsPage.actions.rejectSuccess', 'Ajuste recusado'),
         description: t('adminAdjustmentsPage.actions.rejectDescription', 'Status atualizado para recusado.'),
       })
-      loadAdjustments(page)
     } catch (err) {
       toast({
         title: t('adminAdjustmentsPage.actions.rejectError', 'Nao foi possivel recusar'),
@@ -375,9 +424,9 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     error,
     filteredAdjustments,
     formatDateTime,
-    loadAdjustments,
     loading,
     page,
+    publishAdjustmentSync,
     statusLabel,
     t,
   ])

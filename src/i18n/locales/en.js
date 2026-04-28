@@ -2044,7 +2044,7 @@ const en = {
       },
       table: {
         title: 'Detailed punches',
-        subtitle: 'Sorted by date with daily grouping.',
+        subtitle: 'Compact date-based view for manager review.',
         noTime: 'No time',
         unknownDate: 'Unknown date',
         noDate: 'No date',

@@ -2078,7 +2078,7 @@ const ptBR = {
       },
       table: {
         title: 'Batidas detalhadas',
-        subtitle: 'Ordenadas por data com agrupamento diario.',
+        subtitle: 'Consulta compacta por data para revisão do gestor.',
         noTime: 'Sem horário',
         unknownDate: 'Data desconhecida',
         noDate: 'Sem data',

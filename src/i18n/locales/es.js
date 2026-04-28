@@ -2086,7 +2086,7 @@ const es = {
       },
       table: {
         title: 'Marcaciones detalladas',
-        subtitle: 'Ordenadas por fecha y agrupadas por día.',
+        subtitle: 'Vista compacta por fecha para revision del gestor.',
         noTime: 'Sin hora',
         unknownDate: 'Fecha desconocida',
         noDate: 'Sin fecha',

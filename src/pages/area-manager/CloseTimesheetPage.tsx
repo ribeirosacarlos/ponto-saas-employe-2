@@ -50,6 +50,7 @@ import { fetchAdminLocationSettings } from '../../services/adminLocationSettings
 import { listEmployees } from '../../services/modules/employees'
 import { deleteTimeEntry, listTeamEntries } from '../../services/adminAdjustmentsService'
 import { cn } from '../../lib/utils'
+import { PAGE_PATHS } from '../../routes/config'
 import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
@@ -57,6 +58,7 @@ import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 const PAGE_SIZE = 30
 const EXPORT_PAGE_SIZE = 200
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
+const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
 
 const getLastMonthRange = () => {
   const today = new Date()
@@ -152,6 +154,7 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     ...entry,
     id: entry.id ?? entry.uuid ?? entry.entry_id ?? `timesheet-entry-${index}`,
     timeEntryId: entry.timeEntryId ?? entry.id ?? entry.time_entry_id ?? entry.uuid ?? null,
+    userId: entry.userId ?? entry.user_id ?? entry.employee_id ?? entry.user?.id ?? entry.employee?.id ?? null,
     clockedAt: clock,
     type: entry.type ?? entry.event_type ?? entry.kind ?? '',
     latitude: entry.latitude ?? null,
@@ -599,6 +602,52 @@ export default function CloseTimesheetPage() {
     [canSearch, filters, t, toast],
   )
 
+  const refreshSingleEntry = useCallback(
+    async ({
+      timeEntryId,
+      userId,
+      clockedAt,
+    }: {
+      timeEntryId?: string | number
+      userId?: string | number
+      clockedAt?: string
+    }) => {
+      if (!timeEntryId || !clockedAt) return
+
+      try {
+        const parsedClock = new Date(clockedAt)
+        if (!isValid(parsedClock)) return
+
+        const employeeId = userId || appliedFilters.employeeId || filters.employeeId
+        const { data } = await listTeamEntries({
+          userId: employeeId || undefined,
+          dateFrom: formatISO(startOfDay(parsedClock)),
+          dateTo: formatISO(endOfDay(parsedClock)),
+          page: 1,
+          perPage: PAGE_SIZE,
+        })
+
+        const normalizedEntriesForDay = (data || []).map((entry: any, index: number) =>
+          normalizeEntry(entry, index),
+        )
+        const updatedEntry = normalizedEntriesForDay.find(
+          (entry) => String(entry.timeEntryId ?? entry.id) === String(timeEntryId),
+        )
+
+        if (!updatedEntry) return
+
+        setEntries((prev) =>
+          prev.map((entry) =>
+            String(entry.timeEntryId ?? entry.id) === String(timeEntryId) ? updatedEntry : entry,
+          ),
+        )
+      } catch (error) {
+        console.error('[closeTimesheet] failed to refresh single entry', error)
+      }
+    },
+    [appliedFilters.employeeId, filters.employeeId],
+  )
+
   const handlePaginate = async (direction: 'prev' | 'next') => {
     const nextPage = direction === 'next' ? (page || 1) + 1 : Math.max(1, (page || 1) - 1)
     await handleSearch(nextPage)
@@ -782,6 +831,41 @@ export default function CloseTimesheetPage() {
       setExporting('')
     }
   }
+
+  const openPendingAdjustments = useCallback((entry: any) => {
+    const selectedEmployeeId =
+      entry?.userId ??
+      entry?.user_id ??
+      entry?.user?.id ??
+      appliedFilters.employeeId ??
+      filters.employeeId ??
+      ''
+
+    const params = new URLSearchParams()
+    params.set('status', 'pending')
+    if (selectedEmployeeId) {
+      params.set('userId', String(selectedEmployeeId))
+    }
+
+    window.open(`${PAGE_PATHS.adminAdjustments}?${params.toString()}`, '_blank', 'noopener')
+  }, [appliedFilters.employeeId, filters.employeeId])
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== ADJUSTMENT_SYNC_KEY || !event.newValue) return
+
+      try {
+        const payload = JSON.parse(event.newValue)
+        refreshSingleEntry(payload)
+      } catch (error) {
+        console.error('[closeTimesheet] failed to parse adjustment sync payload', error)
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [refreshSingleEntry])
+
   const currentPage = meta?.currentPage || page || 1
   const lastPage = meta?.lastPage || meta?.last_page || null
   const total = meta?.total
@@ -1121,245 +1205,275 @@ export default function CloseTimesheetPage() {
                       {t('closeTimesheetPage.states.empty')}
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {groupedEntries.map((group) => (
-                    <div key={group.dateKey} className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
-                      <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-                        <div className="flex items-center gap-2 text-xs font-semibold sm:text-sm">
-                          <CalendarRange className="h-3.5 w-3.5 text-primary" />
-                          <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
-                        </div>
-                        <span className="text-[11px] text-muted-foreground">
-                          {group.items.length} {t('closeTimesheetPage.table.records')}
-                        </span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[680px] table-fixed">
-                          <thead>
-                            <tr className="border-b border-border/60 text-center text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                              <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.time')}</th>
-                              <th className="w-[88px] px-3 py-2">{t('closeTimesheetPage.table.headers.type')}</th>
-                              <th className="min-w-[200px] px-3 py-2">{t('closeTimesheetPage.table.headers.user')}</th>
-                              <th className="min-w-[210px] px-3 py-2">{t('closeTimesheetPage.table.headers.location')}</th>
-                              <th className="w-[110px] px-3 py-2">{t('closeTimesheetPage.table.headers.notes')}</th>
-                              {canDeleteTimeEntries ? (
-                              <th className="w-[132px] px-3 py-2">
+                    <div className="space-y-4">
+                      <div className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[760px] table-fixed">
+                            <thead>
+                              <tr className="border-b border-border/70 text-left text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
+                                <th className="w-[148px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
+                                <th className="w-[96px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
+                                <th className="w-[104px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
+                                <th className="px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
+                                <th className="w-[180px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
+                                <th className="w-[96px] px-3 py-3 text-right">
                                   {t('closeTimesheetPage.table.headers.actions', 'Ações')}
                                 </th>
-                              ) : null}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.items.map((entry) => {
-                              const clockKey = entry.clockedAt ? new Date(entry.clockedAt).toISOString() : ''
-                              const isPending = summary.pendingIds.has(entry.id)
-                              const isDuplicate = duplicatesSet.has(clockKey)
-                              const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
-                              const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
-                              const distanceFromCompany = companyLocation
-                                ? calculateDistanceInMeters(
-                                    entry.latitude,
-                                    entry.longitude,
-                                    companyLocation.latitude,
-                                    companyLocation.longitude,
-                                  )
-                                : null
-                              const isOutsideCompany =
-                                distanceFromCompany !== null &&
-                                distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
-                              const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
-                              const isDeletingEntry = deletingEntryId === entry.timeEntryId
-                              const statusLabel = hasPendingAdjustment
-                                ? t('closeTimesheetPage.table.status.adjustmentPending')
-                                : isPending
-                                  ? t('closeTimesheetPage.table.status.pending')
-                                  : isDuplicate
-                                    ? t('closeTimesheetPage.table.status.duplicate')
-                                    : t('closeTimesheetPage.table.status.ok')
-                              return (
-                                <tr
-                                  key={entry.id}
-                                  className="border-b border-border/50 bg-background/55 text-xs last:border-b-0"
-                                >
-                                  <td className="px-3 py-2 align-middle">
-                                    <span className="inline-flex min-w-[58px] justify-center rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
-                                      {formatClock(entry.clockedAt)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 align-middle">
-                                    <span
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupedEntries.flatMap((group) => {
+                                const dateRows = group.items.map((entry, index) => {
+                                  const clockKey = entry.clockedAt ? new Date(entry.clockedAt).toISOString() : ''
+                                  const isPending = summary.pendingIds.has(entry.id)
+                                  const isDuplicate = duplicatesSet.has(clockKey)
+                                  const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
+                                  const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
+                                  const distanceFromCompany = companyLocation
+                                    ? calculateDistanceInMeters(
+                                        entry.latitude,
+                                        entry.longitude,
+                                        companyLocation.latitude,
+                                        companyLocation.longitude,
+                                      )
+                                    : null
+                                  const isOutsideCompany =
+                                    distanceFromCompany !== null &&
+                                    distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
+                                  const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
+                                  const isDeletingEntry = deletingEntryId === entry.timeEntryId
+                                  const statusLabel = hasPendingAdjustment
+                                    ? t('closeTimesheetPage.table.status.adjustmentPending')
+                                    : isPending
+                                      ? t('closeTimesheetPage.table.status.pending')
+                                      : isDuplicate
+                                        ? t('closeTimesheetPage.table.status.duplicate')
+                                        : t('closeTimesheetPage.table.status.ok')
+                                  const statusClassName = hasPendingAdjustment
+                                    ? 'text-sky-700 dark:text-sky-300'
+                                    : isPending
+                                      ? 'text-amber-700 dark:text-amber-300'
+                                      : isDuplicate
+                                        ? 'text-rose-700 dark:text-rose-300'
+                                        : 'text-emerald-700 dark:text-emerald-300'
+                                  const locationLabel = !hasCoordinates
+                                    ? '—'
+                                    : distanceFromCompany !== null
+                                      ? isOutsideCompany
+                                        ? t('closeTimesheetPage.table.locationStatus.outside')
+                                        : t('closeTimesheetPage.table.locationStatus.inside')
+                                      : t('closeTimesheetPage.table.locationTitle')
+
+                                  return (
+                                    <tr
+                                      key={entry.id}
                                       className={cn(
-                                        'inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold uppercase leading-none',
-                                        entry.type === 'in'
-                                          ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700'
-                                          : 'border-sky-200/70 bg-sky-500/10 text-sky-700',
+                                        'border-b border-border/40 text-[13px] transition-colors hover:bg-muted/45',
+                                        index === group.items.length - 1 ? 'last:border-b-0' : '',
                                       )}
                                     >
-                                      {formatEntryType(entry.type)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 align-middle">
-                                    <div className="truncate text-center font-medium leading-tight">
-                                      {entry.user?.name || t('closeTimesheetPage.table.userFallback')}
-                                    </div>
-                                    <div className="truncate text-center text-[11px] text-muted-foreground">
-                                      {entry.user?.email || ''}
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-2 align-middle">
-                                    {hasCoordinates ? (
-                                      <div className="flex flex-col items-center gap-1.5">
-                                        {distanceFromCompany !== null ? (
-                                          <span
-                                            className={cn(
-                                              'rounded-md border px-2 py-1 text-[11px] font-semibold leading-none',
-                                              isOutsideCompany
-                                                ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
-                                                : 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
-                                            )}
-                                          >
-                                            {isOutsideCompany
-                                              ? t('closeTimesheetPage.table.locationStatus.outside')
-                                              : t('closeTimesheetPage.table.locationStatus.inside')}
-                                          </span>
-                                        ) : null}
-                                      <Dialog
-                                        open={locationEntry?.id === entry.id}
-                                        onOpenChange={(open) => !open && setLocationEntry(null)}
-                                      >
-                                        <DialogTrigger asChild>
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-auto gap-1.5 px-0 py-0 text-[11px] text-primary hover:bg-transparent"
-                                            onClick={() => setLocationEntry(entry)}
-                                          >
-                                            <MapPin className="h-3.5 w-3.5" />
-                                            {t('closeTimesheetPage.table.viewLocation')}
-                                          </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                          <DialogHeader className="space-y-1">
-                                            <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
-                                            <DialogDescription>
-                                              {t('closeTimesheetPage.table.locationDescription')}
-                                            </DialogDescription>
-                                          </DialogHeader>
-                                          <div className="space-y-2 rounded-xl bg-muted/50 p-4">
-                                            <div className="flex items-center justify-between text-sm">
-                                              <span className="font-medium">Latitude</span>
-                                              <span>{entry.latitude}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                              <span className="font-medium">Longitude</span>
-                                              <span>{entry.longitude}</span>
-                                            </div>
-                                            {distanceFromCompany !== null ? (
-                                              <div className="flex items-center justify-between text-sm">
-                                                <span className="font-medium">
-                                                  {t('closeTimesheetPage.table.distanceFromCompany')}
-                                                </span>
-                                                <span>
-                                                  {t('closeTimesheetPage.table.distanceValue', {
-                                                    distance: distanceFromCompany,
-                                                  })}
-                                                </span>
-                                              </div>
-                                            ) : null}
-                                            <a
-                                              href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="inline-flex items-center gap-2 text-primary underline"
+                                      <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                                        {group.dateKey && group.dateKey !== 'unknown'
+                                          ? format(parseISO(group.dateKey), 'dd/MM/yyyy')
+                                          : '—'}
+                                      </td>
+                                      <td className="px-3 py-2.5 align-middle">
+                                        <span className="font-medium text-foreground">
+                                          {formatClock(entry.clockedAt)}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5 align-middle">
+                                        <span
+                                          className={cn(
+                                            'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
+                                            entry.type === 'in'
+                                              ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
+                                              : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
+                                          )}
+                                        >
+                                          {formatEntryType(entry.type)}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5 align-middle">
+                                        {hasCoordinates ? (
+                                          <div className="flex items-center gap-2 text-[13px] text-foreground">
+                                            <span
+                                              className={cn(
+                                                'truncate',
+                                                isOutsideCompany
+                                                  ? 'font-semibold text-rose-700 dark:text-rose-300'
+                                                  : 'text-foreground',
+                                              )}
                                             >
-                                              <MapPin className="h-4 w-4" />
-                                              {t('closeTimesheetPage.table.openMaps')}
-                                            </a>
+                                              {locationLabel}
+                                            </span>
+                                            <Dialog
+                                              open={locationEntry?.id === entry.id}
+                                              onOpenChange={(open) => !open && setLocationEntry(null)}
+                                            >
+                                              <DialogTrigger asChild>
+                                                <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className={cn(
+                                                    'h-6 w-6 shrink-0 rounded-full p-0 hover:bg-muted',
+                                                    isOutsideCompany
+                                                      ? 'text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200'
+                                                      : 'text-muted-foreground hover:text-foreground',
+                                                  )}
+                                                  onClick={() => setLocationEntry(entry)}
+                                                  aria-label={t('closeTimesheetPage.table.viewLocation')}
+                                                  title={t('closeTimesheetPage.table.viewLocation')}
+                                                >
+                                                  <MapPin className="h-3.5 w-3.5" />
+                                                </Button>
+                                              </DialogTrigger>
+                                              <DialogContent>
+                                                <DialogHeader className="space-y-1">
+                                                  <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
+                                                  <DialogDescription>
+                                                    {t('closeTimesheetPage.table.locationDescription')}
+                                                  </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="space-y-2 rounded-xl bg-muted/50 p-4">
+                                                  <div className="flex items-center justify-between text-sm">
+                                                    <span className="font-medium">Latitude</span>
+                                                    <span>{entry.latitude}</span>
+                                                  </div>
+                                                  <div className="flex items-center justify-between text-sm">
+                                                    <span className="font-medium">Longitude</span>
+                                                    <span>{entry.longitude}</span>
+                                                  </div>
+                                                  {distanceFromCompany !== null ? (
+                                                    <div className="flex items-center justify-between text-sm">
+                                                      <span className="font-medium">
+                                                        {t('closeTimesheetPage.table.distanceFromCompany')}
+                                                      </span>
+                                                      <span>
+                                                        {t('closeTimesheetPage.table.distanceValue', {
+                                                          distance: distanceFromCompany,
+                                                        })}
+                                                      </span>
+                                                    </div>
+                                                  ) : null}
+                                                  <a
+                                                    href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-2 text-primary underline"
+                                                  >
+                                                    <MapPin className="h-4 w-4" />
+                                                    {t('closeTimesheetPage.table.openMaps')}
+                                                  </a>
+                                                </div>
+                                              </DialogContent>
+                                            </Dialog>
                                           </div>
-                                        </DialogContent>
-                                      </Dialog>
-                                      </div>
-                                    ) : (
-                                      <span className="text-[11px] text-muted-foreground">-</span>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 align-middle">
-                                    <span
-                                      className={cn(
-                                        'inline-flex min-w-[124px] justify-center rounded-md border px-2 py-1 text-center text-[11px] font-semibold leading-none',
-                                        hasPendingAdjustment
-                                          ? 'border-sky-200/70 bg-sky-500/10 text-sky-700'
-                                          : isPending
-                                          ? 'border-amber-200/70 bg-amber-500/10 text-amber-700'
-                                          : isDuplicate
-                                            ? 'border-rose-200/70 bg-rose-500/10 text-rose-700'
-                                            : 'border-emerald-200/70 bg-emerald-500/10 text-emerald-700',
-                                      )}
-                                    >
-                                      {statusLabel}
-                                    </span>
-                                  </td>
-                                  {canDeleteTimeEntries ? (
-                                    <td className="px-3 py-2 align-middle">
-                                      <div className="flex justify-center">
-                                        {canDeleteEntry ? (
-                                          <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            className="h-7 gap-1.5 px-2.5 text-[11px]"
-                                            disabled={isDeletingEntry}
-                                            onClick={() => setDeleteTarget(entry)}
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                            {isDeletingEntry
-                                              ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
-                                              : t('closeTimesheetPage.delete.action', 'Excluir')}
-                                          </Button>
                                         ) : (
-                                          <span className="text-[11px] text-muted-foreground">—</span>
+                                          <span className="text-muted-foreground">—</span>
                                         )}
+                                      </td>
+                                      <td className="px-3 py-2.5 align-middle">
+                                        {hasPendingAdjustment ? (
+                                          <button
+                                            type="button"
+                                            className={cn(
+                                              'font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
+                                              statusClassName,
+                                            )}
+                                            onClick={() => openPendingAdjustments(entry)}
+                                            title={statusLabel}
+                                          >
+                                            {statusLabel}
+                                          </button>
+                                        ) : (
+                                          <span className={cn('font-medium', statusClassName)}>{statusLabel}</span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2.5 align-middle">
+                                        <div className="flex items-center justify-end gap-1">
+                                          {canDeleteEntry ? (
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-rose-600 dark:hover:text-rose-400"
+                                              disabled={isDeletingEntry}
+                                              onClick={() => setDeleteTarget(entry)}
+                                              aria-label={
+                                                isDeletingEntry
+                                                  ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                                                  : t('closeTimesheetPage.delete.action', 'Excluir')
+                                              }
+                                              title={
+                                                isDeletingEntry
+                                                  ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                                                  : t('closeTimesheetPage.delete.action', 'Excluir')
+                                              }
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                          ) : null}
+                                          {!canDeleteEntry ? (
+                                            <span className="text-muted-foreground">—</span>
+                                          ) : null}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )
+                                })
+
+                                return [
+                                <tr key={`${group.dateKey}-separator`} className="border-b border-border/50">
+                                    <td
+                                      colSpan={6}
+                                      className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                        <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
                                       </div>
                                     </td>
-                                  ) : null}
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
+                                  </tr>,
+                                  ...dateRows,
+                                ]
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs text-muted-foreground">
+                        <div>
+                          {t('closeTimesheetPage.table.pagination', {
+                            page: currentPage,
+                            total: lastPage || Math.max(currentPage, 1),
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-full px-3 text-xs"
+                            disabled={currentPage <= 1 || loadingEntries}
+                            onClick={() => handlePaginate('prev')}
+                          >
+                            {t('closeTimesheetPage.table.prev')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-full px-3 text-xs"
+                            disabled={!canGoNext || loadingEntries}
+                            onClick={() => handlePaginate('next')}
+                          >
+                            {t('closeTimesheetPage.table.next')}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3 text-sm">
-                    <div className="text-muted-foreground">
-                      {t('closeTimesheetPage.table.pagination', {
-                        page: currentPage,
-                        total: lastPage || Math.max(currentPage, 1),
-                      })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={currentPage <= 1 || loadingEntries}
-                        onClick={() => handlePaginate('prev')}
-                      >
-                        {t('closeTimesheetPage.table.prev')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!canGoNext || loadingEntries}
-                        onClick={() => handlePaginate('next')}
-                      >
-                        {t('closeTimesheetPage.table.next')}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
                   )}
                 </div>
               ) : null}
