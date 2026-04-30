@@ -16,6 +16,7 @@ import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { EmployeeVacationStatusPills } from '../components/EmployeeVacationStatusPills'
 import {
@@ -1083,13 +1084,12 @@ export default function AdminVacations() {
           <form className="space-y-4 pt-2" onSubmit={handleAbsenceSubmit}>
             <div className="space-y-2">
               <Label htmlFor="absence-type">{t('vacationsPage.absences.typeLabel', 'Tipo')}</Label>
-              <select
+              <Select
                 id="absence-type"
                 value={absenceForm.type}
                 onChange={(event) =>
                   setAbsenceForm((prev) => ({ ...prev, type: event.target.value }))
                 }
-                className="h-12 w-full rounded-xl border border-border/80 bg-background/80 px-4 text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring"
                 required
               >
                 <option value="">{t('vacationsPage.absences.typePlaceholder', 'Selecione o tipo')}</option>
@@ -1098,18 +1098,17 @@ export default function AdminVacations() {
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="absence-date">{t('vacationsPage.absences.dateLabel', 'Data')}</Label>
-              <input
+              <Input
                 id="absence-date"
                 type="date"
                 value={absenceForm.date}
                 onChange={(event) =>
                   setAbsenceForm((prev) => ({ ...prev, date: event.target.value }))
                 }
-                className="flex h-12 w-full rounded-xl border border-border/80 bg-background/80 px-4 py-2 text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 required
               />
             </div>

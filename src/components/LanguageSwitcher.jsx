@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Languages } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
+import { actionMenuItemClass } from './ui/form-controls'
 import { cn } from '../lib/utils'
 
 const languages = [
@@ -40,9 +41,9 @@ export function LanguageSwitcher({ className, iconOnly = false }) {
       <Button
         variant="ghost"
         className={cn(
-          'flex h-10 items-center rounded-2xl border border-border/70 bg-background/80 text-[11px] font-semibold text-foreground shadow-[0_10px_30px_-22px_rgba(62,82,152,0.55)] transition-all hover:bg-background',
+          'items-center border border-border/70 bg-background/80 text-foreground shadow-[0_10px_30px_-22px_rgba(62,82,152,0.55)] transition-all hover:bg-background',
           iconOnly
-            ? 'w-10 justify-center px-0'
+            ? 'w-8 justify-center px-0'
             : 'w-full max-w-[220px] justify-between px-3',
         )}
         aria-haspopup="menu"
@@ -67,7 +68,8 @@ export function LanguageSwitcher({ className, iconOnly = false }) {
             <button
               key={lang.code}
               className={cn(
-                'flex w-full items-center justify-between px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent/80',
+                actionMenuItemClass,
+                'justify-between',
                 current === lang.code && 'bg-accent/80',
               )}
               onClick={() => handleChange(lang.code)}

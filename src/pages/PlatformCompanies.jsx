@@ -16,8 +16,10 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
+import { actionTabButtonClass, bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import {
   Dialog,
   DialogClose,
@@ -701,7 +703,7 @@ export default function PlatformCompanies() {
           subtitle={t('platformCompanies.subtitle', 'Gerencie empresas da plataforma e controle o acesso.')}
           filters={
             <>
-              <div className="flex-1 min-w-[220px] flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className={cn(fieldShellClass, 'min-w-[220px] flex-1')}>
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
@@ -709,7 +711,7 @@ export default function PlatformCompanies() {
                     'platformCompanies.searchPlaceholder',
                     'Buscar por nome, dominio ou id',
                   )}
-                  className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                  className={bareFieldInputClass}
                   value={filters.search}
                   onChange={(event) =>
                     setFilters((prev) => ({ ...prev, search: event.target.value }))
@@ -717,14 +719,14 @@ export default function PlatformCompanies() {
                 />
               </div>
 
-              <div className="min-w-[180px] flex items-center rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className={cn(fieldShellClass, 'min-w-[180px]')}>
                 <select
                   aria-label={t('platformCompanies.filters.status', 'Status')}
                   value={filters.status}
                   onChange={(event) =>
                     setFilters((prev) => ({ ...prev, status: event.target.value }))
                   }
-                  className="w-full bg-transparent text-foreground outline-none"
+                  className={bareFieldInputClass}
                 >
                   {statusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -738,7 +740,7 @@ export default function PlatformCompanies() {
                 <button
                   type="button"
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition',
+                    actionTabButtonClass,
                     viewMode === 'grid'
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground',
@@ -751,7 +753,7 @@ export default function PlatformCompanies() {
                 <button
                   type="button"
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition',
+                    actionTabButtonClass,
                     viewMode === 'list'
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground',
@@ -1522,9 +1524,8 @@ export default function PlatformCompanies() {
                         <Label htmlFor="company-plan-select">
                           {t('platformCompanies.billing.planSelectLabel', 'Plano da empresa')}
                         </Label>
-                        <select
+                        <Select
                           id="company-plan-select"
-                          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           value={subscriptionForm.planId}
                           onChange={(event) =>
                             setSubscriptionForm((prev) => ({ ...prev, planId: event.target.value }))
@@ -1539,7 +1540,7 @@ export default function PlatformCompanies() {
                               {plan.name} — {formatPlanPrice(plan)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       <Button
                         type="button"

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Bell, RefreshCcw, Send } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
@@ -191,7 +192,7 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
             title="Comunicados"
             subtitle="Crie e acompanhe comunicados enviados aos colaboradores."
             actions={
-              <Button type="button" variant="outline" onClick={loadAnnouncements} className="rounded-full border-border bg-background/80 px-3 text-sm">
+              <Button type="button" variant="outline" onClick={loadAnnouncements} className="border-border bg-background/80">
                 <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
                 Atualizar lista
               </Button>
@@ -234,17 +235,16 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold">Tipo</label>
-                    <select
+                    <Select
                       value={form.type}
                       onChange={(e) => handleChange('type', e.target.value)}
-                      className="h-12 w-full rounded-xl border border-border/80 bg-background/80 px-4 text-sm text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       {TYPE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-semibold">Enviar em</label>

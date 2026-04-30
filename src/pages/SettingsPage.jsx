@@ -17,6 +17,7 @@ import { AppTopBar } from '../components/ui/AppTopBar'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import { Switch } from '../components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import {
@@ -62,7 +63,7 @@ const STATUS_BADGES = {
 }
 
 const LINE_BUTTON_CLASS =
-  'inline-flex items-center rounded-md px-0 py-0 text-sm font-medium text-foreground transition hover:text-primary disabled:cursor-not-allowed disabled:text-muted-foreground'
+  'inline-flex h-8 items-center rounded-md px-2.5 text-[11px] font-semibold text-foreground transition hover:text-primary disabled:cursor-not-allowed disabled:text-muted-foreground'
 
 function hasFieldValue(value) {
   return typeof value === 'string' && value.trim() !== ''
@@ -235,15 +236,7 @@ function InlineField({ label, children, hint, error }) {
 }
 
 function MinimalSelect({ className, ...props }) {
-  return (
-    <select
-      className={cn(
-        'h-11 w-full rounded-xl border border-border/80 bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-muted/40',
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <Select className={cn('bg-white disabled:bg-muted/40', className)} {...props} />
 }
 
 function InlineNotice({ children, tone = 'default' }) {
@@ -766,7 +759,7 @@ export default function SettingsPage() {
                   title={t('settingsPage.security.mfa')}
                   description={t('settingsPage.security.mfaHint')}
                   control={
-                    <Button type="button" variant="outline" size="sm" className="rounded-full border-border/70 bg-transparent shadow-none">
+                    <Button type="button" variant="outline" size="sm" className="border-border/70 bg-transparent shadow-none">
                       {t('settingsPage.actions.manage', 'Gerenciar')}
                     </Button>
                   }
@@ -776,7 +769,7 @@ export default function SettingsPage() {
                   title={t('settingsPage.security.sessions')}
                   description={t('settingsPage.security.sessionsHint')}
                   control={
-                    <Button type="button" variant="outline" size="sm" className="rounded-full border-border/70 bg-transparent shadow-none">
+                    <Button type="button" variant="outline" size="sm" className="border-border/70 bg-transparent shadow-none">
                       {t('settingsPage.actions.view', 'Ver')}
                     </Button>
                   }

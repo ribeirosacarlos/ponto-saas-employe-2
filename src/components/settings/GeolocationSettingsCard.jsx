@@ -603,7 +603,7 @@ export function GeolocationSettingsCard({ canEdit }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-            <Button type="submit" disabled={!canEdit || isLoading || isSaving || !hasChanges} className="min-w-[132px] rounded-2xl">
+            <Button type="submit" disabled={!canEdit || isLoading || isSaving || !hasChanges} className="min-w-[132px]">
               {isSaving ? (
                 <>
                   <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />

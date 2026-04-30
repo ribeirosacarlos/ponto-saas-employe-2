@@ -20,6 +20,7 @@ import autoTable from 'jspdf-autotable'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import { Select } from '../components/ui/select'
 
 const PAGE_SIZE = 20
 
@@ -722,7 +723,7 @@ export default function History({ onBackToDashboard }) {
                       <label className="sr-only" htmlFor="history-month-selector">
                         {t('historyPage.filters.month')}
                       </label>
-                      <select
+                      <Select
                         id="history-month-selector"
                         value={selectedMonth?.id ?? ''}
                         onChange={(event) => {
@@ -731,14 +732,14 @@ export default function History({ onBackToDashboard }) {
                             setSelectedMonth(option)
                           }
                         }}
-                        className="w-full min-w-[180px] rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-xs text-foreground focus:border-primary focus:ring-2 focus:ring-primary/40 sm:w-auto sm:text-sm"
+                        className="min-w-[180px] sm:w-auto"
                       >
                         {monthOptions.map((option) => (
                           <option key={option.id} value={option.id}>
                             {option.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button

@@ -4,6 +4,7 @@ import { Building2, RefreshCcw, Save, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
+import { Select } from '../ui/select'
 import { Switch } from '../ui/switch'
 import { useToast } from '../ui/use-toast'
 import { cn } from '../../lib/utils'
@@ -263,9 +264,9 @@ export function AdministrativeSettingsCard({ companyId, enabled = true, onSaved 
                   )}
                 </p>
                 <div className="rounded-2xl border border-border/70 bg-background/90 px-3 py-2">
-                  <select
+                  <Select
                     id="platform-company-timezone"
-                    className="w-full bg-transparent text-sm text-foreground outline-none"
+                    className="border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
                     value={formValues.timezone}
                     disabled={isLoading || isSaving}
                     onChange={(event) => {
@@ -279,7 +280,7 @@ export function AdministrativeSettingsCard({ companyId, enabled = true, onSaved 
                         {timezone}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 {fieldErrors.timezone ? (
                   <p className="text-sm text-rose-600 dark:text-rose-300">{fieldErrors.timezone}</p>
@@ -348,7 +349,7 @@ export function AdministrativeSettingsCard({ companyId, enabled = true, onSaved 
             ) : null}
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-              <Button type="submit" disabled={isLoading || isSaving || !hasChanges} className="min-w-[132px] rounded-2xl">
+              <Button type="submit" disabled={isLoading || isSaving || !hasChanges} className="min-w-[132px]">
                 {isSaving ? (
                   <>
                     <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />

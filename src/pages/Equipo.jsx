@@ -16,8 +16,10 @@ import {
   Users,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
+import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import {
   Dialog,
   DialogClose,
@@ -324,7 +326,7 @@ const ExtraEmployeesNotice = ({
           </div>
         </div>
 
-        <Button type="button" onClick={onPay} disabled={isPaying} className="rounded-full px-4">
+        <Button type="button" onClick={onPay} disabled={isPaying}>
           {isPaying ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -743,10 +745,9 @@ export default function Equipo() {
       <>
         <div className="space-y-2">
           <Label htmlFor={`${prefix}-area`}>{t('equipoPage.form.areaLabel')}</Label>
-          <select
+          <Select
             id={`${prefix}-area`}
             name="area_id"
-            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             value={form.area_id}
             onChange={(event) =>
               setter((prev) => ({ ...prev, area_id: event.target.value }))
@@ -769,7 +770,7 @@ export default function Equipo() {
                 </option>
               ))
             )}
-          </select>
+          </Select>
         </div>
 
         {showManagedAreas ? (
@@ -817,26 +818,26 @@ export default function Equipo() {
           subtitle={t('equipoPage.subtitle')}
           filters={
             <>
-              <div className="flex-1 min-w-[220px] flex items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className={cn(fieldShellClass, 'min-w-[220px] flex-1')}>
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={t('equipoPage.searchPlaceholder')}
-                  className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                  className={bareFieldInputClass}
                   value={filters.search}
                   onChange={(event) =>
                     setFilters((prev) => ({ ...prev, search: event.target.value }))
                   }
                 />
               </div>
-              <div className="min-w-[180px] flex items-center rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className={cn(fieldShellClass, 'min-w-[180px]')}>
                 <select
                   aria-label={t('equipoPage.form.roleLabel')}
                   value={filters.role}
                   onChange={(event) =>
                     setFilters((prev) => ({ ...prev, role: event.target.value }))
                   }
-                  className="w-full bg-transparent text-foreground outline-none"
+                  className={bareFieldInputClass}
                 >
                   {roleFilterOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1186,10 +1187,9 @@ export default function Equipo() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-role">{t('equipoPage.form.roleLabel')}</Label>
-              <select
+              <Select
                 id="create-role"
                 name="role"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={createForm.role}
                 onChange={handleRoleChange(setCreateForm)}
               >
@@ -1198,15 +1198,14 @@ export default function Equipo() {
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {renderAreaFields(createForm, setCreateForm, 'create')}
             <div className="space-y-2">
               <Label htmlFor="create-shift">{t('equipoPage.form.shiftLabel')}</Label>
-              <select
+              <Select
                 id="create-shift"
                 name="shift_id"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={createForm.shift_id}
                 onChange={(event) =>
                   setCreateForm((prev) => ({ ...prev, shift_id: event.target.value }))
@@ -1228,7 +1227,7 @@ export default function Equipo() {
                     </option>
                   ))
                 )}
-              </select>
+              </Select>
             </div>
             <div className="flex items-center justify-end gap-3 pt-2">
               <DialogClose asChild>
@@ -1287,10 +1286,9 @@ export default function Equipo() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-role">{t('equipoPage.form.roleLabel')}</Label>
-              <select
+              <Select
                 id="edit-role"
                 name="role"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={editForm.role}
                 onChange={handleRoleChange(setEditForm)}
                 disabled={editLoading}
@@ -1300,15 +1298,14 @@ export default function Equipo() {
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {renderAreaFields(editForm, setEditForm, 'edit', editLoading)}
             <div className="space-y-2">
               <Label htmlFor="edit-shift">{t('equipoPage.form.shiftLabel')}</Label>
-              <select
+              <Select
                 id="edit-shift"
                 name="shift_id"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={editForm.shift_id}
                 onChange={(event) =>
                   setEditForm((prev) => ({ ...prev, shift_id: event.target.value }))
@@ -1331,7 +1328,7 @@ export default function Equipo() {
                     </option>
                   ))
                 )}
-              </select>
+              </Select>
               {editForm.shift_id && (
                 <div className="space-y-2 pt-2">
                   <div className="flex items-center gap-2">
@@ -1399,10 +1396,9 @@ export default function Equipo() {
           <form className="space-y-4 pt-2" onSubmit={handleAssignSubmit}>
             <div className="space-y-2">
               <Label htmlFor="assign-shift">{t('equipoPage.form.shiftLabel')}</Label>
-              <select
+              <Select
                 id="assign-shift"
                 name="shift_id"
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={assignForm.shift_id}
                 onChange={(event) =>
                   setAssignForm((prev) => ({ ...prev, shift_id: event.target.value }))
@@ -1425,7 +1421,7 @@ export default function Equipo() {
                     </option>
                   ))
                 )}
-              </select>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="assign-start">{t('equipoPage.form.startDateLabel')}</Label>

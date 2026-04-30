@@ -12,6 +12,7 @@ import {
 } from './ui/dialog'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
 import { useTranslation } from 'react-i18next'
@@ -109,20 +110,19 @@ export function AjusteModal({ onSubmit, trigger, isSubmitting, entries = [] }) {
           {availableEntries.length ? (
             <div className="space-y-2">
               <Label htmlFor="timeEntry">{t('adjustment.entryLabel', 'Registro a ajustar')}</Label>
-              <select
+              <Select
                 id="timeEntry"
                 name="timeEntry"
                 required
                 value={selectedEntryId || availableEntries[0]?.id || ''}
                 onChange={(event) => setSelectedEntryId(event.target.value)}
-                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 {availableEntries.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           ) : null}
 

@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, ClipboardList, Clock3, RefreshCcw, Search, UserCheck, UserX } from 'lucide-react'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import { Select } from '../components/ui/select'
+import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
 import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
@@ -38,6 +39,8 @@ const TYPE_LABELS = {
   break_start: 'adminAdjustmentsPage.types.breakStart',
   break_end: 'adminAdjustmentsPage.types.breakEnd',
 }
+
+const COMPACT_BUTTON_CLASS = 'h-8 rounded-md px-2.5 text-[11px]'
 
 const getStatusClass = (status) => STATUS_STYLES[status] || 'border-slate-200/70 bg-slate-100 text-slate-600'
 const normalizeEmployeeOption = (employee = {}, index = 0) => ({
@@ -401,8 +404,13 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
             </div>
           </div>
           <div className="mt-3">
-            <Button size="sm" variant="outline" onClick={() => loadAdjustments(page)}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => loadAdjustments(page)}
+              className={COMPACT_BUTTON_CLASS}
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
               {t('adminAdjustmentsPage.actions.refresh', 'Tentar novamente')}
             </Button>
           </div>
@@ -488,14 +496,20 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                       size="sm"
                       onClick={() => handleReject(adjustment.id)}
                       disabled={disabled}
+                      className={COMPACT_BUTTON_CLASS}
                     >
-                      <UserX className="mr-2 h-4 w-4" />
+                      <UserX className="h-3.5 w-3.5" />
                       {actionLoading[adjustment.id] === 'reject'
                         ? t('adminAdjustmentsPage.actions.rejecting', 'Recusando...')
                         : t('adminAdjustmentsPage.actions.reject', 'Recusar')}
                     </Button>
-                    <Button size="sm" onClick={() => handleApprove(adjustment.id)} disabled={disabled}>
-                      <UserCheck className="mr-2 h-4 w-4" />
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprove(adjustment.id)}
+                      disabled={disabled}
+                      className={COMPACT_BUTTON_CLASS}
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
                       {actionLoading[adjustment.id] === 'approve'
                         ? t('adminAdjustmentsPage.actions.approving', 'Aprovando...')
                         : t('adminAdjustmentsPage.actions.approve', 'Aprovar')}
@@ -562,9 +576,9 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
               variant="outline"
               onClick={() => loadAdjustments(page)}
               disabled={loading}
-              className="rounded-full border-border bg-background/80 px-3 text-sm"
+              className={cn(COMPACT_BUTTON_CLASS, 'border-border bg-background/80')}
             >
-              <RefreshCcw className="mr-2 h-4 w-4 text-primary" />
+              <RefreshCcw className="h-3.5 w-3.5 text-primary" />
               {t('adminAdjustmentsPage.actions.refresh', 'Atualizar')}
             </Button>
           }
@@ -591,12 +605,11 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                   <Label className="text-xs text-muted-foreground">
                     {t('adminAdjustmentsPage.filters.status', 'Status')}
                   </Label>
-                  <select
+                  <Select
                     value={filters.status}
                     onChange={(event) => {
                       setFilters((prev) => ({ ...prev, status: event.target.value }))
                     }}
-                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -605,7 +618,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                           : statusLabel(option)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
@@ -635,8 +648,13 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                   <Label className="text-xs text-muted-foreground">
                     {t('adminAdjustmentsPage.filters.search', 'Busca')}
                   </Label>
-                  <div className="flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 shadow-sm focus-within:ring-2 focus-within:ring-primary/40">
-                    <Search className="h-4 w-4 text-muted-foreground" />
+                  <div
+                    className={cn(
+                      fieldShellClass,
+                      'w-full focus-within:ring-primary/40',
+                    )}
+                  >
+                    <Search className="h-3 w-3 text-muted-foreground" />
                     <input
                       type="text"
                       value={searchTerm}
@@ -645,7 +663,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                         'adminAdjustmentsPage.filters.searchPlaceholder',
                         'Nome, email ou motivo',
                       )}
-                      className="h-full w-full bg-transparent text-sm outline-none"
+                      className={bareFieldInputClass}
                     />
                   </div>
                 </div>
@@ -679,6 +697,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                       variant="outline"
                       disabled={loading || (meta?.currentPage || page) <= 1}
                       onClick={() => setPage((prev) => Math.max(1, (prev || 1) - 1))}
+                      className={COMPACT_BUTTON_CLASS}
                     >
                       {t('adminAdjustmentsPage.pagination.previous', 'Anterior')}
                     </Button>
@@ -692,6 +711,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                           : filteredAdjustments.length < PAGE_SIZE)
                       }
                       onClick={() => setPage((prev) => (prev || 1) + 1)}
+                      className={COMPACT_BUTTON_CLASS}
                     >
                       {t('adminAdjustmentsPage.pagination.next', 'Proxima')}
                     </Button>

@@ -4,6 +4,7 @@ import { Building2, Eye, RefreshCcw, Search } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { Button } from '../components/ui/button'
+import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useSuperAdminCompanies } from '../features/superAdmin/useSuperAdminCompanies'
@@ -105,11 +106,11 @@ export default function SuperAdminCompanies({ onOpenCompany }) {
         )}
         filters={
           <>
-            <div className="flex min-w-[240px] flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+            <div className={cn(fieldShellClass, 'min-w-[240px] flex-1')}>
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                className={bareFieldInputClass}
                 placeholder={t('superAdmin.companies.filters.searchPlaceholder', 'Buscar por nome, slug ou e-mail')}
                 value={searchDraft}
                 onChange={(event) => setSearchDraft(event.target.value)}
@@ -409,10 +410,10 @@ export default function SuperAdminCompanies({ onOpenCompany }) {
 
 function SelectFilter({ ariaLabel, value, onChange, options }) {
   return (
-    <div className="min-w-[170px] items-center rounded-2xl border border-border bg-muted/70 px-3 py-2 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+    <div className={cn(fieldShellClass, 'min-w-[170px]')}>
       <select
         aria-label={ariaLabel}
-        className="w-full bg-transparent text-foreground outline-none"
+        className={bareFieldInputClass}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >

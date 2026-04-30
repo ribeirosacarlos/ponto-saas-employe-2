@@ -23,6 +23,8 @@ import { listAnnouncements } from '../services/announcementsService'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { AdminOnboardingPanel } from '../components/dashboard/AdminOnboardingPanel'
 import { EmployeeOnboardingPanel } from '../components/dashboard/EmployeeOnboardingPanel'
+import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
+import { cn } from '../lib/utils'
 
 const DOCUMENT_CATEGORIES = {
   payroll: {
@@ -437,12 +439,12 @@ export default function Dashboard({
           title={t('dashboardPage.title')}
           filters={
             <div className="flex w-full min-w-0 items-center gap-2">
-              <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-muted/70 px-3 text-[12px] shadow-inner shadow-primary/5 sm:text-[13px]">
+              <div className={cn(fieldShellClass, 'min-w-0 flex-1')}>
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={t('dashboardPage.searchPlaceholder')}
-                  className="h-full w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                  className={bareFieldInputClass}
                 />
               </div>
               <button

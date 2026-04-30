@@ -2,7 +2,9 @@
 import { Check, Download, Eye, FileText, RefreshCcw, Search, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
+import { actionIconButtonClass, actionTabButtonClass } from '../components/ui/form-controls'
 import { Input } from '../components/ui/input'
+import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import {
@@ -554,7 +556,7 @@ export default function AdminDocuments() {
               </Button>
               <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
                 <DialogTrigger asChild>
-                  <Button type="button" className="rounded-full px-4 text-sm">
+                  <Button type="button">
                     <Upload className="h-4 w-4" />
                     {t('documentsPage.admin.actions.upload')}
                   </Button>
@@ -598,8 +600,7 @@ export default function AdminDocuments() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.categoryLabel')}</label>
-                      <select
-                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+                      <Select
                         value={uploadForm.category}
                         onChange={(event) =>
                           setUploadForm((prev) => ({ ...prev, category: event.target.value }))
@@ -612,13 +613,12 @@ export default function AdminDocuments() {
                             {t(opt.labelKey)}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.priorityLabel')}</label>
-                      <select
-                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+                      <Select
                         value={uploadForm.priority}
                         onChange={(event) =>
                           setUploadForm((prev) => ({ ...prev, priority: event.target.value }))
@@ -631,7 +631,7 @@ export default function AdminDocuments() {
                             {t(opt.labelKey)}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
 
                     <label className="flex items-start gap-2 rounded-2xl border border-border/70 bg-muted/30 px-3 py-2 text-sm">
@@ -690,7 +690,7 @@ export default function AdminDocuments() {
               key={key}
               type="button"
               className={cn(
-                'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition',
+                actionTabButtonClass,
                 tab === key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground',
               )}
               onClick={() => {
@@ -717,8 +717,7 @@ export default function AdminDocuments() {
                 onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
               />
             </div>
-            <select
-              className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+            <Select
               value={filters.category}
               onChange={(event) => setFilters((prev) => ({ ...prev, category: event.target.value }))}
             >
@@ -727,7 +726,7 @@ export default function AdminDocuments() {
                   {t(opt.labelKey)}
                 </option>
               ))}
-            </select>
+            </Select>
             <EmployeeMultiSelect
               options={employees}
               value={filters.employeeIds}
@@ -825,7 +824,7 @@ export default function AdminDocuments() {
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                              className={actionIconButtonClass}
                               title={t('documentsPage.actions.view')}
                               onClick={() => handleView(doc)}
                             >
@@ -833,7 +832,7 @@ export default function AdminDocuments() {
                             </button>
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                              className={actionIconButtonClass}
                               title={t('documentsPage.actions.download')}
                               onClick={() =>
                                 downloadDocument(
@@ -846,7 +845,7 @@ export default function AdminDocuments() {
                             </button>
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                              className={actionIconButtonClass}
                               title={t('documentsPage.admin.actions.approve')}
                               disabled={approving}
                               onClick={() => handleApprove(doc)}
@@ -864,7 +863,7 @@ export default function AdminDocuments() {
                               <DialogTrigger asChild>
                                 <button
                                   type="button"
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                                  className={actionIconButtonClass}
                                   title={t('documentsPage.admin.actions.reject')}
                                 >
                                   <X className="h-4 w-4" />

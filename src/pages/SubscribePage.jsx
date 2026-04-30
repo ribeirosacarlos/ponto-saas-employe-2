@@ -219,7 +219,7 @@ export default function SubscribePage({ message, onRetry }) {
                   {t('access.subscription.plansSubtitle')}
                 </p>
               </div>
-              <Button type="button" variant="outline" className="rounded-full px-4" onClick={() => handleCheckout()}>
+              <Button type="button" variant="outline" onClick={() => handleCheckout()}>
                 {t('access.subscription.genericCheckout')}
               </Button>
             </div>
@@ -264,13 +264,12 @@ export default function SubscribePage({ message, onRetry }) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button type="button" className="rounded-full px-6" onClick={() => handleCheckout()}>
+            <Button type="button" onClick={() => handleCheckout()}>
               {t('access.subscription.startCheckout')}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="rounded-full px-5"
               onClick={onRetry}
               disabled={!onRetry}
             >

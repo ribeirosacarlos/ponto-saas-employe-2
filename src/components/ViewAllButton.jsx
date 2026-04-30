@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
+import { actionButtonClass } from './ui/form-controls'
 
 export function ViewAllButton({ label, onClick, icon: Icon = ExternalLink, className }) {
   const { t } = useTranslation()
@@ -11,7 +12,8 @@ export function ViewAllButton({ label, onClick, icon: Icon = ExternalLink, class
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex w-full max-w-full items-center justify-center gap-2 rounded-full border border-border bg-background/90 px-3 py-2 text-center text-[11px] font-semibold text-foreground shadow-[0_12px_28px_-20px_rgba(62,82,152,0.55)] transition hover:-translate-y-0.5 hover:bg-muted/80 sm:w-auto sm:text-xs',
+        actionButtonClass,
+        'w-full max-w-full text-center sm:w-auto',
         className,
       )}
     >

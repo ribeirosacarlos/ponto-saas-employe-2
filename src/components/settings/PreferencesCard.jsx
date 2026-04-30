@@ -4,6 +4,7 @@ import { Globe2, RefreshCcw, Save, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
+import { Select } from '../ui/select'
 import { useToast } from '../ui/use-toast'
 import { DEFAULT_TIMEZONE } from '../../lib/datetime'
 import { fetchCompanyTimezone, updateCompanyTimezone } from '../../services/companyTimezoneService'
@@ -148,12 +149,11 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="timezone-input">{t('settingsPage.preferences.fields.timezone')}</Label>
-              <select
+              <Select
                 id="timezone-input"
                 value={timezone}
                 onChange={(event) => setTimezoneState(event.target.value)}
                 disabled={loading || saving}
-                className="block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <option value="">
                   {t('settingsPage.preferences.fields.timezonePlaceholder')}
@@ -163,7 +163,7 @@ export function PreferencesCard({ company, canEdit, onTimezoneSaved }) {
                     {tz}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" onClick={handleSave} disabled={saving || loading || !timezone}>

@@ -15,6 +15,7 @@ import {
 } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
@@ -520,9 +521,8 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="subscription-plan">{t('superAdmin.companyDetails.subscription.plan', 'Plano')}</Label>
-                <select
+                <Select
                   id="subscription-plan"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   value={subscriptionForm.plan_id}
                   onChange={(event) =>
                     setSubscriptionForm((prev) => ({ ...prev, plan_id: event.target.value }))
@@ -534,13 +534,12 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
                       {plan.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="subscription-status">{t('superAdmin.companyDetails.subscription.status', 'Status')}</Label>
-                <select
+                <Select
                   id="subscription-status"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   value={subscriptionForm.status}
                   onChange={(event) =>
                     setSubscriptionForm((prev) => ({ ...prev, status: event.target.value }))
@@ -550,7 +549,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
                   <option value="trialing">{t('superAdmin.shared.subscription.trialing', 'Trial')}</option>
                   <option value="past_due">{t('superAdmin.shared.subscription.past_due', 'Em atraso')}</option>
                   <option value="canceled">{t('superAdmin.shared.subscription.canceled', 'Cancelada')}</option>
-                </select>
+                </Select>
               </div>
             </div>
 

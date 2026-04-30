@@ -1,5 +1,7 @@
 import { Download, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '../lib/utils'
+import { actionButtonClass } from './ui/form-controls'
 import { ViewAllButton } from './ViewAllButton'
 
 const accentTokens = {
@@ -116,7 +118,7 @@ export function EmployeeDocumentsCard({
                       <button
                         type="button"
                         onClick={() => onAction?.(item)}
-                        className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-full border border-border bg-muted/70 px-3 py-1.5 text-[11px] font-semibold text-foreground transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] sm:w-auto"
+                        className={cn(actionButtonClass, 'w-full shrink-0 sm:w-auto')}
                       >
                         <Download className="h-4 w-4" />
                         <span>{item.actionLabel || t('dashboardPage.documents.defaultAction')}</span>

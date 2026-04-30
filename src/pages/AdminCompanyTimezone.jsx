@@ -215,10 +215,10 @@ export default function AdminCompanyTimezone({ sidebarOpen = false, onToggleSide
                   />
                 </div>
                 <div className="relative">
-                  <input
+                  <Input
                     id="company-timezone"
                     name="timezone"
-                    className="mt-1 block w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-1"
                     value={searchTerm}
                     autoComplete="off"
                     placeholder={t('adminTimezonePage.form.placeholder', 'Selecione ou digite um timezone')}

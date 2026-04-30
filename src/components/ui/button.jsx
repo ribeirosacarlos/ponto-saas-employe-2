@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-[2px] active:translate-y-[0.5px] disabled:opacity-60 disabled:cursor-not-allowed ring-offset-background shadow-[0_1px_0_rgba(255,255,255,0.35)] dark:shadow-none',
+  'inline-flex items-center justify-center gap-2 rounded-md text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-[2px] active:translate-y-[0.5px] disabled:opacity-60 disabled:cursor-not-allowed ring-offset-background shadow-[0_1px_0_rgba(255,255,255,0.35)] dark:shadow-none',
   {
     variants: {
       variant: {
@@ -17,10 +17,10 @@ const buttonVariants = cva(
           'bg-destructive text-destructive-foreground shadow-sm hover:-translate-y-0.5 hover:brightness-110',
       },
       size: {
-        sm: 'h-9 px-3 rounded-lg',
-        md: 'h-11 px-4',
-        lg: 'h-12 px-5 text-base',
-        icon: 'h-11 w-11',
+        sm: 'h-8 px-2.5',
+        md: 'h-8 px-2.5',
+        lg: 'h-8 px-3',
+        icon: 'h-8 w-8',
       },
     },
     defaultVariants: {

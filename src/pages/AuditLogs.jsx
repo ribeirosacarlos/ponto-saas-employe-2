@@ -26,6 +26,7 @@ import {
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { PageContainer } from '../components/ui/PageContainer'
+import { Select } from '../components/ui/select'
 import { useToast } from '../components/ui/use-toast'
 import { formatDateTime } from '../lib/datetime'
 import { cn } from '../lib/utils'
@@ -158,7 +159,7 @@ function FilterCombobox({
                   placeholder="Digite o ID exato"
                   className="h-9 text-xs"
                 />
-                <Button type="button" size="sm" variant="outline" className="h-9" onClick={() => setOpen(false)}>
+                <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
                   Aplicar
                 </Button>
               </div>
@@ -731,18 +732,18 @@ export default function AuditLogs() {
                       <Label htmlFor="audit-per-page" className="text-[11px] text-muted-foreground">
                         Itens por pagina
                       </Label>
-                      <select
+                      <Select
                         id="audit-per-page"
                         value={filters.per_page}
                         onChange={(event) => setPerPage(event.target.value)}
-                        className="h-10 rounded-xl border border-border/80 bg-background/80 px-3 text-sm"
+                        className="w-auto min-w-[84px]"
                       >
                         {AUDIT_PER_PAGE_OPTIONS.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
 
                     <Button type="button" variant="outline" onClick={resetFilters}>

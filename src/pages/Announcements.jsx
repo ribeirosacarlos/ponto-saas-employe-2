@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
+import { Select } from '../components/ui/select'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
@@ -20,6 +21,7 @@ import {
   listAnnouncements,
   markAnnouncementSeen,
 } from '../services/announcementsService'
+import { actionTabButtonClass } from '../components/ui/form-controls'
 
 const STATUS_STYLES = {
   seen: {
@@ -317,17 +319,17 @@ export default function Announcements() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                   {t('announcementsPage.sort.label')}
                 </span>
-                <select
+                <Select
                   value={sort}
                   onChange={(event) => setSort(event.target.value)}
-                  className="rounded-full border border-border/70 bg-background/70 px-3 py-2 text-[11px] font-semibold text-foreground focus:border-primary focus:ring-2 focus:ring-primary/40 focus:ring-offset-0"
+                  className="w-auto rounded-full px-3 font-semibold"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {t(option.labelKey)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -340,7 +342,8 @@ export default function Announcements() {
                     key={tab}
                     type="button"
                     className={cn(
-                      'rounded-full border px-3 py-2 text-[11px] font-semibold transition',
+                      actionTabButtonClass,
+                      'border',
                       activeTab === tab
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border/60 bg-background/60 text-muted-foreground hover:border-border/80',

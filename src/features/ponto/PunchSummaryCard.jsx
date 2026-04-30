@@ -119,7 +119,7 @@ export function PunchSummaryCard({
             onSubmit={onAdjustment}
             isSubmitting={sendingAdjustment}
             trigger={
-              <Button size="sm" variant="outline" className="rounded-full px-3 text-xs">
+              <Button size="sm" variant="outline">
                 {t('dashboard.requestAdjustment')}
               </Button>
             }

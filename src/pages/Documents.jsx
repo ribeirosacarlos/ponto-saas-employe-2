@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Download, Eye, FileText, PenLine, RefreshCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
+import { actionIconButtonClass } from '../components/ui/form-controls'
 import { Input } from '../components/ui/input'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import { Select } from '../components/ui/select'
 import { cn } from '../lib/utils'
 import { useToast } from '../components/ui/use-toast'
 import {
@@ -280,8 +282,7 @@ export default function Documents() {
               value={filters.search}
               onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
             />
-            <select
-              className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+            <Select
               value={filters.category}
               onChange={(event) => setFilters((prev) => ({ ...prev, category: event.target.value }))}
             >
@@ -290,9 +291,8 @@ export default function Documents() {
                   {t(opt.labelKey)}
                 </option>
               ))}
-            </select>
-            <select
-              className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
+            </Select>
+            <Select
               value={filters.status}
               onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
             >
@@ -301,7 +301,7 @@ export default function Documents() {
                   {t(opt.labelKey)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -367,7 +367,7 @@ export default function Documents() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                        className={actionIconButtonClass}
                         title={t('documentsPage.actions.view')}
                         onClick={() => handleView(doc)}
                       >
@@ -375,7 +375,7 @@ export default function Documents() {
                       </button>
                       <button
                         type="button"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                        className={actionIconButtonClass}
                         title={t('documentsPage.actions.download')}
                         onClick={() => handleDownload(doc)}
                       >
@@ -386,7 +386,7 @@ export default function Documents() {
                       !doc.signedAt ? (
                         <button
                           type="button"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] disabled:opacity-60"
+                          className={actionIconButtonClass}
                           title={t('documentsPage.employee.actions.sign')}
                           onClick={() => handleSign(doc)}
                           disabled={signingId === doc.id}
@@ -451,7 +451,7 @@ export default function Documents() {
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                            className={actionIconButtonClass}
                             title={t('documentsPage.actions.view')}
                             onClick={() => handleView(doc)}
                           >
@@ -459,7 +459,7 @@ export default function Documents() {
                           </button>
                           <button
                             type="button"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98]"
+                            className={actionIconButtonClass}
                             title={t('documentsPage.actions.download')}
                             onClick={() => handleDownload(doc)}
                           >
@@ -470,7 +470,7 @@ export default function Documents() {
                           !doc.signedAt ? (
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted active:scale-[0.98] disabled:opacity-60"
+                              className={actionIconButtonClass}
                               title={t('documentsPage.employee.actions.sign')}
                               onClick={() => handleSign(doc)}
                               disabled={signingId === doc.id}

@@ -559,7 +559,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
         actions={
           <>
             {hasManagementAccess ? (
-              <Button onClick={handleOpenCreate} className="rounded-full px-3 text-sm">
+              <Button onClick={handleOpenCreate}>
                 <Plus className="h-4 w-4" />
                 {t('adminShiftsPage.actions.create')}
               </Button>
@@ -568,7 +568,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
               variant="outline"
               onClick={loadShifts}
               disabled={loading}
-              className="rounded-full border-border bg-background/80 px-3 text-sm"
+              className="border-border bg-background/80"
             >
               <RefreshCcw className={cn('h-4 w-4 text-primary', loading && 'animate-spin')} />
               {t('adminShiftsPage.actions.refresh')}

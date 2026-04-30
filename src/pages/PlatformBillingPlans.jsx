@@ -5,6 +5,7 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 import { Switch } from '../components/ui/switch'
 import {
   Dialog,
@@ -488,9 +489,8 @@ function PlanForm({ form, onChange }) {
           <Label htmlFor="plan-interval">
             {t('platformBillingPlans.form.billingInterval', 'Intervalo de cobrança')}
           </Label>
-          <select
+          <Select
             id="plan-interval"
-            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={form.billingInterval}
             onChange={(event) => handleChange('billingInterval', event.target.value)}
           >
@@ -499,7 +499,7 @@ function PlanForm({ form, onChange }) {
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="plan-trial">{t('platformBillingPlans.form.trialDays', 'Dias de teste')}</Label>
