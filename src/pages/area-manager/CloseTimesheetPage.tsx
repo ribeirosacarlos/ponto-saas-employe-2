@@ -70,6 +70,16 @@ const getLastMonthRange = () => {
   }
 }
 
+const getLast7DaysRange = () => {
+  const today = new Date()
+  const start = startOfDay(subDays(today, 6))
+  const end = endOfDay(today)
+  return {
+    from: format(start, 'yyyy-MM-dd'),
+    to: format(end, 'yyyy-MM-dd'),
+  }
+}
+
 const quickRanges = {
   lastMonth: getLastMonthRange,
   thisMonth: () => {
@@ -79,15 +89,7 @@ const quickRanges = {
       to: format(endOfMonth(today), 'yyyy-MM-dd'),
     }
   },
-  last30Days: () => {
-    const today = new Date()
-    const start = startOfDay(subDays(today, 29))
-    const end = endOfDay(today)
-    return {
-      from: format(start, 'yyyy-MM-dd'),
-      to: format(end, 'yyyy-MM-dd'),
-    }
-  },
+  last7Days: getLast7DaysRange,
 }
 
 const formatMinutes = (minutes?: number) => {
@@ -95,6 +97,11 @@ const formatMinutes = (minutes?: number) => {
   const hours = String(Math.floor(total / 60)).padStart(2, '0')
   const mins = String(Math.max(0, Math.round(total % 60))).padStart(2, '0')
   return `${hours}:${mins}`
+}
+
+const formatWholeHours = (minutes?: number) => {
+  const total = Number.isFinite(minutes) ? Number(minutes) : 0
+  return Math.floor(total / 60)
 }
 
 const isPendingApprovalAdjustment = (entry: any = {}) => {
@@ -187,8 +194,23 @@ const normalizeEmployee = (employee: any = {}, index = 0) => ({
     null,
 })
 
-const getEmployeeDisplayName = (employee?: { name?: string; email?: string } | null) =>
-  employee?.name || 'Colaborador'
+const getEmployeeDisplayName = (
+  employee?: { name?: string; full_name?: string; fullName?: string; email?: string } | null,
+) => employee?.name || employee?.full_name || employee?.fullName || employee?.email || 'Colaborador'
+
+const withSevenDayRangeIfMultiple = (state: {
+  employeeIds: string[]
+  from: string
+  to: string
+}) => {
+  if ((state.employeeIds?.length || 0) <= 1) return state
+  const range = quickRanges.last7Days()
+  return {
+    ...state,
+    from: range.from,
+    to: range.to,
+  }
+}
 
 const buildTimesheetSummary = (entries = []) => {
   const duplicateMap = new Map()
@@ -198,7 +220,9 @@ const buildTimesheetSummary = (entries = []) => {
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
     const clock = entry.clockedAt
     if (clock) {
-      const clockKey = new Date(clock).toISOString()
+      const employeeKey =
+        entry.userId ?? entry.user_id ?? entry.employee_id ?? entry.user?.id ?? entry.employee?.id ?? 'unknown-user'
+      const clockKey = `${employeeKey}:${new Date(clock).toISOString()}`
       const count = duplicateMap.get(clockKey) || 0
       duplicateMap.set(clockKey, count + 1)
     }
@@ -339,12 +363,12 @@ export default function CloseTimesheetPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
   const [filters, setFilters] = useState({
-    employeeId: '',
+    employeeIds: [] as string[],
     from: defaultRange.from,
     to: defaultRange.to,
   })
   const [appliedFilters, setAppliedFilters] = useState({
-    employeeId: '',
+    employeeIds: [] as string[],
     from: defaultRange.from,
     to: defaultRange.to,
   })
@@ -453,10 +477,31 @@ export default function CloseTimesheetPage() {
     }
   }, [])
 
-  const selectedEmployee = useMemo(
-    () => employees.find((emp) => emp.id === filters.employeeId) || null,
-    [employees, filters.employeeId],
+  const employeesById = useMemo(
+    () => new Map(employees.map((emp) => [String(emp.id), emp])),
+    [employees],
   )
+
+  const selectedEmployees = useMemo(
+    () =>
+      filters.employeeIds
+        .map((employeeId) => employeesById.get(String(employeeId)))
+        .filter(Boolean) as any[],
+    [employeesById, filters.employeeIds],
+  )
+
+  const appliedSelectedEmployees = useMemo(
+    () =>
+      appliedFilters.employeeIds
+        .map((employeeId) => employeesById.get(String(employeeId)))
+        .filter(Boolean) as any[],
+    [appliedFilters.employeeIds, employeesById],
+  )
+
+  const appliedSelectedEmployee =
+    appliedSelectedEmployees.length === 1 ? appliedSelectedEmployees[0] : null
+  const hasMultipleEmployeesSelected = filters.employeeIds.length > 1
+  const hasAppliedMultipleEmployees = appliedFilters.employeeIds.length > 1
 
   const filteredEmployees = useMemo(() => {
     if (!debouncedSearch) return employees
@@ -474,14 +519,14 @@ export default function CloseTimesheetPage() {
     const thisMonth = quickRanges.thisMonth()
     if (filters.from === thisMonth.from && filters.to === thisMonth.to) return 'thisMonth'
 
-    const last30Days = quickRanges.last30Days()
-    if (filters.from === last30Days.from && filters.to === last30Days.to) return 'last30Days'
+    const last7Days = quickRanges.last7Days()
+    if (filters.from === last7Days.from && filters.to === last7Days.to) return 'last7Days'
 
     return ''
   }, [filters.from, filters.to])
 
   const canSearch =
-    Boolean(filters.employeeId) &&
+    filters.employeeIds.length > 0 &&
     Boolean(filters.from) &&
     Boolean(filters.to) &&
     !isAfter(parseISO(filters.from), parseISO(filters.to))
@@ -557,9 +602,156 @@ export default function CloseTimesheetPage() {
   )
 
   const handleQuickRange = (key: keyof typeof quickRanges) => {
+    if (hasMultipleEmployeesSelected && key !== 'last7Days') return
     const range = quickRanges[key]()
     setFilters((prev) => ({ ...prev, from: range.from, to: range.to }))
   }
+
+  const toggleEmployeeSelection = useCallback((employeeId: string) => {
+    setFilters((prev) => {
+      const isSelected = prev.employeeIds.includes(employeeId)
+      const employeeIds = isSelected
+        ? prev.employeeIds.filter((id) => id !== employeeId)
+        : [...prev.employeeIds, employeeId]
+
+      return withSevenDayRangeIfMultiple({
+        ...prev,
+        employeeIds,
+      })
+    })
+  }, [])
+
+  const fetchAllEntriesByEmployee = useCallback(
+    async ({
+      employeeId,
+      from,
+      to,
+    }: {
+      employeeId: string
+      from: string
+      to: string
+    }) => {
+      const params = {
+        userId: employeeId,
+        dateFrom: formatISO(startOfDay(parseISO(from))),
+        dateTo: formatISO(endOfDay(parseISO(to))),
+        perPage: EXPORT_PAGE_SIZE,
+      }
+
+      let pageToLoad = 1
+      let keepFetching = true
+      const allEntries: any[] = []
+
+      while (keepFetching) {
+        const { data, meta: responseMeta } = await listTeamEntries({ ...params, page: pageToLoad })
+        allEntries.push(...(data || []))
+
+        const lastPage = responseMeta?.lastPage || responseMeta?.last_page
+        const total = responseMeta?.total
+        const perPage = responseMeta?.perPage || responseMeta?.per_page || params.perPage
+
+        if (lastPage) {
+          keepFetching = pageToLoad < lastPage
+        } else if (total) {
+          keepFetching = allEntries.length < total
+        } else {
+          keepFetching = (data?.length || 0) >= perPage
+        }
+
+        pageToLoad += 1
+      }
+
+      return allEntries
+    },
+    [],
+  )
+
+  const resolveEntryEmployee = useCallback(
+    (entry: any) => {
+      const entryUser = entry?.user ?? entry?.employee ?? null
+      if (entryUser?.name || entryUser?.full_name || entryUser?.fullName || entryUser?.email) {
+        return entryUser
+      }
+
+      const entryUserId =
+        entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? ''
+
+      return entryUserId ? employeesById.get(String(entryUserId)) || null : null
+    },
+    [employeesById],
+  )
+
+  const groupedEntriesByEmployee = useMemo(() => {
+    if (!hasAppliedMultipleEmployees) return []
+
+    const sections = new Map<
+      string,
+      {
+        employeeId: string
+        employee: any
+        entries: any[]
+      }
+    >()
+
+    normalizedEntries.forEach((entry) => {
+      const employee = resolveEntryEmployee(entry)
+      const employeeId = String(
+        employee?.id ??
+          entry?.userId ??
+          entry?.user_id ??
+          entry?.employee_id ??
+          entry?.user?.id ??
+          entry?.employee?.id ??
+          'unknown-user',
+      )
+
+      const current = sections.get(employeeId)
+      if (current) {
+        current.entries.push(entry)
+        if (!current.employee && employee) current.employee = employee
+        return
+      }
+
+      sections.set(employeeId, {
+        employeeId,
+        employee,
+        entries: [entry],
+      })
+    })
+
+    const selectedOrder = appliedFilters.employeeIds.map(String)
+
+    return Array.from(sections.values())
+      .map((section) => {
+        const employeeSummary = buildTimesheetSummary(section.entries)
+        const employeeDuplicatesSet = new Set<string>()
+        employeeSummary.duplicateMap?.forEach((count, key) => {
+          if (count > 1) employeeDuplicatesSet.add(key)
+        })
+
+        return {
+          ...section,
+          groups: groupEntriesByDate(section.entries, 'desc'),
+          summary: employeeSummary,
+          duplicatesSet: employeeDuplicatesSet,
+        }
+      })
+      .sort((left, right) => {
+        const leftIndex = selectedOrder.indexOf(String(left.employeeId))
+        const rightIndex = selectedOrder.indexOf(String(right.employeeId))
+
+        if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex
+        if (leftIndex !== -1) return -1
+        if (rightIndex !== -1) return 1
+
+        return getEmployeeDisplayName(left.employee).localeCompare(getEmployeeDisplayName(right.employee))
+      })
+  }, [
+    appliedFilters.employeeIds,
+    hasAppliedMultipleEmployees,
+    normalizedEntries,
+    resolveEntryEmployee,
+  ])
 
   const handleSearch = useCallback(
     async (pageToLoad = 1) => {
@@ -568,9 +760,39 @@ export default function CloseTimesheetPage() {
       setLoadingEntries(true)
       setEntriesError('')
       try {
-        const { from, to, employeeId } = filters
+        const { from, to, employeeIds } = filters
+
+        if (employeeIds.length > 1) {
+          const allEntriesByEmployee = await Promise.all(
+            employeeIds.map((employeeId) => fetchAllEntriesByEmployee({ employeeId, from, to })),
+          )
+
+          const mergedEntries = allEntriesByEmployee
+            .flat()
+            .sort((left, right) => {
+              const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
+              const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
+              return rightTime - leftTime
+            })
+
+          setEntries(mergedEntries)
+          setMeta({
+            currentPage: 1,
+            perPage: mergedEntries.length || PAGE_SIZE,
+            total: mergedEntries.length,
+            lastPage: 1,
+          })
+          setPage(1)
+          setAppliedFilters({
+            employeeIds: [...employeeIds],
+            from,
+            to,
+          })
+          return
+        }
+
         const params = {
-          userId: employeeId,
+          userId: employeeIds[0],
           dateFrom: formatISO(startOfDay(parseISO(from))),
           dateTo: formatISO(endOfDay(parseISO(to))),
           page: pageToLoad,
@@ -581,7 +803,11 @@ export default function CloseTimesheetPage() {
         setEntries(data || [])
         setMeta(responseMeta || null)
         setPage(responseMeta?.currentPage || pageToLoad || 1)
-        setAppliedFilters(filters)
+        setAppliedFilters({
+          employeeIds: [...employeeIds],
+          from,
+          to,
+        })
       } catch (error: any) {
         const message =
           error?.response?.data?.message ||
@@ -599,7 +825,7 @@ export default function CloseTimesheetPage() {
         setLoadingEntries(false)
       }
     },
-    [canSearch, filters, t, toast],
+    [canSearch, fetchAllEntriesByEmployee, filters, t, toast],
   )
 
   const refreshSingleEntry = useCallback(
@@ -618,7 +844,7 @@ export default function CloseTimesheetPage() {
         const parsedClock = new Date(clockedAt)
         if (!isValid(parsedClock)) return
 
-        const employeeId = userId || appliedFilters.employeeId || filters.employeeId
+        const employeeId = userId || appliedFilters.employeeIds[0] || filters.employeeIds[0]
         const { data } = await listTeamEntries({
           userId: employeeId || undefined,
           dateFrom: formatISO(startOfDay(parsedClock)),
@@ -645,7 +871,7 @@ export default function CloseTimesheetPage() {
         console.error('[closeTimesheet] failed to refresh single entry', error)
       }
     },
-    [appliedFilters.employeeId, filters.employeeId],
+    [appliedFilters.employeeIds, filters.employeeIds],
   )
 
   const handlePaginate = async (direction: 'prev' | 'next') => {
@@ -729,8 +955,9 @@ export default function CloseTimesheetPage() {
 
   const buildFilename = (suffix = 'folha-ponto') => {
     const name =
-      selectedEmployee?.name?.trim().toLowerCase().replace(/\s+/g, '-') ||
-      selectedEmployee?.email?.split('@')[0] ||
+      appliedSelectedEmployee?.name?.trim().toLowerCase().replace(/\s+/g, '-') ||
+      appliedSelectedEmployee?.email?.split('@')[0] ||
+      (appliedFilters.employeeIds.length > 1 ? `${appliedFilters.employeeIds.length}-funcionarios` : '') ||
       'funcionario'
     const fromLabel = appliedFilters.from || filters.from
     const toLabel = appliedFilters.to || filters.to
@@ -738,6 +965,18 @@ export default function CloseTimesheetPage() {
   }
 
   const ensureEntriesBeforeExport = () => {
+    if (appliedFilters.employeeIds.length > 1) {
+      toast({
+        title: t('closeTimesheetPage.export.multipleEmployeesTitle', 'Exportação indisponível'),
+        description: t(
+          'closeTimesheetPage.export.multipleEmployeesDescription',
+          'Selecione apenas um funcionário para exportar a folha em PDF.',
+        ),
+        variant: 'error',
+      })
+      return false
+    }
+
     if (!normalizedEntries.length) {
       toast({
         title: t('closeTimesheetPage.export.emptyTitle'),
@@ -750,39 +989,14 @@ export default function CloseTimesheetPage() {
   }
 
   const fetchEntriesForExport = useCallback(async () => {
-    const { from, to, employeeId } = appliedFilters
-    const params = {
-      userId: employeeId,
-      dateFrom: formatISO(startOfDay(parseISO(from))),
-      dateTo: formatISO(endOfDay(parseISO(to))),
-      perPage: EXPORT_PAGE_SIZE,
-    }
-
-    let pageToLoad = 1
-    let keepFetching = true
-    const allEntries: any[] = []
-
-    while (keepFetching) {
-      const { data, meta: responseMeta } = await listTeamEntries({ ...params, page: pageToLoad })
-      allEntries.push(...(data || []))
-
-      const lastPage = responseMeta?.lastPage || responseMeta?.last_page
-      const total = responseMeta?.total
-      const perPage = responseMeta?.perPage || responseMeta?.per_page || params.perPage
-
-      if (lastPage) {
-        keepFetching = pageToLoad < lastPage
-      } else if (total) {
-        keepFetching = allEntries.length < total
-      } else {
-        keepFetching = (data?.length || 0) >= perPage
-      }
-
-      pageToLoad += 1
-    }
-
-    return allEntries
-  }, [appliedFilters])
+    const { from, to, employeeIds } = appliedFilters
+    if (!employeeIds[0]) return []
+    return fetchAllEntriesByEmployee({
+      employeeId: employeeIds[0],
+      from,
+      to,
+    })
+  }, [appliedFilters, fetchAllEntriesByEmployee])
 
   const exportPdf = async () => {
     if (!ensureEntriesBeforeExport()) return
@@ -794,9 +1008,11 @@ export default function CloseTimesheetPage() {
       const groupedForExport = groupEntriesByDate(normalizedExportEntries, 'asc')
       const fullDays = addMissingDays([...groupedForExport], appliedFilters.from, appliedFilters.to)
       const employeeLabel =
-        selectedEmployee?.name || selectedEmployee?.email || t('closeTimesheetPage.table.userFallback')
-      const companyLabel = getCompanyName(selectedEmployee, authUser)
-      const shiftLabel = getShiftName(selectedEmployee) || ''
+        appliedSelectedEmployee?.name ||
+        appliedSelectedEmployee?.email ||
+        t('closeTimesheetPage.table.userFallback')
+      const companyLabel = getCompanyName(appliedSelectedEmployee, authUser)
+      const shiftLabel = getShiftName(appliedSelectedEmployee) || ''
       const periodLabel = `${formatDateLabel(appliedFilters.from)} - ${formatDateLabel(appliedFilters.to)}`
 
       const blob = generateSimpleTimesheetPdf({
@@ -837,8 +1053,8 @@ export default function CloseTimesheetPage() {
       entry?.userId ??
       entry?.user_id ??
       entry?.user?.id ??
-      appliedFilters.employeeId ??
-      filters.employeeId ??
+      appliedFilters.employeeIds[0] ??
+      filters.employeeIds[0] ??
       ''
 
     const params = new URLSearchParams()
@@ -848,7 +1064,7 @@ export default function CloseTimesheetPage() {
     }
 
     window.open(`${PAGE_PATHS.adminAdjustments}?${params.toString()}`, '_blank', 'noopener')
-  }, [appliedFilters.employeeId, filters.employeeId])
+  }, [appliedFilters.employeeIds, filters.employeeIds])
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
@@ -870,6 +1086,259 @@ export default function CloseTimesheetPage() {
   const lastPage = meta?.lastPage || meta?.last_page || null
   const total = meta?.total
   const canGoNext = lastPage ? currentPage < lastPage : total ? currentPage * PAGE_SIZE < total : true
+
+  const renderEntriesTable = ({
+    groups,
+    tableSummary,
+    tableDuplicatesSet,
+  }: {
+    groups: Array<{ dateKey: string; items: any[] }>
+    tableSummary: any
+    tableDuplicatesSet: Set<string>
+  }) => (
+    <div className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] table-fixed">
+          <thead>
+            <tr className="border-b border-border/70 text-left text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
+              <th className="w-[148px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
+              <th className="w-[96px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
+              <th className="w-[104px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
+              <th className="px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
+              <th className="w-[180px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
+              <th className="w-[96px] px-3 py-3 text-right">
+                {t('closeTimesheetPage.table.headers.actions', 'Ações')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.flatMap((group) => {
+              const dateRows = group.items.map((entry, index) => {
+                const employeeKey =
+                  entry?.userId ??
+                  entry?.user_id ??
+                  entry?.employee_id ??
+                  entry?.user?.id ??
+                  entry?.employee?.id ??
+                  'unknown-user'
+                const clockKey = entry.clockedAt
+                  ? `${employeeKey}:${new Date(entry.clockedAt).toISOString()}`
+                  : ''
+                const isPending = tableSummary.pendingIds.has(entry.id)
+                const isDuplicate = tableDuplicatesSet.has(clockKey)
+                const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
+                const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
+                const distanceFromCompany = companyLocation
+                  ? calculateDistanceInMeters(
+                      entry.latitude,
+                      entry.longitude,
+                      companyLocation.latitude,
+                      companyLocation.longitude,
+                    )
+                  : null
+                const isOutsideCompany =
+                  distanceFromCompany !== null &&
+                  distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
+                const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
+                const isDeletingEntry = deletingEntryId === entry.timeEntryId
+                const statusLabel = hasPendingAdjustment
+                  ? t('closeTimesheetPage.table.status.adjustmentPending')
+                  : isPending
+                    ? t('closeTimesheetPage.table.status.pending')
+                    : isDuplicate
+                      ? t('closeTimesheetPage.table.status.duplicate')
+                      : t('closeTimesheetPage.table.status.ok')
+                const statusClassName = hasPendingAdjustment
+                  ? 'text-sky-700 dark:text-sky-300'
+                  : isPending
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : isDuplicate
+                      ? 'text-rose-700 dark:text-rose-300'
+                      : 'text-emerald-700 dark:text-emerald-300'
+                const locationLabel = !hasCoordinates
+                  ? '—'
+                  : distanceFromCompany !== null
+                    ? isOutsideCompany
+                      ? t('closeTimesheetPage.table.locationStatus.outside')
+                      : t('closeTimesheetPage.table.locationStatus.inside')
+                    : t('closeTimesheetPage.table.locationTitle')
+
+                return (
+                  <tr
+                    key={entry.id}
+                    className={cn(
+                      'border-b border-border/40 text-[13px] transition-colors hover:bg-muted/45',
+                      index === group.items.length - 1 ? 'last:border-b-0' : '',
+                    )}
+                  >
+                    <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                      {group.dateKey && group.dateKey !== 'unknown'
+                        ? format(parseISO(group.dateKey), 'dd/MM/yyyy')
+                        : '—'}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <span className="font-medium text-foreground">{formatClock(entry.clockedAt)}</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
+                          entry.type === 'in'
+                            ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
+                            : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
+                        )}
+                      >
+                        {formatEntryType(entry.type)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      {hasCoordinates ? (
+                        <div className="flex items-center gap-2 text-[13px] text-foreground">
+                          <span
+                            className={cn(
+                              'truncate',
+                              isOutsideCompany
+                                ? 'font-semibold text-rose-700 dark:text-rose-300'
+                                : 'text-foreground',
+                            )}
+                          >
+                            {locationLabel}
+                          </span>
+                          <Dialog
+                            open={locationEntry?.id === entry.id}
+                            onOpenChange={(open) => !open && setLocationEntry(null)}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                  'h-6 w-6 shrink-0 rounded-full p-0 hover:bg-muted',
+                                  isOutsideCompany
+                                    ? 'text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200'
+                                    : 'text-muted-foreground hover:text-foreground',
+                                )}
+                                onClick={() => setLocationEntry(entry)}
+                                aria-label={t('closeTimesheetPage.table.viewLocation')}
+                                title={t('closeTimesheetPage.table.viewLocation')}
+                              >
+                                <MapPin className="h-3.5 w-3.5" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader className="space-y-1">
+                                <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
+                                <DialogDescription>
+                                  {t('closeTimesheetPage.table.locationDescription')}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-2 rounded-xl bg-muted/50 p-4">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium">Latitude</span>
+                                  <span>{entry.latitude}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium">Longitude</span>
+                                  <span>{entry.longitude}</span>
+                                </div>
+                                {distanceFromCompany !== null ? (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">
+                                      {t('closeTimesheetPage.table.distanceFromCompany')}
+                                    </span>
+                                    <span>
+                                      {t('closeTimesheetPage.table.distanceValue', {
+                                        distance: distanceFromCompany,
+                                      })}
+                                    </span>
+                                  </div>
+                                ) : null}
+                                <a
+                                  href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 text-primary underline"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                  {t('closeTimesheetPage.table.openMaps')}
+                                </a>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      {hasPendingAdjustment ? (
+                        <button
+                          type="button"
+                          className={cn(
+                            'font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
+                            statusClassName,
+                          )}
+                          onClick={() => openPendingAdjustments(entry)}
+                          title={statusLabel}
+                        >
+                          {statusLabel}
+                        </button>
+                      ) : (
+                        <span className={cn('font-medium', statusClassName)}>{statusLabel}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex items-center justify-end gap-1">
+                        {canDeleteEntry ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-rose-600 dark:hover:text-rose-400"
+                            disabled={isDeletingEntry}
+                            onClick={() => setDeleteTarget(entry)}
+                            aria-label={
+                              isDeletingEntry
+                                ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                                : t('closeTimesheetPage.delete.action', 'Excluir')
+                            }
+                            title={
+                              isDeletingEntry
+                                ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                                : t('closeTimesheetPage.delete.action', 'Excluir')
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : null}
+                        {!canDeleteEntry ? <span className="text-muted-foreground">—</span> : null}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
+
+              return [
+                <tr key={`${group.dateKey}-separator`} className="border-b border-border/50">
+                  <td
+                    colSpan={6}
+                    className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
+                    </div>
+                  </td>
+                </tr>,
+                ...dateRows,
+              ]
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 
   return (
     <div className="relative min-h-screen">
@@ -902,7 +1371,7 @@ export default function CloseTimesheetPage() {
                 {([
                   ['lastMonth', t('closeTimesheetPage.filters.quick.lastMonth')],
                   ['thisMonth', t('closeTimesheetPage.filters.quick.thisMonth')],
-                  ['last30Days', t('closeTimesheetPage.filters.quick.last30Days')],
+                  ['last7Days', t('closeTimesheetPage.filters.quick.last7Days')],
                 ] as const).map(([key, label]) => (
                   <Button
                     key={key}
@@ -910,6 +1379,7 @@ export default function CloseTimesheetPage() {
                     size="sm"
                     variant={activeQuickRange === key ? 'default' : 'ghost'}
                     className="h-7 flex-1 rounded-md px-2 text-[11px]"
+                    disabled={hasMultipleEmployeesSelected && key !== 'last7Days'}
                     onClick={() => handleQuickRange(key)}
                   >
                     {label}
@@ -925,6 +1395,7 @@ export default function CloseTimesheetPage() {
                     <Input
                       type="date"
                       value={filters.from}
+                      disabled={hasMultipleEmployeesSelected}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, from: event.target.value }))
                       }
@@ -940,6 +1411,7 @@ export default function CloseTimesheetPage() {
                       type="date"
                       value={filters.to}
                       min={filters.from}
+                      disabled={hasMultipleEmployeesSelected}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, to: event.target.value }))
                       }
@@ -948,6 +1420,14 @@ export default function CloseTimesheetPage() {
                     <CalendarRange className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                   </div>
               </div>
+              {hasMultipleEmployeesSelected ? (
+                <p className="text-[11px] text-muted-foreground">
+                  {t(
+                    'closeTimesheetPage.filters.multiRangeHint',
+                    'Com múltiplos funcionários selecionados, o período fica limitado aos últimos 7 dias.',
+                  )}
+                </p>
+              ) : null}
               </div>
 
               <div className="grid gap-1.5 self-start xl:grid-cols-[minmax(16rem,1fr)_auto] xl:items-end">
@@ -966,24 +1446,28 @@ export default function CloseTimesheetPage() {
                   >
                     <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1 overflow-hidden">
-                      {selectedEmployee ? (
+                      {selectedEmployees.length > 0 ? (
                         <div className="flex items-center gap-1.5 overflow-hidden">
                           <span className="truncate text-[11px] font-semibold text-foreground">
-                            {getEmployeeDisplayName(selectedEmployee)}
+                            {selectedEmployees.length === 1
+                              ? getEmployeeDisplayName(selectedEmployees[0])
+                              : t('closeTimesheetPage.filters.selectedCount', {
+                                  count: selectedEmployees.length,
+                                })}
                           </span>
                           <span
                             role="button"
                             tabIndex={0}
                             onClick={(event) => {
                               event.stopPropagation()
-                              setFilters((prev) => ({ ...prev, employeeId: '' }))
+                              setFilters((prev) => ({ ...prev, employeeIds: [] }))
                               setEmployeeSearch('')
                             }}
                             onKeyDown={(event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault()
                                 event.stopPropagation()
-                                setFilters((prev) => ({ ...prev, employeeId: '' }))
+                                setFilters((prev) => ({ ...prev, employeeIds: [] }))
                                 setEmployeeSearch('')
                               }
                             }}
@@ -1046,13 +1530,10 @@ export default function CloseTimesheetPage() {
                             <button
                               key={emp.id}
                               type="button"
-                              onClick={() => {
-                                setFilters((prev) => ({ ...prev, employeeId: emp.id }))
-                                setEmployeeComboboxOpen(false)
-                              }}
+                              onClick={() => toggleEmployeeSelection(String(emp.id))}
                               className={cn(
                                 'flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition',
-                                emp.id === filters.employeeId
+                                filters.employeeIds.includes(String(emp.id))
                                   ? 'border-primary/60 bg-primary/10'
                                   : 'border-border/70 bg-background/70 hover:border-primary/30 hover:bg-muted/60',
                               )}
@@ -1060,13 +1541,20 @@ export default function CloseTimesheetPage() {
                               <UserRound
                                 className={cn(
                                   'mt-0.5 h-3.5 w-3.5 shrink-0',
-                                  emp.id === filters.employeeId ? 'text-primary' : 'text-muted-foreground',
+                                  filters.employeeIds.includes(String(emp.id))
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground',
                                 )}
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-xs font-semibold text-foreground">
                                   {getEmployeeDisplayName(emp)}
                                 </div>
+                                {emp.email ? (
+                                  <div className="truncate text-[11px] text-muted-foreground">
+                                    {emp.email}
+                                  </div>
+                                ) : null}
                               </div>
                             </button>
                           ))
@@ -1079,6 +1567,21 @@ export default function CloseTimesheetPage() {
                     </div>
                   ) : null}
                   </div>
+                  {selectedEmployees.length ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {selectedEmployees.map((employee) => (
+                        <button
+                          key={employee.id}
+                          type="button"
+                          onClick={() => toggleEmployeeSelection(String(employee.id))}
+                          className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] text-primary"
+                        >
+                          <span className="truncate">{getEmployeeDisplayName(employee)}</span>
+                          <X className="h-3 w-3 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex w-full gap-1.5 xl:w-auto">
                   <Button
@@ -1088,7 +1591,7 @@ export default function CloseTimesheetPage() {
                     className="h-8 flex-1 rounded-md px-2.5 text-[11px] xl:min-w-[80px] xl:flex-none"
                     onClick={() => {
                       setFilters({
-                        employeeId: '',
+                        employeeIds: [],
                         from: defaultRange.from,
                         to: defaultRange.to,
                       })
@@ -1172,9 +1675,21 @@ export default function CloseTimesheetPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        disabled={exporting === 'standard' || !normalizedEntries.length}
+                        disabled={
+                          exporting === 'standard' ||
+                          !normalizedEntries.length ||
+                          hasAppliedMultipleEmployees
+                        }
                         onClick={() => exportPdf()}
                         className="h-8 rounded-md px-3 text-xs"
+                        title={
+                          hasAppliedMultipleEmployees
+                            ? t(
+                                'closeTimesheetPage.export.multipleEmployeesDescription',
+                                'Selecione apenas um funcionário para exportar a folha em PDF.',
+                              )
+                            : undefined
+                        }
                       >
                         {exporting === 'standard' ? (
                           <RefreshCcw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -1206,243 +1721,52 @@ export default function CloseTimesheetPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[760px] table-fixed">
-                            <thead>
-                              <tr className="border-b border-border/70 text-left text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-                                <th className="w-[148px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
-                                <th className="w-[96px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
-                                <th className="w-[104px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
-                                <th className="px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
-                                <th className="w-[180px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
-                                <th className="w-[96px] px-3 py-3 text-right">
-                                  {t('closeTimesheetPage.table.headers.actions', 'Ações')}
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {groupedEntries.flatMap((group) => {
-                                const dateRows = group.items.map((entry, index) => {
-                                  const clockKey = entry.clockedAt ? new Date(entry.clockedAt).toISOString() : ''
-                                  const isPending = summary.pendingIds.has(entry.id)
-                                  const isDuplicate = duplicatesSet.has(clockKey)
-                                  const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
-                                  const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
-                                  const distanceFromCompany = companyLocation
-                                    ? calculateDistanceInMeters(
-                                        entry.latitude,
-                                        entry.longitude,
-                                        companyLocation.latitude,
-                                        companyLocation.longitude,
-                                      )
-                                    : null
-                                  const isOutsideCompany =
-                                    distanceFromCompany !== null &&
-                                    distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
-                                  const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
-                                  const isDeletingEntry = deletingEntryId === entry.timeEntryId
-                                  const statusLabel = hasPendingAdjustment
-                                    ? t('closeTimesheetPage.table.status.adjustmentPending')
-                                    : isPending
-                                      ? t('closeTimesheetPage.table.status.pending')
-                                      : isDuplicate
-                                        ? t('closeTimesheetPage.table.status.duplicate')
-                                        : t('closeTimesheetPage.table.status.ok')
-                                  const statusClassName = hasPendingAdjustment
-                                    ? 'text-sky-700 dark:text-sky-300'
-                                    : isPending
-                                      ? 'text-amber-700 dark:text-amber-300'
-                                      : isDuplicate
-                                        ? 'text-rose-700 dark:text-rose-300'
-                                        : 'text-emerald-700 dark:text-emerald-300'
-                                  const locationLabel = !hasCoordinates
-                                    ? '—'
-                                    : distanceFromCompany !== null
-                                      ? isOutsideCompany
-                                        ? t('closeTimesheetPage.table.locationStatus.outside')
-                                        : t('closeTimesheetPage.table.locationStatus.inside')
-                                      : t('closeTimesheetPage.table.locationTitle')
-
-                                  return (
-                                    <tr
-                                      key={entry.id}
-                                      className={cn(
-                                        'border-b border-border/40 text-[13px] transition-colors hover:bg-muted/45',
-                                        index === group.items.length - 1 ? 'last:border-b-0' : '',
-                                      )}
-                                    >
-                                      <td className="px-3 py-2.5 align-middle text-muted-foreground">
-                                        {group.dateKey && group.dateKey !== 'unknown'
-                                          ? format(parseISO(group.dateKey), 'dd/MM/yyyy')
-                                          : '—'}
-                                      </td>
-                                      <td className="px-3 py-2.5 align-middle">
-                                        <span className="font-medium text-foreground">
-                                          {formatClock(entry.clockedAt)}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2.5 align-middle">
-                                        <span
-                                          className={cn(
-                                            'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
-                                            entry.type === 'in'
-                                              ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
-                                              : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
-                                          )}
-                                        >
-                                          {formatEntryType(entry.type)}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2.5 align-middle">
-                                        {hasCoordinates ? (
-                                          <div className="flex items-center gap-2 text-[13px] text-foreground">
-                                            <span
-                                              className={cn(
-                                                'truncate',
-                                                isOutsideCompany
-                                                  ? 'font-semibold text-rose-700 dark:text-rose-300'
-                                                  : 'text-foreground',
-                                              )}
-                                            >
-                                              {locationLabel}
-                                            </span>
-                                            <Dialog
-                                              open={locationEntry?.id === entry.id}
-                                              onOpenChange={(open) => !open && setLocationEntry(null)}
-                                            >
-                                              <DialogTrigger asChild>
-                                                <Button
-                                                  type="button"
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className={cn(
-                                                    'h-6 w-6 shrink-0 rounded-full p-0 hover:bg-muted',
-                                                    isOutsideCompany
-                                                      ? 'text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200'
-                                                      : 'text-muted-foreground hover:text-foreground',
-                                                  )}
-                                                  onClick={() => setLocationEntry(entry)}
-                                                  aria-label={t('closeTimesheetPage.table.viewLocation')}
-                                                  title={t('closeTimesheetPage.table.viewLocation')}
-                                                >
-                                                  <MapPin className="h-3.5 w-3.5" />
-                                                </Button>
-                                              </DialogTrigger>
-                                              <DialogContent>
-                                                <DialogHeader className="space-y-1">
-                                                  <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
-                                                  <DialogDescription>
-                                                    {t('closeTimesheetPage.table.locationDescription')}
-                                                  </DialogDescription>
-                                                </DialogHeader>
-                                                <div className="space-y-2 rounded-xl bg-muted/50 p-4">
-                                                  <div className="flex items-center justify-between text-sm">
-                                                    <span className="font-medium">Latitude</span>
-                                                    <span>{entry.latitude}</span>
-                                                  </div>
-                                                  <div className="flex items-center justify-between text-sm">
-                                                    <span className="font-medium">Longitude</span>
-                                                    <span>{entry.longitude}</span>
-                                                  </div>
-                                                  {distanceFromCompany !== null ? (
-                                                    <div className="flex items-center justify-between text-sm">
-                                                      <span className="font-medium">
-                                                        {t('closeTimesheetPage.table.distanceFromCompany')}
-                                                      </span>
-                                                      <span>
-                                                        {t('closeTimesheetPage.table.distanceValue', {
-                                                          distance: distanceFromCompany,
-                                                        })}
-                                                      </span>
-                                                    </div>
-                                                  ) : null}
-                                                  <a
-                                                    href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-2 text-primary underline"
-                                                  >
-                                                    <MapPin className="h-4 w-4" />
-                                                    {t('closeTimesheetPage.table.openMaps')}
-                                                  </a>
-                                                </div>
-                                              </DialogContent>
-                                            </Dialog>
-                                          </div>
-                                        ) : (
-                                          <span className="text-muted-foreground">—</span>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2.5 align-middle">
-                                        {hasPendingAdjustment ? (
-                                          <button
-                                            type="button"
-                                            className={cn(
-                                              'font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
-                                              statusClassName,
-                                            )}
-                                            onClick={() => openPendingAdjustments(entry)}
-                                            title={statusLabel}
-                                          >
-                                            {statusLabel}
-                                          </button>
-                                        ) : (
-                                          <span className={cn('font-medium', statusClassName)}>{statusLabel}</span>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2.5 align-middle">
-                                        <div className="flex items-center justify-end gap-1">
-                                          {canDeleteEntry ? (
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-rose-600 dark:hover:text-rose-400"
-                                              disabled={isDeletingEntry}
-                                              onClick={() => setDeleteTarget(entry)}
-                                              aria-label={
-                                                isDeletingEntry
-                                                  ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
-                                                  : t('closeTimesheetPage.delete.action', 'Excluir')
-                                              }
-                                              title={
-                                                isDeletingEntry
-                                                  ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
-                                                  : t('closeTimesheetPage.delete.action', 'Excluir')
-                                              }
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                          ) : null}
-                                          {!canDeleteEntry ? (
-                                            <span className="text-muted-foreground">—</span>
-                                          ) : null}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )
-                                })
-
-                                return [
-                                <tr key={`${group.dateKey}-separator`} className="border-b border-border/50">
-                                    <td
-                                      colSpan={6}
-                                      className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
-                                        <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
-                                      </div>
-                                    </td>
-                                  </tr>,
-                                  ...dateRows,
-                                ]
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                      {hasAppliedMultipleEmployees ? (
+                        groupedEntriesByEmployee.map((section) => (
+                          <div
+                            key={section.employeeId}
+                            className="space-y-3 rounded-xl border border-border/60 bg-background/40 p-3"
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-foreground">
+                                  {getEmployeeDisplayName(section.employee)}
+                                </p>
+                                {section.employee?.email ? (
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {section.employee.email}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                <span>
+                                  {section.summary.totalEntries} {t('closeTimesheetPage.summary.entries')}
+                                </span>
+                                <span>
+                                  {section.summary.daysWithRecords} {t('closeTimesheetPage.summary.days')}
+                                </span>
+                                <span>
+                                  {t('closeTimesheetPage.summary.hoursOnly', {
+                                    count: formatWholeHours(section.summary.totalMinutes),
+                                    defaultValue: '{{count}} horas',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            {renderEntriesTable({
+                              groups: section.groups,
+                              tableSummary: section.summary,
+                              tableDuplicatesSet: section.duplicatesSet,
+                            })}
+                          </div>
+                        ))
+                      ) : (
+                        renderEntriesTable({
+                          groups: groupedEntries,
+                          tableSummary: summary,
+                          tableDuplicatesSet: duplicatesSet,
+                        })
+                      )}
                       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs text-muted-foreground">
                         <div>
                           {t('closeTimesheetPage.table.pagination', {
