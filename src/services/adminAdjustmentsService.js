@@ -6,6 +6,15 @@ const normalizeProposedType = (value) => {
   return normalized === 'in' || normalized === 'out' ? normalized : null
 }
 
+const firstPresentValue = (...values) => {
+  for (const value of values) {
+    if (value === undefined || value === null) continue
+    if (typeof value === 'string' && value.trim() === '') continue
+    return value
+  }
+  return null
+}
+
 const normalizeAdjustment = (item = {}, index = 0) => {
   const status = (item.adjustment_status ?? item.status ?? item.state ?? '').toString().toLowerCase()
 
@@ -15,9 +24,23 @@ const normalizeAdjustment = (item = {}, index = 0) => {
     companyId: item.company_id ?? item.companyId ?? null,
     userId: item.user_id ?? item.userId ?? item.employee_id ?? item.employeeId ?? null,
     approverId: item.approver_id ?? item.approverId ?? null,
-    originalTime: item.clocked_at ?? item.original_time ?? item.originalTime ?? item.original ?? null,
-    correctedTime:
-      item.proposed_clocked_at ?? item.proposedClockedAt ?? item.corrected_time ?? item.correctedTime ?? item.corrected ?? null,
+    originalTime: firstPresentValue(
+      item.clocked_at,
+      item.original_time,
+      item.originalTime,
+      item.original,
+    ),
+    correctedTime: firstPresentValue(
+      item.proposed_clocked_at,
+      item.proposedClockedAt,
+      item.corrected_time,
+      item.correctedTime,
+      item.corrected,
+      item.clocked_at,
+      item.original_time,
+      item.originalTime,
+      item.original,
+    ),
     proposedType: normalizeProposedType(item.proposed_type ?? item.proposedType ?? item.type ?? null),
     reason: item.adjustment_reason ?? item.reason ?? item.justification ?? item.notes ?? '',
     reviewReason: item.adjustment_review_reason ?? item.review_reason ?? item.reviewReason ?? '',

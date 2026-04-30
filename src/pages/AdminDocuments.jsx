@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
+import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import {
   Dialog,
   DialogClose,
@@ -127,7 +128,7 @@ export default function AdminDocuments() {
   }
 
   const [tab, setTab] = useState('pending')
-  const [filters, setFilters] = useState({ search: '', category: 'all', employee: '' })
+  const [filters, setFilters] = useState({ search: '', category: 'all', employeeIds: [] })
   const [page, setPage] = useState(1)
   const [documents, setDocuments] = useState([])
   const [meta, setMeta] = useState({ currentPage: 1, total: 0, perPage: 10, lastPage: 1 })
@@ -214,6 +215,39 @@ export default function AdminDocuments() {
     }
   }, [i18n.language, t, toast])
 
+  const fetchAllDocumentsByEmployee = useCallback(async ({ service, employeeId, category, search }) => {
+    let pageIndex = 1
+    let keepFetching = true
+    const collected = []
+
+    while (keepFetching && pageIndex <= MAX_EMPLOYEE_PAGES) {
+      const { data, meta: responseMeta } = await service({
+        page: pageIndex,
+        category,
+        search,
+        employee: employeeId,
+      })
+
+      collected.push(...(data || []))
+
+      const lastPage = responseMeta?.lastPage || responseMeta?.last_page
+      const total = responseMeta?.total
+      const perPage = responseMeta?.perPage || responseMeta?.per_page || 10
+
+      if (lastPage) {
+        keepFetching = pageIndex < lastPage
+      } else if (total) {
+        keepFetching = collected.length < total
+      } else {
+        keepFetching = (data?.length || 0) >= perPage
+      }
+
+      pageIndex += 1
+    }
+
+    return collected
+  }, [])
+
   const handleUploadSubmit = async (event) => {
     event?.preventDefault()
     if (!uploadForm.file) {
@@ -279,18 +313,53 @@ export default function AdminDocuments() {
       page: params.page ?? page,
       category: params.category ?? filters.category,
       search: params.search ?? filters.search,
-      employee: params.employee ?? filters.employee,
+      employeeIds: params.employeeIds ?? filters.employeeIds,
     }
     try {
       const service = tab === 'pending' ? listPending : listReview
-      const { data, meta: responseMeta } = await service(query)
-      setDocuments(data)
-      setMeta({
-        currentPage: responseMeta.currentPage || 1,
-        perPage: responseMeta.perPage || 10,
-        total: responseMeta.total || data.length,
-        lastPage: responseMeta.lastPage || 1,
-      })
+
+      if ((query.employeeIds || []).length > 1) {
+        const results = await Promise.all(
+          query.employeeIds.map((employeeId) =>
+            fetchAllDocumentsByEmployee({
+              service,
+              employeeId,
+              category: query.category,
+              search: query.search,
+            }),
+          ),
+        )
+
+        const merged = results
+          .flat()
+          .sort((left, right) => {
+            const leftTime = new Date(left?.updatedAt || left?.createdAt || 0).getTime()
+            const rightTime = new Date(right?.updatedAt || right?.createdAt || 0).getTime()
+            return rightTime - leftTime
+          })
+
+        setDocuments(merged)
+        setMeta({
+          currentPage: 1,
+          perPage: merged.length || 10,
+          total: merged.length,
+          lastPage: 1,
+        })
+      } else {
+        const { data, meta: responseMeta } = await service({
+          page: query.page,
+          category: query.category,
+          search: query.search,
+          employee: query.employeeIds?.[0] || '',
+        })
+        setDocuments(data)
+        setMeta({
+          currentPage: responseMeta.currentPage || 1,
+          perPage: responseMeta.perPage || 10,
+          total: responseMeta.total || data.length,
+          lastPage: responseMeta.lastPage || 1,
+        })
+      }
     } catch (err) {
       const message =
         err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.loadErrorDescription')
@@ -314,12 +383,12 @@ export default function AdminDocuments() {
     setPage(1)
     fetchDocuments({ page: 1 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.category, filters.search, filters.employee])
+  }, [filters.category, filters.search, filters.employeeIds])
 
   useEffect(() => {
-    if (!uploadOpen || employeesLoading || employees.length) return
+    if (!hasAccess || employeesLoading || employees.length) return
     loadEmployees()
-  }, [employees.length, employeesLoading, loadEmployees, uploadOpen])
+  }, [employees.length, employeesLoading, hasAccess, loadEmployees])
 
   const handlePageChange = (nextPage) => {
     if (nextPage < 1 || (meta.lastPage && nextPage > meta.lastPage)) return
@@ -457,9 +526,6 @@ export default function AdminDocuments() {
   }
 
   const emptyState = !loading && documents.length === 0
-  const buildEmployeeLabel = (employee) => {
-    return employee?.name || t('documentsPage.admin.labels.employeeFallback')
-  }
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-foreground">
       <PageContainer className="relative z-10 flex flex-col gap-5 py-6">
@@ -501,21 +567,20 @@ export default function AdminDocuments() {
                   <form className="space-y-4" onSubmit={handleUploadSubmit}>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.employeeLabel')}</label>
-                      <select
-                        className="w-full rounded-2xl border border-border/70 bg-background/70 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/30"
-                        value={uploadForm.employee}
-                        onChange={(event) =>
-                          setUploadForm((prev) => ({ ...prev, employee: event.target.value }))
+                      <EmployeeMultiSelect
+                        options={employees}
+                        value={uploadForm.employee ? [String(uploadForm.employee)] : []}
+                        onChange={(employeeIds) =>
+                          setUploadForm((prev) => ({ ...prev, employee: employeeIds[0] || '' }))
                         }
-                        disabled={employeesLoading}
-                      >
-                        <option value="">{t('documentsPage.admin.upload.employeePlaceholder')}</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {buildEmployeeLabel(employee)}
-                          </option>
-                        ))}
-                      </select>
+                        multiple={false}
+                        loading={employeesLoading}
+                        error={employeesError}
+                        triggerPlaceholder={t('documentsPage.admin.upload.employeePlaceholder')}
+                        searchPlaceholder={t('closeTimesheetPage.filters.searchPlaceholder', 'Buscar por nome ou email')}
+                        emptyText={t('documentsPage.admin.upload.employeeEmpty')}
+                        showSelectedChips={false}
+                      />
                       {employeesLoading ? (
                         <p className="text-xs text-muted-foreground">
                           {t('documentsPage.admin.upload.employeeLoading')}
@@ -663,10 +728,21 @@ export default function AdminDocuments() {
                 </option>
               ))}
             </select>
-            <Input
-              placeholder={t('documentsPage.admin.filters.employeePlaceholder')}
-              value={filters.employee}
-              onChange={(event) => setFilters((prev) => ({ ...prev, employee: event.target.value }))}
+            <EmployeeMultiSelect
+              options={employees}
+              value={filters.employeeIds}
+              onChange={(employeeIds) => setFilters((prev) => ({ ...prev, employeeIds }))}
+              loading={employeesLoading}
+              error={employeesError}
+              triggerPlaceholder={t('documentsPage.admin.filters.employeePlaceholder')}
+              searchPlaceholder={t('closeTimesheetPage.filters.searchPlaceholder', 'Buscar por nome ou email')}
+              emptyText={t('documentsPage.admin.upload.employeeEmpty')}
+              selectedCountText={(count) =>
+                t('documentsPage.admin.filters.selectedCount', {
+                  count,
+                  defaultValue: '{{count}} colaborador(es) selecionado(s)',
+                })
+              }
             />
           </div>
 

@@ -775,6 +775,7 @@ const ptBR = {
         all: 'Todos',
         employee: 'Colaborador',
         allEmployees: 'Todos os colaboradores',
+        selectedCount: '{{count}} colaborador(es) selecionado(s)',
         search: 'Busca',
         searchPlaceholder: 'Nome, email ou motivo',
       },
@@ -1515,6 +1516,7 @@ const ptBR = {
         filters: {
           searchPlaceholder: 'Buscar documento',
           employeePlaceholder: 'Buscar colaborador',
+          selectedCount: '{{count}} colaborador(es) selecionado(s)',
         },
         pagination: {
           previous: 'Anterior',

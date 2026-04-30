@@ -792,6 +792,7 @@ const en = {
         all: 'All',
         employee: 'Employee',
         allEmployees: 'All employees',
+        selectedCount: '{{count}} employee(s) selected',
         search: 'Search',
         searchPlaceholder: 'Name, email or reason',
       },
@@ -1531,6 +1532,7 @@ const en = {
         filters: {
           searchPlaceholder: 'Search documents',
           employeePlaceholder: 'Search employee',
+          selectedCount: '{{count}} employee(s) selected',
         },
         pagination: {
           previous: 'Previous',

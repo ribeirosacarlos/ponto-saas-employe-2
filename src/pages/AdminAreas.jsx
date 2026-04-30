@@ -2,13 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
-  Check,
   Loader2,
   Pencil,
   Plus,
   RefreshCcw,
   Trash2,
-  X,
   Users,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -24,6 +22,7 @@ import {
 } from '../components/ui/dialog'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { useToast } from '../components/ui/use-toast'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
@@ -122,7 +121,6 @@ export default function AdminAreas() {
   const [formMode, setFormMode] = useState('create')
   const [formState, setFormState] = useState(() => buildAreaForm())
   const [initialEmployeeIds, setInitialEmployeeIds] = useState([])
-  const [employeeSearch, setEmployeeSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -157,23 +155,6 @@ export default function AdminAreas() {
   const employeeOptions = useMemo(
     () => sortEmployeesByName(directoryEmployees),
     [directoryEmployees],
-  )
-
-  const filteredEmployeeOptions = useMemo(() => {
-    const query = employeeSearch.trim().toLowerCase()
-    if (!query) return employeeOptions
-
-    return employeeOptions.filter((employee) =>
-      String(employee?.name || '').toLowerCase().includes(query),
-    )
-  }, [employeeOptions, employeeSearch])
-
-  const selectedEmployees = useMemo(
-    () =>
-      formState.employeeIds
-        .map((employeeId) => employeeById.get(String(employeeId)))
-        .filter(Boolean),
-    [employeeById, formState.employeeIds],
   )
 
   const areaMetrics = useMemo(() => {
@@ -253,7 +234,6 @@ export default function AdminAreas() {
   const handleOpenCreate = () => {
     setFormMode('create')
     setInitialEmployeeIds([])
-    setEmployeeSearch('')
     setFormState(buildAreaForm())
     setDialogOpen(true)
   }
@@ -264,7 +244,6 @@ export default function AdminAreas() {
 
     setFormMode('edit')
     setInitialEmployeeIds(linkedEmployeeIds)
-    setEmployeeSearch('')
     setFormState(buildAreaForm(area, linkedEmployees))
     setDialogOpen(true)
   }
@@ -397,18 +376,6 @@ export default function AdminAreas() {
       setDeleting(false)
       setDeleteTarget(null)
     }
-  }
-
-  const handleEmployeeToggle = (employeeId) => {
-    const normalizedEmployeeId = String(employeeId)
-    setFormState((prev) => {
-      const currentIds = Array.isArray(prev.employeeIds) ? prev.employeeIds : []
-      const nextIds = currentIds.includes(normalizedEmployeeId)
-        ? currentIds.filter((value) => value !== normalizedEmployeeId)
-        : [...currentIds, normalizedEmployeeId]
-
-      return { ...prev, employeeIds: nextIds }
-    })
   }
 
   const renderContent = () => {
@@ -710,80 +677,22 @@ export default function AdminAreas() {
                   })}
                 </span>
               </div>
-              <Input
-                id="area-employees-search"
-                value={employeeSearch}
-                onChange={(event) => setEmployeeSearch(event.target.value)}
-                placeholder={t('adminAreasPage.form.employeesSearchPlaceholder')}
+              <EmployeeMultiSelect
+                options={employeeOptions}
+                value={formState.employeeIds}
+                onChange={(employeeIds) => setFormState((prev) => ({ ...prev, employeeIds }))}
+                loading={employeesLoading}
                 disabled={employeesLoading || saving}
-                className="h-10 rounded-lg px-3 text-sm"
-              />
-              <div
-                id="area-employees"
-                className="max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-background/70 p-1.5 shadow-sm"
-              >
-                {filteredEmployeeOptions.length > 0 ? (
-                  filteredEmployeeOptions.map((employee) => {
-                    const employeeId = String(employee.id)
-                    const isSelected = formState.employeeIds.includes(employeeId)
-
-                    return (
-                      <button
-                        key={employeeId}
-                        type="button"
-                        className={cn(
-                          'flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left text-sm transition',
-                          isSelected
-                            ? 'border-primary/40 bg-primary/10 text-foreground'
-                            : 'border-transparent bg-muted/40 text-foreground hover:border-border hover:bg-muted/70',
-                        )}
-                        onClick={() => handleEmployeeToggle(employeeId)}
-                        disabled={employeesLoading || saving}
-                      >
-                        <span className="truncate">
-                          {employee.name || t('adminAreasPage.form.employeeFallback')}
-                        </span>
-                        <span
-                          className={cn(
-                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                            isSelected
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : 'border-border bg-background text-transparent',
-                          )}
-                        >
-                          <Check className="h-3 w-3" />
-                        </span>
-                      </button>
-                    )
+                triggerPlaceholder={t('adminAreasPage.form.employeesSearchPlaceholder')}
+                searchPlaceholder={t('adminAreasPage.form.employeesSearchPlaceholder')}
+                emptyText={t('adminAreasPage.form.emptySearch')}
+                selectedCountText={(count) =>
+                  t('adminAreasPage.form.selectedCount', {
+                    count,
                   })
-                ) : (
-                  <div className="rounded-xl border border-dashed border-border/70 px-3 py-6 text-center text-sm text-muted-foreground">
-                    {t('adminAreasPage.form.emptySearch')}
-                  </div>
-                )}
-              </div>
+                }
+              />
             </div>
-
-            {selectedEmployees.length > 0 ? (
-              <div className="rounded-2xl border border-border/70 bg-muted/35 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  {t('adminAreasPage.form.linkedPreviewLabel')}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {selectedEmployees.map((employee) => (
-                    <button
-                      key={`selected-${employee.id}`}
-                      type="button"
-                      className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] text-foreground transition hover:border-primary/30 hover:bg-background"
-                      onClick={() => handleEmployeeToggle(employee.id)}
-                    >
-                      {employee.name || t('adminAreasPage.form.employeeFallback')}
-                      <X className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <DialogClose asChild>

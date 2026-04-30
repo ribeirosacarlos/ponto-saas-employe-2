@@ -23,6 +23,7 @@ import {
   FileText,
   Filter,
   MapPin,
+  Pencil,
   RefreshCcw,
   Search,
   Timer,
@@ -1276,12 +1277,13 @@ export default function CloseTimesheetPage() {
                         <button
                           type="button"
                           className={cn(
-                            'font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
+                            'inline-flex items-center gap-1 font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
                             statusClassName,
                           )}
                           onClick={() => openPendingAdjustments(entry)}
                           title={statusLabel}
                         >
+                          <Pencil className="h-3.5 w-3.5" />
                           {statusLabel}
                         </button>
                       ) : (

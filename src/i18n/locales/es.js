@@ -789,6 +789,7 @@ const es = {
         all: 'Todos',
         employee: 'Colaborador',
         allEmployees: 'Todos los colaboradores',
+        selectedCount: '{{count}} colaborador(es) seleccionado(s)',
         search: 'Busqueda',
         searchPlaceholder: 'Nombre, email o motivo',
       },
@@ -1529,6 +1530,7 @@ const es = {
         filters: {
           searchPlaceholder: 'Buscar documento',
           employeePlaceholder: 'Buscar colaborador',
+          selectedCount: '{{count}} colaborador(es) seleccionado(s)',
         },
         pagination: {
           previous: 'Anterior',

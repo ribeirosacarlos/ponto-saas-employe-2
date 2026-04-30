@@ -6,11 +6,13 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useDateTime } from '../hooks/useDateTime'
+import { listAllEmployees } from '../services/modules/employees'
 import {
   approveAdminAdjustment,
   listAdminAdjustments,
@@ -38,18 +40,36 @@ const TYPE_LABELS = {
 }
 
 const getStatusClass = (status) => STATUS_STYLES[status] || 'border-slate-200/70 bg-slate-100 text-slate-600'
+const normalizeEmployeeOption = (employee = {}, index = 0) => ({
+  id:
+    employee.id ??
+    employee.uuid ??
+    employee.user_id ??
+    employee.employee_id ??
+    employee.email ??
+    `employee-${index}`,
+  name: employee.name ?? employee.full_name ?? employee.fullName ?? '',
+  email: employee.email ?? '',
+})
+
 const readFiltersFromSearch = () => {
   if (typeof window === 'undefined') {
-    return { status: 'pending', userId: '' }
+    return { status: 'pending', userIds: [] }
   }
 
   const params = new URLSearchParams(window.location.search)
   const status = params.get('status') || 'pending'
+  const userIdsParam = params.get('userIds')
   const userId = params.get('userId') || ''
+  const userIds = userIdsParam
+    ? userIdsParam.split(',').map((item) => item.trim()).filter(Boolean)
+    : userId
+      ? [userId]
+      : []
 
   return {
     status: STATUS_OPTIONS.includes(status) ? status : 'pending',
-    userId,
+    userIds,
   }
 }
 
@@ -64,6 +84,9 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const [filters, setFilters] = useState(readFiltersFromSearch)
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
+  const [employees, setEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
+  const [employeesError, setEmployeesError] = useState('')
 
   const [adjustments, setAdjustments] = useState([])
   const [meta, setMeta] = useState(null)
@@ -75,6 +98,25 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   const [teamMeta, setTeamMeta] = useState(null)
   const [teamLoading, setTeamLoading] = useState(false)
   const [teamError, setTeamError] = useState('')
+
+  const loadEmployees = useCallback(async () => {
+    if (!hasAccess) return
+
+    setEmployeesLoading(true)
+    setEmployeesError('')
+    try {
+      const response = await listAllEmployees({ perPage: 100 })
+      setEmployees((Array.isArray(response) ? response : []).map((item, index) => normalizeEmployeeOption(item, index)))
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        t('closeTimesheetPage.states.employeesError', 'Não foi possível carregar os funcionarios.')
+      setEmployeesError(message)
+    } finally {
+      setEmployeesLoading(false)
+    }
+  }, [hasAccess, t])
 
   const publishAdjustmentSync = useCallback((adjustment) => {
     if (typeof window === 'undefined' || !adjustment?.id) return
@@ -119,7 +161,66 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
       setError('')
       try {
         const status = filters.status === 'all' ? undefined : filters.status
-        const userId = filters.userId || undefined
+        const userIds = filters.userIds || []
+
+        if (userIds.length > 1) {
+          const fetchAllAdjustmentsByUser = async (userId) => {
+            let targetPage = 1
+            let keepFetching = true
+            const merged = []
+
+            while (keepFetching) {
+              const { data, meta: responseMeta } = await listAdminAdjustments({
+                status,
+                userId,
+                page: targetPage,
+                perPage: 100,
+              })
+              merged.push(...(data || []))
+
+              const lastPage = responseMeta?.lastPage || responseMeta?.last_page
+              const total = responseMeta?.total
+              const perPage = responseMeta?.perPage || responseMeta?.per_page || 100
+
+              if (lastPage) {
+                keepFetching = targetPage < lastPage
+              } else if (total) {
+                keepFetching = merged.length < total
+              } else {
+                keepFetching = (data?.length || 0) >= perPage
+              }
+
+              targetPage += 1
+            }
+
+            return merged
+          }
+
+          const grouped = await Promise.all(userIds.map((userId) => fetchAllAdjustmentsByUser(userId)))
+          const mergedAdjustments = grouped
+            .flat()
+            .sort((left, right) => {
+              const leftTime = new Date(
+                left?.createdAt || left?.updatedAt || left?.correctedTime || left?.originalTime || 0,
+              ).getTime()
+              const rightTime = new Date(
+                right?.createdAt || right?.updatedAt || right?.correctedTime || right?.originalTime || 0,
+              ).getTime()
+              return rightTime - leftTime
+            })
+
+          setAdjustments(mergedAdjustments)
+          setMeta({
+            currentPage: 1,
+            perPage: mergedAdjustments.length || PAGE_SIZE,
+            total: mergedAdjustments.length,
+            lastPage: 1,
+          })
+          setPage(1)
+          return
+        }
+
+        const userId = userIds[0] || undefined
         const { data, meta: responseMeta } = await listAdminAdjustments({
           status,
           userId,
@@ -140,7 +241,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
         setLoading(false)
       }
     },
-    [filters.status, filters.userId, hasAccess, t],
+    [filters.status, filters.userIds, hasAccess, t],
   )
 
   const loadTeam = useCallback(
@@ -174,7 +275,12 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
   useEffect(() => {
     if (!hasAccess) return
     setPage(1)
-  }, [filters.status, filters.userId, hasAccess])
+  }, [filters.status, filters.userIds, hasAccess])
+
+  useEffect(() => {
+    if (!hasAccess) return
+    loadEmployees()
+  }, [hasAccess, loadEmployees])
 
   useEffect(() => {
     if (!hasAccess) return
@@ -185,7 +291,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     const syncFiltersFromSearch = () => {
       setFilters((prev) => {
         const next = readFiltersFromSearch()
-        if (prev.status === next.status && prev.userId === next.userId) return prev
+        if (prev.status === next.status && prev.userIds.join(',') === next.userIds.join(',')) return prev
         return next
       })
       setPage(1)
@@ -203,23 +309,6 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
       return target.includes(query)
     })
   }, [adjustments, searchTerm])
-
-  const userOptions = useMemo(() => {
-    const map = new Map()
-    adjustments.forEach((item, index) => {
-      if (!item?.userId) return
-      map.set(item.userId, item.user || { name: t('adminAdjustmentsPage.table.userFallback', 'Colaborador'), hint: index })
-    })
-    teamEntries.forEach((entry) => {
-      if (!entry?.userId) return
-      if (map.has(entry.userId)) return
-      map.set(entry.userId, entry.user || { name: t('adminAdjustmentsPage.table.userFallback', 'Colaborador') })
-    })
-    return Array.from(map.entries()).map(([value, user]) => ({
-      value,
-      label: user?.name || t('adminAdjustmentsPage.table.userFallback', 'Colaborador'),
-    }))
-  }, [adjustments, teamEntries, t])
 
   const handleApprove = async (id) => {
     if (!id) return
@@ -522,22 +611,25 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                   <Label className="text-xs text-muted-foreground">
                     {t('adminAdjustmentsPage.filters.employee', 'Colaborador')}
                   </Label>
-                  <select
-                    value={filters.userId}
-                    onChange={(event) => {
-                      setFilters((prev) => ({ ...prev, userId: event.target.value }))
-                    }}
-                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  >
-                    <option value="">
-                      {t('adminAdjustmentsPage.filters.allEmployees', 'Todos os colaboradores')}
-                    </option>
-                    {userOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <EmployeeMultiSelect
+                    options={employees}
+                    value={filters.userIds}
+                    onChange={(userIds) => setFilters((prev) => ({ ...prev, userIds }))}
+                    loading={employeesLoading}
+                    error={employeesError}
+                    triggerPlaceholder={t('adminAdjustmentsPage.filters.allEmployees', 'Todos os colaboradores')}
+                    searchPlaceholder={t('closeTimesheetPage.filters.searchPlaceholder', 'Buscar por nome ou email')}
+                    emptyText={t(
+                      'closeTimesheetPage.filters.empty',
+                      'Selecione um funcionario para visualizar.',
+                    )}
+                    selectedCountText={(count) =>
+                      t('adminAdjustmentsPage.filters.selectedCount', {
+                        count,
+                        defaultValue: '{{count}} colaborador(es) selecionado(s)',
+                      })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
