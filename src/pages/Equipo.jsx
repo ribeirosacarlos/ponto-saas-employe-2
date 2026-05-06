@@ -2,11 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
+  ArrowUpDown,
   Check,
   CalendarCheck,
   ChevronDown,
+  ChevronUp,
   CreditCard,
   Loader2,
+  Mail,
+  MoreHorizontal,
   Pencil,
   Plus,
   RefreshCcw,
@@ -16,7 +20,12 @@ import {
   Users,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
-import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-controls'
+import {
+  actionMenuItemClass,
+  bareFieldInputClass,
+  fieldShellClass,
+  formControlClass,
+} from '../components/ui/form-controls'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select } from '../components/ui/select'
@@ -75,6 +84,118 @@ const buildAssignForm = (employee = {}) => ({
   shift_id: employee.shift_id ?? employee.shiftId ?? '',
   start_date: new Date().toISOString().slice(0, 10),
 })
+
+function EmployeeActionsMenu({
+  disabled = false,
+  showResendFirstAccessEmail = false,
+  resendInviteLoading = false,
+  onEdit,
+  onAssignShift,
+  onResendFirstAccessEmail,
+  onDeactivate,
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const rect = rootRef.current?.getBoundingClientRect()
+    if (rect) {
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      const estimatedDropdownHeight = showResendFirstAccessEmail ? 180 : 140
+
+      setOpenUpward(spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow)
+    }
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [open])
+
+  const runAction = (callback) => {
+    if (disabled) return
+    callback?.()
+    setOpen(false)
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <Button
+        type="button"
+        size="icon"
+        variant="outline"
+        className="rounded-2xl"
+        onClick={() => setOpen((current) => !current)}
+        disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t('equipoPage.actions.openMenu')}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </Button>
+
+      {open ? (
+        <div
+          className={cn(
+            'absolute right-0 z-30 w-64 overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-[0_24px_70px_-42px_rgba(92,134,255,0.55)] backdrop-blur-xl',
+            openUpward ? 'bottom-[calc(100%+0.5rem)]' : 'top-[calc(100%+0.5rem)]',
+          )}
+        >
+          <button type="button" className={actionMenuItemClass} onClick={() => runAction(onEdit)}>
+            <Pencil className="h-4 w-4 text-primary" />
+            {t('equipoPage.actions.edit')}
+          </button>
+          <button
+            type="button"
+            className={actionMenuItemClass}
+            onClick={() => runAction(onAssignShift)}
+          >
+            <CalendarCheck className="h-4 w-4 text-primary" />
+            {t('equipoPage.actions.assignShift')}
+          </button>
+          {showResendFirstAccessEmail ? (
+            <button
+              type="button"
+              className={cn(
+                actionMenuItemClass,
+                resendInviteLoading && 'cursor-not-allowed opacity-60',
+              )}
+              onClick={() => runAction(onResendFirstAccessEmail)}
+              disabled={disabled || resendInviteLoading}
+            >
+              {resendInviteLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <Mail className="h-4 w-4 text-primary" />
+              )}
+              {resendInviteLoading
+                ? t('equipoPage.actions.resendingFirstAccessEmail')
+                : t('equipoPage.actions.resendFirstAccessEmail')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={cn(actionMenuItemClass, 'text-rose-600 hover:bg-rose-500/10')}
+            onClick={() => runAction(onDeactivate)}
+          >
+            <Trash2 className="h-4 w-4" />
+            {t('equipoPage.actions.deactivate')}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 const parseAreaSearch = (items = [], query = '') => {
   const normalizedQuery = query.trim().toLowerCase()
@@ -248,6 +369,30 @@ function ManagedAreasMultiSelect({
   )
 }
 
+function TopFilterSelect({ ariaLabel, value, onChange, options = [], disabled = false, className }) {
+  return (
+    <div className={cn('relative min-w-[180px]', className)}>
+      <select
+        aria-label={ariaLabel}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={cn(
+          formControlClass,
+          'appearance-none bg-card/95 pr-9 text-[11px] font-medium shadow-[0_18px_40px_-30px_rgba(62,82,152,0.5)]',
+        )}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  )
+}
+
 const ExtraEmployeesNotice = ({
   extraEmployees,
   onPay,
@@ -387,7 +532,7 @@ export default function Equipo() {
   )
   const { areas, loading: areasLoading, reload: reloadAreas } = useAreas({
     enabled: hasManagementAccess,
-    autoLoad: false,
+    autoLoad: true,
     onError: (message) => {
       toast({
         title: t('equipoPage.toasts.areasError.title'),
@@ -428,6 +573,17 @@ export default function Equipo() {
     ],
     [roleOptions, t],
   )
+  const areaFilterOptions = useMemo(
+    () =>
+      [
+        { value: 'all', label: t('equipoPage.filters.allAreas') },
+        ...areas.map((area) => ({
+          value: String(area.id),
+          label: area.name || t('equipoPage.areas.unnamed'),
+        })),
+      ],
+    [areas, t],
+  )
 
   const handleListError = useCallback(
     (message) => {
@@ -459,6 +615,8 @@ export default function Equipo() {
     filteredEmployees,
     filters,
     setFilters,
+    sort,
+    setSort,
     page,
     setPage,
     loading,
@@ -474,6 +632,7 @@ export default function Equipo() {
     updateEmployeeEntry,
     deleteEmployeeEntry,
     assignShiftEntry,
+    resendEmployeeInviteEntry,
   } = useEmployeesManagement({
     t,
     enabled: hasManagementAccess,
@@ -537,6 +696,22 @@ export default function Equipo() {
     () => shifts.find((shift) => String(shift.id) === String(editForm.shift_id)),
     [shifts, editForm.shift_id],
   )
+
+  const handleToggleDateSort = () => {
+    setSort((current) => (current === 'createdAt:asc' ? 'createdAt:desc' : 'createdAt:asc'))
+  }
+
+  const renderDateSortIcon = () => {
+    if (sort === 'createdAt:asc') {
+      return <ChevronUp className="h-3.5 w-3.5 text-primary" aria-hidden />
+    }
+
+    if (sort === 'createdAt:desc') {
+      return <ChevronDown className="h-3.5 w-3.5 text-primary" aria-hidden />
+    }
+
+    return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+  }
 
   const handleCreateSubmit = async (event) => {
     event.preventDefault()
@@ -729,6 +904,29 @@ export default function Equipo() {
     })
   }
 
+  const handleResendFirstAccessEmail = async (employee) => {
+    if (!employee?.id) return
+
+    const result = await resendEmployeeInviteEntry(employee.id)
+    if (result.ok) {
+      toast({
+        title: t('equipoPage.toasts.resendInviteSuccess.title'),
+        description: t('equipoPage.toasts.resendInviteSuccess.description'),
+        variant: 'success',
+      })
+      return
+    }
+
+    toast({
+      title: t('equipoPage.toasts.resendInviteError.title'),
+      description:
+        result.error?.response?.data?.message ||
+        result.error?.message ||
+        t('equipoPage.toasts.resendInviteError.description'),
+      variant: 'error',
+    })
+  }
+
   const handleRoleChange = (setter) => (event) => {
     const nextRole = event.target.value
     setter((prev) => normalizeFormRoleState(nextRole, prev))
@@ -830,22 +1028,23 @@ export default function Equipo() {
                   }
                 />
               </div>
-              <div className={cn(fieldShellClass, 'min-w-[180px]')}>
-                <select
-                  aria-label={t('equipoPage.form.roleLabel')}
-                  value={filters.role}
-                  onChange={(event) =>
-                    setFilters((prev) => ({ ...prev, role: event.target.value }))
-                  }
-                  className={bareFieldInputClass}
-                >
-                  {roleFilterOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <TopFilterSelect
+                ariaLabel={t('equipoPage.form.roleLabel')}
+                value={filters.role}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, role: event.target.value }))
+                }
+                options={roleFilterOptions}
+              />
+              <TopFilterSelect
+                ariaLabel={t('equipoPage.filters.areaLabel')}
+                value={filters.area}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, area: event.target.value }))
+                }
+                options={areaFilterOptions}
+                disabled={areasLoading}
+              />
               <Button
                 type="button"
                 variant="outline"
@@ -939,9 +1138,12 @@ export default function Equipo() {
             {!loading && !error && filteredEmployees.length > 0 ? (
               <>
                 <div className="space-y-3 md:hidden">
-                  {filteredEmployees.map((employee) => {
+                  {filteredEmployees.map((employee, index) => {
                     const isBusy =
-                      mutationLoading.delete || mutationLoading.edit || mutationLoading.shift
+                      mutationLoading.delete ||
+                      mutationLoading.edit ||
+                      mutationLoading.shift ||
+                      mutationLoading.resendInvite
                     const isDisabled = !employee.id || isBusy
                     return (
                       <div
@@ -950,9 +1152,14 @@ export default function Equipo() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold leading-snug">
-                              {employee.name || t('equipoPage.table.emptyName')}
-                            </p>
+                            <div className="flex items-start gap-2">
+                              <span className="inline-flex min-w-8 items-center justify-center rounded-full border border-border/70 bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                #{index + 1}
+                              </span>
+                              <p className="pt-0.5 text-sm font-semibold leading-snug">
+                                {employee.name || t('equipoPage.table.emptyName')}
+                              </p>
+                            </div>
                             <p className="mt-1 text-[11px] text-muted-foreground">
                               {employee.email || t('equipoPage.table.emptyEmail')}
                             </p>
@@ -978,40 +1185,18 @@ export default function Equipo() {
                             </div>
                           </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full px-3 text-xs"
-                            onClick={() => handleEditOpen(employee)}
+                        <div className="mt-3 flex justify-end">
+                          <EmployeeActionsMenu
                             disabled={isDisabled}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            {t('equipoPage.actions.edit')}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full px-3 text-xs"
-                            onClick={() => handleAssignOpen(employee)}
-                            disabled={isDisabled}
-                          >
-                            <CalendarCheck className="h-3.5 w-3.5" />
-                            {t('equipoPage.actions.assignShift')}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            className="rounded-full px-3 text-xs"
-                            onClick={() => setDeleteTarget(employee)}
-                            disabled={isDisabled}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            {t('equipoPage.actions.deactivate')}
-                          </Button>
+                            showResendFirstAccessEmail={Boolean(
+                              employee.must_change_password ?? employee.mustChangePassword,
+                            )}
+                            resendInviteLoading={mutationLoading.resendInvite}
+                            onEdit={() => handleEditOpen(employee)}
+                            onAssignShift={() => handleAssignOpen(employee)}
+                            onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
+                            onDeactivate={() => setDeleteTarget(employee)}
+                          />
                         </div>
                       </div>
                     )
@@ -1022,24 +1207,41 @@ export default function Equipo() {
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                        <th className="w-14 px-3 py-3">{t('equipoPage.table.headers.row')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.name')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.email')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.role')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.area')}</th>
-                        <th className="px-3 py-3">{t('equipoPage.table.headers.createdAt')}</th>
+                        <th className="px-3 py-3">
+                          <button
+                            type="button"
+                            onClick={handleToggleDateSort}
+                            className="inline-flex items-center gap-1.5 font-medium transition hover:text-foreground"
+                            aria-label={t('equipoPage.sort.columnAriaLabel', {
+                              column: t('equipoPage.table.headers.createdAt'),
+                            })}
+                          >
+                            <span>{t('equipoPage.table.headers.createdAt')}</span>
+                            {renderDateSortIcon()}
+                          </button>
+                        </th>
                         <th className="px-3 py-3 text-right">{t('equipoPage.table.headers.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredEmployees.map((employee) => {
+                      {filteredEmployees.map((employee, index) => {
                         const isBusy =
-                          mutationLoading.delete || mutationLoading.edit || mutationLoading.shift
+                          mutationLoading.delete ||
+                          mutationLoading.edit ||
+                          mutationLoading.shift ||
+                          mutationLoading.resendInvite
                         const isDisabled = !employee.id || isBusy
                         return (
                           <tr
                             key={employee.id}
                             className="border-b border-border/80 last:border-b-0"
                           >
+                            <td className="px-3 py-4 text-muted-foreground">{index + 1}</td>
                             <td className="px-3 py-4">
                               <div className="space-y-1">
                                 <p className="font-semibold">
@@ -1071,40 +1273,18 @@ export default function Equipo() {
                             </td>
                             <td className="px-3 py-4">{formatDate(employee.createdAt)}</td>
                             <td className="px-3 py-4">
-                              <div className="flex flex-wrap justify-end gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="rounded-full px-3 text-xs"
-                                  onClick={() => handleEditOpen(employee)}
+                              <div className="flex justify-end">
+                                <EmployeeActionsMenu
                                   disabled={isDisabled}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                  {t('equipoPage.actions.edit')}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="rounded-full px-3 text-xs"
-                                  onClick={() => handleAssignOpen(employee)}
-                                  disabled={isDisabled}
-                                >
-                                  <CalendarCheck className="h-3.5 w-3.5" />
-                                  {t('equipoPage.actions.assignShift')}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-full px-3 text-xs"
-                                  onClick={() => setDeleteTarget(employee)}
-                                  disabled={isDisabled}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  {t('equipoPage.actions.deactivate')}
-                                </Button>
+                                  showResendFirstAccessEmail={Boolean(
+                                    employee.must_change_password ?? employee.mustChangePassword,
+                                  )}
+                                  resendInviteLoading={mutationLoading.resendInvite}
+                                  onEdit={() => handleEditOpen(employee)}
+                                  onAssignShift={() => handleAssignOpen(employee)}
+                                  onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
+                                  onDeactivate={() => setDeleteTarget(employee)}
+                                />
                               </div>
                             </td>
                           </tr>

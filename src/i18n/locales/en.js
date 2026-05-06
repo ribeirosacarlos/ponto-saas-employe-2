@@ -1733,6 +1733,20 @@ const en = {
       title: 'Team',
       subtitle: 'Employee management',
       searchPlaceholder: 'Search by name or email',
+      filters: {
+        areaLabel: 'Filter by area',
+        allAreas: 'All areas',
+      },
+      sort: {
+        label: 'Sort list',
+        columnAriaLabel: 'Sort by {{column}}',
+        options: {
+          'createdAt:desc': 'Newest date',
+          'createdAt:asc': 'Oldest date',
+          'area:asc': 'Area (A-Z)',
+          'role:asc': 'Role',
+        },
+      },
       table: {
         label: 'Employees',
         title: 'Employee management',
@@ -1744,6 +1758,7 @@ const en = {
         emptyArea: 'No area',
         emptyDate: 'No date',
         headers: {
+          row: '#',
           name: 'Name',
           email: 'Email',
           role: 'Role',
@@ -1767,8 +1782,11 @@ const en = {
         save: 'Save',
         creating: 'Creating...',
         updating: 'Saving...',
+        openMenu: 'Open actions',
         edit: 'Edit',
         assignShift: 'Assign shift',
+        resendFirstAccessEmail: 'Resend first access email',
+        resendingFirstAccessEmail: 'Resending first access email...',
         assign: 'Assign',
         assigning: 'Assigning...',
         deactivate: 'Deactivate',
@@ -1858,9 +1876,17 @@ const en = {
           title: 'Employee created',
           description: 'Invite sent successfully.',
         },
+        resendInviteSuccess: {
+          title: 'Email resent',
+          description: 'The first access email was resent successfully.',
+        },
         createError: {
           title: 'Failed to create employee',
           description: 'We could not create the employee.',
+        },
+        resendInviteError: {
+          title: 'Failed to resend email',
+          description: 'We could not resend the first access email.',
         },
         detailsError: {
           title: 'Failed to load employee',

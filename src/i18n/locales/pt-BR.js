@@ -1717,6 +1717,20 @@ const ptBR = {
       title: 'Equipe',
       subtitle: 'Gestao de colaboradores',
       searchPlaceholder: 'Buscar por nome ou e-mail',
+      filters: {
+        areaLabel: 'Filtrar por área',
+        allAreas: 'Todas as áreas',
+      },
+      sort: {
+        label: 'Ordenar lista',
+        columnAriaLabel: 'Ordenar por {{column}}',
+        options: {
+          'createdAt:desc': 'Data mais recente',
+          'createdAt:asc': 'Data mais antiga',
+          'area:asc': 'Área (A-Z)',
+          'role:asc': 'Perfil',
+        },
+      },
       table: {
         label: 'Colaboradores',
         title: 'Gestao de colaboradores',
@@ -1728,6 +1742,7 @@ const ptBR = {
         emptyArea: 'Sem area',
         emptyDate: 'Sem data',
         headers: {
+          row: '#',
           name: 'Nome',
           email: 'E-mail',
           role: 'Perfil',
@@ -1751,8 +1766,11 @@ const ptBR = {
         save: 'Salvar',
         creating: 'Criando...',
         updating: 'Salvando...',
+        openMenu: 'Abrir ações',
         edit: 'Editar',
         assignShift: 'Atribuir jornada',
+        resendFirstAccessEmail: 'Reenviar email de primeiro acesso',
+        resendingFirstAccessEmail: 'Reenviando email de primeiro acesso...',
         assign: 'Atribuir',
         assigning: 'Atribuindo...',
         deactivate: 'Desativar',
@@ -1842,9 +1860,17 @@ const ptBR = {
           title: 'Colaborador criado',
           description: 'Convite enviado com sucesso.',
         },
+        resendInviteSuccess: {
+          title: 'Email reenviado',
+          description: 'O email de primeiro acesso foi reenviado com sucesso.',
+        },
         createError: {
           title: 'Erro ao criar colaborador',
           description: 'Não foi possível criar o colaborador.',
+        },
+        resendInviteError: {
+          title: 'Erro ao reenviar email',
+          description: 'Nao foi possivel reenviar o email de primeiro acesso.',
         },
         detailsError: {
           title: 'Erro ao carregar colaborador',

@@ -1731,6 +1731,20 @@ const es = {
       title: 'Equipo',
       subtitle: 'Gestion de colaboradores',
       searchPlaceholder: 'Buscar por nombre o correo',
+      filters: {
+        areaLabel: 'Filtrar por area',
+        allAreas: 'Todas las areas',
+      },
+      sort: {
+        label: 'Ordenar lista',
+        columnAriaLabel: 'Ordenar por {{column}}',
+        options: {
+          'createdAt:desc': 'Fecha mas reciente',
+          'createdAt:asc': 'Fecha mas antigua',
+          'area:asc': 'Area (A-Z)',
+          'role:asc': 'Rol',
+        },
+      },
       table: {
         label: 'Colaboradores',
         title: 'Gestion de colaboradores',
@@ -1742,6 +1756,7 @@ const es = {
         emptyArea: 'Sin area',
         emptyDate: 'Sin fecha',
         headers: {
+          row: '#',
           name: 'Nombre',
           email: 'Correo',
           role: 'Rol',
@@ -1765,8 +1780,11 @@ const es = {
         save: 'Guardar',
         creating: 'Creando...',
         updating: 'Guardando...',
+        openMenu: 'Abrir acciones',
         edit: 'Editar',
         assignShift: 'Asignar jornada',
+        resendFirstAccessEmail: 'Reenviar correo de primer acceso',
+        resendingFirstAccessEmail: 'Reenviando correo de primer acceso...',
         assign: 'Asignar',
         assigning: 'Asignando...',
         deactivate: 'Dar de baja',
@@ -1856,9 +1874,17 @@ const es = {
           title: 'Colaborador creado',
           description: 'Invitacion enviada con exito.',
         },
+        resendInviteSuccess: {
+          title: 'Correo reenviado',
+          description: 'El correo de primer acceso fue reenviado con exito.',
+        },
         createError: {
           title: 'Error al crear colaborador',
           description: 'No se pudo crear el colaborador.',
+        },
+        resendInviteError: {
+          title: 'Error al reenviar correo',
+          description: 'No se pudo reenviar el correo de primer acceso.',
         },
         detailsError: {
           title: 'Error al cargar colaborador',

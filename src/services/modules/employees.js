@@ -81,6 +81,11 @@ export async function assignEmployeeShift(id, payload) {
   return data?.data || data
 }
 
+export async function resendEmployeeInvite(id) {
+  const { data } = await api.post(`/v1/admin/employees/${id}/resend-invite`)
+  return data?.data || data
+}
+
 export async function getEmployeeOvertimeBalance(employeeId, { from, to, includeDays } = {}) {
   if (!employeeId) {
     throw new Error('employeeId is required to fetch overtime balance')

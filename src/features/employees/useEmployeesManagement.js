@@ -4,12 +4,66 @@ import {
   createEmployee,
   deleteEmployee,
   listEmployees,
+  resendEmployeeInvite,
   updateEmployee,
 } from '../../services/modules/employees'
 import { normalizeArea } from '../../services/modules/areas'
 import { listShifts } from '../../services/modules/shifts'
 
 const ROLE_PRIORITY = ['admin', 'manager', 'area_manager', 'employee']
+const getRolePriority = (role) => {
+  const index = ROLE_PRIORITY.indexOf(role || 'employee')
+  return index === -1 ? ROLE_PRIORITY.length : index
+}
+
+const getManagedAreasLabel = (employee = {}) =>
+  (Array.isArray(employee.managed_areas) ? employee.managed_areas : [])
+    .map((area) => area?.name)
+    .filter(Boolean)
+    .join(', ')
+
+const getSortValue = (employee = {}, sortKey) => {
+  switch (sortKey) {
+    case 'name':
+      return String(employee.name || '').trim().toLowerCase()
+    case 'email':
+      return String(employee.email || '').trim().toLowerCase()
+    case 'role':
+      return getRolePriority(employee.role)
+    case 'area':
+      return String(
+        employee.area_name || employee.areaName || getManagedAreasLabel(employee) || '',
+      )
+        .trim()
+        .toLowerCase()
+    case 'createdAt': {
+      const timestamp = new Date(employee.createdAt || '').getTime()
+      return Number.isNaN(timestamp) ? -Infinity : timestamp
+    }
+    default:
+      return null
+  }
+}
+
+const compareSortValues = (leftValue, rightValue, direction) => {
+  if (leftValue === rightValue) return 0
+
+  const multiplier = direction === 'desc' ? -1 : 1
+
+  if (typeof leftValue === 'number' && typeof rightValue === 'number') {
+    return (leftValue - rightValue) * multiplier
+  }
+
+  if (!leftValue) return 1
+  if (!rightValue) return -1
+
+  return (
+    String(leftValue).localeCompare(String(rightValue), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    }) * multiplier
+  )
+}
 
 export const normalizeEmployee = (employee = {}, index = 0) => {
   const roleFromRolesArray = (() => {
@@ -166,7 +220,8 @@ export function useEmployeesManagement({
   onListError,
   onShiftsError,
 } = {}) {
-  const [filters, setFilters] = useState({ search: '', role: 'all' })
+  const [filters, setFilters] = useState({ search: '', role: 'all', area: 'all' })
+  const [sort, setSort] = useState('createdAt:desc')
   const [page, setPage] = useState(1)
   const [employees, setEmployees] = useState([])
   const [meta, setMeta] = useState(null)
@@ -179,6 +234,7 @@ export function useEmployeesManagement({
     edit: false,
     delete: false,
     shift: false,
+    resendInvite: false,
   })
 
   const loadEmployees = useCallback(
@@ -269,13 +325,46 @@ export function useEmployeesManagement({
   }, [employees, filters.role])
 
   const filteredEmployees = useMemo(() => {
-    if (!filters.search) return filteredByRole
-    const query = filters.search.toLowerCase()
-    return filteredByRole.filter((employee) => {
-      const candidate = `${employee.name || ''} ${employee.email || ''}`.toLowerCase()
-      return candidate.includes(query)
+    const filteredByArea =
+      filters.area === 'all'
+        ? filteredByRole
+        : filteredByRole.filter((employee) => {
+            const primaryAreaId = employee.area_id ?? employee.areaId
+            const managedAreaIds = Array.isArray(employee.managed_area_ids)
+              ? employee.managed_area_ids
+              : Array.isArray(employee.managedAreaIds)
+                ? employee.managedAreaIds
+                : []
+
+            return (
+              String(primaryAreaId || '') === String(filters.area) ||
+              managedAreaIds.some((value) => String(value) === String(filters.area))
+            )
+          })
+
+    const filteredBySearch = !filters.search
+      ? filteredByArea
+      : filteredByArea.filter((employee) => {
+          const query = filters.search.toLowerCase()
+          const candidate = `${employee.name || ''} ${employee.email || ''}`.toLowerCase()
+          return candidate.includes(query)
+        })
+
+    const [sortKey = 'createdAt', direction = 'desc'] = String(sort || '').split(':')
+
+    return [...filteredBySearch].sort((left, right) => {
+      const leftValue = getSortValue(left, sortKey)
+      const rightValue = getSortValue(right, sortKey)
+      const result = compareSortValues(leftValue, rightValue, direction)
+
+      if (result !== 0) return result
+
+      return String(left.id || '').localeCompare(String(right.id || ''), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
     })
-  }, [filteredByRole, filters.search])
+  }, [filteredByRole, filters.area, filters.search, sort])
 
   const totalPages = useMemo(() => {
     if (meta?.lastPage) return meta.lastPage
@@ -330,11 +419,18 @@ export function useEmployeesManagement({
     [runMutation],
   )
 
+  const resendEmployeeInviteEntry = useCallback(
+    (id) => runMutation('resendInvite', () => resendEmployeeInvite(id)),
+    [runMutation],
+  )
+
   return {
     employees,
     filteredEmployees,
     filters,
     setFilters,
+    sort,
+    setSort,
     page,
     setPage,
     meta,
@@ -351,5 +447,6 @@ export function useEmployeesManagement({
     updateEmployeeEntry,
     deleteEmployeeEntry,
     assignShiftEntry,
+    resendEmployeeInviteEntry,
   }
 }
