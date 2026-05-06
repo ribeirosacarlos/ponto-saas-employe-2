@@ -198,6 +198,34 @@ export async function requestAdjustment(timeEntryOrPayload, maybePayload = null)
   return data
 }
 
+const normalizeEmployeeAdjustment = (item = {}, index = 0) => ({
+  id: item.id ?? `adjustment-${index}`,
+  status: String(item.adjustment_status ?? item.status ?? '').toLowerCase(),
+  originalTime: item.clocked_at ?? null,
+  correctedTime: item.proposed_clocked_at ?? item.clocked_at ?? null,
+  reason: item.adjustment_reason ?? item.reason ?? '',
+  createdAt: item.adjustment_requested_at ?? item.created_at ?? null,
+  reviewedAt: item.adjustment_reviewed_at ?? null,
+  reviewReason: item.adjustment_review_reason ?? '',
+})
+
+export async function listEmployeeAdjustments({ status, page = 1 } = {}) {
+  const params = { page }
+  if (status && status !== 'all') params.status = status
+
+  const { data } = await api.get('/v1/employee/adjustments', { params })
+  const payload = data?.data ?? data
+  const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+  const meta = {
+    currentPage: payload?.current_page ?? page,
+    perPage: payload?.per_page ?? 15,
+    total: payload?.total ?? 0,
+    lastPage: payload?.last_page ?? 1,
+  }
+
+  return { data: items.map(normalizeEmployeeAdjustment), meta }
+}
+
 export async function breakRequest(action, coords = {}) {
   const actionLabel = action === 'start' ? 'start' : 'end'
   throw new Error(

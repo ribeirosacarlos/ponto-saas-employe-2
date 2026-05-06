@@ -1216,7 +1216,7 @@ export default function Equipo() {
                           <button
                             type="button"
                             onClick={handleToggleDateSort}
-                            className="inline-flex items-center gap-1.5 font-medium transition hover:text-foreground"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-inherit transition hover:text-foreground"
                             aria-label={t('equipoPage.sort.columnAriaLabel', {
                               column: t('equipoPage.table.headers.createdAt'),
                             })}

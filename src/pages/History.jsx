@@ -9,6 +9,7 @@ import {
   Filter,
   FileText,
   History as HistoryIcon,
+  Pencil,
   RefreshCcw,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -612,6 +613,7 @@ export default function History({ onBackToDashboard }) {
                     variant="outline"
                     className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
                   >
+                    <Pencil className="mr-2 h-4 w-4 text-primary" />
                     {t('historyPage.adjustment.cta')}
                   </Button>
                 }

@@ -430,6 +430,7 @@ const es = {
         areas: 'Areas',
         shifts: 'Jornadas',
         adjustments: 'Ajustes',
+        employeeAdjustments: 'Solicitudes de ajustes',
         closeTimesheet: 'Cerrar hoja',
         companyTimezone: 'Zona horaria de la empresa',
       },
@@ -841,6 +842,51 @@ const es = {
       types: {
         breakStart: 'Inicio del intervalo',
         breakEnd: 'Fin del intervalo',
+      },
+      pagination: {
+        page: 'Pagina',
+        of: 'de',
+        previous: 'Anterior',
+        next: 'Siguiente',
+      },
+    },
+    employeeAdjustmentsPage: {
+      title: 'Solicitudes de ajustes',
+      subtitle: 'Sigue los ajustes de horario enviados por ti.',
+      filters: {
+        title: 'Filtros',
+        description: 'Filtra por estado o busca por motivo e identificador de la solicitud.',
+        status: 'Estado',
+        all: 'Todos',
+        search: 'Busqueda',
+        searchPlaceholder: 'Motivo o ID de la solicitud',
+      },
+      list: {
+        title: 'Mis solicitudes',
+        description: 'Esta pantalla mostrara solo tus ajustes cuando la ruta del backend este lista.',
+      },
+      table: {
+        id: 'Solicitud',
+        createdAt: 'Solicitado el',
+        original: 'Hora original',
+        corrected: 'Hora corregida',
+        reason: 'Motivo',
+        unset: 'No informado',
+      },
+      status: {
+        pending: 'Pendiente',
+        approved: 'Aprobado',
+        rejected: 'Rechazado',
+        unknown: 'Desconocido',
+      },
+      actions: {
+        refresh: 'Actualizar',
+      },
+      states: {
+        noPermissionTitle: 'Acceso restringido',
+        noPermissionDescription: 'No tienes permiso para acceder a esta pagina.',
+        emptyTitle: 'Sin solicitudes',
+        emptyDescription: 'No se encontraron ajustes para los filtros seleccionados.',
       },
       pagination: {
         page: 'Pagina',

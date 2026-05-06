@@ -99,6 +99,16 @@ export const NAV_ITEMS = [
     showInDesktop: true,
   },
   {
+    id: 'employeeAdjustments',
+    labelKey: 'sidebar.items.employeeAdjustments',
+    icon: ClipboardList,
+    page: 'employeeAdjustments',
+    group: 'workspace',
+    requires: { anyOf: ['employee'] },
+    showInDrawer: true,
+    showInDesktop: true,
+  },
+  {
     id: 'adminShifts',
     labelKey: 'sidebar.items.shifts',
     icon: CalendarClock,

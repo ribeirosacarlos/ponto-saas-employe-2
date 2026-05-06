@@ -35,6 +35,10 @@ export const ROUTES = {
     path: '/admin/adjustments',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  employeeAdjustments: {
+    path: '/employee/adjustments',
+    guard: { anyOf: ['employee'] },
+  },
   adminAnnouncements: {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },

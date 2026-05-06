@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock3 } from 'lucide-react'
+import { Clock3, Pencil } from 'lucide-react'
 import { useToast } from '../ui/use-toast'
 import { Button } from '../ui/button'
 import { EntryAdjustmentModal } from '../EntryAdjustmentModal'
@@ -282,6 +282,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
               type="button"
               className="h-10 w-full justify-center rounded-full px-4 text-[11px] font-semibold sm:w-auto sm:text-xs"
             >
+              <Pencil className="mr-2 h-4 w-4" />
               {t('dashboardPage.timeTracking.actions.adjust')}
             </Button>
           }

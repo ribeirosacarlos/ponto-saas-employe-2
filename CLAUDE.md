@@ -49,7 +49,7 @@ i18next with three locales (`pt-BR`, `en`, `es`) in `src/i18n/locales/`. Browser
 ### Typography
 
 - **Font**: Plus Jakarta Sans (400/500/600/700), fallback to Inter / system-ui.
-- **Base text size for UI controls**: `text-[11px]` — used uniformly on buttons, inputs, labels, table cells, and menu items.
+- **Base text size for UI controls**: `text-[12px]` — used uniformly on buttons, inputs, labels, table cells, and menu items.
 - **Headings**: `text-lg font-semibold tracking-tight` for card titles and dialog titles.
 - **Body/description text**: `text-sm text-muted-foreground`.
 
@@ -90,7 +90,7 @@ Cards use `rounded-[22px]`, dialogs use `rounded-[24px]` (one-off values beyond 
 
 ### Buttons (`src/components/ui/button.jsx`)
 
-All sizes share `h-8` (32px height) and `text-[11px] font-semibold`. Sizes differ only in horizontal padding:
+All sizes share `h-8` (32px height) and `text-[12px] font-semibold`. Sizes differ only in horizontal padding:
 
 | Size | Classes |
 |---|---|
@@ -108,16 +108,16 @@ Variants:
 All buttons translate `active:translate-y-[0.5px]` and use `disabled:opacity-60`.
 
 For action buttons outside the CVA system, use the shared constants from `src/components/ui/form-controls.js`:
-- `actionButtonClass` — text button with border (same `h-8 px-2.5 text-[11px]`)
+- `actionButtonClass` — text button with border (same `h-8 px-2.5 text-[12px]`)
 - `actionIconButtonClass` — icon-only square button (`h-8 w-8`)
 - `actionTabButtonClass` — tab-style toggle button
-- `actionMenuItemClass` — dropdown/menu item (`h-8 px-3 text-[11px]`)
+- `actionMenuItemClass` — dropdown/menu item (`h-8 px-3 text-[12px]`)
 
 ### Inputs & Form Controls (`src/components/ui/form-controls.js`)
 
 Shared constants used by `Input`, `Textarea`, `Select`, and composite field shells:
 
-- **All inputs**: `h-8` (32px), `rounded-md`, `border border-border/80`, `bg-background/80`, `px-2.5 py-1.5`, `text-[11px]`, `backdrop-blur-md`
+- **All inputs**: `h-8` (32px), `rounded-md`, `border border-border/80`, `bg-background/80`, `px-2.5 py-1.5`, `text-[12px]`, `backdrop-blur-md`
 - **Focus ring**: `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`
 - **Textarea**: same as input but no fixed height; `py-2` vertical padding
 - **Field shell** (composite inputs with icons): `fieldShellClass` — wraps children in the same height/border/bg as a regular input

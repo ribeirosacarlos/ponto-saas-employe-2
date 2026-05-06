@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { EntryAdjustmentModal } from '../../components/EntryAdjustmentModal'
@@ -120,6 +120,7 @@ export function PunchSummaryCard({
             isSubmitting={sendingAdjustment}
             trigger={
               <Button size="sm" variant="outline">
+                <Pencil className="mr-2 h-4 w-4" />
                 {t('dashboard.requestAdjustment')}
               </Button>
             }

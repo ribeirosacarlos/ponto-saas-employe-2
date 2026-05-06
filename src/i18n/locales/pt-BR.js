@@ -367,7 +367,7 @@ const ptBR = {
       lastPunchFallback: 'Nenhuma batida registrada hoje',
       lastPunchType: '{{time}} - {{type}}',
       nowLabel: 'agora',
-      requestAdjustment: 'Solicitar ajuste',
+      requestAdjustment: 'Ajustar meu ponto',
       hoursToday: 'Horas trabalhadas hoje',
       hoursTodayHelper: 'Horas calculadas pelo servidor com base nas batidas de hoje.',
       hourBank: 'Banco de horas',
@@ -416,7 +416,8 @@ const ptBR = {
         areas: 'Areas',
         shifts: 'Jornadas',
         adjustments: 'Ajustes de ponto',
-        closeTimesheet: 'Fechar folha',
+        employeeAdjustments: 'Solicitações de ajustes',
+        closeTimesheet: 'Folha de pontos',
         companyTimezone: 'Fuso horário da empresa',
       },
     },
@@ -835,6 +836,51 @@ const ptBR = {
         next: 'Próxima',
       },
     },
+    employeeAdjustmentsPage: {
+      title: 'Solicitações de ajustes',
+      subtitle: 'Acompanhe os ajustes de ponto enviados por você.',
+      filters: {
+        title: 'Filtros',
+        description: 'Filtre por status ou pesquise por motivo e identificador da solicitação.',
+        status: 'Status',
+        all: 'Todos',
+        search: 'Busca',
+        searchPlaceholder: 'Motivo ou ID da solicitação',
+      },
+      list: {
+        title: 'Minhas solicitações',
+        description: 'Esta tela exibirá apenas os seus ajustes quando a rota do backend estiver pronta.',
+      },
+      table: {
+        id: 'Solicitação',
+        createdAt: 'Solicitado em',
+        original: 'Horário original',
+        corrected: 'Horário corrigido',
+        reason: 'Motivo',
+        unset: 'Não informado',
+      },
+      status: {
+        pending: 'Pendente',
+        approved: 'Aprovado',
+        rejected: 'Recusado',
+        unknown: 'Desconhecido',
+      },
+      actions: {
+        refresh: 'Atualizar',
+      },
+      states: {
+        noPermissionTitle: 'Acesso restrito',
+        noPermissionDescription: 'Você não tem permissão para acessar esta página.',
+        emptyTitle: 'Nenhuma solicitação',
+        emptyDescription: 'Nenhum ajuste encontrado com os filtros selecionados.',
+      },
+      pagination: {
+        page: 'Página',
+        of: 'de',
+        previous: 'Anterior',
+        next: 'Próxima',
+      },
+    },
     toast: {
       sessionExpired: {
         title: 'Sessão expirada',
@@ -1010,7 +1056,7 @@ const ptBR = {
         registeredAt: 'Registrado às: {{time}}',
         adjustmentTag: 'Ajuste',
         adjustmentPendingTooltip: 'Solicitação de ajuste pendente de aprovação',
-        adjustRequest: 'Solicitar ajuste',
+        adjustRequest: 'Ajustar meu ponto',
         details: 'Detalhes',
         opened: 'Aberto',
         none: 'Ainda não há registros',
@@ -1125,7 +1171,7 @@ const ptBR = {
         },
         actions: {
           fullHistory: 'Histórico completo',
-          adjust: 'Ajustar ponto',
+          adjust: 'Ajustar meu ponto',
         },
       },
       documents: {
@@ -1996,7 +2042,7 @@ const ptBR = {
         requested: 'Ajuste solicitado',
       },
       adjustment: {
-        cta: 'Solicitar ajuste',
+        cta: 'Ajustar meu ponto',
         modalTitle: 'Solicitar ajuste',
         modalDescription: 'Revise o registro e informe o horário correto.',
         date: 'Data',

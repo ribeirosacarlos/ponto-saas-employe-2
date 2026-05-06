@@ -120,7 +120,7 @@ export default function EmployeeMultiSelect({
           onClick={() => !disabled && setOpen((prev) => !prev)}
           disabled={disabled}
           className={cn(
-            'flex h-8 w-full items-center gap-2 rounded-md border border-border/80 bg-background/80 px-2.5 py-1.5 text-left text-[11px] text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 dark:bg-input/70',
+            'flex h-8 w-full items-center gap-2 rounded-md border border-border/80 bg-background/80 px-2.5 py-1.5 text-left text-[12px] text-foreground shadow-[0_12px_35px_-25px_rgba(92,134,255,0.7)] transition backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 dark:bg-input/70',
             open && 'border-ring',
           )}
         >
