@@ -62,6 +62,7 @@ export default function Dashboard({
   onOpenAdminShifts,
   onOpenAdminReports,
   onRestartAdminOnboarding,
+  hasCompletedAdminOnboarding = false,
   onOpenTimeClock,
   onRestartEmployeeOnboarding,
 }) {
@@ -459,6 +460,7 @@ export default function Dashboard({
 
         {isAdminWorkspace ? (
           <AdminOnboardingPanel
+            defaultCollapsed={hasCompletedAdminOnboarding}
             onOpenEmployees={onOpenEmployees}
             onOpenShifts={onOpenAdminShifts}
             onOpenReports={onOpenAdminReports}

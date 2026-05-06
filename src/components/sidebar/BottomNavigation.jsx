@@ -15,6 +15,22 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
     }
   }
 
+  const handleAnchorClick = (event, item) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    handleSelect(item)
+  }
+
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 shadow-[0_-18px_65px_-45px_rgba(62,82,152,0.7)] backdrop-blur-xl md:hidden"
@@ -38,11 +54,11 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
               : 'text-foreground/80'
 
           return (
-            <button
+            <a
               key={item.id}
-              type="button"
               aria-label={t(item.labelKey)}
-              onClick={() => handleSelect(item)}
+              href={item.path || '#'}
+              onClick={(event) => handleAnchorClick(event, item)}
               className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-1 text-[11px] font-medium"
             >
               <span
@@ -65,7 +81,7 @@ export function BottomNavigation({ items = [], currentPage, onNavigate }) {
               >
                 {t(item.labelKey)}
               </span>
-            </button>
+            </a>
           )
         })}
       </div>

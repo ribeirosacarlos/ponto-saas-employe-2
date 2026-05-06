@@ -183,7 +183,7 @@ export default function App() {
     currentPage === 'dashboard' &&
     canRenderCard(capabilities, { anyOf: ['employee'] }) &&
     !canRenderCard(capabilities, { anyOf: ['area_manager', 'admin', 'super_admin'] })
-  const { restartAdminOnboarding } = useAdminOnboarding({
+  const { restartAdminOnboarding, hasCompletedAdminOnboarding } = useAdminOnboarding({
     enabled: shouldEnableAdminOnboarding,
     autoStart: true,
   })
@@ -517,6 +517,7 @@ export default function App() {
             onOpenAdminShifts={handleGoToAdminShifts}
             onOpenAdminReports={handleGoToAdminReports}
             onRestartAdminOnboarding={restartAdminOnboarding}
+            hasCompletedAdminOnboarding={hasCompletedAdminOnboarding}
             onOpenTimeClock={handleGoToTimeClock}
             onRestartEmployeeOnboarding={restartEmployeeOnboarding}
             sidebarOpen={sidebarOpen}

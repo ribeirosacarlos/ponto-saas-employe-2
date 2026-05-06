@@ -75,6 +75,22 @@ export function SidebarNavContent({
     onItemSelect?.(item)
   }
 
+  const handleItemAnchorClick = (event, item) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    handleItemClick(item)
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     window.localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceOpen ? '1' : '0')
@@ -127,9 +143,10 @@ export function SidebarNavContent({
                 const isActive = item.page ? currentPage === item.page : item.active
                 const isCta = item.variant === 'cta'
                 const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
+                const itemHref = item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
-                    <button
+                    <a
                       aria-label={t(item.labelKey)}
                       className={cn(
                         'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
@@ -140,8 +157,8 @@ export function SidebarNavContent({
                             ? 'bg-primary/12 text-primary font-semibold'
                             : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                       )}
-                      onClick={() => handleItemClick(item)}
-                      type="button"
+                      href={itemHref}
+                      onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
                         <Icon
@@ -168,7 +185,7 @@ export function SidebarNavContent({
                           {badgeLabel}
                         </span>
                       ) : null}
-                    </button>
+                    </a>
                   </SidebarTooltip>
                 )
               })}
@@ -209,9 +226,10 @@ export function SidebarNavContent({
               {adminItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.page ? currentPage === item.page : item.active
+                const itemHref = item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
-                    <button
+                    <a
                       aria-label={t(item.labelKey)}
                       className={cn(
                         'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
@@ -220,8 +238,8 @@ export function SidebarNavContent({
                           ? 'bg-primary/12 text-primary font-semibold'
                           : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                       )}
-                      onClick={() => handleItemClick(item)}
-                      type="button"
+                      href={itemHref}
+                      onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
                         <Icon
@@ -232,7 +250,7 @@ export function SidebarNavContent({
                         />
                         <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
                       </div>
-                    </button>
+                    </a>
                   </SidebarTooltip>
                 )
               })}
@@ -273,9 +291,10 @@ export function SidebarNavContent({
               {superAdminItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.page ? currentPage === item.page : item.active
+                const itemHref = item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
-                    <button
+                    <a
                       aria-label={t(item.labelKey)}
                       className={cn(
                         'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
@@ -284,8 +303,8 @@ export function SidebarNavContent({
                           ? 'bg-primary/12 text-primary font-semibold'
                           : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
                       )}
-                      onClick={() => handleItemClick(item)}
-                      type="button"
+                      href={itemHref}
+                      onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
                         <Icon
@@ -296,7 +315,7 @@ export function SidebarNavContent({
                         />
                         <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
                       </div>
-                    </button>
+                    </a>
                   </SidebarTooltip>
                 )
               })}
