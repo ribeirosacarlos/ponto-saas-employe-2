@@ -400,7 +400,7 @@ const ptBR = {
       },
       items: {
         dashboard: 'Dashboard',
-        history: 'Histórico',
+        history: 'Histórico de pontos',
         documents: 'Documentos',
         announcements: 'Comunicados',
         clock: 'Registrar ponto',
@@ -1094,7 +1094,7 @@ const ptBR = {
       searchPlaceholder: 'Buscar colaborador, equipe ou projeto',
       nav: {
         dashboard: 'Dashboard',
-        history: 'Histórico',
+        history: 'Histórico de pontos',
         documents: 'Documentos',
         employees: 'Funcionários',
         calendar: 'Calendário',
@@ -1908,7 +1908,7 @@ const ptBR = {
         noPermissionDescription: 'Você não tem acesso a esta página.',
       },
     },    historyPage: {
-      badge: 'Histórico',
+      badge: 'Histórico de pontos',
       subBadge: 'Colaborador: {{name}}',
       title: 'Histórico de marcações',
       subtitle: 'Veja todas as batidas, filtre por período, exporte e peça ajustes.',
@@ -1926,6 +1926,11 @@ const ptBR = {
         month: 'Mês',
         from: 'De',
         to: 'Até',
+        quick: {
+          lastMonth: 'Mês anterior',
+          thisMonth: 'Este mês',
+          last7Days: 'Últimos 7 dias',
+        },
         apply: 'Aplicar filtros',
         clear: 'Limpar',
       },

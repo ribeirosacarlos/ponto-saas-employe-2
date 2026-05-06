@@ -414,7 +414,7 @@ const es = {
       },
       items: {
         dashboard: 'Panel',
-        history: 'Historial',
+        history: 'Historial de fichajes',
         documents: 'Documentos',
         announcements: 'Comunicados',
         clock: 'Fichar',
@@ -1108,7 +1108,7 @@ const es = {
       searchPlaceholder: 'Buscar colaborador, equipo o proyecto',
       nav: {
         dashboard: 'Panel',
-        history: 'Historial',
+        history: 'Historial de fichajes',
         documents: 'Documentos',
         employees: 'Funcionarios',
         calendar: 'Calendario',
@@ -1922,7 +1922,7 @@ const es = {
         noPermissionDescription: 'No tienes acceso a esta pagina.',
       },
     },    historyPage: {
-      badge: 'Historial',
+      badge: 'Historial de fichajes',
       subBadge: 'Colaborador: {{name}}',
       title: 'Historial de marcaciones',
       subtitle: 'Consulta todas las marcaciones, filtra por fecha, exporta y pide ajustes.',
@@ -1940,6 +1940,11 @@ const es = {
         month: 'Mes',
         from: 'De',
         to: 'Hasta',
+        quick: {
+          lastMonth: 'Mes anterior',
+          thisMonth: 'Este mes',
+          last7Days: 'Últimos 7 días',
+        },
         apply: 'Aplicar filtros',
         clear: 'Limpiar',
       },

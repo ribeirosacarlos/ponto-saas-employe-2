@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
+import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
+  CalendarRange,
   CalendarDays,
   Download,
+  Filter,
   FileText,
   History as HistoryIcon,
   RefreshCcw,
@@ -20,9 +22,43 @@ import autoTable from 'jspdf-autotable'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
 import { AppTopBar } from '../components/ui/AppTopBar'
-import { Select } from '../components/ui/select'
+import { Input } from '../components/ui/input'
 
 const PAGE_SIZE = 20
+
+const quickRanges = {
+  lastMonth: () => {
+    const today = new Date()
+    const target = subMonths(today, 1)
+    return {
+      from: formatDateKey(startOfMonth(target)),
+      to: formatDateKey(endOfMonth(target)),
+    }
+  },
+  thisMonth: () => {
+    const today = new Date()
+    return {
+      from: formatDateKey(startOfMonth(today)),
+      to: formatDateKey(endOfMonth(today)),
+    }
+  },
+  last7Days: () => {
+    const today = new Date()
+    return {
+      from: formatDateKey(subDays(today, 6)),
+      to: formatDateKey(today),
+    }
+  },
+}
+
+function formatDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function normalizeEntry(entry, t) {
   const clock = entry.clocked_at || entry.clockedAt || entry.date || entry.timestamp || entry.created_at
@@ -205,8 +241,9 @@ export default function History({ onBackToDashboard }) {
     [formatTimeTz, t],
   )
 
-  const [filters, setFilters] = useState({ from: '', to: '' })
-  const [appliedFilters, setAppliedFilters] = useState({ from: '', to: '' })
+  const defaultRange = useMemo(() => quickRanges.lastMonth(), [])
+  const [filters, setFilters] = useState(defaultRange)
+  const [appliedFilters, setAppliedFilters] = useState(defaultRange)
   const [entries, setEntries] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -214,7 +251,6 @@ export default function History({ onBackToDashboard }) {
   const [error, setError] = useState('')
   const [localPage, setLocalPage] = useState(1)
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedMonth, setSelectedMonth] = useState(null)
   const [submittingAdjustment, setSubmittingAdjustment] = useState('')
 
   const handleFetch = useCallback(
@@ -274,55 +310,22 @@ export default function History({ onBackToDashboard }) {
     )
   }, [meta])
 
-  const monthOptions = useMemo(() => {
-    const options = []
-    const today = new Date()
-    for (let offset = 0; offset < 3; offset += 1) {
-      const target = subMonths(today, offset)
-      const start = startOfMonth(target)
-      const end = endOfMonth(target)
-      const monthLabel = formatDate(start, { month: 'long', year: 'numeric' })
-      const caption = monthLabel && monthLabel !== '-' ? monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1) : ''
-      const from = formatDateForApi(start)
-      const to = formatDateForApi(end)
-      const id = from ? from.slice(0, 7) : `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`
-      options.push({
-        id,
-        label: caption || id,
-        from,
-        to,
-      })
-    }
-    return options.filter((option) => option.from && option.to)
-  }, [formatDate, formatDateForApi])
-
   useEffect(() => {
-    if (!monthOptions.length) return
-    setSelectedMonth((prev) => {
-      const match = prev && monthOptions.find((option) => option.id === prev.id)
-      return match || monthOptions[0]
-    })
-  }, [monthOptions])
+    handleFetch({ page: 1, filters: defaultRange })
+  }, [defaultRange, handleFetch])
 
-  useEffect(() => {
-    if (!selectedMonth) return
-    const nextFilters = { from: selectedMonth.from, to: selectedMonth.to }
-    setFilters(nextFilters)
-    setAppliedFilters(nextFilters)
-    handleFetch({ page: 1, filters: nextFilters })
-  }, [handleFetch, selectedMonth])
+  const activeQuickRange = useMemo(() => {
+    const lastMonth = quickRanges.lastMonth()
+    if (filters.from === lastMonth.from && filters.to === lastMonth.to) return 'lastMonth'
 
-  useEffect(() => {
-    if (!selectedMonth) return
-    if (!appliedFilters.from && !appliedFilters.to) {
-      setAppliedFilters({ from: selectedMonth.from, to: selectedMonth.to })
-    }
-  }, [selectedMonth, appliedFilters])
+    const thisMonth = quickRanges.thisMonth()
+    if (filters.from === thisMonth.from && filters.to === thisMonth.to) return 'thisMonth'
 
-  useEffect(() => {
-    if (!appliedFilters.from && !appliedFilters.to) return
-    handleFetch({ page: 1 })
-  }, [appliedFilters.from, appliedFilters.to, handleFetch])
+    const last7Days = quickRanges.last7Days()
+    if (filters.from === last7Days.from && filters.to === last7Days.to) return 'last7Days'
+
+    return ''
+  }, [filters.from, filters.to])
 
   const filteredEntries = useMemo(() => {
     const { from, to } = appliedFilters
@@ -402,11 +405,14 @@ export default function History({ onBackToDashboard }) {
   }
 
   const handleClearFilters = async () => {
-    if (!monthOptions.length) return
-    const defaultOption = monthOptions[0]
-    setSelectedMonth(defaultOption)
-    setFilters({ from: defaultOption.from, to: defaultOption.to })
-    setAppliedFilters({ from: defaultOption.from, to: defaultOption.to })
+    setFilters(defaultRange)
+    setAppliedFilters(defaultRange)
+    await handleFetch({ page: 1, filters: defaultRange })
+  }
+
+  const handleQuickRange = (key) => {
+    const range = quickRanges[key]()
+    setFilters(range)
   }
 
   const handleExport = () => {
@@ -667,39 +673,7 @@ export default function History({ onBackToDashboard }) {
               </div>
             ) : null}
 
-            {!loading && !error && groupedEntries.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-card/90 px-5 py-6 text-sm text-muted-foreground shadow-[0_18px_50px_-40px_rgba(62,82,152,0.35)]">
-                <p className="font-semibold text-foreground break-words text-balance">
-                  {t('historyPage.states.emptyTitle')}
-                </p>
-                <p className="mt-1 break-words text-balance">
-                  {t('historyPage.states.emptyDescription')}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full rounded-full px-4 sm:w-auto"
-                    onClick={handleClearFilters}
-                  >
-                    {t('historyPage.filters.clear')}
-                  </Button>
-                  {onBackToDashboard ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="w-full rounded-full px-4 sm:w-auto"
-                      onClick={onBackToDashboard}
-                    >
-                      {t('historyPage.actions.back')}
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-
-            {!loading && !error && groupedEntries.length > 0 && (
+            {!loading && !error ? (
               <div className="min-w-0 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -719,28 +693,6 @@ export default function History({ onBackToDashboard }) {
                     <span className="max-w-full rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-center text-[11px] font-semibold tracking-[0.14em] text-primary break-words text-balance">
                       {t('historyPage.labels.totalEntries', { count: groupedEntries.length })}
                     </span>
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-none">
-                      <label className="sr-only" htmlFor="history-month-selector">
-                        {t('historyPage.filters.month')}
-                      </label>
-                      <Select
-                        id="history-month-selector"
-                        value={selectedMonth?.id ?? ''}
-                        onChange={(event) => {
-                          const option = monthOptions.find((item) => item.id === event.target.value)
-                          if (option) {
-                            setSelectedMonth(option)
-                          }
-                        }}
-                        className="min-w-[180px] sm:w-auto"
-                      >
-                        {monthOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
@@ -756,67 +708,177 @@ export default function History({ onBackToDashboard }) {
                   </div>
                 </div>
 
-                <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                        <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.interval')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
-                        <th className="px-3 py-3">{t('historyPage.table.headers.idle')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groupedEntries.map((group) => {
-                        const { summary } = group
-                        const dateCell = formatDateCell(summary?.entryAt)
-                        const entryLabel = summary?.entryAt
-                          ? formatTimeTz(summary.entryAt)
-                          : t('historyPage.labels.timeFallback')
-                        const exitLabel = summary?.exitAt
-                          ? formatTimeTz(summary.exitAt)
-                          : t('historyPage.labels.timeFallback')
-                        const intervalLabel = summary?.hasBreak
-                          ? formatBreakRanges(summary.breakIntervals)
-                          : t('historyPage.labels.timeFallback')
-                        const workedLabel = group.duration
-                          ? formatDuration(group.duration)
-                          : t('historyPage.labels.noDuration')
-                        const idleLabel =
-                          typeof summary?.idleMinutes === 'number'
-                            ? formatDuration(summary.idleMinutes)
-                            : t('historyPage.labels.timeFallback')
+                <div className="mt-4 rounded-2xl border border-dashed border-border/70 bg-background/60 p-3">
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
+                    <Filter className="h-3.5 w-3.5" />
+                    <span>{t('historyPage.filters.title')}</span>
+                  </div>
 
-                        return (
-                          <tr
-                            key={group.dateKey}
-                            className="border-b border-border/80 last:border-b-0"
+                  <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] xl:items-end">
+                    <div className="space-y-1.5">
+                      <div className="inline-flex w-full flex-wrap items-center gap-1 rounded-lg border border-border/70 bg-background/80 p-1 sm:flex-nowrap">
+                        {([
+                          ['lastMonth', t('historyPage.filters.quick.lastMonth')],
+                          ['thisMonth', t('historyPage.filters.quick.thisMonth')],
+                          ['last7Days', t('historyPage.filters.quick.last7Days')],
+                        ]).map(([key, label]) => (
+                          <Button
+                            key={key}
+                            type="button"
+                            size="sm"
+                            variant={activeQuickRange === key ? 'default' : 'ghost'}
+                            className="h-7 flex-1 rounded-md px-2 text-[11px]"
+                            onClick={() => handleQuickRange(key)}
                           >
-                            <td className="px-3 py-4">
-                              <p className="font-semibold break-words text-balance">
-                                {dateCell.date}
-                              </p>
-                              {dateCell.weekday ? (
-                                <p className="text-[11px] text-muted-foreground break-words">
-                                  {dateCell.weekday}
-                                </p>
-                              ) : null}
-                            </td>
-                            <td className="px-3 py-4 break-words">{entryLabel}</td>
-                            <td className="px-3 py-4 break-words">{intervalLabel}</td>
-                            <td className="px-3 py-4 break-words">{exitLabel}</td>
-                            <td className="px-3 py-4 break-words">{workedLabel}</td>
-                            <td className="px-3 py-4 break-words">{idleLabel}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {t('historyPage.filters.from')}
+                        </span>
+                        <div className="relative min-w-0">
+                          <Input
+                            type="date"
+                            value={filters.from}
+                            max={filters.to || undefined}
+                            onChange={(event) =>
+                              setFilters((prev) => ({ ...prev, from: event.target.value }))
+                            }
+                            className="h-8 rounded-md pr-8 text-[11px]"
+                          />
+                          <CalendarRange className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {t('historyPage.filters.to')}
+                        </span>
+                        <div className="relative min-w-0">
+                          <Input
+                            type="date"
+                            value={filters.to}
+                            min={filters.from || undefined}
+                            onChange={(event) =>
+                              setFilters((prev) => ({ ...prev, to: event.target.value }))
+                            }
+                            className="h-8 rounded-md pr-8 text-[11px]"
+                          />
+                          <CalendarRange className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 rounded-md px-3 text-[11px]"
+                        onClick={handleApplyFilters}
+                        disabled={loading || !filters.from || !filters.to}
+                      >
+                        {t('historyPage.filters.apply')}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+
+                {groupedEntries.length === 0 ? (
+                  <div className="mt-4 rounded-2xl border border-dashed border-border/70 bg-card/90 px-5 py-6 text-sm text-muted-foreground shadow-[0_18px_50px_-40px_rgba(62,82,152,0.35)]">
+                    <p className="font-semibold text-foreground break-words text-balance">
+                      {t('historyPage.states.emptyTitle')}
+                    </p>
+                    <p className="mt-1 break-words text-balance">
+                      {t('historyPage.states.emptyDescription')}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="w-full rounded-full px-4 sm:w-auto"
+                        onClick={handleClearFilters}
+                      >
+                        {t('historyPage.filters.clear')}
+                      </Button>
+                      {onBackToDashboard ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="w-full rounded-full px-4 sm:w-auto"
+                          onClick={onBackToDashboard}
+                        >
+                          {t('historyPage.actions.back')}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="w-full min-w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                          <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.interval')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.idle')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupedEntries.map((group) => {
+                          const { summary } = group
+                          const dateCell = formatDateCell(summary?.entryAt)
+                          const entryLabel = summary?.entryAt
+                            ? formatTimeTz(summary.entryAt)
+                            : t('historyPage.labels.timeFallback')
+                          const exitLabel = summary?.exitAt
+                            ? formatTimeTz(summary.exitAt)
+                            : t('historyPage.labels.timeFallback')
+                          const intervalLabel = summary?.hasBreak
+                            ? formatBreakRanges(summary.breakIntervals)
+                            : t('historyPage.labels.timeFallback')
+                          const workedLabel = group.duration
+                            ? formatDuration(group.duration)
+                            : t('historyPage.labels.noDuration')
+                          const idleLabel =
+                            typeof summary?.idleMinutes === 'number'
+                              ? formatDuration(summary.idleMinutes)
+                              : t('historyPage.labels.timeFallback')
+
+                          return (
+                            <tr
+                              key={group.dateKey}
+                              className="border-b border-border/80 last:border-b-0"
+                            >
+                              <td className="px-3 py-4">
+                                <p className="font-semibold break-words text-balance">
+                                  {dateCell.date}
+                                </p>
+                                {dateCell.weekday ? (
+                                  <p className="text-[11px] text-muted-foreground break-words">
+                                    {dateCell.weekday}
+                                  </p>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-4 break-words">{entryLabel}</td>
+                              <td className="px-3 py-4 break-words">{intervalLabel}</td>
+                              <td className="px-3 py-4 break-words">{exitLabel}</td>
+                              <td className="px-3 py-4 break-words">{workedLabel}</td>
+                              <td className="px-3 py-4 break-words">{idleLabel}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
+            ) : null}
             {!loading && !error && hasMore ? (
               <div className="flex justify-center">
                 <Button

@@ -417,7 +417,7 @@ const en = {
       },
       items: {
         dashboard: 'Dashboard',
-        history: 'History',
+        history: 'Punch history',
         documents: 'Documents',
         announcements: 'Announcements',
         clock: 'Register point',
@@ -1110,7 +1110,7 @@ const en = {
       searchPlaceholder: 'Search teammate, team, or project',
       nav: {
         dashboard: 'Dashboard',
-        history: 'History',
+        history: 'Punch history',
         documents: 'Documents',
         employees: 'Employees',
         calendar: 'Calendar',
@@ -1924,7 +1924,7 @@ const en = {
         noPermissionDescription: 'You do not have access to this page.',
       },
     },    historyPage: {
-      badge: 'History',
+      badge: 'Punch history',
       subBadge: 'Employee: {{name}}',
       title: 'Time entry history',
       subtitle: 'See every punch, filter by date, export, and request adjustments.',
@@ -1942,6 +1942,11 @@ const en = {
         month: 'Month',
         from: 'From',
         to: 'To',
+        quick: {
+          lastMonth: 'Last month',
+          thisMonth: 'This month',
+          last7Days: 'Last 7 days',
+        },
         apply: 'Apply filters',
         clear: 'Clear',
       },
