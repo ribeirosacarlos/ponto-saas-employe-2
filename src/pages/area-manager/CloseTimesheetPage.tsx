@@ -105,6 +105,28 @@ const formatWholeHours = (minutes?: number) => {
   return Math.floor(total / 60)
 }
 
+const computeDayMinutes = (items: any[]): number => {
+  const sorted = [...items].sort((a, b) => {
+    const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+    const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+    return left - right
+  })
+  let total = 0
+  const openIns: number[] = []
+  sorted.forEach((entry) => {
+    if (!entry.clockedAt) return
+    const ts = new Date(entry.clockedAt).getTime()
+    if (!Number.isFinite(ts)) return
+    if (entry.type === 'in') {
+      openIns.push(ts)
+    } else if (entry.type === 'out' && openIns.length) {
+      const start = openIns.shift()!
+      total += Math.max(0, Math.round((ts - start) / 60000))
+    }
+  })
+  return total
+}
+
 const isPendingApprovalAdjustment = (entry: any = {}) => {
   const source = String(entry?.source ?? entry?.proposed_source ?? entry?.proposedSource ?? '')
     .trim()
@@ -1114,6 +1136,7 @@ export default function CloseTimesheetPage() {
           </thead>
           <tbody>
             {groups.flatMap((group) => {
+              const dayMins = computeDayMinutes(group.items)
               const dateRows = group.items.map((entry, index) => {
                 const employeeKey =
                   entry?.userId ??
@@ -1327,9 +1350,23 @@ export default function CloseTimesheetPage() {
                     colSpan={6}
                     className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center gap-2">
-                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
-                      <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
+                        <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
+                        {group.items.length > 0 && (
+                          <span className="text-[11px] text-muted-foreground/60">
+                            · {group.items.length} {t('closeTimesheetPage.table.records', 'registros')}
+                          </span>
+                        )}
+                      </div>
+                      {dayMins > 0 && (
+                        <div className="flex items-center gap-1.5 text-[11px]">
+                          <Timer className="h-3 w-3 text-muted-foreground/70" />
+                          <span className="font-mono font-semibold text-foreground">{formatMinutes(dayMins)}</span>
+                          <span className="text-muted-foreground/70">{t('closeTimesheetPage.table.dailyTotal', 'trabalhadas')}</span>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>,

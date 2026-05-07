@@ -2209,6 +2209,7 @@ const es = {
           inside: 'Dentro de la empresa',
           outside: 'Fuera de la empresa',
         },
+        dailyTotal: 'trabajadas',
       },
       delete: {
         action: 'Eliminar',

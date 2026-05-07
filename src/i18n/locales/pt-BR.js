@@ -2201,6 +2201,7 @@ const ptBR = {
           inside: 'Dentro da empresa',
           outside: 'Fora da empresa',
         },
+        dailyTotal: 'trabalhadas',
       },
       delete: {
         action: 'Excluir',

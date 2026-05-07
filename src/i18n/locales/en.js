@@ -2121,6 +2121,7 @@ const en = {
           inside: 'Inside company',
           outside: 'Outside company',
         },
+        dailyTotal: 'worked',
       },
       delete: {
         action: 'Delete',
