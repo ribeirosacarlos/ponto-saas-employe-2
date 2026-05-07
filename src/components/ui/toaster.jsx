@@ -97,6 +97,20 @@ export function Toaster() {
                 {toast.description && (
                   <p className="text-xs leading-relaxed text-[hsl(var(--foreground))]/80">{toast.description}</p>
                 )}
+                {toast.details?.length > 0 && (
+                  <div className="mt-1.5 flex flex-col gap-0.5 rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/50 px-2.5 py-2">
+                    {toast.details.map((d) => (
+                      <div key={d.label} className="flex min-w-0 items-baseline gap-1.5">
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--foreground))]/50">
+                          {d.label}
+                        </span>
+                        <code className="min-w-0 truncate text-[10px] text-[hsl(var(--foreground))]/75">
+                          {d.value}
+                        </code>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button

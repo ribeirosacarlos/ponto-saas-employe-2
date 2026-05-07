@@ -4,7 +4,7 @@ import { normalizeAdminLocationSettings } from '../types/adminLocationSettings'
 const BASE_PATH = '/v1/admin/settings/location'
 
 export async function fetchAdminLocationSettings() {
-  const { data } = await api.get(BASE_PATH)
+  const { data } = await api.get(BASE_PATH, { skipAccessDeniedHandling: true })
   return normalizeAdminLocationSettings(data)
 }
 

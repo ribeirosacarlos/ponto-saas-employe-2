@@ -47,7 +47,7 @@ export function ToastProvider({ children }) {
   }, [clearTimers])
 
   const toast = useCallback(
-    ({ title, description, variant = 'default', duration }) => {
+    ({ title, description, details, variant = 'default', duration }) => {
       const id = crypto.randomUUID()
       const normalizedVariant = variant === 'info' ? 'default' : variant
       const effectiveDuration =
@@ -55,7 +55,7 @@ export function ToastProvider({ children }) {
 
       setToasts((current) => [
         ...current,
-        { id, title, description, variant: normalizedVariant, duration: effectiveDuration, state: 'open' },
+        { id, title, description, details, variant: normalizedVariant, duration: effectiveDuration, state: 'open' },
       ])
 
       if (effectiveDuration) {

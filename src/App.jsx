@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Menu, ShieldAlert, X } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import ActivateAccount from './pages/ActivateAccount'
@@ -36,8 +36,6 @@ import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.js
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { HelpContactDialog } from './components/HelpContactDialog.jsx'
-import { Button } from './components/ui/button.jsx'
-import { Card, CardContent } from './components/ui/card.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './services/modules/employee'
 import { getCurrentUser, clearAuthCache } from './services/authService'
@@ -492,18 +490,25 @@ export default function App() {
     }
   }, [clearAccessDenied, getDefaultAuthenticatedPage, logout, navigateTo, syncProfile, t, toast])
 
-  const accessDebugInfo = useMemo(() => {
-    if (accessDeniedReason !== ACCESS_DENIED_REASONS.FORBIDDEN) return null
-
-    return {
-      pageLabel: lastDeniedContext?.page || currentPage,
-      routePath:
-        lastDeniedContext?.routePath ||
-        (typeof window !== 'undefined' ? window.location.pathname : ''),
-      requestUrl: lastDeniedContext?.requestUrl || '',
-      requestMethod: lastDeniedContext?.requestMethod || '',
-    }
-  }, [accessDeniedReason, currentPage, lastDeniedContext])
+  useEffect(() => {
+    if (accessDeniedReason !== ACCESS_DENIED_REASONS.FORBIDDEN) return
+    const details = [
+      lastDeniedContext?.page && { label: 'Página', value: lastDeniedContext.page },
+      lastDeniedContext?.routePath && { label: 'Rota', value: lastDeniedContext.routePath },
+      lastDeniedContext?.requestUrl && {
+        label: 'Requisição',
+        value: `${lastDeniedContext.requestMethod || 'GET'} ${lastDeniedContext.requestUrl}`,
+      },
+    ].filter(Boolean)
+    toast({
+      title: t('errors.forbidden.title'),
+      description: lastDeniedMessage || t('errors.forbidden.description'),
+      variant: 'error',
+      duration: 15000,
+      details,
+    })
+    clearAccessDenied()
+  }, [accessDeniedReason, clearAccessDenied, lastDeniedContext, lastDeniedMessage, t, toast])
 
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -707,52 +712,6 @@ export default function App() {
               ) : null}
               <div className="flex-1 min-h-0">
                 <div className="mx-auto w-full max-w-[1320px]">
-                  {accessDebugInfo ? (
-                    <div className="px-4 pt-4 md:px-6">
-                      <Card className="border-rose-200/70 bg-rose-50/80 shadow-[0_18px_50px_-35px_rgba(244,63,94,0.45)] dark:border-rose-500/30 dark:bg-rose-500/10">
-                        <CardContent className="flex flex-col gap-3 px-5 py-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-300">
-                                <ShieldAlert className="h-5 w-5" />
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-semibold text-rose-700 dark:text-rose-100">
-                                  Permissão negada nesta página
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 rounded-full px-2 text-rose-700 hover:bg-rose-100 dark:text-rose-100 dark:hover:bg-rose-500/10"
-                              onClick={clearAccessDenied}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="grid gap-2 text-sm text-rose-800 dark:text-rose-50">
-                            <p>
-                              <span className="font-semibold">Página:</span> <code>{accessDebugInfo.pageLabel}</code>
-                            </p>
-                            <p>
-                              <span className="font-semibold">Rota atual:</span> <code>{accessDebugInfo.routePath || '-'}</code>
-                            </p>
-                            <p>
-                              <span className="font-semibold">Request bloqueada:</span>{' '}
-                              <code>{accessDebugInfo.requestMethod || 'GET'} {accessDebugInfo.requestUrl || '-'}</code>
-                            </p>
-                            {lastDeniedMessage ? (
-                              <p>
-                                <span className="font-semibold">Mensagem:</span> <code>{lastDeniedMessage}</code>
-                              </p>
-                            ) : null}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : null}
                   {renderCurrentPage()}
                 </div>
               </div>
