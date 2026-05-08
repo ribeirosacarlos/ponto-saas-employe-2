@@ -23,9 +23,11 @@ import {
   FileText,
   Filter,
   MapPin,
+  Monitor,
   Pencil,
   RefreshCcw,
   Search,
+  Smartphone,
   Timer,
   Trash2,
   UserRound,
@@ -190,6 +192,7 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     latitude: entry.latitude ?? null,
     longitude: entry.longitude ?? null,
     source: entry.source ?? entry.origin ?? '',
+    deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
   }
 }
@@ -1121,15 +1124,16 @@ export default function CloseTimesheetPage() {
   }) => (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] table-fixed">
+        <table className="w-full min-w-[860px] table-fixed">
           <thead>
             <tr className="border-b border-border/70 text-left text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-              <th className="w-[148px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
-              <th className="w-[96px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
-              <th className="w-[104px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
-              <th className="px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
-              <th className="w-[180px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
-              <th className="w-[96px] px-3 py-3 text-right">
+              <th className="w-[130px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
+              <th className="w-[85px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
+              <th className="w-[100px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
+              <th className="w-[115px] px-3 py-3">{t('closeTimesheetPage.table.headers.device', 'Dispositivo')}</th>
+              <th className="w-[185px] px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
+              <th className="w-[165px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
+              <th className="w-[80px] px-3 py-3 text-right">
                 {t('closeTimesheetPage.table.headers.actions', 'Ações')}
               </th>
             </tr>
@@ -1214,6 +1218,22 @@ export default function CloseTimesheetPage() {
                       >
                         {formatEntryType(entry.type)}
                       </span>
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      {entry.deviceType ? (
+                        <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                          {entry.deviceType === 'mobile' ? (
+                            <Smartphone className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <Monitor className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          {entry.deviceType === 'mobile'
+                            ? t('closeTimesheetPage.table.device.mobile', 'Mobile')
+                            : t('closeTimesheetPage.table.device.web', 'Web')}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 align-middle">
                       {hasCoordinates ? (
@@ -1347,7 +1367,7 @@ export default function CloseTimesheetPage() {
               return [
                 <tr key={`${group.dateKey}-separator`} className="border-b border-border/50">
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
                   >
                     <div className="flex items-center justify-between gap-2">

@@ -9,14 +9,13 @@ import {
   Filter,
   FileText,
   History as HistoryIcon,
-  Pencil,
   RefreshCcw,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
-import { getEmployeeEntries, requestAdjustment } from '../services/modules/employee'
+import { getEmployeeEntries } from '../services/modules/employee'
 import { exportEntriesToCSV } from '../lib/exportEntries'
-import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
+import { RequestAdjustmentButton } from '../components/RequestAdjustmentButton'
 import { useAuthStore } from '../store/useAuth'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -252,7 +251,6 @@ export default function History({ onBackToDashboard }) {
   const [error, setError] = useState('')
   const [localPage, setLocalPage] = useState(1)
   const [currentPage, setCurrentPage] = useState(1)
-  const [submittingAdjustment, setSubmittingAdjustment] = useState('')
 
   const handleFetch = useCallback(
     async ({ page = 1, append = false, filters: filtersOverride } = {}) => {
@@ -437,51 +435,7 @@ export default function History({ onBackToDashboard }) {
     })
   }
 
-  const handleAdjustment = async (payload, closeModal, resetForm) => {
-    const timeEntryId =
-      payload.timeEntryId ||
-      payload.time_entry_id ||
-      payload.entry_id ||
-      payload.entry?.id ||
-      payload.entry?.uuid ||
-      (entries.find((item) => item.id || item.uuid)?.id ??
-        entries.find((item) => item.id || item.uuid)?.uuid) ||
-      ''
-    const idKey = timeEntryId || payload.original_time || payload.date || ''
-    if (!timeEntryId) {
-      toast({
-        title: t('historyPage.adjustment.errorTitle'),
-        description: t('historyPage.adjustment.missingEntry', 'Selecione um registro para ajustar.'),
-        variant: 'error',
-      })
-      return
-    }
-    setSubmittingAdjustment(idKey)
-    try {
-      await requestAdjustment({
-        ...payload,
-        timeEntryId,
-      })
-      toast({
-        title: t('toast.adjustmentSuccess.title'),
-        description: t('toast.adjustmentSuccess.description'),
-        variant: 'success',
-      })
-      closeModal?.()
-      resetForm?.()
-    } catch (err) {
-      toast({
-        title: t('historyPage.adjustment.errorTitle'),
-        description:
-          err.response?.data?.message || err.message || t('historyPage.adjustment.errorDescription'),
-        variant: 'error',
-      })
-    } finally {
-      setSubmittingAdjustment('')
-    }
-  }
-
-  const handleExportPDF = () => {
+const handleExportPDF = () => {
     if (!groupedEntries.length) {
       toast({
         title: t('historyPage.export.emptyTitle'),
@@ -603,20 +557,10 @@ export default function History({ onBackToDashboard }) {
           subtitle={t('historyPage.subtitle')}
           actions={
             <>
-              <EntryAdjustmentModal
+              <RequestAdjustmentButton
                 entries={entries}
-                onSubmit={handleAdjustment}
-                isSubmitting={Boolean(submittingAdjustment)}
-                trigger={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
-                  >
-                    <Pencil className="mr-2 h-4 w-4 text-primary" />
-                    {t('historyPage.adjustment.cta')}
-                  </Button>
-                }
+                variant="outline"
+                className="w-full rounded-full border-border bg-background/80 px-3 text-sm sm:w-auto"
               />
               <Button
                 type="button"

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Clock, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
-import { EntryAdjustmentModal } from '../../components/EntryAdjustmentModal'
+import { RequestAdjustmentButton } from '../../components/RequestAdjustmentButton'
 import { getWorkedToday } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
@@ -14,8 +14,6 @@ export function PunchSummaryCard({
   workedTime,
   hourBank,
   nextType = 'in',
-  sendingAdjustment,
-  onAdjustment,
   entries = [],
 }) {
   const token = useAuthStore((state) => state.token)
@@ -103,7 +101,7 @@ export function PunchSummaryCard({
             <CardTitle className="text-xl">{t('dashboard.myPoint')}</CardTitle>
             <p className="text-sm text-foreground/70">{t('dashboard.description')}</p>
           </div>
-          <EntryAdjustmentModal
+          <RequestAdjustmentButton
             entry={lastPunch}
             entries={entries}
             defaultDate={
@@ -116,14 +114,9 @@ export function PunchSummaryCard({
                   )
                 : new Date()
             }
-            onSubmit={onAdjustment}
-            isSubmitting={sendingAdjustment}
-            trigger={
-              <Button size="sm" variant="outline">
-                <Pencil className="mr-2 h-4 w-4" />
-                {t('dashboard.requestAdjustment')}
-              </Button>
-            }
+            variant="outline"
+            size="sm"
+            label={t('dashboard.requestAdjustment')}
           />
         </div>
 

@@ -10,6 +10,7 @@ import { useAuthStore } from '../store/useAuth'
 import { useDateTime } from '../hooks/useDateTime'
 import { useEmployeeAdjustments } from '../hooks/useEmployeeAdjustments'
 import { cn } from '../lib/utils'
+import { RequestAdjustmentButton } from '../components/RequestAdjustmentButton'
 
 const EMPLOYEE_REQUIRES = { anyOf: ['employee'] }
 const STATUS_OPTIONS = ['all', 'pending', 'approved', 'rejected']
@@ -101,20 +102,26 @@ export default function EmployeeAdjustments({ sidebarOpen = false, onToggleSideb
             'Acompanhe somente os ajustes de ponto enviados por voce.',
           )}
           actions={
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStatus('all')
-                setSearchTerm('')
-                setPage(1)
-                reload()
-              }}
-              disabled={loading}
-              className={cn(COMPACT_BUTTON_CLASS, 'border-border bg-background/80')}
-            >
-              <RefreshCcw className={cn('h-3.5 w-3.5 text-primary', loading && 'animate-spin')} />
-              {t('employeeAdjustmentsPage.actions.refresh', 'Atualizar')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <RequestAdjustmentButton
+                onSuccess={reload}
+                className={COMPACT_BUTTON_CLASS}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatus('all')
+                  setSearchTerm('')
+                  setPage(1)
+                  reload()
+                }}
+                disabled={loading}
+                className={cn(COMPACT_BUTTON_CLASS, 'border-border bg-background/80')}
+              >
+                <RefreshCcw className={cn('h-3.5 w-3.5 text-primary', loading && 'animate-spin')} />
+                {t('employeeAdjustmentsPage.actions.refresh', 'Atualizar')}
+              </Button>
+            </div>
           }
         />
 

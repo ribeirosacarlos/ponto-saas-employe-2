@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock3, Pencil } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import { useToast } from '../ui/use-toast'
-import { Button } from '../ui/button'
-import { EntryAdjustmentModal } from '../EntryAdjustmentModal'
 import { useClocking } from '../../features/ponto/useClocking'
-import { requestAdjustment } from '../../services/modules/employee'
+import { RequestAdjustmentButton } from '../RequestAdjustmentButton'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 import { ViewAllButton } from '../ViewAllButton'
@@ -25,8 +23,6 @@ export function TimeTrackingCard({ onOpenHistory }) {
   const { toast } = useToast()
   const { entries, loadingEntries, refreshEntries } = useClocking()
   const { formatDate, formatTime, formatDateForApi } = useDateTime()
-  const [sendingAdjustment, setSendingAdjustment] = useState(false)
-
   const getDateKey = (value) => formatDateForApi(value) || 'invalid'
 
   const formatClockedTime = (value) => {
@@ -136,48 +132,6 @@ export function TimeTrackingCard({ onOpenHistory }) {
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
 
-  const handleAdjustment = async (form, closeModal, resetForm) => {
-    setSendingAdjustment(true)
-    const timeEntryId =
-      form.timeEntryId ||
-      form.time_entry_id ||
-      form.entry?.id ||
-      form.entry?.uuid ||
-      entries?.[0]?.id ||
-      entries?.[0]?.uuid ||
-      null
-    if (!timeEntryId) {
-      toast({
-        title: t('toast.adjustmentError.title'),
-        description: t('toast.adjustmentError.description'),
-        variant: 'error',
-      })
-      setSendingAdjustment(false)
-      return
-    }
-    try {
-      await requestAdjustment({
-        ...form,
-        timeEntryId,
-      })
-      toast({
-        title: t('toast.adjustmentSuccess.title'),
-        description: t('toast.adjustmentSuccess.description'),
-        variant: 'success',
-      })
-      closeModal()
-      resetForm()
-    } catch (error) {
-      toast({
-        title: t('toast.adjustmentError.title'),
-        description: error.response?.data?.message || t('toast.adjustmentError.description'),
-        variant: 'error',
-      })
-    } finally {
-      setSendingAdjustment(false)
-    }
-  }
-
   const handleViewFullHistory = () => {
     if (onOpenHistory) {
       onOpenHistory()
@@ -259,7 +213,7 @@ export function TimeTrackingCard({ onOpenHistory }) {
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-end">
-        <EntryAdjustmentModal
+        <RequestAdjustmentButton
           entry={latestAdjustableEntry}
           entries={entries}
           defaultDate={
@@ -275,17 +229,8 @@ export function TimeTrackingCard({ onOpenHistory }) {
                 )
               : new Date()
           }
-          onSubmit={handleAdjustment}
-          isSubmitting={sendingAdjustment}
-          trigger={
-            <Button
-              type="button"
-              className="h-10 w-full justify-center rounded-full px-4 text-[11px] font-semibold sm:w-auto sm:text-xs"
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              {t('dashboardPage.timeTracking.actions.adjust')}
-            </Button>
-          }
+          label={t('dashboardPage.timeTracking.actions.adjust')}
+          className="h-10 w-full justify-center rounded-full px-4 text-[11px] font-semibold sm:w-auto sm:text-xs"
         />
       </div>
     </section>
