@@ -129,6 +129,53 @@ export async function listTeamEntries({
   return { data: items.map((entry, index) => normalizeTeamEntry(entry, index)), meta }
 }
 
+const parseOvertimeMinutes = (payload) => {
+  const getMinutes = (source) => {
+    if (source === null || source === undefined) return null
+    if (typeof source === 'number') return Number.isFinite(source) ? source : null
+    if (typeof source === 'string') {
+      const parsed = Number(source)
+      return Number.isFinite(parsed) ? parsed : null
+    }
+    if (typeof source !== 'object') return null
+    for (const key of ['balanceMinutes', 'balance_minutes', 'totalMinutes', 'total_minutes', 'minutesBalance', 'minutes_balance', 'minutes']) {
+      const parsed = Number(source[key])
+      if (Number.isFinite(parsed)) return parsed
+    }
+    for (const key of ['balanceSeconds', 'balance_seconds', 'totalSeconds', 'total_seconds', 'seconds']) {
+      const parsed = Number(source[key])
+      if (Number.isFinite(parsed)) return parsed / 60
+    }
+    for (const nested of [source.summary, source.balance, source.totals]) {
+      const r = getMinutes(nested)
+      if (r !== null) return r
+    }
+    if (Array.isArray(source.days)) {
+      const total = source.days.reduce((acc, d) => acc + (getMinutes(d) ?? 0), 0)
+      if (Number.isFinite(total)) return total
+    }
+    if (Array.isArray(source)) {
+      const total = source.reduce((acc, item) => acc + (getMinutes(item) ?? 0), 0)
+      if (Number.isFinite(total)) return total
+    }
+    return null
+  }
+  const minutes = getMinutes(payload)
+  return { ...(typeof payload === 'object' && !Array.isArray(payload) ? payload : {}), balanceMinutes: minutes }
+}
+
+export async function getTeamOvertimeBalance(employeeId, { from = undefined, to = undefined, isAdmin = false } = {}) {
+  if (!employeeId) throw new Error('employeeId is required')
+  const params = {}
+  if (from) params.from = from
+  if (to) params.to = to
+  const path = isAdmin
+    ? `/v1/employees/${employeeId}/overtime`
+    : `/v1/team/${employeeId}/overtime`
+  const { data } = await api.get(path, { params })
+  return parseOvertimeMinutes(data?.data ?? data ?? {})
+}
+
 export async function deleteTimeEntry(timeEntryId) {
   if (!timeEntryId) return null
   const { data } = await api.delete(`/v1/admin/time-entries/${timeEntryId}`, {

@@ -2041,6 +2041,7 @@ const en = {
         title: 'Summary',
         value: 'Value',
         entries: 'Total punches',
+        overtime: 'Overtime',
         days: 'Days with records',
         hours: 'Total hours',
         hoursOnly: '{{count}} hours',

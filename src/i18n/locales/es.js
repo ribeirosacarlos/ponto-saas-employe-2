@@ -2133,6 +2133,7 @@ const es = {
         title: 'Resumen',
         value: 'Valor',
         entries: 'Total de marcaciones',
+        overtime: 'Horas extras',
         days: 'Días con registros',
         hours: 'Horas totales',
         hoursOnly: '{{count}} horas',

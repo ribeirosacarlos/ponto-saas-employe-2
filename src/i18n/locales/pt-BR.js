@@ -2121,6 +2121,7 @@ const ptBR = {
         title: 'Resumo',
         value: 'Valor',
         entries: 'Total de batidas',
+        overtime: 'Horas extras',
         days: 'Dias com registros',
         hours: 'Horas totais',
         hoursOnly: '{{count}} horas',
