@@ -410,7 +410,7 @@ export default function CloseTimesheetPage() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | number | null>(null)
   const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
-  const [overtimeData, setOvertimeData] = useState<Map<string, number | null>>(new Map())
+  const [overtimeData, setOvertimeData] = useState<Map<string, { hhmm: string | null; minutes: number | null }>>(new Map())
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
   const [employeeComboboxOpenUpward, setEmployeeComboboxOpenUpward] = useState(false)
@@ -517,7 +517,7 @@ export default function CloseTimesheetPage() {
     setOvertimeLoading(true)
 
     const fetchAll = async () => {
-      const results = new Map<string, number | null>()
+      const results = new Map<string, { hhmm: string | null; minutes: number | null }>()
       await Promise.all(
         appliedFilters.employeeIds.map(async (empId) => {
           try {
@@ -526,9 +526,12 @@ export default function CloseTimesheetPage() {
               to: appliedFilters.to,
               isAdmin,
             })
-            results.set(String(empId), balance?.balanceMinutes ?? null)
+            results.set(String(empId), {
+              hhmm: balance?.totals?.balance_hhmm ?? null,
+              minutes: balance?.balanceMinutes ?? null,
+            })
           } catch {
-            results.set(String(empId), null)
+            results.set(String(empId), { hhmm: null, minutes: null })
           }
         }),
       )
@@ -1728,7 +1731,16 @@ export default function CloseTimesheetPage() {
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <TrendingUp className="h-3 w-3 text-primary" />
-                        <span className="text-lg font-semibold leading-none">{formatMinutes(summary.totalOvertimeMinutes)}</span>
+                        <span className="text-lg font-semibold leading-none">
+                          {overtimeLoading
+                            ? '...'
+                            : (() => {
+                                const d = appliedFilters.employeeIds[0]
+                                  ? overtimeData.get(String(appliedFilters.employeeIds[0]))
+                                  : undefined
+                                return d?.hhmm ?? formatMinutes(d?.minutes ?? undefined)
+                              })()}
+                        </span>
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
@@ -1838,11 +1850,15 @@ export default function CloseTimesheetPage() {
                                     defaultValue: '{{count}} horas',
                                   })}
                                 </span>
-                                {section.summary.totalOvertimeMinutes > 0 && (
-                                  <span className="font-medium text-primary">
-                                    +{formatMinutes(section.summary.totalOvertimeMinutes)} {t('closeTimesheetPage.summary.overtime')}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const d = overtimeData.get(String(section.employeeId))
+                                  const label = d?.hhmm ?? (d?.minutes != null ? formatMinutes(d.minutes) : null)
+                                  return label ? (
+                                    <span className="font-medium text-primary">
+                                      {label} {t('closeTimesheetPage.summary.overtime')}
+                                    </span>
+                                  ) : null
+                                })()}
                               </div>
                             </div>
                             {renderEntriesTable({

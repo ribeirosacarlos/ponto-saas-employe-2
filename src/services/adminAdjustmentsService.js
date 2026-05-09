@@ -170,7 +170,7 @@ export async function getTeamOvertimeBalance(employeeId, { from = undefined, to 
   if (from) params.from = from
   if (to) params.to = to
   const path = isAdmin
-    ? `/v1/employees/${employeeId}/overtime`
+    ? `/v1/employee/${employeeId}/overtime`
     : `/v1/team/${employeeId}/overtime`
   const { data } = await api.get(path, { params })
   return parseOvertimeMinutes(data?.data ?? data ?? {})

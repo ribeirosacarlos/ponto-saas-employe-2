@@ -68,6 +68,7 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [plannedBreakWindow, setPlannedBreakWindow] = useState({ start: null, end: null })
   const [plannedLoading, setPlannedLoading] = useState(false)
   const [overtimeMinutes, setOvertimeMinutes] = useState(null)
+  const [overtimeHhmm, setOvertimeHhmm] = useState(null)
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [recentEntries, setRecentEntries] = useState([])
   const [todayPendingAdjustments, setTodayPendingAdjustments] = useState([])
@@ -620,6 +621,7 @@ export default function TimeClock({ onContinueToDashboard }) {
       if (!token || !employeeId) {
         if (active) {
           setOvertimeMinutes(null)
+          setOvertimeHhmm(null)
           setOvertimeLoading(false)
         }
         return
@@ -681,10 +683,12 @@ export default function TimeClock({ onContinueToDashboard }) {
 
         if (!active) return
         setOvertimeMinutes(minutes)
+        setOvertimeHhmm(balance?.totals?.balance_hhmm ?? null)
       } catch (error) {
         console.error('[TimeClock] Failed to load overtime balance', error)
         if (!active) return
         setOvertimeMinutes(null)
+        setOvertimeHhmm(null)
       } finally {
         if (active) setOvertimeLoading(false)
       }
@@ -723,8 +727,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   )
 
   const overtimeLabel = useMemo(
-    () => (overtimeLoading ? t('common.loading', 'Carregando...') : formatBalanceToLabel(overtimeMinutes)),
-    [formatBalanceToLabel, overtimeLoading, overtimeMinutes, t],
+    () => (overtimeLoading ? t('common.loading', 'Carregando...') : (overtimeHhmm ?? formatBalanceToLabel(overtimeMinutes))),
+    [formatBalanceToLabel, overtimeHhmm, overtimeLoading, overtimeMinutes, t],
   )
 
   const overtimeTone = useMemo(
