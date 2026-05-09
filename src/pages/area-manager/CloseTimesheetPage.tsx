@@ -20,8 +20,8 @@ import {
   ChevronDown,
   Clock3,
   Download,
-  FileText,
   Filter,
+  TrendingUp,
   MapPin,
   Monitor,
   Pencil,
@@ -51,7 +51,7 @@ import { useToast } from '../../components/ui/use-toast'
 import { canRenderCard, getCapabilitiesFromRoles } from '../../auth/acl'
 import { fetchAdminLocationSettings } from '../../services/adminLocationSettingsService'
 import { listEmployees } from '../../services/modules/employees'
-import { deleteTimeEntry, listTeamEntries } from '../../services/adminAdjustmentsService'
+import { deleteTimeEntry, getTeamOvertimeBalance, listTeamEntries } from '../../services/adminAdjustmentsService'
 import { cn } from '../../lib/utils'
 import { PAGE_PATHS } from '../../routes/config'
 import { useAuthStore } from '../../store/useAuth'
@@ -410,6 +410,8 @@ export default function CloseTimesheetPage() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | number | null>(null)
   const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
+  const [overtimeData, setOvertimeData] = useState<Map<string, number | null>>(new Map())
+  const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
   const [employeeComboboxOpenUpward, setEmployeeComboboxOpenUpward] = useState(false)
   const employeeComboboxRef = useRef<HTMLDivElement | null>(null)
@@ -502,6 +504,44 @@ export default function CloseTimesheetPage() {
       active = false
     }
   }, [])
+
+  const isAdmin = useMemo(
+    () => (roles as string[]).some((r) => ['admin', 'super_admin', 'manager'].includes(r)),
+    [roles],
+  )
+
+  useEffect(() => {
+    if (!hasSearched || !appliedFilters.employeeIds.length) return
+
+    let active = true
+    setOvertimeLoading(true)
+
+    const fetchAll = async () => {
+      const results = new Map<string, number | null>()
+      await Promise.all(
+        appliedFilters.employeeIds.map(async (empId) => {
+          try {
+            const balance = await getTeamOvertimeBalance(empId, {
+              from: appliedFilters.from,
+              to: appliedFilters.to,
+              isAdmin,
+            })
+            results.set(String(empId), balance?.balanceMinutes ?? null)
+          } catch {
+            results.set(String(empId), null)
+          }
+        }),
+      )
+      if (!active) return
+      setOvertimeData(results)
+      setOvertimeLoading(false)
+    }
+
+    fetchAll()
+    return () => {
+      active = false
+    }
+  }, [hasSearched, appliedFilters, isAdmin])
 
   const employeesById = useMemo(
     () => new Map(employees.map((emp) => [String(emp.id), emp])),
@@ -1681,14 +1721,14 @@ export default function CloseTimesheetPage() {
 
               {hasSearched ? (
                 <div className="space-y-4 border-t border-border/70 pt-5">
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
                       <p className="text-[11px] leading-none text-muted-foreground">
-                        {t('closeTimesheetPage.summary.entries')}
+                        {t('closeTimesheetPage.summary.overtime')}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <FileText className="h-3 w-3 text-primary" />
-                        <span className="text-lg font-semibold leading-none">{summary.totalEntries}</span>
+                        <TrendingUp className="h-3 w-3 text-primary" />
+                        <span className="text-lg font-semibold leading-none">{formatMinutes(summary.totalOvertimeMinutes)}</span>
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
@@ -1696,15 +1736,6 @@ export default function CloseTimesheetPage() {
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <CalendarRange className="h-3 w-3 text-primary" />
                         <span className="text-lg font-semibold leading-none">{summary.daysWithRecords}</span>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
-                      <p className="text-[11px] leading-none text-muted-foreground">
-                        {t('closeTimesheetPage.summary.hours')}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <Timer className="h-3 w-3 text-primary" />
-                        <span className="text-lg font-semibold leading-none">{formatMinutes(summary.totalMinutes)}</span>
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
@@ -1799,9 +1830,6 @@ export default function CloseTimesheetPage() {
                               </div>
                               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                                 <span>
-                                  {section.summary.totalEntries} {t('closeTimesheetPage.summary.entries')}
-                                </span>
-                                <span>
                                   {section.summary.daysWithRecords} {t('closeTimesheetPage.summary.days')}
                                 </span>
                                 <span>
@@ -1810,6 +1838,11 @@ export default function CloseTimesheetPage() {
                                     defaultValue: '{{count}} horas',
                                   })}
                                 </span>
+                                {section.summary.totalOvertimeMinutes > 0 && (
+                                  <span className="font-medium text-primary">
+                                    +{formatMinutes(section.summary.totalOvertimeMinutes)} {t('closeTimesheetPage.summary.overtime')}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             {renderEntriesTable({
