@@ -27,6 +27,7 @@ import AuditLogs from './pages/AuditLogs.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
 import AdminAreas from './pages/AdminAreas.jsx'
 import AdminDocuments from './pages/AdminDocuments.jsx'
+import AdminHolidays from './pages/AdminHolidays.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
 import SubscribePage from './pages/SubscribePage.jsx'
@@ -550,6 +551,8 @@ export default function App() {
         return <EmployeeAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminDocuments':
         return <AdminDocuments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminHolidays':
+        return <AdminHolidays sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminShifts':
         return <AdminShifts sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminAreas':

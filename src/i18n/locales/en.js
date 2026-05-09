@@ -435,6 +435,7 @@ const en = {
         adjustments: 'Adjustments',
         closeTimesheet: 'Close timesheet',
         companyTimezone: 'Company timezone',
+        holidays: 'Holidays',
       },
     },
     adminOnboarding: {
@@ -2146,7 +2147,69 @@ const en = {
         unauthorized: 'Invalid credentials. Please check and try again.',
       },
     },
-
+    holidaysPage: {
+      tag: 'Holidays',
+      title: 'Holiday Management',
+      subtitle: 'Create and manage company holidays.',
+      actions: {
+        refresh: 'Refresh',
+        create: 'New holiday',
+        edit: 'Edit',
+        delete: 'Delete',
+      },
+      filters: {
+        searchPlaceholder: 'Search by name...',
+        startDate: 'Start date',
+        endDate: 'End date',
+      },
+      scopes: {
+        all: 'All scopes',
+        national: 'National',
+        regional: 'Regional',
+        local: 'Local',
+        company: 'Company',
+      },
+      table: {
+        date: 'Date',
+        name: 'Name',
+        scope: 'Scope',
+        actions: 'Actions',
+      },
+      listCount: '{{count}} holiday(s)',
+      form: {
+        createTitle: 'New holiday',
+        editTitle: 'Edit holiday',
+        createDescription: 'Fill in the details to create a new holiday.',
+        editDescription: 'Update the holiday details.',
+        dateLabel: 'Date',
+        nameLabel: 'Name',
+        namePlaceholder: 'e.g. Labor Day',
+        scopeLabel: 'Scope',
+        submit: 'Save',
+        saving: 'Saving...',
+      },
+      delete: {
+        title: 'Delete holiday',
+        description: 'Are you sure you want to delete "{{name}}"? This action cannot be undone.',
+        confirm: 'Delete',
+        deleting: 'Deleting...',
+      },
+      states: {
+        empty: 'No holidays found.',
+        noPermission: 'You do not have permission to access this page.',
+        loadError: 'Failed to load holidays.',
+      },
+      toasts: {
+        loadErrorTitle: 'Load error',
+        createSuccess: 'Holiday created successfully.',
+        updateSuccess: 'Holiday updated successfully.',
+        deleteSuccess: 'Holiday deleted successfully.',
+        saveErrorTitle: 'Save error',
+        saveError: 'Could not save the holiday.',
+        deleteErrorTitle: 'Delete error',
+        deleteError: 'Could not delete the holiday.',
+      },
+    },
   },
 }
 

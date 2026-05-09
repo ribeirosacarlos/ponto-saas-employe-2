@@ -27,6 +27,10 @@ export const ROUTES = {
     path: '/admin/documents',
     guard: { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] },
   },
+  adminHolidays: {
+    path: '/admin/holidays',
+    guard: { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] },
+  },
   adminCompanyTimezone: {
     path: '/admin/company/timezone',
     guard: { anyOf: ['admin', 'super_admin'] },
