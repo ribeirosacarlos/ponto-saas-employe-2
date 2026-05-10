@@ -3,7 +3,7 @@ import { api } from './http/api'
 const normalizeHoliday = (item = {}, index = 0) => ({
   ...item,
   id: item.id ?? `holiday-${index}`,
-  date: item.date ?? '',
+  date: typeof item.date === 'string' ? item.date.slice(0, 10) : '',
   name: item.name ?? '',
   scope: (item.scope ?? 'national').toLowerCase(),
   companyId: item.company_id ?? item.companyId ?? '',

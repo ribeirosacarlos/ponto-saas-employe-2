@@ -61,6 +61,46 @@ const NAV_GROUP_ORDER = {
   superAdmin: 2,
 }
 const ADMIN_LAST_ITEM_IDS = new Set(['settings'])
+const APP_TITLE_FALLBACK = 'Jornafy'
+const NAV_PAGE_TITLE_KEYS = NAV_ITEMS.reduce((acc, item) => {
+  if (item.page && !acc[item.page]) {
+    acc[item.page] = item.labelKey
+  }
+  return acc
+}, {})
+const PAGE_TITLE_CONFIG = {
+  login: { key: 'login.title', fallback: 'Entrar na conta' },
+  activateAccount: { key: 'activateAccount.title', fallback: 'Ativar conta' },
+  resetPassword: { key: 'resetPassword.title', fallback: 'Recuperar senha' },
+  forgotPassword: { key: 'forgotPassword.title', fallback: 'Esqueci minha senha' },
+  companyMissing: { key: 'access.companyMissing.title', fallback: 'Voce precisa vincular uma empresa' },
+  subscribe: { key: 'access.subscription.title', fallback: 'Ative sua assinatura para continuar' },
+  forbidden: { key: 'access.forbidden.title', fallback: 'Acesso negado' },
+  timeClock: { key: 'timeClock.title', fallback: 'Registro de ponto' },
+  dashboard: { key: 'dashboardPage.title', fallback: 'Dashboard' },
+  history: { key: 'historyPage.title', fallback: 'Historico de marcacoes' },
+  documents: { key: 'documentsPage.title', fallback: 'Documentacao do colaborador' },
+  vacations: { key: 'vacationsPage.title', fallback: 'Ferias e ausencias' },
+  adminVacations: { key: 'vacationsPage.adminTitle', fallback: 'Gestao de ferias e ausencias' },
+  adminAdjustments: { key: 'adminAdjustmentsPage.title', fallback: 'Ajustes de ponto' },
+  employeeAdjustments: { key: 'employeeAdjustmentsPage.title', fallback: 'Solicitacoes de ajustes' },
+  adminDocuments: { key: 'documentsPage.admin.title', fallback: 'Documentos da equipe' },
+  adminHolidays: { key: 'holidaysPage.title', fallback: 'Gestao de feriados' },
+  adminShifts: { key: 'adminShiftsPage.title', fallback: 'Jornadas de trabalho' },
+  adminAreas: { key: 'adminAreasPage.title', fallback: 'Areas' },
+  adminAnnouncements: { key: 'announcementsPage.title', fallback: 'Comunicados' },
+  adminCompanyTimezone: { key: 'adminTimezonePage.title', fallback: 'Fuso horario da empresa' },
+  closeTimesheet: { key: NAV_PAGE_TITLE_KEYS.closeTimesheet, fallback: 'Folha de pontos' },
+  auditLogs: { key: 'sidebar.items.auditLogs', fallback: 'Auditoria' },
+  platformBillingPlans: { key: 'platformBillingPlans.title', fallback: 'Planos de cobranca' },
+  platformCompanies: { key: 'platformCompanies.title', fallback: 'Empresas' },
+  superAdminDashboard: { key: NAV_PAGE_TITLE_KEYS.superAdminDashboard, fallback: 'Dashboard' },
+  superAdminCompanies: { key: NAV_PAGE_TITLE_KEYS.superAdminCompanies, fallback: 'Empresas' },
+  superAdminCompanyDetails: { key: 'superAdmin.companyDetails.title', fallback: 'Detalhes da empresa' },
+  announcements: { key: 'announcementsPage.title', fallback: 'Comunicados' },
+  equipo: { key: 'equipoPage.title', fallback: 'Equipe' },
+  settings: { key: 'settingsPage.title', fallback: 'Configuracoes' },
+}
 
 const getInitialSidebarCollapsed = () => {
   if (typeof window === 'undefined') return false
@@ -367,6 +407,19 @@ export default function App() {
       setSidebarOpen(false)
     }
   }, [currentPage, isMobile])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const brandTitle = t('common.brand', APP_TITLE_FALLBACK)
+    const auditTitle = isSuperAdmin ? 'Auditoria da plataforma' : 'Auditoria da empresa'
+    const titleConfig = currentPage === 'auditLogs' ? { fallback: auditTitle } : PAGE_TITLE_CONFIG[currentPage]
+    const titleKey = titleConfig ? titleConfig.key : NAV_PAGE_TITLE_KEYS[currentPage]
+    const fallbackTitle = titleConfig?.fallback || currentPage
+    const translatedTitle = titleKey ? t(titleKey, fallbackTitle) : fallbackTitle
+
+    document.title = translatedTitle ? `${translatedTitle} - ${brandTitle}` : brandTitle
+  }, [currentPage, isSuperAdmin, t])
 
 
   useEffect(() => {

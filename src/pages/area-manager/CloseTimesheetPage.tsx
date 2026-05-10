@@ -102,11 +102,6 @@ const formatMinutes = (minutes?: number) => {
   return `${hours}:${mins}`
 }
 
-const formatWholeHours = (minutes?: number) => {
-  const total = Number.isFinite(minutes) ? Number(minutes) : 0
-  return Math.floor(total / 60)
-}
-
 const computeDayMinutes = (items: any[]): number => {
   const sorted = [...items].sort((a, b) => {
     const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
@@ -1722,45 +1717,47 @@ export default function CloseTimesheetPage() {
 
               {hasSearched ? (
                 <div className="space-y-4 border-t border-border/70 pt-5">
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
-                      <p className="text-[11px] leading-none text-muted-foreground">
-                        {t('closeTimesheetPage.summary.overtime')}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <TrendingUp className="h-3 w-3 text-primary" />
-                        <span className="text-lg font-semibold leading-none">
-                          {overtimeLoading
-                            ? '...'
-                            : (() => {
-                                const d = appliedFilters.employeeIds[0]
-                                  ? overtimeData.get(String(appliedFilters.employeeIds[0]))
-                                  : undefined
-                                return d?.hhmm ?? formatMinutes(d?.minutes ?? undefined)
-                              })()}
-                        </span>
+                  {!hasAppliedMultipleEmployees ? (
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-[11px] leading-none text-muted-foreground">
+                          {t('closeTimesheetPage.summary.overtime')}
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <TrendingUp className="h-3 w-3 text-primary" />
+                          <span className="text-lg font-semibold leading-none">
+                            {overtimeLoading
+                              ? '...'
+                              : (() => {
+                                  const d = appliedFilters.employeeIds[0]
+                                    ? overtimeData.get(String(appliedFilters.employeeIds[0]))
+                                    : undefined
+                                  return d?.hhmm ?? formatMinutes(d?.minutes ?? undefined)
+                                })()}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
-                      <p className="text-[11px] leading-none text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <CalendarRange className="h-3 w-3 text-primary" />
-                        <span className="text-lg font-semibold leading-none">{summary.daysWithRecords}</span>
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-[11px] leading-none text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <CalendarRange className="h-3 w-3 text-primary" />
+                          <span className="text-lg font-semibold leading-none">{summary.daysWithRecords}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
-                      <p className="text-[11px] leading-none text-muted-foreground">
-                        {t('closeTimesheetPage.summary.inconsistencies')}
-                      </p>
-                      <div className="mt-1.5 flex items-start gap-1.5 text-amber-600 dark:text-amber-100">
-                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                        <div className="text-[11px] leading-4">
-                          <div>{t('closeTimesheetPage.summary.pendingCount', { count: summary.pendingCount })}</div>
-                          <div>{t('closeTimesheetPage.summary.duplicateCount', { count: summary.duplicateCount })}</div>
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-[11px] leading-none text-muted-foreground">
+                          {t('closeTimesheetPage.summary.inconsistencies')}
+                        </p>
+                        <div className="mt-1.5 flex items-start gap-1.5 text-amber-600 dark:text-amber-100">
+                          <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                          <div className="text-[11px] leading-4">
+                            <div>{t('closeTimesheetPage.summary.pendingCount', { count: summary.pendingCount })}</div>
+                            <div>{t('closeTimesheetPage.summary.duplicateCount', { count: summary.duplicateCount })}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -1842,21 +1839,27 @@ export default function CloseTimesheetPage() {
                                 <span>
                                   {section.summary.daysWithRecords} {t('closeTimesheetPage.summary.days')}
                                 </span>
-                                <span>
-                                  {t('closeTimesheetPage.summary.hoursOnly', {
-                                    count: formatWholeHours(section.summary.totalMinutes),
-                                    defaultValue: '{{count}} horas',
-                                  })}
+                                <span className="font-medium text-primary">
+                                  {formatMinutes(section.summary.totalMinutes)}{' '}
+                                  {t('closeTimesheetPage.table.dailyTotal')}
                                 </span>
-                                {(() => {
-                                  const d = overtimeData.get(String(section.employeeId))
-                                  const label = d?.hhmm ?? (d?.minutes != null ? formatMinutes(d.minutes) : null)
-                                  return label ? (
-                                    <span className="font-medium text-primary">
-                                      {label} {t('closeTimesheetPage.summary.overtime')}
-                                    </span>
-                                  ) : null
-                                })()}
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-1',
+                                    section.summary.pendingCount + section.summary.duplicateCount > 0
+                                      ? 'font-medium text-amber-600 dark:text-amber-100'
+                                      : undefined,
+                                  )}
+                                  title={`${t('closeTimesheetPage.summary.pendingCount', {
+                                    count: section.summary.pendingCount,
+                                  })} • ${t('closeTimesheetPage.summary.duplicateCount', {
+                                    count: section.summary.duplicateCount,
+                                  })}`}
+                                >
+                                  <AlertCircle className="h-3 w-3 shrink-0" />
+                                  {section.summary.pendingCount + section.summary.duplicateCount}{' '}
+                                  {t('closeTimesheetPage.summary.inconsistencies')}
+                                </span>
                               </div>
                             </div>
                             {renderEntriesTable({

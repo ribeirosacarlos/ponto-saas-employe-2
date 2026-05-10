@@ -44,17 +44,22 @@ const EMPTY_FORM = { date: '', name: '', scope: 'national' }
 
 const formatDate = (value, locale = 'pt-BR') => {
   if (!value) return '-'
-  const [year, month, day] = value.split('-').map(Number)
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number)
   const date = new Date(year, month - 1, day)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function ScopeBadge({ scope }) {
+function ScopeBadge({ scope, label }) {
   const tone = SCOPE_TONES[scope] || 'border-border/60 text-foreground'
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold', tone)}>
-      {scope}
+    <span
+      className={cn(
+        'inline-flex w-fit items-center rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap',
+        tone,
+      )}
+    >
+      {label}
     </span>
   )
 }
@@ -79,6 +84,11 @@ export default function AdminHolidays() {
 
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+
+  const getScopeLabel = (scope) => {
+    const labelKey = SCOPE_OPTIONS.find((option) => option.value === scope)?.labelKey
+    return labelKey ? t(labelKey) : scope
+  }
 
   const fetchHolidays = async (overrides = {}) => {
     if (!hasAccess) return
@@ -267,18 +277,19 @@ export default function AdminHolidays() {
           {/* Desktop table */}
           <div className="hidden md:block overflow-hidden rounded-[24px] border border-border/70 bg-card/95 shadow-[0_30px_90px_-60px_rgba(62,82,152,0.55)]">
             <div className="w-full overflow-x-auto">
-              <div className="min-w-[600px]">
-                <div className="grid grid-cols-[1fr_2fr_1fr_120px] gap-3 rounded-t-3xl border-b border-border/70 bg-background/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  <span>{t('holidaysPage.table.date')}</span>
-                  <span>{t('holidaysPage.table.name')}</span>
-                  <span>{t('holidaysPage.table.scope')}</span>
-                  <span className="text-right">{t('holidaysPage.table.actions')}</span>
+              <div className="min-w-[780px]">
+                <div className="grid grid-cols-[72px_160px_minmax(260px,1.8fr)_160px_104px] gap-4 rounded-t-3xl border-b border-border/70 bg-background/80 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="text-center">#</span>
+                  <span className="text-center">{t('holidaysPage.table.date')}</span>
+                  <span className="text-center">{t('holidaysPage.table.name')}</span>
+                  <span className="text-center">{t('holidaysPage.table.scope')}</span>
+                  <span className="text-center">{t('holidaysPage.table.actions')}</span>
                 </div>
                 <div className="divide-y divide-border/60">
                   {loading
                     ? skeletonRows.map((key) => (
-                        <div key={key} className="grid grid-cols-[1fr_2fr_1fr_120px] gap-3 px-4 py-4">
-                          {[0, 1, 2, 3].map((i) => (
+                        <div key={key} className="grid grid-cols-[72px_160px_minmax(260px,1.8fr)_160px_104px] gap-4 px-5 py-4">
+                          {[0, 1, 2, 3, 4].map((i) => (
                             <div key={i} className="h-4 animate-pulse rounded bg-muted/50" />
                           ))}
                         </div>
@@ -292,17 +303,22 @@ export default function AdminHolidays() {
                   ) : null}
 
                   {!loading &&
-                    holidays.map((holiday) => (
+                    holidays.map((holiday, index) => (
                       <div
                         key={holiday.id}
-                        className="grid grid-cols-[1fr_2fr_1fr_120px] items-center gap-3 px-4 py-4 text-sm"
+                        className="grid grid-cols-[72px_160px_minmax(260px,1.8fr)_160px_104px] items-center gap-4 px-5 py-4 text-sm"
                       >
-                        <span className="font-medium tabular-nums">
+                        <span className="text-center font-medium tabular-nums text-muted-foreground">
+                          {(Math.max((meta?.currentPage ?? 1) - 1, 0) * (meta?.perPage ?? holidays.length ?? 1)) + index + 1}
+                        </span>
+                        <span className="text-center font-medium tabular-nums">
                           {formatDate(holiday.date, i18n.language)}
                         </span>
-                        <span className="truncate font-semibold">{holiday.name}</span>
-                        <ScopeBadge scope={holiday.scope} />
-                        <div className="flex justify-end gap-2">
+                        <span className="min-w-0 truncate text-center font-semibold">{holiday.name}</span>
+                        <div className="flex justify-center">
+                          <ScopeBadge scope={holiday.scope} label={getScopeLabel(holiday.scope)} />
+                        </div>
+                        <div className="flex justify-center gap-2">
                           <button
                             type="button"
                             className={actionIconButtonClass}
@@ -349,7 +365,7 @@ export default function AdminHolidays() {
                         {formatDate(holiday.date, i18n.language)}
                       </p>
                     </div>
-                    <ScopeBadge scope={holiday.scope} />
+                    <ScopeBadge scope={holiday.scope} label={getScopeLabel(holiday.scope)} />
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={() => openEdit(holiday)}>
