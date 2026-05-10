@@ -21,6 +21,7 @@ import {
   Clock3,
   Download,
   Filter,
+  TrendingDown,
   TrendingUp,
   MapPin,
   Monitor,
@@ -58,8 +59,6 @@ import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 
-const PAGE_SIZE = 30
-const EXPORT_PAGE_SIZE = 200
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
 
@@ -100,6 +99,44 @@ const formatMinutes = (minutes?: number) => {
   const hours = String(Math.floor(total / 60)).padStart(2, '0')
   const mins = String(Math.max(0, Math.round(total % 60))).padStart(2, '0')
   return `${hours}:${mins}`
+}
+
+const formatBalanceMinutes = (minutes?: number | null) => {
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
+  const rounded = Math.round(minutes)
+  const sign = rounded > 0 ? '+' : rounded < 0 ? '-' : ''
+  const absolute = Math.abs(rounded)
+  const hours = String(Math.floor(absolute / 60)).padStart(2, '0')
+  const mins = String(absolute % 60).padStart(2, '0')
+  return `${sign}${hours}:${mins}`
+}
+
+const getBalanceToneClass = (minutes?: number | null) => {
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return 'text-muted-foreground'
+  if (minutes > 0) return 'text-emerald-600 dark:text-emerald-300'
+  if (minutes < 0) return 'text-rose-600 dark:text-rose-300'
+  return 'text-foreground'
+}
+
+const getBalanceTrend = (minutes?: number | null) => {
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) {
+    return {
+      icon: TrendingUp,
+      className: 'text-muted-foreground',
+    }
+  }
+
+  if (minutes < 0) {
+    return {
+      icon: TrendingDown,
+      className: 'text-rose-500 dark:text-rose-300',
+    }
+  }
+
+  return {
+    icon: TrendingUp,
+    className: minutes > 0 ? 'text-emerald-500 dark:text-emerald-300' : 'text-foreground',
+  }
 }
 
 const computeDayMinutes = (items: any[]): number => {
@@ -395,10 +432,8 @@ export default function CloseTimesheetPage() {
   })
 
   const [entries, setEntries] = useState<any[]>([])
-  const [meta, setMeta] = useState<any | null>(null)
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [entriesError, setEntriesError] = useState('')
-  const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState<'standard' | ''>('')
   const [locationEntry, setLocationEntry] = useState<any | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
@@ -565,6 +600,23 @@ export default function CloseTimesheetPage() {
   const hasMultipleEmployeesSelected = filters.employeeIds.length > 1
   const hasAppliedMultipleEmployees = appliedFilters.employeeIds.length > 1
 
+  const getOvertimeDisplay = useCallback(
+    (employeeId?: string | number | null) => {
+      const overtime = employeeId ? overtimeData.get(String(employeeId)) : undefined
+      const minutes = overtime?.minutes ?? null
+      const trend = getBalanceTrend(minutes)
+
+      return {
+        minutes,
+        label: overtime?.hhmm ?? formatBalanceMinutes(minutes),
+        toneClass: getBalanceToneClass(minutes),
+        TrendIcon: trend.icon,
+        trendClassName: trend.className,
+      }
+    },
+    [overtimeData],
+  )
+
   const filteredEmployees = useMemo(() => {
     if (!debouncedSearch) return employees
     const query = debouncedSearch.toLowerCase()
@@ -693,37 +745,13 @@ export default function CloseTimesheetPage() {
       from: string
       to: string
     }) => {
-      const params = {
+      const { data } = await listTeamEntries({
         userId: employeeId,
         dateFrom: formatISO(startOfDay(parseISO(from))),
         dateTo: formatISO(endOfDay(parseISO(to))),
-        perPage: EXPORT_PAGE_SIZE,
-      }
+      })
 
-      let pageToLoad = 1
-      let keepFetching = true
-      const allEntries: any[] = []
-
-      while (keepFetching) {
-        const { data, meta: responseMeta } = await listTeamEntries({ ...params, page: pageToLoad })
-        allEntries.push(...(data || []))
-
-        const lastPage = responseMeta?.lastPage || responseMeta?.last_page
-        const total = responseMeta?.total
-        const perPage = responseMeta?.perPage || responseMeta?.per_page || params.perPage
-
-        if (lastPage) {
-          keepFetching = pageToLoad < lastPage
-        } else if (total) {
-          keepFetching = allEntries.length < total
-        } else {
-          keepFetching = (data?.length || 0) >= perPage
-        }
-
-        pageToLoad += 1
-      }
-
-      return allEntries
+      return data || []
     },
     [],
   )
@@ -816,7 +844,7 @@ export default function CloseTimesheetPage() {
   ])
 
   const handleSearch = useCallback(
-    async (pageToLoad = 1) => {
+    async () => {
       if (!canSearch) return
       setHasSearched(true)
       setLoadingEntries(true)
@@ -838,13 +866,6 @@ export default function CloseTimesheetPage() {
             })
 
           setEntries(mergedEntries)
-          setMeta({
-            currentPage: 1,
-            perPage: mergedEntries.length || PAGE_SIZE,
-            total: mergedEntries.length,
-            lastPage: 1,
-          })
-          setPage(1)
           setAppliedFilters({
             employeeIds: [...employeeIds],
             from,
@@ -857,14 +878,10 @@ export default function CloseTimesheetPage() {
           userId: employeeIds[0],
           dateFrom: formatISO(startOfDay(parseISO(from))),
           dateTo: formatISO(endOfDay(parseISO(to))),
-          page: pageToLoad,
-          perPage: PAGE_SIZE,
         }
 
-        const { data, meta: responseMeta } = await listTeamEntries(params)
+        const { data } = await listTeamEntries(params)
         setEntries(data || [])
-        setMeta(responseMeta || null)
-        setPage(responseMeta?.currentPage || pageToLoad || 1)
         setAppliedFilters({
           employeeIds: [...employeeIds],
           from,
@@ -911,8 +928,6 @@ export default function CloseTimesheetPage() {
           userId: employeeId || undefined,
           dateFrom: formatISO(startOfDay(parsedClock)),
           dateTo: formatISO(endOfDay(parsedClock)),
-          page: 1,
-          perPage: PAGE_SIZE,
         })
 
         const normalizedEntriesForDay = (data || []).map((entry: any, index: number) =>
@@ -936,11 +951,6 @@ export default function CloseTimesheetPage() {
     [appliedFilters.employeeIds, filters.employeeIds],
   )
 
-  const handlePaginate = async (direction: 'prev' | 'next') => {
-    const nextPage = direction === 'next' ? (page || 1) + 1 : Math.max(1, (page || 1) - 1)
-    await handleSearch(nextPage)
-  }
-
   const handleDeleteTimeEntry = useCallback(async () => {
     if (!deleteTarget?.timeEntryId) return
 
@@ -963,17 +973,6 @@ export default function CloseTimesheetPage() {
           return String(entryTimeEntryId) !== String(timeEntryId)
         }),
       )
-      setMeta((prev) => {
-        if (!prev) return prev
-
-        const currentTotal = Number(prev.total)
-        const nextTotal = Number.isFinite(currentTotal) ? Math.max(0, currentTotal - 1) : prev.total
-
-        return {
-          ...prev,
-          total: nextTotal,
-        }
-      })
       setDeleteTarget(null)
     } catch (error: any) {
       const status = error?.response?.status
@@ -1143,11 +1142,6 @@ export default function CloseTimesheetPage() {
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
   }, [refreshSingleEntry])
-
-  const currentPage = meta?.currentPage || page || 1
-  const lastPage = meta?.lastPage || meta?.last_page || null
-  const total = meta?.total
-  const canGoNext = lastPage ? currentPage < lastPage : total ? currentPage * PAGE_SIZE < total : true
 
   const renderEntriesTable = ({
     groups,
@@ -1723,19 +1717,19 @@ export default function CloseTimesheetPage() {
                         <p className="text-[11px] leading-none text-muted-foreground">
                           {t('closeTimesheetPage.summary.overtime')}
                         </p>
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          <TrendingUp className="h-3 w-3 text-primary" />
-                          <span className="text-lg font-semibold leading-none">
-                            {overtimeLoading
-                              ? '...'
-                              : (() => {
-                                  const d = appliedFilters.employeeIds[0]
-                                    ? overtimeData.get(String(appliedFilters.employeeIds[0]))
-                                    : undefined
-                                  return d?.hhmm ?? formatMinutes(d?.minutes ?? undefined)
-                                })()}
-                          </span>
-                        </div>
+                        {(() => {
+                          const overtime = getOvertimeDisplay(appliedFilters.employeeIds[0])
+                          const TrendIcon = overtime.TrendIcon
+
+                          return (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <TrendIcon className={cn('h-3 w-3', overtime.trendClassName)} />
+                              <span className={cn('text-lg font-semibold leading-none', overtime.toneClass)}>
+                                {overtimeLoading ? '...' : overtime.label}
+                              </span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
                         <p className="text-[11px] leading-none text-muted-foreground">{t('closeTimesheetPage.summary.days')}</p>
@@ -1839,10 +1833,17 @@ export default function CloseTimesheetPage() {
                                 <span>
                                   {section.summary.daysWithRecords} {t('closeTimesheetPage.summary.days')}
                                 </span>
-                                <span className="font-medium text-primary">
-                                  {formatMinutes(section.summary.totalMinutes)}{' '}
-                                  {t('closeTimesheetPage.table.dailyTotal')}
-                                </span>
+                                {(() => {
+                                  const overtime = getOvertimeDisplay(section.employeeId)
+                                  const TrendIcon = overtime.TrendIcon
+
+                                  return (
+                                    <span className={cn('inline-flex items-center gap-1 font-medium', overtime.toneClass)}>
+                                      <TrendIcon className={cn('h-3 w-3 shrink-0', overtime.trendClassName)} />
+                                      {overtimeLoading ? '...' : overtime.label} {t('closeTimesheetPage.summary.overtime')}
+                                    </span>
+                                  )
+                                })()}
                                 <span
                                   className={cn(
                                     'inline-flex items-center gap-1',
@@ -1876,36 +1877,6 @@ export default function CloseTimesheetPage() {
                           tableDuplicatesSet: duplicatesSet,
                         })
                       )}
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs text-muted-foreground">
-                        <div>
-                          {t('closeTimesheetPage.table.pagination', {
-                            page: currentPage,
-                            total: lastPage || Math.max(currentPage, 1),
-                          })}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 rounded-full px-3 text-xs"
-                            disabled={currentPage <= 1 || loadingEntries}
-                            onClick={() => handlePaginate('prev')}
-                          >
-                            {t('closeTimesheetPage.table.prev')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 rounded-full px-3 text-xs"
-                            disabled={!canGoNext || loadingEntries}
-                            onClick={() => handlePaginate('next')}
-                          >
-                            {t('closeTimesheetPage.table.next')}
-                          </Button>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
