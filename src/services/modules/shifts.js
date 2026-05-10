@@ -23,17 +23,17 @@ const toBoolean = (value) => {
     const lower = value.trim().toLowerCase()
     if (['true', '1', 'yes', 'on'].includes(lower)) return true
     if (['false', '0', 'no', 'off', ''].includes(lower)) return false
-    const asNumber = Number(lower)
-    if (Number.isFinite(asNumber)) return asNumber !== 0
   }
   return Boolean(value)
 }
 
-const toNumberOrNull = (value) => {
+const toIntegerOrNull = (value) => {
   if (value === null || value === undefined || value === '') return null
-  const parsed = Number(value)
+  const parsed = Number.parseInt(value, 10)
   return Number.isFinite(parsed) ? parsed : null
 }
+
+const hasValue = (value) => value !== null && value !== undefined && value !== ''
 
 const normalizeShiftEvent = (event = {}, index = 0) => ({
   id: event.id ?? event.uuid ?? `event-${index}`,
@@ -44,67 +44,97 @@ const normalizeShiftEvent = (event = {}, index = 0) => ({
   sort_order: Number(event.sort_order ?? event.sortOrder ?? index),
 })
 
-const normalizeOutgoingDay = (day = {}, index = 0) => {
-  const working = toBoolean(
-    day.is_working_day ?? day.isWorkingDay ?? day.working_day ?? day.workingDay ?? false,
-  )
-  const isWorking = Boolean(working)
-
-  return {
-    weekday: Number(day.weekday ?? day.day ?? index + 1),
-    is_working_day: isWorking,
-    start_time: working ? toHHmm(day.start_time ?? day.startTime ?? day.start ?? '') || null : null,
-    end_time: working ? toHHmm(day.end_time ?? day.endTime ?? day.end ?? '') || null : null,
-    break_start_time: working
-      ? toHHmm(day.break_start_time ?? day.breakStartTime ?? day.breakStart ?? '') || null
-      : null,
-    break_end_time: working
-      ? toHHmm(day.break_end_time ?? day.breakEndTime ?? day.breakEnd ?? '') || null
-      : null,
-    break_minutes: working ? toNumberOrNull(day.break_minutes ?? day.breakMinutes ?? day.breakDuration) : null,
-  }
-}
-
-const sanitizeShiftPayload = (payload = {}) => {
-  const base = { ...payload }
-  base.start_time = toHHmm(payload.start_time ?? payload.startTime ?? '') || null
-  base.end_time = toHHmm(payload.end_time ?? payload.endTime ?? '') || null
-  base.is_working_day = undefined
-
-  const sourceDays = payload.days ?? payload.shift_days ?? []
-  const normalizedDays = Array.isArray(sourceDays)
-    ? sourceDays.map((day, index) => normalizeOutgoingDay(day, index))
-    : []
-
-  base.days = normalizedDays
-  base.shift_days = normalizedDays
-
-  return base
-}
-
 const normalizeShiftDay = (day = {}, index = 0) => ({
   weekday: Number(day.weekday ?? day.day ?? index + 1),
-  is_working_day:
+  is_working_day: toBoolean(
     day.is_working_day ?? day.isWorkingDay ?? day.working_day ?? day.workingDay ?? false,
+  ),
   start_time: toHHmm(day.start_time ?? day.startTime ?? day.start ?? ''),
   end_time: toHHmm(day.end_time ?? day.endTime ?? day.end ?? ''),
+  scheduled_minutes: toIntegerOrNull(
+    day.scheduled_minutes ?? day.scheduledMinutes ?? day.planned_minutes ?? day.plannedMinutes,
+  ),
   break_start_time: toHHmm(day.break_start_time ?? day.breakStartTime ?? day.breakStart ?? ''),
   break_end_time: toHHmm(day.break_end_time ?? day.breakEndTime ?? day.breakEnd ?? ''),
-  break_minutes: day.break_minutes ?? day.breakMinutes ?? day.breakDuration ?? null,
+  break_minutes: toIntegerOrNull(day.break_minutes ?? day.breakMinutes ?? day.breakDuration),
   events: Array.isArray(day.events) ? day.events.map((event, idx) => normalizeShiftEvent(event, idx)) : [],
 })
 
 const normalizeShift = (shift = {}, index = 0) => ({
   id: shift?.id ?? shift?.uuid ?? shift?.shift_id ?? `shift-${index}`,
-  name: shift?.name ?? shift?.title ?? shift?.label ?? '',
+  company_id: shift?.company_id ?? shift?.companyId ?? null,
+  name: shift?.name ?? '',
   start_time: toHHmm(shift?.start_time ?? shift?.startTime ?? ''),
   end_time: toHHmm(shift?.end_time ?? shift?.endTime ?? ''),
-  is_flexible: Boolean(shift?.is_flexible ?? shift?.flexible ?? shift?.isFlexible),
-  is_default: Boolean(shift?.is_default ?? shift?.default ?? shift?.isDefault),
+  is_flexible: toBoolean(shift?.is_flexible ?? shift?.flexible ?? shift?.isFlexible ?? false),
+  is_default: toBoolean(shift?.is_default ?? shift?.default ?? shift?.isDefault ?? false),
   shift_days: (shift?.shift_days ?? shift?.days ?? []).map((day, dayIndex) =>
     normalizeShiftDay(day, dayIndex),
   ),
 })
+
+const serializeShiftDayForApi = (day = {}, index = 0) => {
+  const weekday = Number(day.weekday ?? index + 1)
+  const isWorkingDay = toBoolean(day.is_working_day ?? day.isWorkingDay ?? false)
+
+  if (!isWorkingDay) {
+    return {
+      weekday,
+      is_working_day: false,
+    }
+  }
+
+  const startTime = toHHmm(day.start_time ?? day.startTime ?? '')
+  const endTime = toHHmm(day.end_time ?? day.endTime ?? '')
+  const scheduledMinutes = toIntegerOrNull(day.scheduled_minutes ?? day.scheduledMinutes)
+  const breakStartTime = toHHmm(day.break_start_time ?? day.breakStartTime ?? '')
+  const breakEndTime = toHHmm(day.break_end_time ?? day.breakEndTime ?? '')
+  const breakMinutes = toIntegerOrNull(day.break_minutes ?? day.breakMinutes)
+
+  const payloadDay = {
+    weekday,
+    is_working_day: true,
+    start_time: startTime,
+    end_time: endTime,
+  }
+
+  if (hasValue(scheduledMinutes)) {
+    payloadDay.scheduled_minutes = scheduledMinutes
+  }
+
+  if (breakStartTime && breakEndTime) {
+    payloadDay.break_start_time = breakStartTime
+    payloadDay.break_end_time = breakEndTime
+  }
+
+  if (hasValue(breakMinutes)) {
+    payloadDay.break_minutes = breakMinutes
+  }
+
+  return payloadDay
+}
+
+const serializeShiftPayloadForApi = (payload = {}) => {
+  const result = {}
+
+  if (hasValue(payload.name)) {
+    result.name = String(payload.name).trim()
+  }
+
+  if (typeof payload.is_flexible === 'boolean') {
+    result.is_flexible = payload.is_flexible
+  }
+
+  if (typeof payload.is_default === 'boolean') {
+    result.is_default = payload.is_default
+  }
+
+  if (Array.isArray(payload.days)) {
+    result.days = payload.days.map((day, index) => serializeShiftDayForApi(day, index))
+  }
+
+  return result
+}
 
 const normalizePaginated = (data, fallbackPage = 1) => {
   const payload = data?.data ?? data
@@ -130,10 +160,7 @@ const normalizePaginated = (data, fallbackPage = 1) => {
 export async function listShifts({ page = 1, perPage } = {}) {
   const params = {}
   if (page) params.page = page
-  if (perPage) {
-    params.per_page = perPage
-    params.perPage = perPage
-  }
+  if (perPage) params.per_page = perPage
 
   const { data } = await api.get(BASE, { params })
   const { items, meta } = normalizePaginated(data, page)
@@ -141,8 +168,7 @@ export async function listShifts({ page = 1, perPage } = {}) {
 }
 
 export async function createShift(payload = {}) {
-  const sanitized = sanitizeShiftPayload(payload)
-  const { data } = await api.post(BASE, sanitized)
+  const { data } = await api.post(BASE, serializeShiftPayloadForApi(payload))
   return normalizeShift(data?.data ?? data ?? {}, 0)
 }
 
@@ -154,8 +180,7 @@ export async function getShift(id) {
 
 export async function updateShift(id, payload = {}) {
   if (!id) return null
-  const sanitized = sanitizeShiftPayload(payload)
-  const { data } = await api.put(`${BASE}/${id}`, sanitized)
+  const { data } = await api.put(`${BASE}/${id}`, serializeShiftPayloadForApi(payload))
   return normalizeShift(data?.data ?? data ?? {}, 0)
 }
 

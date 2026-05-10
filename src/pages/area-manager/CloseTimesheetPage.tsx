@@ -522,8 +522,6 @@ export default function CloseTimesheetPage() {
         appliedFilters.employeeIds.map(async (empId) => {
           try {
             const balance = await getTeamOvertimeBalance(empId, {
-              from: appliedFilters.from,
-              to: appliedFilters.to,
               isAdmin,
             })
             results.set(String(empId), {

@@ -597,7 +597,7 @@ const en = {
     },
     adminShiftsPage: {
       title: 'Work shifts',
-      subtitle: 'Configure standard or flexible shifts and breaks for the whole company.',
+      subtitle: 'Configure work windows, daily workload, and breaks for each shift.',
       actions: {
         refresh: 'Refresh',
         create: 'New shift',
@@ -610,7 +610,7 @@ const en = {
       dialog: {
         createTitle: 'New work shift',
         editTitle: 'Edit work shift',
-        description: 'Set schedule, break and whether this shift is default or flexible.',
+        description: 'Set the work window, daily workload per day, and breaks.',
         deleteDescription:
           'This action will remove the shift "{{name}}". Employees linked to it will need reassignment.',
         deleteConfirm: 'Delete shift',
@@ -627,9 +627,34 @@ const en = {
         dayActive: 'Active day',
         startLabel: 'Start',
         endLabel: 'End',
+        scheduledMinutesLabel: 'Daily workload',
         breakStartLabel: 'Break start',
         breakEndLabel: 'Break end',
-        breakMinutesLabel: 'Break duration (min)',
+        breakMinutesLabel: 'Break duration',
+        infoTitle: 'Work window and daily workload are different things now',
+        infoDescription:
+          'The window defines when the employee may work. The daily workload defines how much they need to complete that day. Example: shift 11:00-19:00 with daily workload 06:00.',
+        templateTitle: 'Use the same base setup during the week',
+        templateDescription:
+          'Fill the window, daily workload, and break once. Then customize only the days that differ.',
+        sameAsWeek: 'Same weekly setup',
+        customizeDay: 'Edit this day only',
+        customDay: 'Custom day',
+        windowSummaryLabel: 'Window',
+        workloadSummaryLabel: 'Daily workload',
+        breakSummaryLabel: 'Break',
+        validation: {
+          daysCount: 'Send all 7 days of the week.',
+          invalidWeekday: 'The day identifier must be between 1 and 7.',
+          duplicateWeekday: 'Each weekday must appear only once.',
+          startEndRequired: 'Provide start and end times for active days.',
+          invalidWindow: 'The start time must be earlier than the end time.',
+          breakPair: 'Fill break start and end together.',
+          breakOrder: 'The break must start before it ends.',
+          breakInsideWindow: 'The break must stay inside the shift window.',
+          invalidWorkload: 'Daily workload must be a valid HH:MM value.',
+          workloadExceedsWindow: 'Daily workload cannot be greater than the shift window.',
+        },
       },
       toasts: {
         nameRequired: {
@@ -648,14 +673,18 @@ const en = {
           title: 'Save error',
           description: 'We could not save this shift. Try again.',
         },
+        validation: {
+          title: 'Review the shift data',
+          description: 'We found invalid fields before saving.',
+        },
         deleted: {
           title: 'Shift removed',
           description: 'The shift "{{name}}" has been deleted.',
         },
-      deleteError: {
-            title: 'Delete error',
-            description: 'We could not remove this shift now.',
-          },
+        deleteError: {
+          title: 'Delete error',
+          description: 'We could not remove this shift now.',
+        },
       },
     },
     adminAreasPage: {

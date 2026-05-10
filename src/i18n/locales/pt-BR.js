@@ -619,7 +619,7 @@ const ptBR = {
     },
     adminShiftsPage: {
       title: 'Jornadas de trabalho',
-      subtitle: 'Configure jornadas padrão, intervalos e turnos flexíveis para toda a empresa.',
+      subtitle: 'Configure a janela de trabalho, a carga diária e os intervalos de cada jornada.',
       actions: {
         refresh: 'Atualizar',
         create: 'Nova jornada',
@@ -632,7 +632,7 @@ const ptBR = {
       dialog: {
         createTitle: 'Nova jornada de trabalho',
         editTitle: 'Editar jornada de trabalho',
-        description: 'Defina horários, intervalo e se a jornada será padrão ou flexível.',
+        description: 'Defina a janela da jornada, a carga diária por dia e os intervalos.',
         deleteDescription:
           'Esta ação removerá a jornada "{{name}}". Os colaboradores associados precisarão ser reatribuídos.',
         deleteConfirm: 'Excluir jornada',
@@ -649,9 +649,34 @@ const ptBR = {
         dayActive: 'Dia ativo',
         startLabel: 'Início',
         endLabel: 'Fim',
+        scheduledMinutesLabel: 'Carga diária',
         breakStartLabel: 'Início intervalo',
         breakEndLabel: 'Fim intervalo',
-        breakMinutesLabel: 'Duração intervalo (min)',
+        breakMinutesLabel: 'Duração intervalo',
+        infoTitle: 'Janela da jornada e carga diária agora são coisas diferentes',
+        infoDescription:
+          'A janela define entre quais horas o colaborador pode trabalhar. A carga diária define quanto ele precisa cumprir no dia. Ex.: jornada 11:00-19:00 com carga diária 06:00.',
+        templateTitle: 'Usar a mesma configuração base na semana',
+        templateDescription:
+          'Preencha a janela, a carga diária e o intervalo uma vez. Depois personalize apenas os dias diferentes.',
+        sameAsWeek: 'Mesmo modelo da semana',
+        customizeDay: 'Editar só este dia',
+        customDay: 'Dia personalizado',
+        windowSummaryLabel: 'Janela',
+        workloadSummaryLabel: 'Carga diária',
+        breakSummaryLabel: 'Intervalo',
+        validation: {
+          daysCount: 'Envie os 7 dias completos da semana.',
+          invalidWeekday: 'O identificador do dia precisa estar entre 1 e 7.',
+          duplicateWeekday: 'Cada dia da semana deve aparecer apenas uma vez.',
+          startEndRequired: 'Informe início e fim da jornada para dias ativos.',
+          invalidWindow: 'O horário de início precisa ser menor que o horário de fim.',
+          breakPair: 'Preencha início e fim do intervalo juntos.',
+          breakOrder: 'O intervalo precisa começar antes de terminar.',
+          breakInsideWindow: 'O intervalo precisa estar dentro da janela da jornada.',
+          invalidWorkload: 'A carga diária precisa ser um valor válido em HH:MM.',
+          workloadExceedsWindow: 'A carga diária não pode ser maior que a janela da jornada.',
+        },
       },
       toasts: {
         nameRequired: {
@@ -669,6 +694,10 @@ const ptBR = {
         saveError: {
           title: 'Erro ao salvar',
           description: 'Não conseguimos salvar a jornada. Tente novamente.',
+        },
+        validation: {
+          title: 'Revise os dados da jornada',
+          description: 'Encontramos campos inválidos antes de salvar.',
         },
         deleted: {
           title: 'Jornada removida',

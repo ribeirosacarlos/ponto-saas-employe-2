@@ -56,6 +56,49 @@ const toHHmm = (value) => {
   return `${h}:${m}`
 }
 
+const timeToMinutes = (value) => {
+  const normalized = toHHmm(value)
+  if (!normalized) return null
+  const [hours = '0', minutes = '0'] = normalized.split(':')
+  const total = Number(hours) * 60 + Number(minutes)
+  return Number.isFinite(total) ? total : null
+}
+
+const computeWindowMinutes = (start, end) => {
+  const startMinutes = timeToMinutes(start)
+  const endMinutes = timeToMinutes(end)
+  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return null
+  return endMinutes - startMinutes
+}
+
+const formatMinutesToHHmm = (minutes) => {
+  if (minutes === null || minutes === undefined || minutes === '') return ''
+  const total = Math.max(0, Math.round(Number(minutes) || 0))
+  const hours = String(Math.floor(total / 60)).padStart(2, '0')
+  const mins = String(total % 60).padStart(2, '0')
+  return `${hours}:${mins}`
+}
+
+const syncScheduledMinutes = (currentScheduled, previousStart, previousEnd, nextStart, nextEnd) => {
+  const nextWindow = computeWindowMinutes(nextStart, nextEnd)
+  if (nextWindow === null) return currentScheduled
+  if (currentScheduled === null || currentScheduled === undefined || currentScheduled === '') {
+    return nextWindow
+  }
+  const numericScheduled = Number(currentScheduled)
+  if (!Number.isFinite(numericScheduled)) return nextWindow
+  return Math.min(Math.max(0, numericScheduled), nextWindow)
+}
+
+const clampScheduledMinutesToWindow = (scheduledMinutes, start, end) => {
+  if (scheduledMinutes === null || scheduledMinutes === undefined || scheduledMinutes === '') return null
+  const windowMinutes = computeWindowMinutes(start, end)
+  const numericScheduled = Number(scheduledMinutes)
+  if (!Number.isFinite(numericScheduled)) return windowMinutes
+  if (windowMinutes === null) return Math.max(0, numericScheduled)
+  return Math.min(Math.max(0, numericScheduled), windowMinutes)
+}
+
 const buildDefaultDay = (weekday, useWorkingDefaults = true) => {
   const working = useWorkingDefaults && weekday <= 5
   return {
@@ -63,6 +106,7 @@ const buildDefaultDay = (weekday, useWorkingDefaults = true) => {
     is_working_day: working,
     start_time: working ? '09:00' : '',
     end_time: working ? '18:00' : '',
+    scheduled_minutes: working ? computeWindowMinutes('09:00', '18:00') : null,
     break_start_time: working ? '12:00' : '',
     break_end_time: working ? '13:00' : '',
     break_minutes: working ? 60 : null,
@@ -80,17 +124,21 @@ const normalizeDayFromSource = (source = {}, weekday) => {
 
   const start_time = toHHmm(source.start_time ?? source.startTime ?? '') || ''
   const end_time = toHHmm(source.end_time ?? source.endTime ?? '') || ''
+  const scheduled_minutes =
+    source.scheduled_minutes ?? source.scheduledMinutes ?? source.planned_minutes ?? null
   const break_start_time = toHHmm(source.break_start_time ?? source.breakStartTime ?? '') || ''
   const break_end_time = toHHmm(source.break_end_time ?? source.breakEndTime ?? '') || ''
   const break_minutes = source.break_minutes ?? source.breakMinutes ?? null
 
   return {
     weekday,
-    is_working_day: Boolean(
-      working && (start_time || end_time || break_start_time || break_end_time || break_minutes),
-    ),
+    is_working_day: Boolean(working),
     start_time,
     end_time,
+    scheduled_minutes:
+      scheduled_minutes === null || scheduled_minutes === undefined || scheduled_minutes === ''
+        ? null
+        : Number(scheduled_minutes),
     break_start_time,
     break_end_time,
     break_minutes,
@@ -138,6 +186,7 @@ const buildPayload = (form) => ({
       is_working_day: working,
       start_time: working ? formatTime(day.start_time) : null,
       end_time: working ? formatTime(day.end_time) : null,
+      scheduled_minutes: working ? toNumber(day.scheduled_minutes) : null,
       break_start_time: working ? formatTime(day.break_start_time) : null,
       break_end_time: working ? formatTime(day.break_end_time) : null,
       break_minutes: working ? toNumber(day.break_minutes) : null,
@@ -157,11 +206,22 @@ const formatBreakLabel = (minutes) => {
   return `${minutes} min de intervalo`
 }
 
+const formatScheduledLabel = (scheduledMinutes, start, end) => {
+  if (scheduledMinutes !== null && scheduledMinutes !== undefined) {
+    return formatMinutesToHHmm(scheduledMinutes)
+  }
+  const automaticMinutes = computeWindowMinutes(start, end)
+  if (automaticMinutes === null) return 'Automático'
+  return `Automático (${formatMinutesToHHmm(automaticMinutes)})`
+}
+
 const buildTemplateFromDays = (days = []) => {
   const firstWorking = days.find((day) => day.is_working_day) || buildDefaultDay(1)
   return {
     start_time: firstWorking.start_time || '09:00',
     end_time: firstWorking.end_time || '18:00',
+    scheduled_minutes:
+      firstWorking.scheduled_minutes ?? computeWindowMinutes(firstWorking.start_time, firstWorking.end_time),
     break_start_time: firstWorking.break_start_time || '12:00',
     break_end_time: firstWorking.break_end_time || '13:00',
     break_minutes: firstWorking.break_minutes ?? 60,
@@ -176,6 +236,7 @@ const areWorkingDaysUniform = (days = []) => {
     (day) =>
       day.start_time === firstDay.start_time &&
       day.end_time === firstDay.end_time &&
+      (day.scheduled_minutes ?? null) === (firstDay.scheduled_minutes ?? null) &&
       day.break_start_time === firstDay.break_start_time &&
       day.break_end_time === firstDay.break_end_time &&
       (day.break_minutes ?? null) === (firstDay.break_minutes ?? null),
@@ -200,7 +261,6 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
   const [formState, setFormState] = useState(() => buildShiftForm())
   const [useWeeklyTemplate, setUseWeeklyTemplate] = useState(true)
   const [weeklyTemplate, setWeeklyTemplate] = useState(() => buildTemplateFromDays(buildShiftForm().days))
-  const [customizedDays, setCustomizedDays] = useState([])
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -231,7 +291,6 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     setFormState(nextForm)
     setUseWeeklyTemplate(true)
     setWeeklyTemplate(buildTemplateFromDays(nextForm.days))
-    setCustomizedDays([])
     setDialogOpen(true)
   }
 
@@ -241,43 +300,68 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     setFormState(nextForm)
     setUseWeeklyTemplate(areWorkingDaysUniform(nextForm.days))
     setWeeklyTemplate(buildTemplateFromDays(nextForm.days))
-    setCustomizedDays([])
     setDialogOpen(true)
   }
 
-  const applyTemplateToDays = useCallback((days, template, options = {}) => {
-    const { preserveCustomized = true, customizedWeekdays = customizedDays } = options
+  const applyTemplateToDays = useCallback((days, template) => {
     return days.map((day) => {
       if (!day.is_working_day) return day
-      if (preserveCustomized && customizedWeekdays.includes(day.weekday)) return day
       return {
         ...day,
         start_time: template.start_time,
         end_time: template.end_time,
+        scheduled_minutes: clampScheduledMinutesToWindow(
+          template.scheduled_minutes,
+          template.start_time,
+          template.end_time,
+        ),
         break_start_time: template.break_start_time,
         break_end_time: template.break_end_time,
         break_minutes: template.break_minutes,
       }
     })
-  }, [customizedDays])
+  }, [])
 
   const handleWeeklyTemplateToggle = (enabled) => {
     setUseWeeklyTemplate(enabled)
     if (!enabled) return
-
     setFormState((prev) => ({
       ...prev,
-      days: applyTemplateToDays(prev.days, weeklyTemplate, {
-        preserveCustomized: false,
-        customizedWeekdays: [],
-      }),
+      days: applyTemplateToDays(prev.days, weeklyTemplate),
     }))
-    setCustomizedDays([])
   }
 
   const handleWeeklyTemplateChange = (field, value) => {
-    const nextValue = field === 'break_minutes' ? value.replace(/\D/g, '') : value
-    const nextTemplate = { ...weeklyTemplate, [field]: nextValue }
+    let nextTemplate = weeklyTemplate
+    if (field === 'break_minutes') {
+      nextTemplate = { ...weeklyTemplate, break_minutes: value.replace(/\D/g, '') }
+    } else if (field === 'scheduled_minutes') {
+      nextTemplate = {
+        ...weeklyTemplate,
+        scheduled_minutes: clampScheduledMinutesToWindow(
+          value ? timeToMinutes(value) : null,
+          weeklyTemplate.start_time,
+          weeklyTemplate.end_time,
+        ),
+      }
+    } else if (field === 'start_time' || field === 'end_time') {
+      const nextStart = field === 'start_time' ? value : weeklyTemplate.start_time
+      const nextEnd = field === 'end_time' ? value : weeklyTemplate.end_time
+      nextTemplate = {
+        ...weeklyTemplate,
+        [field]: value,
+        scheduled_minutes: syncScheduledMinutes(
+          weeklyTemplate.scheduled_minutes,
+          weeklyTemplate.start_time,
+          weeklyTemplate.end_time,
+          nextStart,
+          nextEnd,
+        ),
+      }
+    } else {
+      nextTemplate = { ...weeklyTemplate, [field]: value }
+    }
+
     setWeeklyTemplate(nextTemplate)
     if (!useWeeklyTemplate) return
 
@@ -285,10 +369,6 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
       ...prev,
       days: applyTemplateToDays(prev.days, nextTemplate),
     }))
-  }
-
-  const handleCustomizeDay = (weekday) => {
-    setCustomizedDays((prev) => (prev.includes(weekday) ? prev : [...prev, weekday]))
   }
 
   const handleToggleDay = (weekday, enabled) => {
@@ -302,16 +382,22 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
             is_working_day: false,
             start_time: '',
             end_time: '',
+            scheduled_minutes: null,
             break_start_time: '',
             break_end_time: '',
             break_minutes: null,
           }
         }
+        const nextStart = useWeeklyTemplate ? weeklyTemplate.start_time : day.start_time || '09:00'
+        const nextEnd = useWeeklyTemplate ? weeklyTemplate.end_time : day.end_time || '18:00'
         return {
           ...day,
           is_working_day: true,
-          start_time: useWeeklyTemplate ? weeklyTemplate.start_time : day.start_time || '09:00',
-          end_time: useWeeklyTemplate ? weeklyTemplate.end_time : day.end_time || '18:00',
+          start_time: nextStart,
+          end_time: nextEnd,
+          scheduled_minutes: useWeeklyTemplate
+            ? weeklyTemplate.scheduled_minutes
+            : day.scheduled_minutes ?? computeWindowMinutes(nextStart, nextEnd),
           break_start_time: useWeeklyTemplate
             ? weeklyTemplate.break_start_time
             : day.break_start_time || '12:00',
@@ -324,27 +410,176 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
         }
       }),
     }))
-    if (!enabled) {
-      setCustomizedDays((prev) => prev.filter((value) => value !== weekday))
-    }
   }
 
   const handleDayChange = (weekday, field, value) => {
-    if (useWeeklyTemplate) {
-      setCustomizedDays((prev) => (prev.includes(weekday) ? prev : [...prev, weekday]))
-    }
     setFormState((prev) => ({
       ...prev,
-      days: prev.days.map((day) =>
-        day.weekday === weekday
-          ? {
-              ...day,
-              [field]: field === 'break_minutes' ? value.replace(/\D/g, '') : value,
-            }
-          : day,
-      ),
+      days: prev.days.map((day) => {
+        if (day.weekday !== weekday) return day
+        if (field === 'break_minutes') {
+          return {
+            ...day,
+            break_minutes: value.replace(/\D/g, ''),
+          }
+        }
+        if (field === 'scheduled_minutes') {
+          return {
+            ...day,
+            scheduled_minutes: clampScheduledMinutesToWindow(
+              value ? timeToMinutes(value) : null,
+              day.start_time,
+              day.end_time,
+            ),
+          }
+        }
+        if (field === 'start_time' || field === 'end_time') {
+          const nextStart = field === 'start_time' ? value : day.start_time
+          const nextEnd = field === 'end_time' ? value : day.end_time
+          return {
+            ...day,
+            [field]: value,
+            scheduled_minutes: syncScheduledMinutes(
+              day.scheduled_minutes,
+              day.start_time,
+              day.end_time,
+              nextStart,
+              nextEnd,
+            ),
+          }
+        }
+        return {
+          ...day,
+          [field]: value,
+        }
+      }),
     }))
   }
+
+  const validateForm = useCallback(() => {
+    const errors = []
+    const weekdaySet = new Set()
+
+    if (!formState.name.trim()) {
+      errors.push({
+        label: t('adminShiftsPage.form.name', { defaultValue: 'Nome da jornada' }),
+        value: t('adminShiftsPage.toasts.nameRequired.description'),
+      })
+    }
+
+    if (!Array.isArray(formState.days) || formState.days.length !== 7) {
+      errors.push({
+        label: t('adminShiftsPage.form.daysHelper', { defaultValue: 'Dias da semana' }),
+        value: t('adminShiftsPage.form.validation.daysCount', {
+          defaultValue: 'Envie os 7 dias completos da semana.',
+        }),
+      })
+      return errors
+    }
+
+    formState.days.forEach((day) => {
+      const weekday = Number(day.weekday)
+      const dayLabel = WEEK_DAYS.find((item) => item.value === weekday)?.label || `Dia ${weekday}`
+
+      if (!Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.invalidWeekday', {
+            defaultValue: 'O identificador do dia precisa estar entre 1 e 7.',
+          }),
+        })
+        return
+      }
+
+      if (weekdaySet.has(weekday)) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.duplicateWeekday', {
+            defaultValue: 'Cada dia da semana deve aparecer apenas uma vez.',
+          }),
+        })
+      }
+      weekdaySet.add(weekday)
+
+      if (!day.is_working_day) return
+
+      const startMinutes = timeToMinutes(day.start_time)
+      const endMinutes = timeToMinutes(day.end_time)
+      const hasBreakStart = Boolean(toHHmm(day.break_start_time))
+      const hasBreakEnd = Boolean(toHHmm(day.break_end_time))
+      const breakStartMinutes = timeToMinutes(day.break_start_time)
+      const breakEndMinutes = timeToMinutes(day.break_end_time)
+      const scheduledMinutes =
+        day.scheduled_minutes === null || day.scheduled_minutes === undefined || day.scheduled_minutes === ''
+          ? null
+          : Number(day.scheduled_minutes)
+
+      if (startMinutes === null || endMinutes === null) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.startEndRequired', {
+            defaultValue: 'Informe início e fim da jornada para dias ativos.',
+          }),
+        })
+        return
+      }
+
+      if (endMinutes <= startMinutes) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.invalidWindow', {
+            defaultValue: 'O horário de início precisa ser menor que o horário de fim.',
+          }),
+        })
+      }
+
+      if (hasBreakStart !== hasBreakEnd) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.breakPair', {
+            defaultValue: 'Preencha início e fim do intervalo juntos.',
+          }),
+        })
+      }
+
+      if (hasBreakStart && hasBreakEnd) {
+        if (breakStartMinutes === null || breakEndMinutes === null || breakEndMinutes <= breakStartMinutes) {
+          errors.push({
+            label: dayLabel,
+            value: t('adminShiftsPage.form.validation.breakOrder', {
+              defaultValue: 'O intervalo precisa começar antes de terminar.',
+            }),
+          })
+        } else if (breakStartMinutes < startMinutes || breakEndMinutes > endMinutes) {
+          errors.push({
+            label: dayLabel,
+            value: t('adminShiftsPage.form.validation.breakInsideWindow', {
+              defaultValue: 'O intervalo precisa estar dentro da janela da jornada.',
+            }),
+          })
+        }
+      }
+
+      const windowMinutes = endMinutes - startMinutes
+      if (scheduledMinutes !== null && (!Number.isFinite(scheduledMinutes) || scheduledMinutes < 0)) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.invalidWorkload', {
+            defaultValue: 'A carga diária precisa ser um valor válido em HH:MM.',
+          }),
+        })
+      } else if (scheduledMinutes !== null && scheduledMinutes > windowMinutes) {
+        errors.push({
+          label: dayLabel,
+          value: t('adminShiftsPage.form.validation.workloadExceedsWindow', {
+            defaultValue: 'A carga diária não pode ser maior que a janela da jornada.',
+          }),
+        })
+      }
+    })
+
+    return errors
+  }, [formState, t])
 
   const handleSubmit = async (event) => {
     event?.preventDefault?.()
@@ -353,6 +588,22 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
         title: t('adminShiftsPage.toasts.nameRequired.title'),
         description: t('adminShiftsPage.toasts.nameRequired.description'),
         variant: 'destructive',
+      })
+      return
+    }
+
+    const validationErrors = validateForm()
+    if (validationErrors.length) {
+      toast({
+        title: t('adminShiftsPage.toasts.validation.title', {
+          defaultValue: 'Revise os dados da jornada',
+        }),
+        description: t('adminShiftsPage.toasts.validation.description', {
+          defaultValue: 'Encontramos campos inválidos antes de salvar.',
+        }),
+        details: validationErrors.slice(0, 6),
+        variant: 'destructive',
+        duration: 7000,
       })
       return
     }
@@ -424,11 +675,25 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
     const workingEntries = (shift?.shift_days ?? []).filter((day) => day.is_working_day)
     const workingDays = workingEntries.length
     const firstWorking = workingEntries[0]
-    const startLabel = shift.start_time || firstWorking?.start_time || ''
-    const endLabel = shift.end_time || firstWorking?.end_time || ''
-    const breakLabel = formatBreakLabel(firstWorking?.break_minutes)
+    const isUniform = areWorkingDaysUniform(workingEntries)
+    const startLabel = isUniform ? shift.start_time || firstWorking?.start_time || '' : ''
+    const endLabel = isUniform ? shift.end_time || firstWorking?.end_time || '' : ''
+    const breakLabel = isUniform ? formatBreakLabel(firstWorking?.break_minutes) : 'Intervalos por dia'
+    const scheduledValues = workingEntries
+      .map((day) => day.scheduled_minutes ?? computeWindowMinutes(day.start_time, day.end_time))
+      .filter((value) => value !== null && value !== undefined)
+    const firstScheduled = scheduledValues[0]
+    const sameScheduled =
+      scheduledValues.length > 0 && scheduledValues.every((value) => value === firstScheduled)
+    const workloadLabel =
+      workingEntries.length === 0
+        ? ''
+        : sameScheduled
+          ? `Carga ${formatMinutesToHHmm(firstScheduled)}/dia`
+          : 'Carga configurada por dia'
     const summaryParts = [
-      formatRange(startLabel, endLabel),
+      isUniform ? formatRange(startLabel, endLabel) : 'Horários configurados por dia',
+      workloadLabel,
       workingDays ? `${workingDays} dia(s) ativo(s)` : 'Sem dias ativos',
       breakLabel,
     ].filter(Boolean)
@@ -465,7 +730,9 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
               <span className="min-w-0 truncate">{summaryParts.join(' • ')}</span>
             </p>
             {workingDayNames.length ? (
-              <p className="text-[11px] text-muted-foreground">{workingDayNames.join(' • ')}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {workingDayNames.join(' • ')}
+              </p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -596,38 +863,16 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
             className="dialog-scrollbar space-y-5 max-h-[70vh] overflow-y-auto pr-3 pb-4"
             onSubmit={handleSubmit}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="shift-name">{t('adminShiftsPage.form.name')}</Label>
-                <Input
-                  id="shift-name"
-                  placeholder={t('adminShiftsPage.form.namePlaceholder')}
-                  value={formState.name}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, name: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border/70 bg-muted/40 p-3 text-sm">
-                <label className="flex items-center justify-between gap-2">
-                  <span>{t('adminShiftsPage.form.default')}</span>
-                  <Switch
-                    checked={formState.is_default}
-                    onCheckedChange={(checked) =>
-                      setFormState((prev) => ({ ...prev, is_default: checked }))
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-2">
-                  <span>{t('adminShiftsPage.form.flexible')}</span>
-                  <Switch
-                    checked={formState.is_flexible}
-                    onCheckedChange={(checked) =>
-                      setFormState((prev) => ({ ...prev, is_flexible: checked }))
-                    }
-                  />
-                </label>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="shift-name">{t('adminShiftsPage.form.name')}</Label>
+              <Input
+                id="shift-name"
+                placeholder={t('adminShiftsPage.form.namePlaceholder')}
+                value={formState.name}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, name: event.target.value }))
+                }
+              />
             </div>
 
             <div className="space-y-3">
@@ -638,18 +883,49 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                 </span>
               </div>
               <div className="space-y-3">
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
+                <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Usar o mesmo horário na semana</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t('adminShiftsPage.form.templateTitle', {
+                          defaultValue: 'Mesmo horário para todos os dias ativos',
+                        })}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        Preencha uma vez e ajuste só os dias que forem diferentes.
+                        {t('adminShiftsPage.form.templateDescription', {
+                          defaultValue:
+                            'Ative para definir um único padrão. Desative para editar cada dia separadamente.',
+                        })}
                       </p>
                     </div>
                     <Switch checked={useWeeklyTemplate} onCheckedChange={handleWeeklyTemplateToggle} />
                   </div>
                   {useWeeklyTemplate ? (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-7">
+                        {formState.days.map((day) => {
+                          const dayMeta = WEEK_DAYS.find((item) => item.value === day.weekday)
+                          const working = Boolean(day.is_working_day)
+                          return (
+                            <label
+                              key={`weekly-day-${day.weekday}`}
+                              className={cn(
+                                'flex items-center justify-between rounded-xl border px-3 py-2 text-sm transition-colors',
+                                working
+                                  ? 'border-primary/30 bg-background text-foreground'
+                                  : 'border-border/70 bg-muted/30 text-muted-foreground',
+                              )}
+                            >
+                              <span className="font-medium">{dayMeta?.short || day.weekday}</span>
+                              <Switch
+                                checked={working}
+                                onCheckedChange={(checked) => handleToggleDay(day.weekday, checked)}
+                              />
+                            </label>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                       <div className="space-y-1.5">
                         <Label className="text-[11px] text-muted-foreground">
                           {t('adminShiftsPage.form.startLabel')}
@@ -671,6 +947,21 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                           value={weeklyTemplate.end_time || ''}
                           onChange={(event) =>
                             handleWeeklyTemplateChange('end_time', event.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] text-muted-foreground">
+                          {t('adminShiftsPage.form.scheduledMinutesLabel', {
+                            defaultValue: 'Carga diária',
+                          })}
+                        </Label>
+                        <Input
+                          type="time"
+                          step="60"
+                          value={formatMinutesToHHmm(weeklyTemplate.scheduled_minutes)}
+                          onChange={(event) =>
+                            handleWeeklyTemplateChange('scheduled_minutes', event.target.value)
                           }
                         />
                       </div>
@@ -711,119 +1002,182 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                           }
                         />
                       </div>
-                    </div>
+                      </div>
+                    </>
                   ) : null}
                 </div>
-                {formState.days.map((day) => {
-                  const working = Boolean(day.is_working_day)
-                  const dayLabel = WEEK_DAYS.find((item) => item.value === day.weekday)?.label
-                  const isCustomized = customizedDays.includes(day.weekday)
-                  const showDayEditor = !useWeeklyTemplate || isCustomized
-                  return (
-                    <div
-                      key={`day-${day.weekday}`}
-                      className="rounded-xl border border-border/70 bg-card/80 p-3"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold">{dayLabel}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {working
-                              ? t('adminShiftsPage.form.dayWorking')
-                              : t('adminShiftsPage.form.dayOff')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {working && useWeeklyTemplate && !isCustomized ? (
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                              Mesmo horário da semana
+
+                {!useWeeklyTemplate ? (
+                  <div className="grid gap-3 xl:grid-cols-2">
+                  {formState.days.map((day) => {
+                    const working = Boolean(day.is_working_day)
+                    const dayLabel = WEEK_DAYS.find((item) => item.value === day.weekday)?.label
+                    const breakLabel =
+                      day.break_start_time && day.break_end_time
+                        ? `${day.break_start_time} - ${day.break_end_time}`
+                        : day.break_minutes === 0
+                          ? 'Sem intervalo'
+                          : day.break_minutes
+                            ? `${day.break_minutes} min`
+                            : 'Não configurado'
+                    const windowLabel = working
+                      ? formatRange(day.start_time, day.end_time)
+                      : t('adminShiftsPage.form.dayOff', { defaultValue: 'Dia de folga' })
+                    const workloadLabel = working
+                      ? formatScheduledLabel(day.scheduled_minutes, day.start_time, day.end_time)
+                      : '--'
+
+                    return (
+                      <div
+                        key={`day-${day.weekday}`}
+                        className="rounded-2xl border border-border/70 bg-card/80 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{dayLabel}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {working
+                                ? t('adminShiftsPage.form.dayWorking')
+                                : t('adminShiftsPage.form.dayOff')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">
+                              {t('adminShiftsPage.form.dayActive')}
                             </span>
-                          ) : null}
-                          {working && useWeeklyTemplate ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="h-7 px-2 text-[11px]"
-                              onClick={() => handleCustomizeDay(day.weekday)}
-                            >
-                              {isCustomized ? 'Dia personalizado' : 'Editar só este dia'}
-                            </Button>
-                          ) : null}
-                          <span className="text-xs text-muted-foreground">{t('adminShiftsPage.form.dayActive')}</span>
-                          <Switch
-                            checked={working}
-                            onCheckedChange={(checked) => handleToggleDay(day.weekday, checked)}
-                          />
+                            <Switch
+                              checked={working}
+                              onCheckedChange={(checked) => handleToggleDay(day.weekday, checked)}
+                            />
+                          </div>
                         </div>
+
+                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t('adminShiftsPage.form.windowSummaryLabel', {
+                                defaultValue: 'Janela',
+                              })}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{windowLabel}</p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t('adminShiftsPage.form.workloadSummaryLabel', {
+                                defaultValue: 'Carga diária',
+                              })}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-foreground">
+                              {workloadLabel}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t('adminShiftsPage.form.breakSummaryLabel', {
+                                defaultValue: 'Intervalo',
+                              })}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{breakLabel}</p>
+                          </div>
+                        </div>
+
+                        {working ? (
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.startLabel')}
+                              </Label>
+                              <Input
+                                type="time"
+                                value={day.start_time || ''}
+                                onChange={(event) =>
+                                  handleDayChange(day.weekday, 'start_time', event.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.endLabel')}
+                              </Label>
+                              <Input
+                                type="time"
+                                value={day.end_time || ''}
+                                onChange={(event) =>
+                                  handleDayChange(day.weekday, 'end_time', event.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.scheduledMinutesLabel', {
+                                  defaultValue: 'Carga diária',
+                                })}
+                              </Label>
+                              <Input
+                                type="time"
+                                step="60"
+                                value={formatMinutesToHHmm(day.scheduled_minutes)}
+                                onChange={(event) =>
+                                  handleDayChange(
+                                    day.weekday,
+                                    'scheduled_minutes',
+                                    event.target.value,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.breakStartLabel')}
+                              </Label>
+                              <Input
+                                type="time"
+                                value={day.break_start_time || ''}
+                                onChange={(event) =>
+                                  handleDayChange(
+                                    day.weekday,
+                                    'break_start_time',
+                                    event.target.value,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.breakEndLabel')}
+                              </Label>
+                              <Input
+                                type="time"
+                                value={day.break_end_time || ''}
+                                onChange={(event) =>
+                                  handleDayChange(
+                                    day.weekday,
+                                    'break_end_time',
+                                    event.target.value,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[11px] text-muted-foreground">
+                                {t('adminShiftsPage.form.breakMinutesLabel')}
+                              </Label>
+                              <Input
+                                inputMode="numeric"
+                                placeholder="60"
+                                value={day.break_minutes ?? ''}
+                                onChange={(event) =>
+                                  handleDayChange(day.weekday, 'break_minutes', event.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
-                      {working && showDayEditor ? (
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-[11px] text-muted-foreground">
-                              {t('adminShiftsPage.form.startLabel')}
-                            </Label>
-                            <Input
-                              type="time"
-                              value={day.start_time || ''}
-                              onChange={(event) =>
-                                handleDayChange(day.weekday, 'start_time', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[11px] text-muted-foreground">
-                              {t('adminShiftsPage.form.endLabel')}
-                            </Label>
-                            <Input
-                              type="time"
-                              value={day.end_time || ''}
-                              onChange={(event) =>
-                                handleDayChange(day.weekday, 'end_time', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[11px] text-muted-foreground">
-                              {t('adminShiftsPage.form.breakStartLabel')}
-                            </Label>
-                            <Input
-                              type="time"
-                              value={day.break_start_time || ''}
-                              onChange={(event) =>
-                                handleDayChange(day.weekday, 'break_start_time', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[11px] text-muted-foreground">
-                              {t('adminShiftsPage.form.breakEndLabel')}
-                            </Label>
-                            <Input
-                              type="time"
-                              value={day.break_end_time || ''}
-                              onChange={(event) =>
-                                handleDayChange(day.weekday, 'break_end_time', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-                            <Label className="text-[11px] text-muted-foreground">
-                              {t('adminShiftsPage.form.breakMinutesLabel')}
-                            </Label>
-                            <Input
-                              inputMode="numeric"
-                              placeholder="60"
-                              value={day.break_minutes ?? ''}
-                              onChange={(event) =>
-                                handleDayChange(day.weekday, 'break_minutes', event.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                  </div>
+                ) : null}
               </div>
             </div>
 

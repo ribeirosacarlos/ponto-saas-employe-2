@@ -595,7 +595,7 @@ const es = {
     },
     adminShiftsPage: {
       title: 'Jornadas de trabajo',
-      subtitle: 'Configura turnos estándar o flexibles y los descansos de toda la empresa.',
+      subtitle: 'Configura la ventana de trabajo, la carga diaria y los descansos de cada jornada.',
       actions: {
         refresh: 'Actualizar',
         create: 'Nueva jornada',
@@ -608,7 +608,7 @@ const es = {
       dialog: {
         createTitle: 'Nueva jornada de trabajo',
         editTitle: 'Editar jornada de trabajo',
-        description: 'Define horario, descanso y si la jornada será predeterminada o flexible.',
+        description: 'Define la ventana de la jornada, la carga diaria por día y los descansos.',
         deleteDescription:
           'Esta acción eliminará la jornada "{{name}}". Los colaboradores vinculados deberán reasignarse.',
         deleteConfirm: 'Eliminar jornada',
@@ -625,9 +625,34 @@ const es = {
         dayActive: 'Día activo',
         startLabel: 'Inicio',
         endLabel: 'Fin',
+        scheduledMinutesLabel: 'Carga diaria',
         breakStartLabel: 'Inicio descanso',
         breakEndLabel: 'Fin descanso',
-        breakMinutesLabel: 'Duración descanso (min)',
+        breakMinutesLabel: 'Duración descanso',
+        infoTitle: 'La ventana de la jornada y la carga diaria ahora son diferentes',
+        infoDescription:
+          'La ventana define entre qué horas el colaborador puede trabajar. La carga diaria define cuánto debe cumplir ese día. Ejemplo: jornada 11:00-19:00 con carga diaria 06:00.',
+        templateTitle: 'Usar la misma configuración base en la semana',
+        templateDescription:
+          'Completa la ventana, la carga diaria y el descanso una vez. Luego personaliza solo los días diferentes.',
+        sameAsWeek: 'Mismo modelo semanal',
+        customizeDay: 'Editar solo este día',
+        customDay: 'Día personalizado',
+        windowSummaryLabel: 'Ventana',
+        workloadSummaryLabel: 'Carga diaria',
+        breakSummaryLabel: 'Descanso',
+        validation: {
+          daysCount: 'Envía los 7 días completos de la semana.',
+          invalidWeekday: 'El identificador del día debe estar entre 1 y 7.',
+          duplicateWeekday: 'Cada día de la semana debe aparecer una sola vez.',
+          startEndRequired: 'Informa inicio y fin para los días activos.',
+          invalidWindow: 'La hora de inicio debe ser menor que la hora de fin.',
+          breakPair: 'Completa juntos el inicio y el fin del descanso.',
+          breakOrder: 'El descanso debe empezar antes de terminar.',
+          breakInsideWindow: 'El descanso debe estar dentro de la ventana de la jornada.',
+          invalidWorkload: 'La carga diaria debe ser un valor HH:MM válido.',
+          workloadExceedsWindow: 'La carga diaria no puede ser mayor que la ventana de la jornada.',
+        },
       },
       toasts: {
         nameRequired: {
@@ -645,6 +670,10 @@ const es = {
         saveError: {
           title: 'Error al guardar',
           description: 'No pudimos guardar la jornada. Intenta nuevamente.',
+        },
+        validation: {
+          title: 'Revisa los datos de la jornada',
+          description: 'Encontramos campos inválidos antes de guardar.',
         },
         deleted: {
           title: 'Jornada eliminada',
