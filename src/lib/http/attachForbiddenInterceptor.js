@@ -1,6 +1,7 @@
 import i18n from '../../i18n/i18n'
 import { emitAccessDenied, resolveAccessDenial } from '../accessDenied'
 import { resolvePageFromPath } from '../../routes/config'
+import { hasStoredToken } from '../authStorage'
 
 const AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/logout']
 const ACCESS_EXCEPTIONS = ['/v1/billing/checkout-session', '/v1/platform/billing/companies']
@@ -19,7 +20,7 @@ export function attachForbiddenInterceptor(axiosInstance) {
         const message = data.message || i18n.t('errors.forbidden.description')
         const { reason } = resolveAccessDenial(message)
         const title = data.title || i18n.t('errors.forbidden.title')
-        const hasToken = typeof window !== 'undefined' ? Boolean(localStorage.getItem('auth_token')) : false
+        const hasToken = hasStoredToken()
         const requestUrl = error.config?.url || ''
         const isAuthRequest = AUTH_ENDPOINTS.some((endpoint) => requestUrl.includes(endpoint))
         const isAccessException = ACCESS_EXCEPTIONS.some((endpoint) => requestUrl.includes(endpoint))

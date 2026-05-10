@@ -39,7 +39,7 @@ import { BrandSignature } from './components/BrandSignature.jsx'
 import { HelpContactDialog } from './components/HelpContactDialog.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { getWorkedToday } from './services/modules/employee'
-import { getCurrentUser, clearAuthCache } from './services/authService'
+import { getCurrentUser } from './services/authService'
 import { listAuditLogs } from './services/auditLogsService'
 import { useToast } from './components/ui/use-toast'
 import { useTheme } from './providers/ThemeProvider.jsx'
@@ -112,6 +112,7 @@ const getInitialSidebarCollapsed = () => {
 
 export default function App() {
   const token = useAuthStore((state) => state.token)
+  const isSessionReady = useAuthStore((state) => state.isSessionReady)
   const restoreSession = useAuthStore((state) => state.restoreSession)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
@@ -270,7 +271,7 @@ export default function App() {
   )
 
   useEffect(() => {
-    restoreSession()
+    void restoreSession()
   }, [restoreSession])
 
   useEffect(() => {
@@ -282,6 +283,8 @@ export default function App() {
   }, [isMobile])
 
   useEffect(() => {
+    if (!isSessionReady) return
+
     if (!token) {
       setCompanyAuditAccess(null)
       setIsHandlingPublicAuthRoute(false)
@@ -324,9 +327,11 @@ export default function App() {
     }
     setCurrentPage(allowedPage)
     setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
-  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, navigateTo, token])
+  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, isSessionReady, navigateTo, token])
 
   useEffect(() => {
+    if (!isSessionReady) return
+
     if (!token) {
       setCompanyAuditAccess(null)
       return
@@ -368,10 +373,12 @@ export default function App() {
     return () => {
       active = false
     }
-  }, [isCompanyAdmin, isSuperAdmin, token])
+  }, [isCompanyAdmin, isSessionReady, isSuperAdmin, token])
 
   useEffect(() => {
     const handlePopstate = () => {
+      if (!isSessionReady) return
+
       const pageFromPath =
         typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'login'
       if (!token) {
@@ -400,7 +407,7 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopstate)
     return () => window.removeEventListener('popstate', handlePopstate)
-  }, [canAccessPage, getDefaultAuthenticatedPage, navigateTo, token])
+  }, [canAccessPage, getDefaultAuthenticatedPage, isSessionReady, navigateTo, token])
 
   useEffect(() => {
     if (isMobile) {
@@ -421,40 +428,8 @@ export default function App() {
     document.title = translatedTitle ? `${translatedTitle} - ${brandTitle}` : brandTitle
   }, [currentPage, isSuperAdmin, t])
 
-
   useEffect(() => {
-    let active = true
-
-    const bootstrapAccess = async () => {
-      if (!token) return
-      try {
-        const profile = await getCurrentUser()
-        if (!active) return
-        if (profile?.user) {
-          syncProfile(profile.user, profile.roles || [])
-        }
-        clearAccessDenied()
-      } catch (error) {
-        if (!active) return
-        const status = error?.response?.status
-        if (status === 401) {
-          toast({
-            title: t('toast.sessionExpired.title'),
-            description: error.response?.data?.message || t('toast.sessionExpired.description'),
-            variant: 'error',
-          })
-          await logout()
-        }
-      }
-    }
-
-    bootstrapAccess()
-    return () => {
-      active = false
-    }
-  }, [clearAccessDenied, logout, syncProfile, t, toast, token])
-
-  useEffect(() => {
+    if (!isSessionReady) return
     if (!token || !accessDeniedReason) return
     if (accessDeniedReason === ACCESS_DENIED_REASONS.FORBIDDEN) return
     const redirect = getAccessRedirect(accessDeniedReason)
@@ -463,13 +438,13 @@ export default function App() {
     if (currentPage === redirect.page) return
 
     navigateTo(redirect.page, true, { search: redirect.search })
-  }, [accessDeniedReason, currentPage, navigateTo, token])
+  }, [accessDeniedReason, currentPage, isSessionReady, navigateTo, token])
 
   useEffect(() => {
     let active = true
 
     const fetchWorkedToday = async () => {
-      if (!token || accessDeniedReason) {
+      if (!isSessionReady || !token || accessDeniedReason) {
         setTodayBadge(t('dashboardPage.badges.today'))
         return
       }
@@ -492,7 +467,7 @@ export default function App() {
     return () => {
       active = false
     }
-  }, [accessDeniedReason, formatMinutesToLabel, t, token])
+  }, [accessDeniedReason, formatMinutesToLabel, isSessionReady, t, token])
 
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
@@ -685,6 +660,7 @@ export default function App() {
 
   const shouldRenderPublicAuthPage =
     PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute)
+  const isRestoringProtectedSession = token && !isSessionReady && !shouldRenderPublicAuthPage
 
   return (
     <div
@@ -709,6 +685,12 @@ export default function App() {
           ) : (
             <ForgotPassword />
           )
+        ) : isRestoringProtectedSession ? (
+          <div className="flex min-h-screen items-center justify-center px-6">
+            <div className="rounded-3xl border border-border/70 bg-card/80 px-6 py-5 text-sm font-medium text-muted-foreground shadow-[0_30px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+              {t('common.loading')}
+            </div>
+          </div>
         ) : token ? (
           <>
             {!isMobile ? (

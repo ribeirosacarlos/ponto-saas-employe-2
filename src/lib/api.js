@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
+import { readStoredToken } from './authStorage'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -10,7 +11,7 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
+  const token = readStoredToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { attachForbiddenInterceptor } from '../../lib/http/attachForbiddenInterceptor'
+import { readStoredToken } from '../../lib/authStorage'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -17,7 +18,7 @@ api.interceptors.request.use((config) => {
     return config
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  const token = readStoredToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
