@@ -11,6 +11,8 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { forgotPasswordRequest } from '../services/modules/auth'
 
+const RESET_PASSWORD_EMAIL_KEY = 'reset_password_email'
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -46,9 +48,9 @@ export default function ForgotPassword() {
       })
 
       if (typeof window !== 'undefined') {
-        const emailParam = encodeURIComponent(normalizedEmail)
+        window.sessionStorage.setItem(RESET_PASSWORD_EMAIL_KEY, normalizedEmail)
         window.setTimeout(() => {
-          window.location.href = `/reset-password?email=${emailParam}`
+          window.location.href = '/reset-password'
         }, 600)
       }
 

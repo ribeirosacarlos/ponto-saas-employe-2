@@ -161,6 +161,7 @@ export default function App() {
     () => roles?.some((role) => String(role).toLowerCase() === 'admin'),
     [roles],
   )
+  const canViewForbiddenRequestDetails = isCompanyAdmin || isSuperAdmin
 
   const allNavItems = useMemo(
     () =>
@@ -524,10 +525,11 @@ export default function App() {
     const details = [
       lastDeniedContext?.page && { label: 'Página', value: lastDeniedContext.page },
       lastDeniedContext?.routePath && { label: 'Rota', value: lastDeniedContext.routePath },
-      lastDeniedContext?.requestUrl && {
-        label: 'Requisição',
-        value: `${lastDeniedContext.requestMethod || 'GET'} ${lastDeniedContext.requestUrl}`,
-      },
+      canViewForbiddenRequestDetails &&
+        lastDeniedContext?.requestUrl && {
+          label: 'Requisição',
+          value: `${lastDeniedContext.requestMethod || 'GET'} ${lastDeniedContext.requestUrl}`,
+        },
     ].filter(Boolean)
     toast({
       title: t('errors.forbidden.title'),
@@ -537,7 +539,7 @@ export default function App() {
       details,
     })
     clearAccessDenied()
-  }, [accessDeniedReason, clearAccessDenied, lastDeniedContext, lastDeniedMessage, t, toast])
+  }, [accessDeniedReason, canViewForbiddenRequestDetails, clearAccessDenied, lastDeniedContext, lastDeniedMessage, t, toast])
 
   const renderCurrentPage = () => {
     switch (currentPage) {

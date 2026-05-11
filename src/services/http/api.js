@@ -11,9 +11,7 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const requestUrl = String(config.url || '')
-  const isAuthRequest = ['/v1/auth/login', '/v1/auth/logout'].some((endpoint) => requestUrl.includes(endpoint))
-  if (isAuthRequest) {
+  if (config.skipAuth === true) {
     delete config.headers.Authorization
     return config
   }

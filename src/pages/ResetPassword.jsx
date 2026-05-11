@@ -11,6 +11,8 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { resetPasswordRequest } from '../services/modules/auth'
 
+const RESET_PASSWORD_EMAIL_KEY = 'reset_password_email'
+
 const getPasswordChecks = (password) => ({
   length: password.length >= 8,
   uppercase: /[A-Z]/.test(password),
@@ -67,8 +69,7 @@ const getPasswordErrorKey = (password, confirmation, email) => {
 export default function ResetPassword() {
   const [email, setEmail] = useState(() => {
     if (typeof window === 'undefined') return ''
-    const params = new URLSearchParams(window.location.search)
-    return params.get('email') || ''
+    return window.sessionStorage.getItem(RESET_PASSWORD_EMAIL_KEY) || ''
   })
   const [verificationCode, setVerificationCode] = useState('')
   const [password, setPassword] = useState('')
@@ -146,6 +147,7 @@ export default function ResetPassword() {
       setPasswordConfirmation('')
 
       if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(RESET_PASSWORD_EMAIL_KEY)
         window.setTimeout(() => {
           window.location.href = '/'
         }, 800)

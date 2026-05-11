@@ -1,8 +1,15 @@
 import { DEFAULT_TIMEZONE, formatDate, formatTime } from './datetime'
 
+const DANGEROUS_CSV_PREFIXES = ['=', '+', '-', '@']
+
+function sanitizeCsvFormula(value) {
+  if (!value) return value
+  return DANGEROUS_CSV_PREFIXES.some((prefix) => value.startsWith(prefix)) ? `'${value}` : value
+}
+
 function escapeCsvValue(value) {
   if (value === null || value === undefined) return ''
-  const stringValue = String(value).replace(/"/g, '""')
+  const stringValue = sanitizeCsvFormula(String(value)).replace(/"/g, '""')
   if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
     return `"${stringValue}"`
   }

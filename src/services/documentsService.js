@@ -136,16 +136,18 @@ export async function resendDocument(id, formData) {
 
 export async function trackDocumentView(documentId) {
   if (!documentId) return null
-  // TODO: wire view tracking endpoint and admin notification when backend is ready.
+  const error = new Error('Document view tracking endpoint is not implemented.')
+  error.code = 'DOCUMENT_VIEW_TRACKING_UNAVAILABLE'
   warnOnce('documents-view', '[documentsService] Missing document view tracking endpoint.')
-  return { id: documentId, viewedAt: new Date().toISOString(), mocked: true }
+  throw error
 }
 
 export async function trackDocumentSignature(documentId) {
   if (!documentId) return null
-  // TODO: wire signature endpoint and admin notification when backend is ready.
+  const error = new Error('Document signature endpoint is not implemented.')
+  error.code = 'DOCUMENT_SIGNATURE_UNAVAILABLE'
   warnOnce('documents-signature', '[documentsService] Missing document signature endpoint.')
-  return { id: documentId, signedAt: new Date().toISOString(), mocked: true }
+  throw error
 }
 
 

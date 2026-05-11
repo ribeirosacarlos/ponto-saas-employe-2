@@ -1,24 +1,4 @@
-import axios from 'axios'
-import { attachForbiddenInterceptor } from './http/attachForbiddenInterceptor'
-import { readStoredToken } from './authStorage'
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? '/api' : 'https://api.jornafy.com/api')
-
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-})
-
-api.interceptors.request.use((config) => {
-  const token = readStoredToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-attachForbiddenInterceptor(api)
+import { api } from '../services/http/api'
 
 
 const ENTRIES_CACHE_MS = 15 * 1000 // 15s cache to squash duplicate rapid requests
@@ -26,7 +6,7 @@ const entriesCache = new Map()
 const entriesInflight = new Map()
 
 export async function loginRequest(email, password) {
-  const { data } = await api.post('/v1/auth/login', { email, password })
+  const { data } = await api.post('/v1/auth/login', { email, password }, { skipAuth: true })
   return {
     token: data.token || data?.data?.token,
     user: data.user || data?.data?.user,

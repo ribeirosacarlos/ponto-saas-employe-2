@@ -18,7 +18,7 @@ export function attachForbiddenInterceptor(axiosInstance) {
 
         const data = error.response.data && typeof error.response.data === 'object' ? error.response.data : {}
         const message = data.message || i18n.t('errors.forbidden.description')
-        const { reason } = resolveAccessDenial(message)
+        const { reason } = resolveAccessDenial({ code: data.code, message })
         const title = data.title || i18n.t('errors.forbidden.title')
         const hasToken = hasStoredToken()
         const requestUrl = error.config?.url || ''

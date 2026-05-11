@@ -1,7 +1,7 @@
 import { api } from '../http/api'
 
 export async function loginRequest(email, password) {
-  const { data } = await api.post('/v1/auth/login', { email, password })
+  const { data } = await api.post('/v1/auth/login', { email, password }, { skipAuth: true })
   const payload = data?.data || data || {}
 
   return {
@@ -24,12 +24,12 @@ export async function acceptInvite(payload = {}) {
     invite_code,
     password,
     password_confirmation,
-  })
+  }, { skipAuth: true })
   return data
 }
 
 export async function forgotPasswordRequest(email) {
-  const { data } = await api.post('/v1/forgot-password', { email })
+  const { data } = await api.post('/v1/forgot-password', { email }, { skipAuth: true })
   return data
 }
 
@@ -40,7 +40,7 @@ export async function resetPasswordRequest(payload = {}) {
     email,
     password,
     password_confirmation,
-  })
+  }, { skipAuth: true })
   return data
 }
 

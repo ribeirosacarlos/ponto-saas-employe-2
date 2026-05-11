@@ -97,16 +97,25 @@ export const useAuthStore = create((set, get) => ({
     try {
       resetAuthState(set)
       const data = await loginRequest(email, password)
-      const { token, user, roles = [] } = data
+      const { token, user } = data
       if (!token) {
         throw new Error(i18n.t('auth.errors.tokenMissing'))
       }
 
       api.defaults.headers.common.Authorization = `Bearer ${token}`
       persistAuthSession({ token, user: user || null })
-      set({ user, token, roles, isSessionReady: true })
+      const profile = await getCurrentUser(true)
+      const nextUser = profile?.user || user || null
+      const nextRoles = Array.isArray(profile?.roles) ? profile.roles : []
+
+      persistAuthSession({ token, user: nextUser })
+      set({ user: nextUser, token, roles: nextRoles, isSessionReady: true })
       emitAccessClear()
-      return data
+      return {
+        ...data,
+        user: nextUser,
+        roles: nextRoles,
+      }
     } catch (error) {
       const status = error.response?.status
       const friendlyUnauthorized = status === 401 ? i18n.t('auth.errors.unauthorized') : null
@@ -115,6 +124,7 @@ export const useAuthStore = create((set, get) => ({
         error.response?.data?.message ||
         error.message ||
         i18n.t('auth.errors.loginFailed')
+      resetAuthState(set)
       set({ error: message })
       throw new Error(message)
     } finally {
