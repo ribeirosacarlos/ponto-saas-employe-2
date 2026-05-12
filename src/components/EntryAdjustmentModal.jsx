@@ -23,6 +23,7 @@ export function EntryAdjustmentModal({
   onSubmit,
   isSubmitting,
   defaultDate,
+  onOpen,
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -125,7 +126,13 @@ export function EntryAdjustmentModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (nextOpen) onOpen?.()
+      }}
+    >
       <DialogTrigger asChild>
         <span
           className={cn(

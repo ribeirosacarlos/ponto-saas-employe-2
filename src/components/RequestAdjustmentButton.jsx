@@ -4,7 +4,7 @@ import { Pencil } from 'lucide-react'
 import { EntryAdjustmentModal } from './EntryAdjustmentModal'
 import { Button } from './ui/button'
 import { useToast } from './ui/use-toast'
-import { requestAdjustment } from '../services/modules/employee'
+import { getEmployeeEntries, requestAdjustment } from '../services/modules/employee'
 import { cn } from '../lib/utils'
 
 export function RequestAdjustmentButton({
@@ -23,8 +23,11 @@ export function RequestAdjustmentButton({
   const { t } = useTranslation()
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
+  const [resolvedEntries, setResolvedEntries] = useState(entries)
+  const [loadingEntries, setLoadingEntries] = useState(false)
 
   const isSubmitting = externalIsSubmitting !== undefined ? externalIsSubmitting : submitting
+  const modalEntries = entries?.length ? entries : resolvedEntries
 
   const handleSubmit = async (payload, closeModal, resetForm) => {
     if (externalOnSubmit) {
@@ -40,7 +43,7 @@ export function RequestAdjustmentButton({
 
     setSubmitting(true)
     try {
-      await requestAdjustment(timeEntryId ? { ...payload, timeEntryId } : payload)
+      await requestAdjustment({ ...payload, timeEntryId })
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),
@@ -61,14 +64,35 @@ export function RequestAdjustmentButton({
     }
   }
 
+  const ensureEntries = async () => {
+    if (entry || entries?.length || resolvedEntries?.length || loadingEntries) return
+
+    setLoadingEntries(true)
+    try {
+      const response = await getEmployeeEntries({ page: 1, perPage: 50, preferLatestPage: false })
+      const fetchedEntries = Array.isArray(response?.data) ? response.data : []
+      setResolvedEntries(fetchedEntries)
+    } catch (err) {
+      toast({
+        title: t('historyPage.adjustment.errorTitle'),
+        description:
+          err.response?.data?.message || err.message || t('historyPage.adjustment.errorDescription'),
+        variant: 'error',
+      })
+    } finally {
+      setLoadingEntries(false)
+    }
+  }
+
   return (
     <EntryAdjustmentModal
       entry={entry}
-      entries={entries}
+      entries={modalEntries}
       defaultDate={defaultDate}
       hideOriginalTime={hideOriginalTime}
       onSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
+      isSubmitting={isSubmitting || loadingEntries}
+      onOpen={ensureEntries}
       trigger={
         <Button type="button" variant={variant} size={size} className={cn(className)}>
           <Pencil className="mr-2 h-4 w-4" />
