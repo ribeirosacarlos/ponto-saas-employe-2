@@ -158,8 +158,7 @@ export async function listEntries(page = 1) {
 }
 
 export async function requestAdjustment(timeEntryOrPayload, maybePayload = null) {
-  // New API: adjustments are tied to a specific time entry.
-  // Accept both the new signature (timeEntryId, payload) and the legacy one (payload containing the id).
+  // Accept both the newer signature (timeEntryId, payload) and legacy payload-only calls.
   const payload = maybePayload || timeEntryOrPayload || {}
   const timeEntryIdSource = maybePayload ? timeEntryOrPayload : payload
 
@@ -172,11 +171,14 @@ export async function requestAdjustment(timeEntryOrPayload, maybePayload = null)
     timeEntryIdSource?.entryId
   const timeEntryId = timeEntryIdSource?.id && !maybeId ? timeEntryIdSource.id : maybeId
 
-  if (!timeEntryId) {
-    throw new Error('requestAdjustment now requires a timeEntryId (time entry UUID)')
-  }
-
   const normalizedPayload = {
+    corrected_time:
+      payload?.corrected_time ??
+      payload?.proposed_clocked_at ??
+      payload?.proposedClockedAt ??
+      payload?.clocked_at ??
+      payload?.clockedAt ??
+      null,
     proposed_clocked_at:
       payload?.proposed_clocked_at ??
       payload?.proposedClockedAt ??
@@ -194,7 +196,10 @@ export async function requestAdjustment(timeEntryOrPayload, maybePayload = null)
     }
   })
 
-  const { data } = await api.post(`/v1/employee/time-entries/${timeEntryId}/adjustment`, normalizedPayload)
+  const endpoint = timeEntryId
+    ? `/v1/employee/time-entries/${timeEntryId}/adjustment`
+    : '/v1/employee/adjustments'
+  const { data } = await api.post(endpoint, normalizedPayload)
   return data
 }
 

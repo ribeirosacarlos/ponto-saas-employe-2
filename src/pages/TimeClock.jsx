@@ -772,20 +772,9 @@ export default function TimeClock({ onContinueToDashboard }) {
       openEntryForAdjustment?.time_entry_id ||
       null
     const idKey = timeEntryId || payload.original_time || 'open-entry'
-    if (!timeEntryId) {
-      toast({
-        title: t('historyPage.adjustment.errorTitle'),
-        description: t('historyPage.adjustment.missingEntry', 'Selecione um registro para ajustar.'),
-        variant: 'error',
-      })
-      return
-    }
     setSubmittingOpenAdjustment(idKey)
     try {
-      await requestAdjustment({
-        ...payload,
-        timeEntryId,
-      })
+      await requestAdjustment(timeEntryId ? { ...payload, timeEntryId } : payload)
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),

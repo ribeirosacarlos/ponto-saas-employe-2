@@ -36,21 +36,11 @@ export function RequestAdjustmentButton({
       payload.time_entry_id ||
       payload.entry_id ||
       payload.entry?.id ||
-      payload.entry?.uuid ||
-      ''
-
-    if (!timeEntryId) {
-      toast({
-        title: t('historyPage.adjustment.errorTitle'),
-        description: t('historyPage.adjustment.missingEntry', 'Selecione um registro para ajustar.'),
-        variant: 'error',
-      })
-      return
-    }
+      payload.entry?.uuid
 
     setSubmitting(true)
     try {
-      await requestAdjustment({ ...payload, timeEntryId })
+      await requestAdjustment(timeEntryId ? { ...payload, timeEntryId } : payload)
       toast({
         title: t('toast.adjustmentSuccess.title'),
         description: t('toast.adjustmentSuccess.description'),
