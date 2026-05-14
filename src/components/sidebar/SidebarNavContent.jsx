@@ -36,6 +36,27 @@ const SidebarTooltip = ({ label, children, collapsed, offset = 'translate-x-2' }
   )
 }
 
+const getNavItemClass = ({ collapsed, isActive, isCta = false }) =>
+  cn(
+    'group flex w-full min-h-[38px] items-center py-2 text-left transition-all duration-200',
+    collapsed ? 'justify-center rounded-2xl px-2' : 'justify-between rounded-2xl px-3.5',
+    isCta
+      ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
+      : isActive
+        ? 'border border-primary/30 bg-primary/20 text-foreground font-medium shadow-[0_14px_34px_-24px_rgba(91,68,230,0.38)] hover:bg-primary/22'
+        : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
+  )
+
+const getNavIconClass = ({ isActive, isCta = false }) =>
+  cn(
+    'h-4 w-4 shrink-0 transition-colors',
+    isCta
+      ? 'text-primary-foreground'
+      : isActive
+        ? 'text-primary'
+        : 'text-foreground/70 group-hover:text-foreground',
+  )
+
 export function SidebarNavContent({
   items = [],
   currentPage,
@@ -148,29 +169,12 @@ export function SidebarNavContent({
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
                       aria-label={t(item.labelKey)}
-                      className={cn(
-                        'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
-                        collapsed ? 'justify-center px-2' : 'justify-between px-3',
-                        isCta
-                          ? 'bg-primary text-primary-foreground font-semibold shadow-[0_18px_45px_-30px_rgba(62,82,152,0.7)] hover:bg-primary/90'
-                          : isActive
-                            ? 'bg-primary/12 text-primary font-semibold'
-                            : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
-                      )}
+                      className={getNavItemClass({ collapsed, isActive, isCta })}
                       href={itemHref}
                       onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
-                        <Icon
-                          className={cn(
-                            'h-4 w-4 shrink-0 transition-colors',
-                            isCta
-                              ? 'text-primary-foreground'
-                              : isActive
-                                ? 'text-primary'
-                                : 'text-foreground/70 group-hover:text-foreground',
-                          )}
-                        />
+                        <Icon className={getNavIconClass({ isActive, isCta })} />
                         <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
                       </div>
                       {!collapsed && badgeLabel ? (
@@ -231,23 +235,12 @@ export function SidebarNavContent({
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
                       aria-label={t(item.labelKey)}
-                      className={cn(
-                        'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
-                        collapsed ? 'justify-center px-2' : 'justify-between px-3',
-                        isActive
-                          ? 'bg-primary/12 text-primary font-semibold'
-                          : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
-                      )}
+                      className={getNavItemClass({ collapsed, isActive })}
                       href={itemHref}
                       onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
-                        <Icon
-                          className={cn(
-                            'h-4 w-4 shrink-0 transition-colors',
-                            isActive ? 'text-primary' : 'text-foreground/70 group-hover:text-foreground',
-                          )}
-                        />
+                        <Icon className={getNavIconClass({ isActive })} />
                         <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
                       </div>
                     </a>
@@ -296,23 +289,12 @@ export function SidebarNavContent({
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
                       aria-label={t(item.labelKey)}
-                      className={cn(
-                        'group flex w-full min-h-[34px] items-center rounded-full py-2 text-left transition-colors duration-150',
-                        collapsed ? 'justify-center px-2' : 'justify-between px-3',
-                        isActive
-                          ? 'bg-primary/12 text-primary font-semibold'
-                          : 'text-foreground/80 hover:bg-muted/70 hover:text-foreground',
-                      )}
+                      className={getNavItemClass({ collapsed, isActive })}
                       href={itemHref}
                       onClick={(event) => handleItemAnchorClick(event, item)}
                     >
                       <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
-                        <Icon
-                          className={cn(
-                            'h-4 w-4 shrink-0 transition-colors',
-                            isActive ? 'text-primary' : 'text-foreground/70 group-hover:text-foreground',
-                          )}
-                        />
+                        <Icon className={getNavIconClass({ isActive })} />
                         <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
                       </div>
                     </a>
