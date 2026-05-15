@@ -3,6 +3,8 @@
   on:
     push:
       branches: ["main"]
+    schedule:
+      - cron: "30 23 * * *"
     workflow_dispatch: {}
 
   permissions:
@@ -10,7 +12,33 @@
     contents: read
 
   jobs:
+    gate:
+      runs-on: ubuntu-latest
+      outputs:
+        should_deploy: ${{ steps.check.outputs.should_deploy }}
+
+      steps:
+        - name: Check deploy window
+          id: check
+          shell: bash
+          run: |
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            current_hm=$(TZ=America/Sao_Paulo date +%H%M)
+
+            if [ "$current_hm" -ge "2030" ]; then
+              echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+              echo "Deploy blocked: current Sao Paulo time is $current_hm, before 20:30."
+            fi
+
     deploy:
+      needs: gate
+      if: needs.gate.outputs.should_deploy == 'true'
       runs-on: ubuntu-latest
 
       steps:
