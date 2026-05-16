@@ -194,12 +194,31 @@ const en = {
       },
       preferences: {
         title: 'Preferences',
-        subtitle: 'Company timezone and language.',
+        subtitle: 'Company timezone, punch access and geolocation.',
         helper: 'Applied to filters, times and exports.',
         fields: {
           timezone: 'Company timezone',
           locale: 'Language',
           timezonePlaceholder: 'Type to search and select',
+        },
+        clockDevice: {
+          title: 'Allowed device for punch registration',
+          description:
+            'Choose where employees can register punches. At least one option must stay enabled.',
+          helper: 'At least one registration method must remain enabled.',
+          options: {
+            mobile: 'Mobile app',
+            desktop: 'Desktop browser',
+          },
+          states: {
+            loading: 'Loading device settings...',
+          },
+          validation: {
+            atLeastOne: 'At least one device type must be allowed for punch registration.',
+          },
+          toast: {
+            errorDescription: 'Could not save the allowed device settings for punch registration.',
+          },
         },
         notificationsTitle: 'Notifications and alerts',
         actions: {

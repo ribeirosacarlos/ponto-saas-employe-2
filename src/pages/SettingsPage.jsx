@@ -9,6 +9,9 @@ import {
   Loader2,
   LocateFixed,
   MapPinned,
+  Monitor,
+  MonitorSmartphone,
+  Smartphone,
   Shield,
   ShieldCheck,
 } from 'lucide-react'
@@ -33,14 +36,17 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { DEFAULT_TIMEZONE } from '../lib/datetime'
 import { useDateTime } from '../hooks/useDateTime'
+import { useAdminDeviceSettings } from '../hooks/useAdminDeviceSettings'
 import { useAdminLocationSettings } from '../hooks/useAdminLocationSettings'
 import { useSettingsOverview } from '../hooks/useSettingsOverview'
 import { useSettingsSubscription } from '../hooks/useSettingsSubscription'
+import { useUpdateAdminDeviceSettings } from '../hooks/useUpdateAdminDeviceSettings'
 import { useUpdateAdminLocationSettings } from '../hooks/useUpdateAdminLocationSettings'
 import { fetchCompanyTimezone, updateCompanyTimezone } from '../services/companyTimezoneService'
 import { fetchCompanyGeolocation, updateCompanyGeolocation } from '../services/companyGeolocationService'
 import { useAuthStore } from '../store/useAuth'
 import { useTimezoneStore } from '../store/useTimezone'
+import { serializeAdminDeviceSettingsPayload } from '../types/adminDeviceSettings'
 import {
   createAdminLocationSettingsFormValues,
   serializeAdminLocationSettingsPayload,
@@ -275,12 +281,20 @@ export default function SettingsPage() {
     cancel,
   } = useSettingsSubscription(canEditPreferences)
   const {
+    data: deviceSettingsData,
+    isLoading: deviceSettingsLoading,
+    error: deviceSettingsLoadError,
+    reload: reloadDeviceSettings,
+    setData: setDeviceSettingsData,
+  } = useAdminDeviceSettings(true)
+  const {
     data: locationData,
     isLoading: locationLoading,
     error: locationLoadError,
     reload: reloadLocation,
     setData: setLocationData,
   } = useAdminLocationSettings(true)
+  const { save: saveDeviceSettings, isSaving: deviceSettingsSaving } = useUpdateAdminDeviceSettings()
   const { save: saveLocationSettings, isSaving: locationSaving } = useUpdateAdminLocationSettings()
 
   const billing = data?.billing || null
@@ -321,12 +335,17 @@ export default function SettingsPage() {
   const [locationForm, setLocationForm] = useState(EMPTY_LOCATION_FORM)
   const [locationFieldErrors, setLocationFieldErrors] = useState({})
   const [locationSubmitError, setLocationSubmitError] = useState('')
+  const [deviceSettingsError, setDeviceSettingsError] = useState('')
   const [clockRequirementLoading, setClockRequirementLoading] = useState(true)
   const [clockRequirementSaving, setClockRequirementSaving] = useState(false)
   const [clockRequirementError, setClockRequirementError] = useState('')
   const [featureAvailable, setFeatureAvailable] = useState(false)
   const [requiredOnClock, setRequiredOnClock] = useState(false)
   const [initialRequiredOnClock, setInitialRequiredOnClock] = useState(false)
+  const [clockDevicePreference, setClockDevicePreference] = useState({
+    mobile: true,
+    desktop: true,
+  })
   const [perimeterExpanded, setPerimeterExpanded] = useState(false)
 
   useEffect(() => {
@@ -336,6 +355,15 @@ export default function SettingsPage() {
     }
     setTimezoneBaseline(nextTimezone)
   }, [company?.timezone, isTimezoneEditing])
+
+  useEffect(() => {
+    if (!deviceSettingsData) return
+    setClockDevicePreference({
+      mobile: deviceSettingsData.allow_mobile_clock === true,
+      desktop: deviceSettingsData.allow_desktop_clock === true,
+    })
+    setDeviceSettingsError('')
+  }, [deviceSettingsData])
 
   useEffect(() => {
     if (!locationData) return
@@ -427,7 +455,6 @@ export default function SettingsPage() {
     const base = [timezoneBaseline, company?.timezone, DEFAULT_TIMEZONE, 'UTC'].filter(Boolean)
     return Array.from(new Set([...(timezoneOptions || []), ...base]))
   }, [company?.timezone, timezoneBaseline, timezoneOptions])
-
   const timezoneDirty = timezoneValue !== timezoneBaseline
   const validationEnabled = locationForm.location_validation_enabled === true
   const validationMode =
@@ -442,7 +469,12 @@ export default function SettingsPage() {
   }, [locationData, locationForm])
 
   const hasClockRequirementChanges = requiredOnClock !== initialRequiredOnClock
-  const hasPendingGeolocationChanges = hasLocationChanges || hasClockRequirementChanges
+  const hasDeviceSettingsChanges =
+    !!deviceSettingsData &&
+    (clockDevicePreference.mobile !== (deviceSettingsData.allow_mobile_clock === true) ||
+      clockDevicePreference.desktop !== (deviceSettingsData.allow_desktop_clock === true))
+  const hasPendingGeolocationChanges =
+    hasLocationChanges || hasClockRequirementChanges || hasDeviceSettingsChanges
 
   const accessUntil = activeSubscription?.access_expires_at || activeSubscription?.current_period_end || null
   const cancelDisabled =
@@ -451,6 +483,22 @@ export default function SettingsPage() {
     isCancelling ||
     subscriptionStatusKey === 'canceling' ||
     subscriptionStatusKey === 'canceled'
+
+  const clockDeviceOptions = useMemo(
+    () => [
+      {
+        key: 'mobile',
+        label: t('settingsPage.preferences.clockDevice.options.mobile'),
+        icon: Smartphone,
+      },
+      {
+        key: 'desktop',
+        label: t('settingsPage.preferences.clockDevice.options.desktop'),
+        icon: Monitor,
+      },
+    ],
+    [t],
+  )
 
   const handleTimezoneSave = async () => {
     if (!timezoneValue || !canEditPreferences) return
@@ -488,6 +536,32 @@ export default function SettingsPage() {
     }
   }
 
+  const handleClockDeviceToggle = (deviceKey, checked) => {
+    setDeviceSettingsError('')
+    setClockDevicePreference((current) => {
+      const next = { ...current, [deviceKey]: checked }
+      if (!next.mobile && !next.desktop) {
+        return current
+      }
+      return next
+    })
+  }
+
+  const persistDeviceSettings = async () => {
+    if (!clockDevicePreference.mobile && !clockDevicePreference.desktop) {
+      throw new Error('device_validation_error')
+    }
+
+    const response = await saveDeviceSettings(
+      serializeAdminDeviceSettingsPayload(clockDevicePreference),
+    )
+    setDeviceSettingsData(response)
+    setClockDevicePreference({
+      mobile: response.allow_mobile_clock === true,
+      desktop: response.allow_desktop_clock === true,
+    })
+  }
+
   const persistClockRequirement = async () => {
     const response = await updateCompanyGeolocation(requiredOnClock)
     const nextRequired = response?.required_on_clock === true
@@ -511,13 +585,35 @@ export default function SettingsPage() {
   }
 
   const handleSaveGeolocationChanges = async () => {
-    if (!canEditPreferences || clockRequirementSaving || locationSaving) return
+    if (!canEditPreferences || clockRequirementSaving || locationSaving || deviceSettingsSaving) return
 
     setClockRequirementError('')
     setLocationSubmitError('')
     setLocationFieldErrors({})
+    setDeviceSettingsError('')
 
     let failed = false
+
+    if (hasDeviceSettingsChanges) {
+      try {
+        await persistDeviceSettings()
+      } catch (err) {
+        failed = true
+        setDeviceSettingsError(
+          err?.message === 'device_validation_error'
+            ? t(
+                'settingsPage.preferences.clockDevice.validation.atLeastOne',
+                'E necessario permitir ao menos um tipo de dispositivo para registro de ponto.',
+              )
+            : err?.response?.data?.message ||
+                err?.message ||
+                t(
+                  'settingsPage.preferences.clockDevice.toast.errorDescription',
+                  'Nao foi possivel salvar a configuracao de dispositivos para o registro de ponto.',
+                ),
+        )
+      }
+    }
 
     if (hasClockRequirementChanges) {
       try {
@@ -562,20 +658,24 @@ export default function SettingsPage() {
     if (!failed) {
       toast({
         title: t('settingsPage.locationValidation.toast.successTitle'),
-        description: t(
-          'settingsPage.settingsSaved',
-          'As preferencias de geolocalizacao foram atualizadas.',
-        ),
+        description: t('settingsPage.settingsSaved', 'As preferencias da empresa foram atualizadas.'),
         variant: 'success',
       })
     }
   }
 
   const handleDiscardGeolocationChanges = () => {
+    if (deviceSettingsData) {
+      setClockDevicePreference({
+        mobile: deviceSettingsData.allow_mobile_clock === true,
+        desktop: deviceSettingsData.allow_desktop_clock === true,
+      })
+    }
     if (locationData) {
       setLocationForm(createAdminLocationSettingsFormValues(locationData))
     }
     setRequiredOnClock(initialRequiredOnClock)
+    setDeviceSettingsError('')
     setLocationFieldErrors({})
     setLocationSubmitError('')
     setClockRequirementError('')
@@ -780,7 +880,10 @@ export default function SettingsPage() {
 
           <Section
             label={t('settingsPage.preferences.title', 'Preferencias')}
-            title={t('settingsPage.preferences.subtitle', 'Zona horaria e geolocalizacao da empresa.')}
+            title={t(
+              'settingsPage.preferences.subtitle',
+              'Zona horaria, acesso de ponto e geolocalizacao da empresa.',
+            )}
           >
             <div>
               <SettingRow
@@ -852,6 +955,62 @@ export default function SettingsPage() {
                       {t('common.actions.cancel', 'Cancelar')}
                     </RowAction>
                   </div>
+                </div>
+              </SettingRow>
+
+              <SettingRow
+                icon={MonitorSmartphone}
+                title={t(
+                  'settingsPage.preferences.clockDevice.title',
+                  'Dispositivo permitido para bater ponto',
+                )}
+                description={t(
+                  'settingsPage.preferences.clockDevice.description',
+                  'Escolha onde os colaboradores podem registrar o ponto. Pelo menos uma opcao deve estar ativa.',
+                )}
+                expanded
+                error={deviceSettingsError}
+              >
+                <div className="space-y-3 pl-12">
+                  {clockDeviceOptions.map((option) => {
+                    const Icon = option.icon
+                    const checked = clockDevicePreference[option.key]
+
+                    return (
+                      <div
+                        key={option.key}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white px-4 py-3"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <p className="text-sm font-semibold text-foreground">{option.label}</p>
+                        </div>
+                        <Switch
+                          checked={checked}
+                          disabled={
+                            !canEditPreferences ||
+                            deviceSettingsLoading ||
+                            deviceSettingsSaving ||
+                            !deviceSettingsData
+                          }
+                          className="h-5 w-9 [&>span]:h-3.5 [&>span]:w-3.5"
+                          aria-label={option.label}
+                          onCheckedChange={(nextChecked) =>
+                            handleClockDeviceToggle(option.key, nextChecked)
+                          }
+                        />
+                      </div>
+                    )
+                  })}
+
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      'settingsPage.preferences.clockDevice.helper',
+                      'Pelo menos uma forma de registro deve permanecer ativa.',
+                    )}
+                  </p>
                 </div>
               </SettingRow>
 
@@ -1028,20 +1187,36 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-3 pt-3">
-              {locationLoading || clockRequirementLoading ? (
+              {locationLoading || clockRequirementLoading || deviceSettingsLoading ? (
                 <InlineNotice>
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{t('settingsPage.locationValidation.states.loading')}</span>
+                    <span>
+                      {deviceSettingsLoading
+                        ? t(
+                            'settingsPage.preferences.clockDevice.states.loading',
+                            'Carregando configuracao de dispositivos...',
+                          )
+                        : t('settingsPage.locationValidation.states.loading')}
+                    </span>
                   </div>
                 </InlineNotice>
               ) : null}
 
-              {locationLoadError ? (
+              {locationLoadError || deviceSettingsLoadError ? (
                 <InlineNotice tone="error">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span>{locationLoadError}</span>
-                    <RowAction onClick={reloadLocation}>
+                    <span>{deviceSettingsLoadError || locationLoadError}</span>
+                    <RowAction
+                      onClick={() => {
+                        if (deviceSettingsLoadError) {
+                          reloadDeviceSettings().catch(() => {})
+                        }
+                        if (locationLoadError) {
+                          reloadLocation().catch(() => {})
+                        }
+                      }}
+                    >
                       {t('settingsPage.locationValidation.actions.reload', 'Recarregar')}
                     </RowAction>
                   </div>
@@ -1078,7 +1253,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   {t(
                     'settingsPage.pendingChangesDescription',
-                    'Salve ou descarte as preferencias de geolocalizacao antes de sair da pagina.',
+                    'Salve ou descarte as preferencias de registro e geolocalizacao antes de sair da pagina.',
                   )}
                 </p>
               </div>
@@ -1086,7 +1261,7 @@ export default function SettingsPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <RowAction
-                disabled={clockRequirementSaving || locationSaving}
+                disabled={clockRequirementSaving || locationSaving || deviceSettingsSaving}
                 onClick={handleDiscardGeolocationChanges}
               >
                 {t('common.actions.cancel', 'Cancelar')}
@@ -1095,11 +1270,16 @@ export default function SettingsPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={!canEditPreferences || clockRequirementSaving || locationSaving}
+                disabled={
+                  !canEditPreferences ||
+                  clockRequirementSaving ||
+                  locationSaving ||
+                  deviceSettingsSaving
+                }
                 onClick={handleSaveGeolocationChanges}
                 className="rounded-full border-border/70 bg-transparent shadow-none"
               >
-                {clockRequirementSaving || locationSaving ? (
+                {clockRequirementSaving || locationSaving || deviceSettingsSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {t('settingsPage.locationValidation.actions.saving', 'Salvando...')}
