@@ -191,12 +191,32 @@ const es = {
       },
       preferences: {
         title: 'Preferencias',
-        subtitle: 'Zona horaria e idioma de la empresa.',
+        subtitle: 'Zona horaria, acceso de fichaje y geolocalizacion de la empresa.',
         helper: 'Aplicado a filtros, horarios y exportaciones.',
         fields: {
           timezone: 'Zona horaria de la empresa',
           locale: 'Idioma',
           timezonePlaceholder: 'Escribe para buscar y seleccionar',
+        },
+        clockDevice: {
+          title: 'Dispositivo permitido para fichar',
+          description:
+            'Elige donde los colaboradores pueden registrar el fichaje. Al menos una opcion debe permanecer activa.',
+          helper: 'Al menos una forma de registro debe permanecer activa.',
+          options: {
+            mobile: 'Aplicacion mobile',
+            desktop: 'Navegador desktop',
+          },
+          states: {
+            loading: 'Cargando configuracion de dispositivos...',
+          },
+          validation: {
+            atLeastOne: 'Es necesario permitir al menos un tipo de dispositivo para registrar el fichaje.',
+          },
+          toast: {
+            errorDescription:
+              'No fue posible guardar la configuracion de dispositivos para el registro del fichaje.',
+          },
         },
         notificationsTitle: 'Notificaciones y alertas',
         actions: {

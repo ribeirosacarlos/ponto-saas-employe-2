@@ -189,7 +189,7 @@ const ptBR = {
       },
       preferences: {
         title: 'Preferencias',
-        subtitle: 'Zona horaria e idioma da empresa.',
+        subtitle: 'Zona horaria, acesso de ponto e geolocalizacao da empresa.',
         helper: 'Aplicado a filtros, horarios e exportacoes.',
         notifications: 'Alertas',
         notificationsTitle: 'Notificacoes e alertas',
@@ -203,6 +203,27 @@ const ptBR = {
           timezone: 'Zona horaria da empresa',
           locale: 'Idioma',
           timezonePlaceholder: 'Digite para buscar e selecionar',
+        },
+        clockDevice: {
+          title: 'Dispositivo permitido para bater ponto',
+          description:
+            'Escolha onde os colaboradores podem registrar o ponto. Pelo menos uma opcao deve estar ativa.',
+          helper: 'Pelo menos uma forma de registro deve permanecer ativa.',
+          options: {
+            mobile: 'Aplicativo mobile',
+            desktop: 'Navegador desktop',
+          },
+          states: {
+            loading: 'Carregando configuracao de dispositivos...',
+          },
+          validation: {
+            atLeastOne:
+              'E necessario permitir ao menos um tipo de dispositivo para registro de ponto.',
+          },
+          toast: {
+            errorDescription:
+              'Nao foi possivel salvar a configuracao de dispositivos para o registro de ponto.',
+          },
         },
         actions: {
           edit: 'Editar',
