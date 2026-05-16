@@ -57,7 +57,9 @@ export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   if (hasFiniteNumber(coords.longitude)) payload.longitude = Number(coords.longitude)
   if (coords.source) payload.source = coords.source
 
-  const response = await api.post('/v1/employee/clock', payload)
+  const response = await api.post('/v1/employee/clock', payload, {
+    skipAccessDeniedHandling: true,
+  })
   const { data: rawData, status: httpStatus } = response
   const payloadData = rawData?.data ?? rawData ?? {}
 
