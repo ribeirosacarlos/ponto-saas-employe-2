@@ -847,7 +847,7 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
       {renderContent()}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-4xl">
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'edit'
@@ -1008,174 +1008,179 @@ export default function AdminShifts({ sidebarOpen = false, onToggleSidebar = () 
                 </div>
 
                 {!useWeeklyTemplate ? (
-                  <div className="grid gap-3 xl:grid-cols-2">
-                  {formState.days.map((day) => {
-                    const working = Boolean(day.is_working_day)
-                    const dayLabel = WEEK_DAYS.find((item) => item.value === day.weekday)?.label
-                    const breakLabel =
-                      day.break_start_time && day.break_end_time
-                        ? `${day.break_start_time} - ${day.break_end_time}`
-                        : day.break_minutes === 0
-                          ? 'Sem intervalo'
-                          : day.break_minutes
-                            ? `${day.break_minutes} min`
-                            : 'Não configurado'
-                    const windowLabel = working
-                      ? formatRange(day.start_time, day.end_time)
-                      : t('adminShiftsPage.form.dayOff', { defaultValue: 'Dia de folga' })
-                    const workloadLabel = working
-                      ? formatScheduledLabel(day.scheduled_minutes, day.start_time, day.end_time)
-                      : '--'
-
-                    return (
-                      <div
-                        key={`day-${day.weekday}`}
-                        className="rounded-2xl border border-border/70 bg-card/80 p-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold">{dayLabel}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {working
-                                ? t('adminShiftsPage.form.dayWorking')
-                                : t('adminShiftsPage.form.dayOff')}
-                            </p>
+                  <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/80">
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[1040px]">
+                        <div className="grid grid-cols-[190px_110px_repeat(6,minmax(110px,1fr))] gap-3 border-b border-border/70 bg-muted/40 px-4 py-3">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Dia
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground">
-                              {t('adminShiftsPage.form.dayActive')}
-                            </span>
-                            <Switch
-                              checked={working}
-                              onCheckedChange={(checked) => handleToggleDay(day.weekday, checked)}
-                            />
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.dayActive')}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.startLabel')}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.endLabel')}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.scheduledMinutesLabel', {
+                              defaultValue: 'Carga diária',
+                            })}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.breakStartLabel')}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.breakEndLabel')}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('adminShiftsPage.form.breakMinutesLabel')}
                           </div>
                         </div>
 
-                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {t('adminShiftsPage.form.windowSummaryLabel', {
-                                defaultValue: 'Janela',
-                              })}
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-foreground">{windowLabel}</p>
-                          </div>
-                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {t('adminShiftsPage.form.workloadSummaryLabel', {
-                                defaultValue: 'Carga diária',
-                              })}
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-foreground">
-                              {workloadLabel}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {t('adminShiftsPage.form.breakSummaryLabel', {
-                                defaultValue: 'Intervalo',
-                              })}
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-foreground">{breakLabel}</p>
-                          </div>
-                        </div>
+                        {formState.days.map((day, index) => {
+                          const working = Boolean(day.is_working_day)
+                          const dayLabel = WEEK_DAYS.find((item) => item.value === day.weekday)?.label
 
-                        {working ? (
-                          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.startLabel')}
-                              </Label>
-                              <Input
-                                type="time"
-                                value={day.start_time || ''}
-                                onChange={(event) =>
-                                  handleDayChange(day.weekday, 'start_time', event.target.value)
-                                }
-                              />
+                          return (
+                            <div
+                              key={`day-${day.weekday}`}
+                              className={cn(
+                                'grid grid-cols-[190px_110px_repeat(6,minmax(110px,1fr))] gap-3 px-4 py-3',
+                                index < formState.days.length - 1 && 'border-b border-border/60',
+                                !working && 'bg-muted/20',
+                              )}
+                            >
+                              <div className="flex min-h-11 flex-col justify-center">
+                                <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {working
+                                    ? t('adminShiftsPage.form.dayWorking')
+                                    : t('adminShiftsPage.form.dayOff')}
+                                </p>
+                              </div>
+
+                              <div className="flex min-h-11 items-center">
+                                <div className="flex items-center gap-3">
+                                  <Switch
+                                    checked={working}
+                                    onCheckedChange={(checked) =>
+                                      handleToggleDay(day.weekday, checked)
+                                    }
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    {working ? 'Ativo' : 'Folga'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel} {t('adminShiftsPage.form.startLabel')}
+                                </Label>
+                                <Input
+                                  type="time"
+                                  value={day.start_time || ''}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(day.weekday, 'start_time', event.target.value)
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel} {t('adminShiftsPage.form.endLabel')}
+                                </Label>
+                                <Input
+                                  type="time"
+                                  value={day.end_time || ''}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(day.weekday, 'end_time', event.target.value)
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel}{' '}
+                                  {t('adminShiftsPage.form.scheduledMinutesLabel', {
+                                    defaultValue: 'Carga diária',
+                                  })}
+                                </Label>
+                                <Input
+                                  type="time"
+                                  step="60"
+                                  value={formatMinutesToHHmm(day.scheduled_minutes)}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(
+                                      day.weekday,
+                                      'scheduled_minutes',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel} {t('adminShiftsPage.form.breakStartLabel')}
+                                </Label>
+                                <Input
+                                  type="time"
+                                  value={day.break_start_time || ''}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(
+                                      day.weekday,
+                                      'break_start_time',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel} {t('adminShiftsPage.form.breakEndLabel')}
+                                </Label>
+                                <Input
+                                  type="time"
+                                  value={day.break_end_time || ''}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(
+                                      day.weekday,
+                                      'break_end_time',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="sr-only">
+                                  {dayLabel} {t('adminShiftsPage.form.breakMinutesLabel')}
+                                </Label>
+                                <Input
+                                  inputMode="numeric"
+                                  placeholder="60"
+                                  value={day.break_minutes ?? ''}
+                                  disabled={!working}
+                                  onChange={(event) =>
+                                    handleDayChange(day.weekday, 'break_minutes', event.target.value)
+                                  }
+                                />
+                              </div>
                             </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.endLabel')}
-                              </Label>
-                              <Input
-                                type="time"
-                                value={day.end_time || ''}
-                                onChange={(event) =>
-                                  handleDayChange(day.weekday, 'end_time', event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.scheduledMinutesLabel', {
-                                  defaultValue: 'Carga diária',
-                                })}
-                              </Label>
-                              <Input
-                                type="time"
-                                step="60"
-                                value={formatMinutesToHHmm(day.scheduled_minutes)}
-                                onChange={(event) =>
-                                  handleDayChange(
-                                    day.weekday,
-                                    'scheduled_minutes',
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.breakStartLabel')}
-                              </Label>
-                              <Input
-                                type="time"
-                                value={day.break_start_time || ''}
-                                onChange={(event) =>
-                                  handleDayChange(
-                                    day.weekday,
-                                    'break_start_time',
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.breakEndLabel')}
-                              </Label>
-                              <Input
-                                type="time"
-                                value={day.break_end_time || ''}
-                                onChange={(event) =>
-                                  handleDayChange(
-                                    day.weekday,
-                                    'break_end_time',
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[11px] text-muted-foreground">
-                                {t('adminShiftsPage.form.breakMinutesLabel')}
-                              </Label>
-                              <Input
-                                inputMode="numeric"
-                                placeholder="60"
-                                value={day.break_minutes ?? ''}
-                                onChange={(event) =>
-                                  handleDayChange(day.weekday, 'break_minutes', event.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        ) : null}
+                          )
+                        })}
                       </div>
-                    )
-                  })}
+                    </div>
                   </div>
                 ) : null}
               </div>
