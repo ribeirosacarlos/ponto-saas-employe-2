@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   endOfDay,
   endOfMonth,
@@ -101,6 +101,12 @@ const formatMinutes = (minutes?: number) => {
   return `${hours}:${mins}`
 }
 
+const formatWorkedTime = (hhmm?: string | null, minutes?: number | null) => {
+  if (typeof hhmm === 'string' && hhmm.trim()) return hhmm.trim()
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--'
+  return formatMinutes(minutes)
+}
+
 const formatBalanceMinutes = (minutes?: number | null) => {
   if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
   const rounded = Math.round(minutes)
@@ -139,26 +145,60 @@ const getBalanceTrend = (minutes?: number | null) => {
   }
 }
 
-const computeDayMinutes = (items: any[]): number => {
-  const sorted = [...items].sort((a, b) => {
-    const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
-    const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
-    return left - right
+const getFirstDefinedValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null)
+
+const getDailyMetricsCandidate = (entry: any = {}) =>
+  getFirstDefinedValue(
+    entry.dailySummary,
+    entry.daily_summary,
+    entry.daySummary,
+    entry.day_summary,
+    entry.workdaySummary,
+    entry.workday_summary,
+    entry.totals,
+  )
+
+const normalizeDailyMetrics = (source: any = {}) => ({
+  workedMinutes: getFirstDefinedValue(source.worked_minutes, source.workedMinutes),
+  workedHhmm: getFirstDefinedValue(source.worked_hhmm, source.workedHhmm),
+  expectedMinutes: getFirstDefinedValue(source.expected_minutes, source.expectedMinutes),
+  expectedHhmm: getFirstDefinedValue(source.expected_hhmm, source.expectedHhmm),
+  breakMinutes: getFirstDefinedValue(source.break_minutes, source.breakMinutes),
+  allowedBreakMinutes: getFirstDefinedValue(source.allowed_break_minutes, source.allowedBreakMinutes),
+  exceededBreakMinutes: getFirstDefinedValue(source.exceeded_break_minutes, source.exceededBreakMinutes),
+  balanceMinutes: getFirstDefinedValue(source.balance_minutes, source.balanceMinutes),
+  balanceHhmm: getFirstDefinedValue(source.balance_hhmm, source.balanceHhmm),
+})
+
+const extractDailyMetrics = (items: any[] = []) => {
+  const metricsSource = items.find((entry) => {
+    const candidate = getDailyMetricsCandidate(entry)
+    const source = candidate ?? entry
+    return [
+      source?.worked_minutes,
+      source?.workedMinutes,
+      source?.worked_hhmm,
+      source?.workedHhmm,
+      source?.expected_minutes,
+      source?.expectedMinutes,
+      source?.expected_hhmm,
+      source?.expectedHhmm,
+      source?.break_minutes,
+      source?.breakMinutes,
+      source?.allowed_break_minutes,
+      source?.allowedBreakMinutes,
+      source?.exceeded_break_minutes,
+      source?.exceededBreakMinutes,
+      source?.balance_minutes,
+      source?.balanceMinutes,
+      source?.balance_hhmm,
+      source?.balanceHhmm,
+    ].some((value) => value !== undefined && value !== null)
   })
-  let total = 0
-  const openIns: number[] = []
-  sorted.forEach((entry) => {
-    if (!entry.clockedAt) return
-    const ts = new Date(entry.clockedAt).getTime()
-    if (!Number.isFinite(ts)) return
-    if (entry.type === 'in') {
-      openIns.push(ts)
-    } else if (entry.type === 'out' && openIns.length) {
-      const start = openIns.shift()!
-      total += Math.max(0, Math.round((ts - start) / 60000))
-    }
-  })
-  return total
+
+  if (!metricsSource) return null
+
+  return normalizeDailyMetrics(getDailyMetricsCandidate(metricsSource) ?? metricsSource)
 }
 
 const isPendingApprovalAdjustment = (entry: any = {}) => {
@@ -226,6 +266,7 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     source: entry.source ?? entry.origin ?? '',
     deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
+    dailyMetrics: normalizeDailyMetrics(getDailyMetricsCandidate(entry) ?? entry),
   }
 }
 
@@ -273,7 +314,6 @@ const withSevenDayRangeIfMultiple = (state: {
 const buildTimesheetSummary = (entries = []) => {
   const duplicateMap = new Map()
   const pendingIds = new Set()
-  let totalMinutes = 0
 
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
     const clock = entry.clockedAt
@@ -306,10 +346,7 @@ const buildTimesheetSummary = (entries = []) => {
         openIns.push({ id: entry.id, ts })
         return
       }
-      if (entry.type === 'out' && openIns.length) {
-        const start = openIns.shift()
-        totalMinutes += Math.max(0, Math.round((ts - start.ts) / 60000))
-      }
+      if (entry.type === 'out' && openIns.length) openIns.shift()
     })
 
     openIns.forEach((item) => pendingIds.add(item.id))
@@ -325,7 +362,6 @@ const buildTimesheetSummary = (entries = []) => {
   return {
     totalEntries: entries.length,
     daysWithRecords: dayKeys.length,
-    totalMinutes,
     pendingCount: pendingIds.size,
     duplicateCount,
     pendingIds,
@@ -345,6 +381,7 @@ const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc')
   return Object.entries(groups)
     .map(([dateKey, items]) => ({
       dateKey,
+      dailyMetrics: extractDailyMetrics(items),
       items: [...items].sort((a, b) => {
         const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
         const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
@@ -384,7 +421,11 @@ const getShiftName = (employee: any) =>
     employee?.shiftTitle,
   )
 
-const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string, to: string) => {
+const addMissingDays = (
+  days: { dateKey: string; items: any[]; dailyMetrics?: ReturnType<typeof extractDailyMetrics> }[],
+  from: string,
+  to: string,
+) => {
   const start = parseISO(from)
   const end = parseISO(to)
   if (!isValid(start) || !isValid(end)) return days
@@ -394,7 +435,7 @@ const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string,
   allDays.forEach((day) => {
     const key = format(day, 'yyyy-MM-dd')
     if (!existing.has(key)) {
-      days.push({ dateKey: key, items: [] })
+      days.push({ dateKey: key, items: [], dailyMetrics: null })
     }
   })
 
@@ -1148,7 +1189,7 @@ export default function CloseTimesheetPage() {
     tableSummary,
     tableDuplicatesSet,
   }: {
-    groups: Array<{ dateKey: string; items: any[] }>
+    groups: Array<{ dateKey: string; items: any[]; dailyMetrics?: ReturnType<typeof extractDailyMetrics> }>
     tableSummary: any
     tableDuplicatesSet: Set<string>
   }) => (
@@ -1170,7 +1211,11 @@ export default function CloseTimesheetPage() {
           </thead>
           <tbody>
             {groups.flatMap((group) => {
-              const dayMins = computeDayMinutes(group.items)
+              const workedTimeLabel = formatWorkedTime(
+                group.dailyMetrics?.workedHhmm,
+                group.dailyMetrics?.workedMinutes,
+              )
+              const showDailyWorkedTime = group.items.length > 0
               const dateRows = group.items.map((entry, index) => {
                 const employeeKey =
                   entry?.userId ??
@@ -1410,10 +1455,10 @@ export default function CloseTimesheetPage() {
                           </span>
                         )}
                       </div>
-                      {dayMins > 0 && (
+                      {showDailyWorkedTime && (
                         <div className="flex items-center gap-1.5 text-[11px]">
                           <Timer className="h-3 w-3 text-muted-foreground/70" />
-                          <span className="font-mono font-semibold text-foreground">{formatMinutes(dayMins)}</span>
+                          <span className="font-mono font-semibold text-foreground">{workedTimeLabel}</span>
                           <span className="text-muted-foreground/70">{t('closeTimesheetPage.table.dailyTotal', 'trabalhadas')}</span>
                         </div>
                       )}
@@ -1918,6 +1963,5 @@ export default function CloseTimesheetPage() {
     </div>
   )
 }
-
 
 
