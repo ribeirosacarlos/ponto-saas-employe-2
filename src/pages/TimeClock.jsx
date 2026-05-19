@@ -20,6 +20,36 @@ import { getCompanyTimezone, isSameCompanyDay, toCompanyDate } from '../lib/date
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 import { GEOLOCATION_ERROR_CODES, getClockCoordinates, getClockSource } from '../lib/geolocation'
 
+const PENDING_PUNCH_STORAGE_KEY = 'time_clock_pending_punch'
+
+const isBrowser = () => typeof window !== 'undefined'
+
+const readPendingPunchStorage = () => {
+  if (!isBrowser()) return null
+
+  try {
+    const raw = window.localStorage.getItem(PENDING_PUNCH_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch (error) {
+    console.warn('[TimeClock] Failed to read pending punch from storage', error)
+    return null
+  }
+}
+
+const persistPendingPunchStorage = (payload) => {
+  if (!isBrowser()) return
+
+  try {
+    if (!payload) {
+      window.localStorage.removeItem(PENDING_PUNCH_STORAGE_KEY)
+      return
+    }
+    window.localStorage.setItem(PENDING_PUNCH_STORAGE_KEY, JSON.stringify(payload))
+  } catch (error) {
+    console.warn('[TimeClock] Failed to persist pending punch to storage', error)
+  }
+}
+
 const statusTokens = {
   idle: {
     ring: 'from-slate-200 via-slate-100 to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800',
@@ -44,6 +74,7 @@ export default function TimeClock({ onContinueToDashboard }) {
     formatDate,
     formatTime,
     formatDateForApi,
+    formatDateTimeForApi,
     isSameDay,
     toCompanyZonedParts,
     tz: companyTimezone,
@@ -79,9 +110,14 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [isLastPunchExpanded, setIsLastPunchExpanded] = useState(true)
   const [isSubmittingClock, setIsSubmittingClock] = useState(false)
   const [clockActionError, setClockActionError] = useState('')
+  const [optimisticPunch, setOptimisticPunch] = useState(null)
+  const [pendingSyncPunch, setPendingSyncPunch] = useState(null)
+  const [isSyncingPendingPunch, setIsSyncingPendingPunch] = useState(false)
+  const [pendingSyncMessage, setPendingSyncMessage] = useState('')
   const userMenuRef = useRef(null)
   const isMounted = useRef(true)
   const isMobile = useIsMobile()
+  const pendingSyncAttemptedRef = useRef(false)
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -193,18 +229,22 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [workedTodayData, setWorkedTodayData] = useState(null)
 
   const lastPunch = useMemo(() => {
+    if (optimisticPunch) return optimisticPunch
     const list = workedTodayData?.details?.entries || []
     if (!list.length) return null
     return [...list].sort(
       (a, b) =>
         new Date(b.clocked_at || b.created_at).getTime() - new Date(a.clocked_at || a.created_at).getTime(),
     )[0]
-  }, [workedTodayData])
+  }, [optimisticPunch, workedTodayData])
+
+  const isLastPunchPending = (lastPunch?.adjustment_status ?? lastPunch?.status) === 'pending'
 
   const lastPunchTime = useMemo(
     () => (lastPunch ? formatClockedTime(lastPunch.clocked_at || lastPunch.created_at) : null),
     [formatClockedTime, lastPunch],
   )
+  const canAdjustLastPunch = Boolean(lastPunch && !String(lastPunch?.id || '').startsWith('optimistic-'))
 
   const registeredAtParts = useMemo(() => {
     if (!lastPunchTime) return null
@@ -213,13 +253,13 @@ export default function TimeClock({ onContinueToDashboard }) {
     return { before: before?.trim?.() || '', after: after?.trim?.() || '' }
   }, [lastPunchTime, t])
 
-  const formatMinutesToLabel = (minutes) => {
+  const formatMinutesToLabel = useCallback((minutes) => {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '00:00'
     const totalMinutes = Math.max(0, Math.round(minutes))
     const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
     const mins = String(totalMinutes % 60).padStart(2, '0')
     return `${hours}:${mins}`
-  }
+  }, [])
 
   const isAdjustmentSource = (entry) =>
     ['adjustment', 'proposed_adjustment'].includes(entry?.source || entry?.proposed_source)
@@ -387,6 +427,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
   const isClockBlocked = !canClockIn({ isAbsentToday })
   const visibleClockError = clockActionError || lastError
+  const hasPendingSyncPunch = Boolean(pendingSyncPunch)
 
   const getGeolocationErrorMessage = useCallback(
     (code) => {
@@ -422,39 +463,55 @@ export default function TimeClock({ onContinueToDashboard }) {
     [t],
   )
 
-  useEffect(() => {
-    let active = true
-
-    const fetchWorkedToday = async () => {
+  const refreshWorkedToday = useCallback(
+    async (forceRefresh = false) => {
       if (!token) {
         setWorkedTodayLabel('00:00')
         setWorkedTodayData(null)
-        return
+        return null
       }
+
       try {
-        const data = await getWorkedToday()
-        if (!active) return
+        const data = await getWorkedToday(forceRefresh)
+        if (!isMounted.current) return data
+
         setWorkedTodayData(data)
         const minutes =
           data?.workedMinutes ??
           data?.worked_minutes ??
           (data?.workedSeconds ?? data?.worked_seconds) / 60
-        const label = formatMinutesToLabel(minutes)
-        if (!active) return
-        setWorkedTodayLabel(label)
+        setWorkedTodayLabel(formatMinutesToLabel(minutes))
+        return data
       } catch (error) {
         console.error('[TimeClock] Failed to load worked-today', error)
-        if (!active) return
-        setWorkedTodayLabel('00:00')
-        setWorkedTodayData(null)
+        if (isMounted.current) {
+          setWorkedTodayLabel('00:00')
+          setWorkedTodayData(null)
+        }
+        return null
       }
+    },
+    [formatMinutesToLabel, token],
+  )
+
+  useEffect(() => {
+    refreshWorkedToday()
+  }, [refreshWorkedToday])
+
+  useEffect(() => {
+    if (!token) {
+      setPendingSyncPunch(null)
+      setPendingSyncMessage('')
+      setOptimisticPunch(null)
+      pendingSyncAttemptedRef.current = false
+      return
     }
 
-    fetchWorkedToday()
+    const stored = readPendingPunchStorage()
+    if (!stored) return
 
-    return () => {
-      active = false
-    }
+    setPendingSyncPunch(stored)
+    setOptimisticPunch(stored.optimisticEntry || null)
   }, [token])
 
   useEffect(() => {
@@ -845,7 +902,7 @@ export default function TimeClock({ onContinueToDashboard }) {
     [formatClockedTime, formatDate, t],
   )
 
-  const fetchRecentEntries = useCallback(async () => {
+  const fetchRecentEntries = useCallback(async (forceRefresh = false) => {
     if (!token) {
       if (isMounted.current) {
         setRecentEntries([])
@@ -856,7 +913,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
     if (isMounted.current) setRecentEntriesLoading(true)
     try {
-      const { data } = await listEmployeeEntries(1)
+      const { data } = await listEmployeeEntries({ page: 1, forceRefresh })
       const normalized = Array.isArray(data) ? data : data?.data || []
       const tz = getCompanyTimezone(companyTimezone)
       const todayKey = toCompanyDate(new Date(), tz)
@@ -899,6 +956,22 @@ export default function TimeClock({ onContinueToDashboard }) {
     fetchRecentEntries()
   }, [fetchRecentEntries])
 
+  const displayedRecentEntries = useMemo(() => {
+    if (!optimisticPunch?.clocked_at) return recentEntries
+
+    const [optimisticEntry] = normalizeEntryList([optimisticPunch])
+    if (!optimisticEntry) return recentEntries
+
+    return [
+      optimisticEntry,
+      ...recentEntries.filter(
+        (entry) =>
+          entry.id !== optimisticEntry.id &&
+          !(entry.value === optimisticEntry.value && entry.interval === optimisticEntry.interval),
+      ),
+    ].slice(0, 4)
+  }, [normalizeEntryList, optimisticPunch, recentEntries])
+
   const handleGoToDashboard = () => {
     if (onContinueToDashboard) {
       onContinueToDashboard()
@@ -907,8 +980,201 @@ export default function TimeClock({ onContinueToDashboard }) {
     window.location.href = '/dashboard'
   }
 
+  const clearPendingPunch = useCallback(() => {
+    persistPendingPunchStorage(null)
+    setPendingSyncPunch(null)
+    setPendingSyncMessage('')
+    pendingSyncAttemptedRef.current = false
+  }, [])
+
+  const shouldDiscardPendingPunch = useCallback((result) => {
+    if (!result?.error) return false
+    if (result.httpStatus !== 422) return false
+    return true
+  }, [])
+
+  const syncPendingPunch = useCallback(
+    async ({ showSuccessToast = false, skipIfOffline = false } = {}) => {
+      const pending = pendingSyncPunch || readPendingPunchStorage()
+      if (!pending || !token || isSyncingPendingPunch) return null
+
+      if (skipIfOffline && isBrowser() && navigator.onLine === false) {
+        setPendingSyncMessage(
+          t(
+            'timeClock.pendingSync.offline',
+            'Este ponto esta salvo no dispositivo e sera sincronizado quando houver conexao.',
+          ),
+        )
+        return null
+      }
+
+      setIsSyncingPendingPunch(true)
+      setClockActionError('')
+      setPendingSyncMessage(
+        t('timeClock.pendingSync.syncing', 'Sincronizando ponto pendente com o servidor...'),
+      )
+
+      let result = null
+
+      try {
+        let coordinates = pending.coordinates || null
+
+        if (!coordinates && pending.needsGeolocationRetry) {
+          try {
+            coordinates = await getClockCoordinates({ required: pending.geolocationRequired === true })
+          } catch (error) {
+            if (pending.geolocationRequired) {
+              const message = getGeolocationErrorMessage(error?.code)
+              setPendingSyncMessage(message)
+              setClockActionError(message)
+              return null
+            }
+          }
+        }
+
+        const nextPending = coordinates
+          ? {
+              ...pending,
+              coordinates,
+              needsGeolocationRetry: false,
+            }
+          : pending
+
+        setPendingSyncPunch(nextPending)
+        persistPendingPunchStorage(nextPending)
+
+        result = await registerClock(nextPending.type, {
+          clockedAt: nextPending.clockedAt,
+          source: nextPending.source,
+          ...(coordinates || {}),
+          suppressCreatedToast: true,
+          suppressAdjustmentToast: true,
+        })
+      } finally {
+        setIsSyncingPendingPunch(false)
+      }
+
+      if (result?.error) {
+        const message =
+          result.message ||
+          t('toast.clockError.description', 'Nao foi possivel registrar o ponto. Verifique permissoes ou tente novamente.')
+        if (shouldDiscardPendingPunch(result)) {
+          clearPendingPunch()
+          setOptimisticPunch(null)
+        }
+        setPendingSyncMessage(message)
+        setClockActionError(message)
+        return result
+      }
+
+      if (!result) {
+        setPendingSyncMessage(
+          t(
+            'timeClock.pendingSync.retryNeeded',
+            'O ponto continua pendente. Tente sincronizar novamente.',
+          ),
+        )
+        return null
+      }
+
+      if (result.status === 'adjustment_requested') {
+        setOptimisticPunch((current) =>
+          current
+            ? {
+                ...current,
+                status: 'pending',
+                adjustment_status: 'pending',
+              }
+            : current,
+        )
+        clearPendingPunch()
+        toast({
+          title: t('timeClock.adjustmentRequested.title', 'Fora do turno'),
+          description: t(
+            'timeClock.adjustmentRequested.description',
+            'Fora do turno - aguardando aprovacao do gestor.',
+          ),
+          variant: 'warning',
+        })
+        await Promise.allSettled([fetchRecentEntries(true), refreshOpenStatus(), refreshWorkedToday(true)])
+        return result
+      }
+
+      if (result.status === 'created' && result?.next_event) {
+        setOpenEntryStatus((prev) => ({ ...(prev || {}), next_event: result.next_event, open: false }))
+      }
+
+      clearPendingPunch()
+      const [workedTodayResult] = await Promise.all([
+        refreshWorkedToday(true),
+        fetchRecentEntries(true),
+        refreshOpenStatus(),
+      ])
+
+      if (workedTodayResult) {
+        setOptimisticPunch(null)
+      }
+
+      if (showSuccessToast) {
+        toast({
+          title: t('timeClock.pendingSync.successTitle', 'Ponto sincronizado'),
+          description: t(
+            'timeClock.pendingSync.successDescription',
+            'O registro pendente foi enviado com sucesso ao servidor.',
+          ),
+          variant: 'success',
+        })
+      }
+
+      return result
+    },
+    [
+      clearPendingPunch,
+      fetchRecentEntries,
+      getGeolocationErrorMessage,
+      isSyncingPendingPunch,
+      pendingSyncPunch,
+      refreshOpenStatus,
+      refreshWorkedToday,
+      registerClock,
+      shouldDiscardPendingPunch,
+      t,
+      toast,
+      token,
+    ],
+  )
+
+  useEffect(() => {
+    if (!token || !pendingSyncPunch || pendingSyncAttemptedRef.current) return
+    pendingSyncAttemptedRef.current = true
+    syncPendingPunch({ skipIfOffline: true })
+  }, [pendingSyncPunch, syncPendingPunch, token])
+
+  useEffect(() => {
+    if (!token) return undefined
+
+    const handleOnline = () => {
+      if (readPendingPunchStorage()) {
+        syncPendingPunch({ showSuccessToast: true, skipIfOffline: true })
+      }
+    }
+
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [syncPendingPunch, token])
+
   const handlePrimaryAction = async () => {
     if (isSubmittingClock || primaryLoading) {
+      return
+    }
+
+    if (hasPendingSyncPunch) {
+      setClockActionError(
+        t(
+          'timeClock.pendingSync.blockNewPunch',
+          'Existe um ponto pendente de sincronizacao. Envie-o antes de registrar outro.',
+        ),
+      )
       return
     }
 
@@ -928,11 +1194,50 @@ export default function TimeClock({ onContinueToDashboard }) {
     setIsSubmittingClock(true)
 
     let result = null
+    const now = new Date()
+    const clockedAt = formatDateTimeForApi(now) || now.toISOString()
+    const source = getClockSource()
+    const optimisticEntry = {
+      id: `optimistic-${clockedAt}`,
+      clocked_at: clockedAt,
+      created_at: clockedAt,
+      type: nextActionType,
+      source,
+      status: 'confirmed',
+    }
+    const pendingPayload = {
+      type: nextActionType,
+      clockedAt,
+      source,
+      createdAt: now.toISOString(),
+      geolocationRequired: false,
+      needsGeolocationRetry: false,
+      coordinates: null,
+      optimisticEntry,
+    }
+
+    pendingSyncAttemptedRef.current = true
+    setOptimisticPunch(optimisticEntry)
+    setPendingSyncPunch(pendingPayload)
+    setPendingSyncMessage(
+      t(
+        'timeClock.pendingSync.created',
+        'Ponto salvo no dispositivo. Estamos tentando sincronizar com o servidor.',
+      ),
+    )
+    persistPendingPunchStorage(pendingPayload)
+    toast({
+      title: t('timeClock.clockSuccess.title', 'Ponto registrado com sucesso.'),
+      description: t('toast.clockSuccess.description', {
+        time: formatTime(clockedAt, { hour12: false }) || t('dashboard.nowLabel'),
+      }),
+      variant: 'success',
+    })
 
     try {
       const settings = await getSettingsOverview()
       const geolocationRequired = settings?.workday?.geolocation_required === true
-      const source = getClockSource()
+      pendingPayload.geolocationRequired = geolocationRequired
       let coordinates = null
 
       try {
@@ -940,28 +1245,60 @@ export default function TimeClock({ onContinueToDashboard }) {
       } catch (error) {
         if (geolocationRequired) {
           const message = getGeolocationErrorMessage(error?.code)
+          pendingPayload.needsGeolocationRetry = true
+          setPendingSyncPunch({ ...pendingPayload })
+          persistPendingPunchStorage(pendingPayload)
+          setPendingSyncMessage(message)
           setClockActionError(message)
-          toast({
-            title: t('timeClock.geolocation.requiredTitle', 'Localizacao obrigatoria'),
-            description: message,
-            variant: 'error',
-          })
           return
         }
+
+        pendingPayload.needsGeolocationRetry = true
+      }
+
+      if (coordinates) {
+        pendingPayload.coordinates = coordinates
+        pendingPayload.needsGeolocationRetry = false
+        setPendingSyncPunch({ ...pendingPayload })
+        persistPendingPunchStorage(pendingPayload)
+      } else if (pendingPayload.needsGeolocationRetry) {
+        setPendingSyncPunch({ ...pendingPayload })
+        persistPendingPunchStorage(pendingPayload)
       }
 
       result = await registerClock(nextActionType, {
+        clockedAt,
         source,
         ...(coordinates || {}),
+        suppressCreatedToast: true,
+        suppressAdjustmentToast: true,
       })
     } catch (error) {
       const message =
         error?.response?.data?.message ||
         error?.message ||
         t('toast.clockError.description', 'Nao foi possivel registrar o ponto. Verifique permissoes ou tente novamente.')
+      setPendingSyncMessage(message)
       setClockActionError(message)
     } finally {
       setIsSubmittingClock(false)
+    }
+
+    if (result?.error) {
+      const message =
+        result.message ||
+        t(
+          'timeClock.pendingSync.retryNeeded',
+          'O ponto continua pendente. Tente sincronizar novamente.',
+        )
+      if (shouldDiscardPendingPunch(result)) {
+        clearPendingPunch()
+        setOptimisticPunch(null)
+      } else {
+        setPendingSyncMessage(message)
+      }
+      setClockActionError(message)
+      return
     }
 
     if (result?.status === 'created' && result?.next_event) {
@@ -970,8 +1307,41 @@ export default function TimeClock({ onContinueToDashboard }) {
     if (!result) {
       return
     }
-    await fetchRecentEntries()
-    await refreshOpenStatus()
+
+    if (result.status === 'adjustment_requested') {
+      setOptimisticPunch((current) =>
+        current
+          ? {
+              ...current,
+              status: 'pending',
+              adjustment_status: 'pending',
+            }
+          : current,
+      )
+      clearPendingPunch()
+      toast({
+        title: t('timeClock.adjustmentRequested.title', 'Fora do turno'),
+        description: t(
+          'timeClock.adjustmentRequested.description',
+          'Fora do turno - aguardando aprovacao do gestor.',
+        ),
+        variant: 'warning',
+      })
+      await Promise.allSettled([fetchRecentEntries(true), refreshOpenStatus()])
+      return
+    }
+
+    clearPendingPunch()
+
+    const [workedTodayResult] = await Promise.all([
+      refreshWorkedToday(true),
+      fetchRecentEntries(true),
+      refreshOpenStatus(),
+    ])
+
+    if (workedTodayResult) {
+      setOptimisticPunch(null)
+    }
   }
 
   const handleLogout = async () => {
@@ -1178,10 +1548,15 @@ export default function TimeClock({ onContinueToDashboard }) {
                           t('timeClock.lastPunch.none')
                         )}
                       </p>
+                      {isLastPunchPending ? (
+                        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+                          {t('timeClock.lastPunch.pending', 'Aguardando aprovacao')}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 <div className="flex items-center gap-2">
-                  {lastPunch ? (
+                  {canAdjustLastPunch ? (
                     <EntryAdjustmentModal
                       entry={lastPunch}
                       defaultDate={
@@ -1217,7 +1592,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                     </button>
                   </div>
                 </div>
-                {lastPunch ? (
+                {canAdjustLastPunch ? (
                   <>
                     <div className="h-px bg-foreground/15" />
                     <div className="bg-background/90 px-3 py-[6px] flex justify-center md:hidden">
@@ -1308,7 +1683,7 @@ export default function TimeClock({ onContinueToDashboard }) {
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
-                  disabled={primaryLoading || loadingEntries || isClockBlocked}
+                  disabled={primaryLoading || loadingEntries || isClockBlocked || hasPendingSyncPunch}
                   onClick={handlePrimaryAction}
                   className="h-11 w-full rounded-full text-[14px] shadow-[0_16px_40px_-24px_rgba(62,82,152,0.55)]"
                 >
@@ -1322,6 +1697,35 @@ export default function TimeClock({ onContinueToDashboard }) {
                   {t('timeClock.actions.goDashboard')}
                 </Button>
               </div>
+              {hasPendingSyncPunch ? (
+                <div className="rounded-2xl border border-amber-300/70 bg-amber-50/90 px-3 py-3 text-amber-900 shadow-[0_12px_30px_-24px_rgba(217,119,6,0.45)] dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">
+                        {t('timeClock.pendingSync.title', 'Ponto pendente de sincronizacao')}
+                      </p>
+                      <p className="text-xs font-medium">
+                        {pendingSyncMessage ||
+                          t(
+                            'timeClock.pendingSync.description',
+                            'Este registro esta salvo no dispositivo e sera enviado ao servidor assim que possivel.',
+                          )}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => syncPendingPunch({ showSuccessToast: true, skipIfOffline: false })}
+                      disabled={isSyncingPendingPunch}
+                      className="h-10 rounded-full border border-amber-500/30 bg-white/80 px-4 text-[13px] font-semibold text-amber-900 hover:bg-white dark:bg-amber-50/10 dark:text-amber-50 dark:hover:bg-amber-50/20"
+                    >
+                      {isSyncingPendingPunch
+                        ? t('timeClock.pendingSync.syncingButton', 'Sincronizando...')
+                        : t('timeClock.pendingSync.button', 'Sincronizar agora')}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
               {visibleClockError ? (
                 <p className="text-xs font-semibold text-rose-500 sm:text-sm">{visibleClockError}</p>
               ) : null}
@@ -1367,7 +1771,7 @@ export default function TimeClock({ onContinueToDashboard }) {
                       {t('timeClock.recent.empty', 'Nenhum registro encontrado.')}
                     </p>
                   ) : (
-                    recentEntries.map((entry) => (
+                    displayedRecentEntries.map((entry) => (
                       <div
                         key={entry.id || entry.day + entry.value}
                       className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.22)]"

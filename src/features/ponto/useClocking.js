@@ -22,11 +22,11 @@ export function useClocking() {
   const [lastError, setLastError] = useState(null)
   const [localBreak, setLocalBreak] = useState(null)
 
-  const refreshEntries = useCallback(async () => {
+  const refreshEntries = useCallback(async (options = {}) => {
     setLoadingEntries(true)
     setLastError(null)
     try {
-      const response = await listEntries()
+      const response = await listEntries(options)
       const normalized = response?.data || response?.entries || []
       setEntries(normalized)
       setLocalBreak(null)
@@ -40,8 +40,7 @@ export function useClocking() {
           variant: 'error',
         })
         await logout()
-      } else if (error.response?.status === 403) {
-      } else {
+      } else if (error.response?.status !== 403) {
         toast({
           title: t('toast.fetchEntriesError.title'),
           description: error.response?.data?.message || t('toast.fetchEntriesError.description'),
@@ -54,13 +53,21 @@ export function useClocking() {
   }, [logout, toast, t])
 
   const registerClock = useCallback(
-    async (type, coords) => {
+    async (type, request = {}) => {
       const actionType = type || ''
+      const {
+        suppressCreatedToast = false,
+        suppressAdjustmentToast = false,
+        clockedAt,
+        ...coords
+      } = request || {}
+
       setClocking(actionType)
       setLastError(null)
+
       try {
-        const result = await clockRequest(type, coords)
-        const savedAt = result?.entry?.clocked_at || result?.entry?.created_at
+        const result = await clockRequest(type, { ...coords, clockedAt })
+        const savedAt = result?.entry?.clocked_at || result?.entry?.created_at || clockedAt
         const formattedTime = savedAt
           ? formatTime(savedAt, { hour12: false }) || t('dashboard.nowLabel')
           : t('dashboard.nowLabel')
@@ -69,38 +76,47 @@ export function useClocking() {
           const adjustment = result?.adjustment ?? {}
           const adjustmentId = adjustment.id || adjustment.uuid
           const proposedType = adjustment.proposed_type ?? adjustment.proposedType ?? ''
-          const proposedAt = adjustment.proposed_clocked_at ?? adjustment.proposedClockedAt ?? ''
-          toast({
-            title: t(
-              'timeClock.adjustmentRequested.title',
-              'Fora da jornada / dia não trabalhado / dia completo.',
-            ),
-            description:
-              t(
-                'timeClock.adjustmentRequested.description',
-                'Enviamos uma solicitação de ajuste para aprovação.',
-              ) +
-              (adjustmentId
-                ? ` (#${adjustmentId} • ${proposedType || '?'} • ${proposedAt || '--'})`
-                : ''),
-            variant: 'warning',
-          })
+          const proposedAt =
+            adjustment.proposed_clocked_at ?? adjustment.proposedClockedAt ?? clockedAt ?? ''
+
+          if (!suppressAdjustmentToast) {
+            toast({
+              title: t(
+                'timeClock.adjustmentRequested.title',
+                'Fora da jornada / dia nao trabalhado / dia completo.',
+              ),
+              description:
+                t(
+                  'timeClock.adjustmentRequested.description',
+                  'Enviamos uma solicitacao de ajuste para aprovacao.',
+                ) +
+                (adjustmentId
+                  ? ` (#${adjustmentId} • ${proposedType || '?'} • ${proposedAt || '--'})`
+                  : ''),
+              variant: 'warning',
+            })
+          }
+
           setLocalBreak(false)
-          await refreshEntries()
+          await refreshEntries({ forceRefresh: true })
           return result
         }
 
-        toast({
-          title: t('timeClock.clockSuccess.title', 'Ponto registrado com sucesso.'),
-          description: formattedTime ? t('toast.clockSuccess.description', { time: formattedTime }) : null,
-          variant: 'success',
-        })
+        if (!suppressCreatedToast) {
+          toast({
+            title: t('timeClock.clockSuccess.title', 'Ponto registrado com sucesso.'),
+            description: formattedTime ? t('toast.clockSuccess.description', { time: formattedTime }) : null,
+            variant: 'success',
+          })
+        }
+
         setLocalBreak(false)
-        await refreshEntries()
+        await refreshEntries({ forceRefresh: true })
         return result
       } catch (error) {
         const message = error.response?.data?.message || error.message || ''
         setLastError(message)
+
         if (error.response?.status === 422 && error.response?.data?.message) {
           toast({
             title: t('toast.clockValidation.title', t('toast.clockError.title')),
@@ -114,12 +130,6 @@ export function useClocking() {
             variant: 'error',
           })
           await logout()
-        } else if (error.response?.status === 403) {
-          toast({
-            title: t('toast.clockError.title'),
-            description: error.response?.data?.message || t('toast.clockError.description'),
-            variant: 'error',
-          })
         } else {
           toast({
             title: t('toast.clockError.title'),
@@ -127,7 +137,12 @@ export function useClocking() {
             variant: 'error',
           })
         }
-        return null
+
+        return {
+          error: true,
+          httpStatus: error.response?.status || null,
+          message,
+        }
       } finally {
         setClocking('')
       }
@@ -146,7 +161,9 @@ export function useClocking() {
           ? formatTime(savedAt, { hour12: false }) || t('dashboard.nowLabel')
           : t('dashboard.nowLabel')
         toast({
-          title: action === 'start' ? t('timeClock.actions.goToBreak', 'Iniciar intervalo') : t('timeClock.actions.backFromBreak', 'Voltar do intervalo'),
+          title: action === 'start'
+            ? t('timeClock.actions.goToBreak', 'Iniciar intervalo')
+            : t('timeClock.actions.backFromBreak', 'Voltar do intervalo'),
           description: t('toast.clockSuccess.description', { time: formattedTime }),
           variant: 'success',
         })
@@ -162,16 +179,13 @@ export function useClocking() {
             variant: 'error',
           })
           await logout()
-        } else if (error.response?.status === 403) {
-          toast({
-            title: t('timeClock.breakError') || t('toast.clockError.title'),
-            description: error.response?.data?.message || t('timeClock.breakErrorDescription') || t('toast.clockError.description'),
-            variant: 'error',
-          })
         } else {
           toast({
             title: t('timeClock.breakError') || t('toast.clockError.title'),
-            description: error.response?.data?.message || t('timeClock.breakErrorDescription') || t('toast.clockError.description'),
+            description:
+              error.response?.data?.message ||
+              t('timeClock.breakErrorDescription') ||
+              t('toast.clockError.description'),
             variant: 'error',
           })
         }
@@ -197,6 +211,7 @@ export function useClocking() {
     () => entries.filter((entry) => WORK_TYPES.includes(entry.type)),
     [entries],
   )
+
   const todaysWorkEntries = useMemo(
     () =>
       todaysEntries.filter(

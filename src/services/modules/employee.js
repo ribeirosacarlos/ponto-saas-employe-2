@@ -53,6 +53,7 @@ export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   const coords = typeof typeOrCoords === 'string' ? maybeCoords : typeOrCoords || {}
   const payload = {}
 
+  if (coords.clockedAt) payload.clocked_at = coords.clockedAt
   if (hasFiniteNumber(coords.latitude)) payload.latitude = Number(coords.latitude)
   if (hasFiniteNumber(coords.longitude)) payload.longitude = Number(coords.longitude)
   if (coords.source) payload.source = coords.source
@@ -154,8 +155,12 @@ export async function getEmployeeEntries(params = {}) {
   }
 }
 
-export async function listEntries(page = 1) {
-  const { data, meta } = await getEmployeeEntries({ page })
+export async function listEntries(pageOrOptions = 1) {
+  const options =
+    typeof pageOrOptions === 'object' && pageOrOptions !== null
+      ? pageOrOptions
+      : { page: pageOrOptions }
+  const { data, meta } = await getEmployeeEntries(options)
   return { data, meta }
 }
 

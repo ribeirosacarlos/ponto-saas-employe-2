@@ -5,6 +5,7 @@ import {
   coerceDatePlaceholder,
   formatDate,
   formatDateISO,
+  formatDateTimeForApi,
   formatDateTime,
   formatRelative,
   formatTime,
@@ -29,6 +30,7 @@ export function useDateTime() {
       formatDate: (value, options = {}) => formatDate(value, { locale, timeZone: tz, ...options }),
       formatDateTime: (value, options = {}) =>
         formatDateTime(value, { locale, timeZone: tz, ...options }),
+      formatDateTimeForApi: (value) => formatDateTimeForApi(value, { timeZone: tz, locale }),
       formatTime: (value, options = {}) => formatTime(value, { locale, timeZone: tz, ...options }),
       formatRelative: (value, reference, options = {}) =>
         formatRelative(value, reference, { locale, timeZone: tz, ...options }),

@@ -145,6 +145,25 @@ export const isSameDayInZone = (left, right, { timeZone, locale } = {}) => {
 
 export const toCompanyDate = (value, timeZone) => formatDateISO(value, { timeZone })
 
+export const formatDateTimeForApi = (value, { timeZone, locale } = {}) => {
+  const date = normalizeInput(value)
+  if (!date) return null
+
+  const zoned = toZonedParts(date, { timeZone, locale })
+  if (!zoned) return null
+
+  const { year, month, day, hour = 0, minute = 0, second = 0 } = zoned
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+  const utcFromZonedParts = Date.UTC(year, month - 1, day, hour, minute, second)
+  const offsetMinutes = Math.round((utcFromZonedParts - date.getTime()) / 60000)
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const absoluteOffset = Math.abs(offsetMinutes)
+  const offsetHours = String(Math.floor(absoluteOffset / 60)).padStart(2, '0')
+  const offsetMins = String(absoluteOffset % 60).padStart(2, '0')
+
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${milliseconds}${sign}${offsetHours}:${offsetMins}`
+}
+
 export const isSameCompanyDay = (value, timeZone, targetDateStr) => {
   if (!value || !targetDateStr) return false
   const entryDate = toCompanyDate(value, timeZone)
