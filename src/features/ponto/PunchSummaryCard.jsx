@@ -6,6 +6,7 @@ import { RequestAdjustmentButton } from '../../components/RequestAdjustmentButto
 import { getWorkedToday } from '../../services/modules/employee'
 import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
+import { getWorkedTodayMinutes } from '../../lib/timesheet'
 
 export function PunchSummaryCard({
   t,
@@ -24,7 +25,6 @@ export function PunchSummaryCard({
   const formatClockedTime = (value) => {
     const formatted = formatTime(value, { hour12: false })
     return formatted === '-' ? '--:--' : formatted
-  return format(date, 'HH:mm')
   }
 
   const formatMinutesToLabel = (minutes) => {
@@ -45,10 +45,7 @@ export function PunchSummaryCard({
       }
       try {
         const data = await getWorkedToday()
-        const minutes =
-          data?.workedMinutes ??
-          data?.worked_minutes ??
-          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        const minutes = getWorkedTodayMinutes(data)
         if (!active) return
         setWorkedTodayLabel(formatMinutesToLabel(minutes))
       } catch (error) {
