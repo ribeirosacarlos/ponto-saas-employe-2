@@ -1,30 +1,13 @@
 import { api } from '../http/api'
+import {
+  getWorkedTodayMinutes,
+  normalizeEntriesResponse,
+  normalizeWorkedToday,
+} from '../../lib/timesheet'
 
 const ENTRIES_CACHE_MS = 15 * 1000 // 15s cache to squash duplicate rapid requests
 const entriesCache = new Map()
 const entriesInflight = new Map()
-
-const parseEntriesResponse = (data, { page, perPage }) => {
-  const payload = data?.data && !Array.isArray(data.data) ? data.data : data
-  const entries = Array.isArray(payload?.data)
-    ? payload.data
-    : Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.entries)
-        ? payload.entries
-        : []
-
-  const metaSource = data?.meta || payload?.meta || payload || {}
-  const meta = {
-    currentPage:
-      metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
-    perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
-    total: metaSource.total ?? payload?.total,
-    lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
-  }
-
-  return { data: entries, meta }
-}
 
 const extractClockedAt = (entry) =>
   entry?.clocked_at ||
@@ -121,7 +104,7 @@ export async function getEmployeeEntries(params = {}) {
 
   const loadEntries = async () => {
     let response = await fetchPage(page)
-    let parsed = parseEntriesResponse(response.data, { page, perPage })
+    let parsed = normalizeEntriesResponse(response.data, { page, perPage })
 
     if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
       const today = new Date()
@@ -137,7 +120,7 @@ export async function getEmployeeEntries(params = {}) {
 
       if (!hasTodayEntry && parsed.meta.currentPage === 1) {
         response = await fetchPage(parsed.meta.lastPage)
-        parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+        parsed = normalizeEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
       }
     }
 
@@ -155,8 +138,8 @@ export async function getEmployeeEntries(params = {}) {
 }
 
 export async function listEntries(page = 1) {
-  const { data, meta } = await getEmployeeEntries({ page })
-  return { data, meta }
+  const { data, days, meta } = await getEmployeeEntries({ page })
+  return { data, days, meta }
 }
 
 export async function requestAdjustment(timeEntryOrPayload, maybePayload = null) {
@@ -264,11 +247,8 @@ export async function getWorkedToday(forceRefresh = false) {
   workedTodayInflight = (async () => {
     const { data } = await api.get('/v1/employee/worked-today')
     const payload = data?.data || data || {}
-    const normalized = {
-      ...payload,
-      workedMinutes: payload.worked_minutes ?? payload.workedMinutes,
-      workedSeconds: payload.worked_seconds ?? payload.workedSeconds,
-    }
+    const normalized = normalizeWorkedToday(payload)
+    normalized.workedMinutes = getWorkedTodayMinutes(normalized)
     workedTodayCache = normalized
     workedTodayFetchedAt = Date.now()
     workedTodayInflight = null
