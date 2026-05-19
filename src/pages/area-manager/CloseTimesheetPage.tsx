@@ -58,6 +58,7 @@ import { PAGE_PATHS } from '../../routes/config'
 import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
+import { mergeTimesheetDays } from '../../lib/timesheet'
 
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
@@ -149,6 +150,7 @@ const getFirstDefinedValue = (...values: any[]) => values.find((value) => value 
 
 const getDailyMetricsCandidate = (entry: any = {}) =>
   getFirstDefinedValue(
+    entry.summary,
     entry.dailySummary,
     entry.daily_summary,
     entry.daySummary,
@@ -369,7 +371,7 @@ const buildTimesheetSummary = (entries = []) => {
   }
 }
 
-const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc') => {
+const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' | 'desc' = 'desc') => {
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
     const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
@@ -378,21 +380,51 @@ const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc')
 
   const sorter = (a: number, b: number) => (order === 'asc' ? a - b : b - a)
 
-  return Object.entries(groups)
-    .map(([dateKey, items]) => ({
+  const fallbackGroups = Object.entries(groups).map(([dateKey, items]) => ({
+    dateKey,
+    dailyMetrics: extractDailyMetrics(items),
+    items: [...items].sort((a, b) => {
+      const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+      const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+      return right - left
+    }),
+  }))
+
+  if (!days.length) {
+    return fallbackGroups.sort((a, b) => {
+      const left = new Date(a.dateKey).getTime()
+      const right = new Date(b.dateKey).getTime()
+      return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
+    })
+  }
+
+  const fallbackByDate = new Map(fallbackGroups.map((group) => [group.dateKey, group]))
+  const dayGroups = days.map((day) => {
+    const dateKey = day?.date ?? day?.dateKey ?? 'unknown'
+    const fallback = fallbackByDate.get(dateKey)
+    const items = Array.isArray(day?.entries) && day.entries.length
+      ? day.entries.map((entry: any, index: number) => normalizeEntry(entry, index))
+      : fallback?.items || []
+
+    return {
       dateKey,
-      dailyMetrics: extractDailyMetrics(items),
+      dailyMetrics: normalizeDailyMetrics(day?.summary ?? day),
       items: [...items].sort((a, b) => {
         const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
         const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
         return right - left
       }),
-    }))
-    .sort((a, b) => {
-      const left = new Date(a.dateKey).getTime()
-      const right = new Date(b.dateKey).getTime()
-      return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
-    })
+    }
+  })
+
+  const knownDates = new Set(dayGroups.map((group) => group.dateKey))
+  const orphanGroups = fallbackGroups.filter((group) => !knownDates.has(group.dateKey))
+
+  return [...dayGroups, ...orphanGroups].sort((a, b) => {
+    const left = new Date(a.dateKey).getTime()
+    const right = new Date(b.dateKey).getTime()
+    return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
+  })
 }
 
 const firstNonEmpty = (...values: any[]) => values.find((value) => {
@@ -473,6 +505,7 @@ export default function CloseTimesheetPage() {
   })
 
   const [entries, setEntries] = useState<any[]>([])
+  const [entryDays, setEntryDays] = useState<any[]>([])
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [entriesError, setEntriesError] = useState('')
   const [exporting, setExporting] = useState<'standard' | ''>('')
@@ -596,7 +629,7 @@ export default function CloseTimesheetPage() {
               isAdmin,
             })
             results.set(String(empId), {
-              hhmm: balance?.totals?.balance_hhmm ?? null,
+              hhmm: balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null,
               minutes: balance?.balanceMinutes ?? null,
             })
           } catch {
@@ -701,8 +734,8 @@ export default function CloseTimesheetPage() {
   }, [summary.duplicateMap])
 
   const groupedEntries = useMemo(() => {
-    return groupEntriesByDate(normalizedEntries, 'desc')
-  }, [normalizedEntries])
+    return groupEntriesByDate(normalizedEntries, entryDays, 'desc')
+  }, [entryDays, normalizedEntries])
 
   const companyLocation = useMemo(() => {
     if (
@@ -786,13 +819,11 @@ export default function CloseTimesheetPage() {
       from: string
       to: string
     }) => {
-      const { data } = await listTeamEntries({
+      return listTeamEntries({
         userId: employeeId,
         dateFrom: formatISO(startOfDay(parseISO(from))),
         dateTo: formatISO(endOfDay(parseISO(to))),
       })
-
-      return data || []
     },
     [],
   )
@@ -862,7 +893,11 @@ export default function CloseTimesheetPage() {
 
         return {
           ...section,
-          groups: groupEntriesByDate(section.entries, 'desc'),
+          groups: groupEntriesByDate(
+            section.entries,
+            entryDays.filter((day) => String(day?.employeeId ?? '') === String(section.employeeId)),
+            'desc',
+          ),
           summary: employeeSummary,
           duplicatesSet: employeeDuplicatesSet,
         }
@@ -879,6 +914,7 @@ export default function CloseTimesheetPage() {
       })
   }, [
     appliedFilters.employeeIds,
+    entryDays,
     hasAppliedMultipleEmployees,
     normalizedEntries,
     resolveEntryEmployee,
@@ -894,19 +930,21 @@ export default function CloseTimesheetPage() {
         const { from, to, employeeIds } = filters
 
         if (employeeIds.length > 1) {
-          const allEntriesByEmployee = await Promise.all(
+          const allResponses = await Promise.all(
             employeeIds.map((employeeId) => fetchAllEntriesByEmployee({ employeeId, from, to })),
           )
 
-          const mergedEntries = allEntriesByEmployee
-            .flat()
+          const mergedEntries = allResponses
+            .flatMap((response) => response?.data || [])
             .sort((left, right) => {
               const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
               const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
               return rightTime - leftTime
             })
+          const mergedDays = mergeTimesheetDays([], allResponses.flatMap((response) => response?.days || []))
 
           setEntries(mergedEntries)
+          setEntryDays(mergedDays)
           setAppliedFilters({
             employeeIds: [...employeeIds],
             from,
@@ -921,8 +959,9 @@ export default function CloseTimesheetPage() {
           dateTo: formatISO(endOfDay(parseISO(to))),
         }
 
-        const { data } = await listTeamEntries(params)
+        const { data, days } = await listTeamEntries(params)
         setEntries(data || [])
+        setEntryDays(days || [])
         setAppliedFilters({
           employeeIds: [...employeeIds],
           from,
@@ -936,6 +975,7 @@ export default function CloseTimesheetPage() {
           t('closeTimesheetPage.states.entriesError')
         setEntriesError(message)
         setEntries([])
+        setEntryDays([])
         toast({
           title: t('closeTimesheetPage.states.entriesErrorTitle'),
           description: message,
@@ -965,7 +1005,7 @@ export default function CloseTimesheetPage() {
         if (!isValid(parsedClock)) return
 
         const employeeId = userId || appliedFilters.employeeIds[0] || filters.employeeIds[0]
-        const { data } = await listTeamEntries({
+        const { data, days } = await listTeamEntries({
           userId: employeeId || undefined,
           dateFrom: formatISO(startOfDay(parsedClock)),
           dateTo: formatISO(endOfDay(parsedClock)),
@@ -985,6 +1025,12 @@ export default function CloseTimesheetPage() {
             String(entry.timeEntryId ?? entry.id) === String(timeEntryId) ? updatedEntry : entry,
           ),
         )
+        if (days?.length) {
+          setEntryDays((prev) => {
+            const remaining = prev.filter((day) => day?.date !== days[0]?.date)
+            return mergeTimesheetDays(remaining, days)
+          })
+        }
       } catch (error) {
         console.error('[closeTimesheet] failed to refresh single entry', error)
       }
@@ -1013,6 +1059,18 @@ export default function CloseTimesheetPage() {
             entry?.timeEntryId ?? entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? null
           return String(entryTimeEntryId) !== String(timeEntryId)
         }),
+      )
+      setEntryDays((prev) =>
+        prev
+          .map((day) => ({
+            ...day,
+            entries: (day?.entries || []).filter((entry: any) => {
+              const entryTimeEntryId =
+                entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? entry?.timeEntryId ?? null
+              return String(entryTimeEntryId) !== String(timeEntryId)
+            }),
+          }))
+          .filter((day) => day.entries.length > 0 || day.summary),
       )
       setDeleteTarget(null)
     } catch (error: any) {
@@ -1103,11 +1161,13 @@ export default function CloseTimesheetPage() {
   const exportPdf = async () => {
     if (!ensureEntriesBeforeExport()) return
     try {
-      const allEntries = await fetchEntriesForExport()
+      const response = await fetchEntriesForExport()
+      const allEntries = response?.data || []
+      const allDays = response?.days || []
       const normalizedExportEntries = allEntries.map((entry: any, index: number) =>
         normalizeEntry(entry, index),
       )
-      const groupedForExport = groupEntriesByDate(normalizedExportEntries, 'asc')
+      const groupedForExport = groupEntriesByDate(normalizedExportEntries, allDays, 'asc')
       const fullDays = addMissingDays([...groupedForExport], appliedFilters.from, appliedFilters.to)
       const employeeLabel =
         appliedSelectedEmployee?.name ||
@@ -1963,5 +2023,3 @@ export default function CloseTimesheetPage() {
     </div>
   )
 }
-
-
