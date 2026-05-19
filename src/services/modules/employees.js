@@ -1,4 +1,5 @@
 import { api } from '../http/api'
+import { normalizeOvertimePayload } from '../../lib/timesheet'
 
 export async function listEmployees(page = 1, filters = {}) {
   const params = {}
@@ -98,75 +99,5 @@ export async function getEmployeeOvertimeBalance(employeeId, { from, to, include
 
   const { data } = await api.get(`/v1/employee/${employeeId}/overtime`, { params })
   const payload = data?.data ?? data ?? {}
-
-  const getMinutesFromSource = (source) => {
-    if (source === null || source === undefined) return null
-    if (typeof source === 'number') return Number.isFinite(source) ? source : null
-    if (typeof source === 'string') {
-      const parsed = Number(source)
-      if (Number.isFinite(parsed)) return parsed
-    }
-    if (typeof source !== 'object') return null
-
-    const candidates = [
-      source.balanceMinutes,
-      source.balance_minutes,
-      source.totalMinutes,
-      source.total_minutes,
-      source.minutesBalance,
-      source.minutes_balance,
-      source.minutes,
-    ]
-    for (const value of candidates) {
-      const parsed = Number(value)
-      if (Number.isFinite(parsed)) return parsed
-    }
-
-    const secondsCandidates = [
-      source.balanceSeconds,
-      source.balance_seconds,
-      source.totalSeconds,
-      source.total_seconds,
-      source.seconds,
-    ]
-    for (const value of secondsCandidates) {
-      const parsed = Number(value)
-      if (Number.isFinite(parsed)) return parsed / 60
-    }
-
-    return null
-  }
-
-  const extractMinutes = (source) => {
-    const direct = getMinutesFromSource(source)
-    if (direct !== null) return direct
-    if (source?.summary) {
-      const summaryMinutes = getMinutesFromSource(source.summary)
-      if (summaryMinutes !== null) return summaryMinutes
-    }
-    if (source?.balance) {
-      const balanceMinutes = getMinutesFromSource(source.balance)
-      if (balanceMinutes !== null) return balanceMinutes
-    }
-    if (source?.totals) {
-      const totalsMinutes = getMinutesFromSource(source.totals)
-      if (totalsMinutes !== null) return totalsMinutes
-    }
-    if (Array.isArray(source?.days)) {
-      const total = source.days.reduce((acc, day) => acc + (getMinutesFromSource(day) ?? 0), 0)
-      if (Number.isFinite(total)) return total
-    }
-    if (Array.isArray(source)) {
-      const total = source.reduce((acc, item) => acc + (getMinutesFromSource(item) ?? 0), 0)
-      if (Number.isFinite(total)) return total
-    }
-    return null
-  }
-
-  const balanceMinutes = extractMinutes(payload)
-
-  return {
-    ...(typeof payload === 'object' && !Array.isArray(payload) ? payload : {}),
-    balanceMinutes,
-  }
+  return normalizeOvertimePayload(payload)
 }
