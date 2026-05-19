@@ -1,4 +1,5 @@
 import { api } from '../services/http/api'
+import { normalizeEntriesResponse } from './timesheet'
 
 
 const ENTRIES_CACHE_MS = 15 * 1000 // 15s cache to squash duplicate rapid requests
@@ -58,28 +59,6 @@ export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   }
 }
 
-const parseEntriesResponse = (data, { page, perPage }) => {
-  const payload = data?.data && !Array.isArray(data.data) ? data.data : data
-  const entries = Array.isArray(payload?.data)
-    ? payload.data
-    : Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.entries)
-        ? payload.entries
-        : []
-
-  const metaSource = data?.meta || payload?.meta || payload || {}
-  const meta = {
-    currentPage:
-      metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
-    perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
-    total: metaSource.total ?? payload?.total,
-    lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
-  }
-
-  return { data: entries, meta }
-}
-
 const extractClockedAt = (entry) =>
   entry?.clocked_at ||
   entry?.clockedAt ||
@@ -128,7 +107,7 @@ export async function getEmployeeEntries({
 
   const loadEntries = async () => {
     let response = await fetchPage(page)
-    let parsed = parseEntriesResponse(response.data, { page, perPage })
+    let parsed = normalizeEntriesResponse(response.data, { page, perPage })
 
     if (preferLatestPage && page === 1 && parsed.meta.lastPage && parsed.meta.lastPage > 1) {
       const today = new Date()
@@ -146,7 +125,7 @@ export async function getEmployeeEntries({
       // If the first page doesn't include today's records and there are more pages, fetch the last page.
       if (!hasTodayEntry && parsed.meta.currentPage === 1) {
         response = await fetchPage(parsed.meta.lastPage)
-        parsed = parseEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
+        parsed = normalizeEntriesResponse(response.data, { page: parsed.meta.lastPage, perPage })
       }
     }
 
@@ -164,8 +143,8 @@ export async function getEmployeeEntries({
 }
 
 export async function listEntries(page = 1) {
-  const { data, meta } = await getEmployeeEntries({ page })
-  return { data, meta }
+  const { data, days, meta } = await getEmployeeEntries({ page })
+  return { data, days, meta }
 }
 
 export async function breakRequest(action, coords = {}) {
