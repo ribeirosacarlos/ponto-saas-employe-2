@@ -23,6 +23,7 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { useDateTime } from '../hooks/useDateTime'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { Input } from '../components/ui/input'
+import { mergeTimesheetDays } from '../lib/timesheet'
 
 const PAGE_SIZE = 20
 
@@ -245,12 +246,24 @@ export default function History({ onBackToDashboard }) {
   const [filters, setFilters] = useState(defaultRange)
   const [appliedFilters, setAppliedFilters] = useState(defaultRange)
   const [entries, setEntries] = useState([])
+  const [days, setDays] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [localPage, setLocalPage] = useState(1)
   const [currentPage, setCurrentPage] = useState(1)
+
+  const getGroupEntryAt = useCallback((group) => {
+    const firstPair = group?.summary?.pairDetails?.[0]
+    return firstPair?.in || group?.items?.[0]?.clockedAt || null
+  }, [])
+
+  const getGroupExitAt = useCallback((group) => {
+    const pairs = group?.summary?.pairDetails || []
+    const lastPair = [...pairs].reverse().find((pair) => pair?.out)
+    return lastPair?.out || group?.items?.[group.items.length - 1]?.clockedAt || null
+  }, [])
 
   const handleFetch = useCallback(
     async ({ page = 1, append = false, filters: filtersOverride } = {}) => {
@@ -260,7 +273,7 @@ export default function History({ onBackToDashboard }) {
 
       try {
         const activeFilters = filtersOverride || appliedFilters
-        const { data, meta: responseMeta } = await getEmployeeEntries({
+        const { data, days: responseDays, meta: responseMeta } = await getEmployeeEntries({
           from: activeFilters.from || undefined,
           to: activeFilters.to || undefined,
           page,
@@ -280,6 +293,7 @@ export default function History({ onBackToDashboard }) {
 
         const normalized = (data || []).map((item) => normalizeEntry(item, t))
         setEntries((prev) => (append ? [...prev, ...normalized] : normalized))
+        setDays((prev) => (append ? mergeTimesheetDays(prev, responseDays || []) : responseDays || []))
         setMeta(responseMeta || null)
         setCurrentPage(responseMeta?.currentPage ?? page)
         if (!append) setLocalPage(1)
@@ -345,6 +359,18 @@ export default function History({ onBackToDashboard }) {
       })
   }, [appliedFilters, entries, formatDateForApi])
 
+  const filteredDays = useMemo(() => {
+    const { from, to } = appliedFilters
+
+    return (days || []).filter((day) => {
+      const key = day?.date
+      if (!key) return false
+      if (from && key < from) return false
+      if (to && key > to) return false
+      return true
+    })
+  }, [appliedFilters, days])
+
   const paginatedEntries = useMemo(() => {
     if (supportsServerPagination) return filteredEntries
     return filteredEntries.slice(0, localPage * PAGE_SIZE)
@@ -357,25 +383,52 @@ export default function History({ onBackToDashboard }) {
       return acc
     }, {})
 
-    return Object.entries(groups)
-      .map(([dateKey, items]) => {
-        const sortedItems = [...items].sort((a, b) => {
-          const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
-          const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
-          return left - right
-        })
-        const summary = summarizeDay(sortedItems)
-        return {
-          dateKey,
-          items: sortedItems,
-          duration: summary.workMinutes,
-          summary,
-        }
+    const fallbackGroups = Object.entries(groups).map(([dateKey, items]) => {
+      const sortedItems = [...items].sort((a, b) => {
+        const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+        const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+        return left - right
       })
-      .sort((a, b) => {
-        return (b.dateKey || '').localeCompare(a.dateKey || '')
+      const summary = summarizeDay(sortedItems)
+      return {
+        dateKey,
+        items: sortedItems,
+        duration: summary.workMinutes,
+        summary,
+      }
+    })
+
+    if (!filteredDays.length) {
+      return fallbackGroups.sort((a, b) => (b.dateKey || '').localeCompare(a.dateKey || ''))
+    }
+
+    const fallbackByDate = new Map(fallbackGroups.map((group) => [group.dateKey, group]))
+    const daysBackedGroups = filteredDays.map((day) => {
+      const fallbackGroup = fallbackByDate.get(day.date)
+      const items = day.entries?.length
+        ? day.entries.map((item) => normalizeEntry(item, t))
+        : fallbackGroup?.items || []
+      const sortedItems = [...items].sort((a, b) => {
+        const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+        const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+        return left - right
       })
-  }, [formatDateForApi, paginatedEntries])
+
+      return {
+        dateKey: day.date,
+        items: sortedItems,
+        duration: Number(day.summary?.workedMinutes ?? 0),
+        summary: day.summary,
+      }
+    })
+
+    const daysWithSummary = new Set(daysBackedGroups.map((group) => group.dateKey))
+    const orphanGroups = fallbackGroups.filter((group) => !daysWithSummary.has(group.dateKey))
+
+    return [...daysBackedGroups, ...orphanGroups].sort((a, b) =>
+      (b.dateKey || '').localeCompare(a.dateKey || ''),
+    )
+  }, [filteredDays, formatDateForApi, paginatedEntries, t])
 
   const hasMore = useMemo(() => {
     if (supportsServerPagination) {
@@ -476,18 +529,21 @@ const handleExportPDF = () => {
 
     const body = groupedEntries.map((group) => {
       const { summary } = group
-      const entryLabel = summary?.entryAt ? formatTimeTz(summary.entryAt) : t('historyPage.labels.timeFallback')
-      const exitLabel = summary?.exitAt ? formatTimeTz(summary.exitAt) : t('historyPage.labels.timeFallback')
-      const intervalLabel = summary?.hasBreak
-        ? formatBreakRanges(summary.breakIntervals)
-        : t('historyPage.labels.timeFallback')
-      const workedLabel = group.duration
-        ? formatDuration(group.duration)
-        : t('historyPage.labels.noDuration')
-      const idleLabel =
-        typeof summary?.idleMinutes === 'number'
+      const entryAt = getGroupEntryAt(group)
+      const exitAt = getGroupExitAt(group)
+      const entryLabel = entryAt ? formatTimeTz(entryAt) : t('historyPage.labels.timeFallback')
+      const exitLabel = exitAt ? formatTimeTz(exitAt) : t('historyPage.labels.timeFallback')
+      const intervalLabel =
+        summary?.realBreakHhmm ||
+        (summary?.hasBreak ? formatBreakRanges(summary.breakIntervals) : t('historyPage.labels.timeFallback'))
+      const workedLabel =
+        summary?.workedHhmm ||
+        (group.duration ? formatDuration(group.duration) : t('historyPage.labels.noDuration'))
+      const balanceLabel =
+        summary?.balanceHhmm ||
+        (typeof summary?.idleMinutes === 'number'
           ? formatDuration(summary.idleMinutes)
-          : t('historyPage.labels.timeFallback')
+          : t('historyPage.labels.timeFallback'))
 
       return [
         formatDateLabel(group.dateKey),
@@ -495,13 +551,16 @@ const handleExportPDF = () => {
         intervalLabel,
         exitLabel,
         workedLabel,
-        idleLabel,
+        balanceLabel,
       ]
     })
 
-    const totalWorkedMinutes = groupedEntries.reduce((sum, group) => sum + (group.duration || 0), 0)
-    const totalIdleMinutes = groupedEntries.reduce(
-      (sum, group) => sum + (group.summary?.idleMinutes || 0),
+    const totalWorkedMinutes = groupedEntries.reduce(
+      (sum, group) => sum + Number(group.summary?.workedMinutes ?? group.duration ?? 0),
+      0,
+    )
+    const totalBalanceMinutes = groupedEntries.reduce(
+      (sum, group) => sum + Number(group.summary?.balanceMinutes ?? 0),
       0,
     )
 
@@ -511,10 +570,10 @@ const handleExportPDF = () => {
         [
           t('historyPage.table.headers.date'),
           t('historyPage.table.headers.entry'),
-          t('historyPage.table.headers.interval'),
+          t('historyPage.table.headers.break', 'Pausa'),
           t('historyPage.table.headers.exit'),
           t('historyPage.table.headers.worked'),
-          t('historyPage.table.headers.idle'),
+          t('historyPage.table.headers.balance', 'Saldo'),
         ],
       ],
       body,
@@ -525,7 +584,9 @@ const handleExportPDF = () => {
           '',
           '',
           formatDuration(totalWorkedMinutes),
-          formatDuration(totalIdleMinutes),
+          totalBalanceMinutes >= 0
+            ? `+${formatDuration(totalBalanceMinutes)}`
+            : `-${formatDuration(Math.abs(totalBalanceMinutes))}`,
         ],
       ],
       styles: { fontSize: 9 },
@@ -769,32 +830,39 @@ const handleExportPDF = () => {
                         <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                           <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
                           <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.interval')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.break', 'Pausa')}</th>
                           <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
                           <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.idle')}</th>
+                          <th className="px-3 py-3">{t('historyPage.table.headers.balance', 'Saldo')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {groupedEntries.map((group) => {
                           const { summary } = group
-                          const dateCell = formatDateCell(summary?.entryAt)
-                          const entryLabel = summary?.entryAt
-                            ? formatTimeTz(summary.entryAt)
+                          const entryAt = getGroupEntryAt(group)
+                          const exitAt = getGroupExitAt(group)
+                          const dateCell = formatDateCell(group.dateKey)
+                          const entryLabel = entryAt
+                            ? formatTimeTz(entryAt)
                             : t('historyPage.labels.timeFallback')
-                          const exitLabel = summary?.exitAt
-                            ? formatTimeTz(summary.exitAt)
+                          const exitLabel = exitAt
+                            ? formatTimeTz(exitAt)
                             : t('historyPage.labels.timeFallback')
-                          const intervalLabel = summary?.hasBreak
-                            ? formatBreakRanges(summary.breakIntervals)
-                            : t('historyPage.labels.timeFallback')
-                          const workedLabel = group.duration
-                            ? formatDuration(group.duration)
-                            : t('historyPage.labels.noDuration')
-                          const idleLabel =
-                            typeof summary?.idleMinutes === 'number'
+                          const intervalLabel =
+                            summary?.realBreakHhmm ||
+                            (summary?.hasBreak
+                              ? formatBreakRanges(summary.breakIntervals)
+                              : t('historyPage.labels.timeFallback'))
+                          const workedLabel =
+                            summary?.workedHhmm ||
+                            (group.duration
+                              ? formatDuration(group.duration)
+                              : t('historyPage.labels.noDuration'))
+                          const balanceLabel =
+                            summary?.balanceHhmm ||
+                            (typeof summary?.idleMinutes === 'number'
                               ? formatDuration(summary.idleMinutes)
-                              : t('historyPage.labels.timeFallback')
+                              : t('historyPage.labels.timeFallback'))
 
                           return (
                             <tr
@@ -815,7 +883,7 @@ const handleExportPDF = () => {
                               <td className="px-3 py-4 break-words">{intervalLabel}</td>
                               <td className="px-3 py-4 break-words">{exitLabel}</td>
                               <td className="px-3 py-4 break-words">{workedLabel}</td>
-                              <td className="px-3 py-4 break-words">{idleLabel}</td>
+                              <td className="px-3 py-4 break-words">{balanceLabel}</td>
                             </tr>
                           )
                         })}
