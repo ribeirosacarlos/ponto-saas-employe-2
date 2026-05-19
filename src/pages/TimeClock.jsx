@@ -19,6 +19,7 @@ import { useIsMobile } from '../hooks/useMediaQuery'
 import { getCompanyTimezone, isSameCompanyDay, toCompanyDate } from '../lib/datetime'
 import { EntryAdjustmentModal } from '../components/EntryAdjustmentModal'
 import { GEOLOCATION_ERROR_CODES, getClockCoordinates, getClockSource } from '../lib/geolocation'
+import { getWorkedTodayMinutes } from '../lib/timesheet'
 
 const statusTokens = {
   idle: {
@@ -435,10 +436,7 @@ export default function TimeClock({ onContinueToDashboard }) {
         const data = await getWorkedToday()
         if (!active) return
         setWorkedTodayData(data)
-        const minutes =
-          data?.workedMinutes ??
-          data?.worked_minutes ??
-          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        const minutes = getWorkedTodayMinutes(data)
         const label = formatMinutesToLabel(minutes)
         if (!active) return
         setWorkedTodayLabel(label)
@@ -641,49 +639,11 @@ export default function TimeClock({ onContinueToDashboard }) {
           `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-01`
         const to = formatDateForApi(today) || `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-${String(zonedToday.day).padStart(2, '0')}`
         const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
-
-        const parseNumber = (value) => {
-          if (value === null || value === undefined) return null
-          const parsed = Number(value)
-          return Number.isFinite(parsed) ? parsed : null
-        }
-
-        let minutes =
-          parseNumber(balance?.balanceMinutes ?? balance?.balance_minutes) ??
-          parseNumber(balance?.totalMinutes ?? balance?.total_minutes) ??
-          parseNumber(balance?.minutesBalance ?? balance?.minutes_balance) ??
-          parseNumber(balance?.minutes)
-
-        if (minutes === null) {
-          const seconds =
-            parseNumber(
-              balance?.balanceSeconds ??
-                balance?.balance_seconds ??
-                balance?.totalSeconds ??
-                balance?.total_seconds ??
-                balance?.seconds,
-            ) ?? null
-          if (seconds !== null) {
-            minutes = seconds / 60
-          }
-        }
-
-        if (minutes === null && Array.isArray(balance?.days)) {
-          const total = balance.days.reduce(
-            (acc, day) =>
-              acc +
-              (parseNumber(day?.balanceMinutes ?? day?.balance_minutes ?? day?.minutesBalance ?? day?.minutes_balance ?? day?.minutes) ??
-                0),
-            0,
-          )
-          if (Number.isFinite(total)) {
-            minutes = total
-          }
-        }
+        const minutes = balance?.balanceMinutes ?? null
 
         if (!active) return
         setOvertimeMinutes(minutes)
-        setOvertimeHhmm(balance?.totals?.balance_hhmm ?? null)
+        setOvertimeHhmm(balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null)
       } catch (error) {
         console.error('[TimeClock] Failed to load overtime balance', error)
         if (!active) return
