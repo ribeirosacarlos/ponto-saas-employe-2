@@ -61,6 +61,33 @@ function formatDateKey(value) {
   return `${year}-${month}-${day}`
 }
 
+function extractSourceDateKey(value) {
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`
+  }
+  return formatDateKey(value)
+}
+
+function extractSourceTime(value) {
+  if (typeof value !== 'string') return ''
+  const match = value.match(/T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?$/i)
+  return match ? `${match[1]}:${match[2]}` : ''
+}
+
+function formatDateParts(dateKey) {
+  if (!dateKey || dateKey === 'unknown') return null
+  const match = String(dateKey).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return null
+  return { year: match[1], month: match[2], day: match[3] }
+}
+
+function buildUtcDateFromKey(dateKey) {
+  const parts = formatDateParts(dateKey)
+  if (!parts) return null
+  return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), 12, 0, 0))
+}
+
 function normalizeEntry(entry, t) {
   const clock = entry.clocked_at || entry.clockedAt || entry.date || entry.timestamp || entry.created_at
 
@@ -122,14 +149,14 @@ function calculateBreakDuration(entries = []) {
 
     // Interval starts when user clocks out (leaves for lunch) and ends on the next clock-in.
     if (type === 'out' || type === 'break_start') {
-      breakStart = ts
+      breakStart = { ts, raw: entry.clockedAt }
       return
     }
 
     if ((type === 'in' || type === 'break_end') && breakStart) {
-      const duration = Math.max(0, ts - breakStart)
+      const duration = Math.max(0, ts - breakStart.ts)
       totalMs += duration
-      intervals.push({ start: breakStart, end: ts })
+      intervals.push({ start: breakStart.raw, end: entry.clockedAt })
       breakStart = null
     }
   })
@@ -152,13 +179,15 @@ function summarizeDay(entries = []) {
       .reverse()
       .find((entry) => entry.type === 'out' || entry.type === 'break_start') || sorted[sorted.length - 1]
 
-  const entryAt = entryRecord?.clockedAt ? new Date(entryRecord.clockedAt) : null
-  const exitAt = exitRecord?.clockedAt ? new Date(exitRecord.clockedAt) : null
+  const entryAt = entryRecord?.clockedAt || null
+  const exitAt = exitRecord?.clockedAt || null
   const { minutes: breakMinutes, hasBreak, intervals: breakIntervals } = calculateBreakDuration(sorted)
   const workMinutes = calculateDayDuration(sorted, true)
+  const entryTimestamp = entryAt ? new Date(entryAt).getTime() : null
+  const exitTimestamp = exitAt ? new Date(exitAt).getTime() : null
   const spanMinutes =
-    entryAt && exitAt
-      ? Math.max(0, Math.round((exitAt.getTime() - entryAt.getTime()) / 60000))
+    entryTimestamp !== null && exitTimestamp !== null
+      ? Math.max(0, Math.round((exitTimestamp - entryTimestamp) / 60000))
       : null
   const idleMinutes = spanMinutes !== null ? Math.max(0, spanMinutes - workMinutes) : null
 
@@ -177,10 +206,12 @@ export default function History({ onBackToDashboard }) {
   const { t } = useTranslation()
   const { toast } = useToast()
   const user = useAuthStore((state) => state.user)
-  const { formatDate, formatTime, formatDateForApi, tz, locale } = useDateTime()
+  const { formatDate, formatTime, tz, locale } = useDateTime()
 
   const formatTimeTz = useCallback(
     (value) => {
+      const literalTime = extractSourceTime(value)
+      if (literalTime) return literalTime
       const formatted = formatTime(value, { hour: '2-digit', minute: '2-digit', hour12: false })
       return formatted === '-' ? t('historyPage.labels.timeFallback') : formatted
     },
@@ -189,17 +220,18 @@ export default function History({ onBackToDashboard }) {
 
   const weekdayFormatter = useMemo(() => {
     try {
-      return new Intl.DateTimeFormat(locale || 'pt-BR', { weekday: 'long', timeZone: tz })
+      return new Intl.DateTimeFormat(locale || 'pt-BR', { weekday: 'long', timeZone: 'UTC' })
     } catch (error) {
       return null
     }
-  }, [locale, tz])
+  }, [locale])
 
   const formatWeekday = useCallback(
     (value) => {
       if (!value || !weekdayFormatter) return ''
-      const date = value instanceof Date ? value : new Date(value)
-      if (Number.isNaN(date.getTime())) return ''
+      const dateKey = extractSourceDateKey(value)
+      const date = buildUtcDateFromKey(dateKey)
+      if (!date || Number.isNaN(date.getTime())) return ''
       const label = weekdayFormatter.format(date)
       if (!label) return ''
       const normalized = label.toLocaleLowerCase(locale || 'pt-BR')
@@ -215,18 +247,18 @@ export default function History({ onBackToDashboard }) {
       if (!value) {
         return { date: t('historyPage.labels.unknownDate'), weekday: '' }
       }
-      const apiDate = formatDateForApi(value)
-      if (!apiDate) {
+      const dateKey = extractSourceDateKey(value)
+      const parts = formatDateParts(dateKey)
+      if (!parts) {
         return { date: t('historyPage.labels.unknownDate'), weekday: formatWeekday(value) }
       }
-      const [year, month, day] = apiDate.split('-')
-      const dateLabel = `${day}/${month}/${year}`
+      const dateLabel = `${parts.day}/${parts.month}/${parts.year}`
       return {
         date: dateLabel || t('historyPage.labels.unknownDate'),
         weekday: formatWeekday(value),
       }
     },
-    [formatDateForApi, formatWeekday, t],
+    [formatWeekday, t],
   )
 
   const formatBreakRanges = useCallback(
@@ -346,18 +378,18 @@ export default function History({ onBackToDashboard }) {
     return entries
       .filter((entry) => {
         if (!entry.clockedAt) return true
-        const key = formatDateForApi(entry.clockedAt)
+        const key = extractSourceDateKey(entry.clockedAt)
         if (!key) return true
         if (from && key < from) return false
         if (to && key > to) return false
         return true
       })
       .sort((a, b) => {
-        const left = a.clockedAt ? formatDateForApi(a.clockedAt) || '' : ''
-        const right = b.clockedAt ? formatDateForApi(b.clockedAt) || '' : ''
-        return right.localeCompare(left)
+        const leftTime = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+        const rightTime = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+        return rightTime - leftTime
       })
-  }, [appliedFilters, entries, formatDateForApi])
+  }, [appliedFilters, entries])
 
   const filteredDays = useMemo(() => {
     const { from, to } = appliedFilters
@@ -378,7 +410,7 @@ export default function History({ onBackToDashboard }) {
 
   const groupedEntries = useMemo(() => {
     const groups = paginatedEntries.reduce((acc, entry) => {
-      const key = entry.clockedAt ? formatDateForApi(entry.clockedAt) || 'unknown' : 'unknown'
+      const key = entry.clockedAt ? extractSourceDateKey(entry.clockedAt) || 'unknown' : 'unknown'
       acc[key] = acc[key] ? [...acc[key], entry] : [entry]
       return acc
     }, {})
@@ -428,7 +460,7 @@ export default function History({ onBackToDashboard }) {
     return [...daysBackedGroups, ...orphanGroups].sort((a, b) =>
       (b.dateKey || '').localeCompare(a.dateKey || ''),
     )
-  }, [filteredDays, formatDateForApi, paginatedEntries, t])
+  }, [filteredDays, paginatedEntries, t])
 
   const hasMore = useMemo(() => {
     if (supportsServerPagination) {
@@ -503,8 +535,8 @@ const handleExportPDF = () => {
     })
     const getDateLabel = (value) => {
       if (!value) return t('historyPage.pdf.allDates')
-      const label = formatDate(value, { day: '2-digit', month: '2-digit', year: 'numeric' })
-      return label === '-' ? t('historyPage.pdf.allDates') : label
+      const parts = formatDateParts(extractSourceDateKey(value))
+      return parts ? `${parts.day}/${parts.month}/${parts.year}` : t('historyPage.pdf.allDates')
     }
 
     const periodRange = `${getDateLabel(appliedFilters.from)} - ${getDateLabel(appliedFilters.to)}`
@@ -599,7 +631,10 @@ const handleExportPDF = () => {
 
   const formatDateLabel = (dateKey) => {
     if (dateKey === 'unknown') return t('historyPage.labels.unknownDate')
-    const label = formatDate(dateKey, {
+    const date = buildUtcDateFromKey(dateKey)
+    if (!date) return t('historyPage.labels.unknownDate')
+    const label = formatDate(date, {
+      timeZone: 'UTC',
       weekday: 'long',
       day: '2-digit',
       month: 'short',
