@@ -52,6 +52,7 @@ import { useAccess } from './providers/AccessProvider.jsx'
 import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
 import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
 import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
+import { getWorkedTodayMinutes } from './lib/timesheet'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
@@ -451,10 +452,7 @@ export default function App() {
       }
       try {
         const data = await getWorkedToday()
-        const minutes =
-          data?.workedMinutes ??
-          data?.worked_minutes ??
-          (data?.workedSeconds ?? data?.worked_seconds) / 60
+        const minutes = getWorkedTodayMinutes(data)
         if (!active) return
         setTodayBadge(formatMinutesToLabel(minutes))
       } catch (error) {

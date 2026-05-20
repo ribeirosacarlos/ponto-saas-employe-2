@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   endOfDay,
   endOfMonth,
@@ -58,6 +58,7 @@ import { PAGE_PATHS } from '../../routes/config'
 import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
+import { mergeTimesheetDays } from '../../lib/timesheet'
 
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
@@ -101,6 +102,12 @@ const formatMinutes = (minutes?: number) => {
   return `${hours}:${mins}`
 }
 
+const formatWorkedTime = (hhmm?: string | null, minutes?: number | null) => {
+  if (typeof hhmm === 'string' && hhmm.trim()) return hhmm.trim()
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--'
+  return formatMinutes(minutes)
+}
+
 const formatBalanceMinutes = (minutes?: number | null) => {
   if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return '--:--'
   const rounded = Math.round(minutes)
@@ -139,26 +146,61 @@ const getBalanceTrend = (minutes?: number | null) => {
   }
 }
 
-const computeDayMinutes = (items: any[]): number => {
-  const sorted = [...items].sort((a, b) => {
-    const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
-    const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
-    return left - right
+const getFirstDefinedValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null)
+
+const getDailyMetricsCandidate = (entry: any = {}) =>
+  getFirstDefinedValue(
+    entry.summary,
+    entry.dailySummary,
+    entry.daily_summary,
+    entry.daySummary,
+    entry.day_summary,
+    entry.workdaySummary,
+    entry.workday_summary,
+    entry.totals,
+  )
+
+const normalizeDailyMetrics = (source: any = {}) => ({
+  workedMinutes: getFirstDefinedValue(source.worked_minutes, source.workedMinutes),
+  workedHhmm: getFirstDefinedValue(source.worked_hhmm, source.workedHhmm),
+  expectedMinutes: getFirstDefinedValue(source.expected_minutes, source.expectedMinutes),
+  expectedHhmm: getFirstDefinedValue(source.expected_hhmm, source.expectedHhmm),
+  breakMinutes: getFirstDefinedValue(source.break_minutes, source.breakMinutes),
+  allowedBreakMinutes: getFirstDefinedValue(source.allowed_break_minutes, source.allowedBreakMinutes),
+  exceededBreakMinutes: getFirstDefinedValue(source.exceeded_break_minutes, source.exceededBreakMinutes),
+  balanceMinutes: getFirstDefinedValue(source.balance_minutes, source.balanceMinutes),
+  balanceHhmm: getFirstDefinedValue(source.balance_hhmm, source.balanceHhmm),
+})
+
+const extractDailyMetrics = (items: any[] = []) => {
+  const metricsSource = items.find((entry) => {
+    const candidate = getDailyMetricsCandidate(entry)
+    const source = candidate ?? entry
+    return [
+      source?.worked_minutes,
+      source?.workedMinutes,
+      source?.worked_hhmm,
+      source?.workedHhmm,
+      source?.expected_minutes,
+      source?.expectedMinutes,
+      source?.expected_hhmm,
+      source?.expectedHhmm,
+      source?.break_minutes,
+      source?.breakMinutes,
+      source?.allowed_break_minutes,
+      source?.allowedBreakMinutes,
+      source?.exceeded_break_minutes,
+      source?.exceededBreakMinutes,
+      source?.balance_minutes,
+      source?.balanceMinutes,
+      source?.balance_hhmm,
+      source?.balanceHhmm,
+    ].some((value) => value !== undefined && value !== null)
   })
-  let total = 0
-  const openIns: number[] = []
-  sorted.forEach((entry) => {
-    if (!entry.clockedAt) return
-    const ts = new Date(entry.clockedAt).getTime()
-    if (!Number.isFinite(ts)) return
-    if (entry.type === 'in') {
-      openIns.push(ts)
-    } else if (entry.type === 'out' && openIns.length) {
-      const start = openIns.shift()!
-      total += Math.max(0, Math.round((ts - start) / 60000))
-    }
-  })
-  return total
+
+  if (!metricsSource) return null
+
+  return normalizeDailyMetrics(getDailyMetricsCandidate(metricsSource) ?? metricsSource)
 }
 
 const isPendingApprovalAdjustment = (entry: any = {}) => {
@@ -226,6 +268,7 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     source: entry.source ?? entry.origin ?? '',
     deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
+    dailyMetrics: normalizeDailyMetrics(getDailyMetricsCandidate(entry) ?? entry),
   }
 }
 
@@ -273,7 +316,6 @@ const withSevenDayRangeIfMultiple = (state: {
 const buildTimesheetSummary = (entries = []) => {
   const duplicateMap = new Map()
   const pendingIds = new Set()
-  let totalMinutes = 0
 
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
     const clock = entry.clockedAt
@@ -306,10 +348,7 @@ const buildTimesheetSummary = (entries = []) => {
         openIns.push({ id: entry.id, ts })
         return
       }
-      if (entry.type === 'out' && openIns.length) {
-        const start = openIns.shift()
-        totalMinutes += Math.max(0, Math.round((ts - start.ts) / 60000))
-      }
+      if (entry.type === 'out' && openIns.length) openIns.shift()
     })
 
     openIns.forEach((item) => pendingIds.add(item.id))
@@ -325,7 +364,6 @@ const buildTimesheetSummary = (entries = []) => {
   return {
     totalEntries: entries.length,
     daysWithRecords: dayKeys.length,
-    totalMinutes,
     pendingCount: pendingIds.size,
     duplicateCount,
     pendingIds,
@@ -333,7 +371,7 @@ const buildTimesheetSummary = (entries = []) => {
   }
 }
 
-const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc') => {
+const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' | 'desc' = 'desc') => {
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
     const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
@@ -342,20 +380,51 @@ const groupEntriesByDate = (entries: any[] = [], order: 'asc' | 'desc' = 'desc')
 
   const sorter = (a: number, b: number) => (order === 'asc' ? a - b : b - a)
 
-  return Object.entries(groups)
-    .map(([dateKey, items]) => ({
+  const fallbackGroups = Object.entries(groups).map(([dateKey, items]) => ({
+    dateKey,
+    dailyMetrics: extractDailyMetrics(items),
+    items: [...items].sort((a, b) => {
+      const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
+      const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
+      return right - left
+    }),
+  }))
+
+  if (!days.length) {
+    return fallbackGroups.sort((a, b) => {
+      const left = new Date(a.dateKey).getTime()
+      const right = new Date(b.dateKey).getTime()
+      return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
+    })
+  }
+
+  const fallbackByDate = new Map(fallbackGroups.map((group) => [group.dateKey, group]))
+  const dayGroups = days.map((day) => {
+    const dateKey = day?.date ?? day?.dateKey ?? 'unknown'
+    const fallback = fallbackByDate.get(dateKey)
+    const items = Array.isArray(day?.entries) && day.entries.length
+      ? day.entries.map((entry: any, index: number) => normalizeEntry(entry, index))
+      : fallback?.items || []
+
+    return {
       dateKey,
+      dailyMetrics: normalizeDailyMetrics(day?.summary ?? day),
       items: [...items].sort((a, b) => {
         const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
         const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
         return right - left
       }),
-    }))
-    .sort((a, b) => {
-      const left = new Date(a.dateKey).getTime()
-      const right = new Date(b.dateKey).getTime()
-      return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
-    })
+    }
+  })
+
+  const knownDates = new Set(dayGroups.map((group) => group.dateKey))
+  const orphanGroups = fallbackGroups.filter((group) => !knownDates.has(group.dateKey))
+
+  return [...dayGroups, ...orphanGroups].sort((a, b) => {
+    const left = new Date(a.dateKey).getTime()
+    const right = new Date(b.dateKey).getTime()
+    return sorter(isNaN(left) ? 0 : left, isNaN(right) ? 0 : right)
+  })
 }
 
 const firstNonEmpty = (...values: any[]) => values.find((value) => {
@@ -384,7 +453,11 @@ const getShiftName = (employee: any) =>
     employee?.shiftTitle,
   )
 
-const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string, to: string) => {
+const addMissingDays = (
+  days: { dateKey: string; items: any[]; dailyMetrics?: ReturnType<typeof extractDailyMetrics> }[],
+  from: string,
+  to: string,
+) => {
   const start = parseISO(from)
   const end = parseISO(to)
   if (!isValid(start) || !isValid(end)) return days
@@ -394,7 +467,7 @@ const addMissingDays = (days: { dateKey: string; items: any[] }[], from: string,
   allDays.forEach((day) => {
     const key = format(day, 'yyyy-MM-dd')
     if (!existing.has(key)) {
-      days.push({ dateKey: key, items: [] })
+      days.push({ dateKey: key, items: [], dailyMetrics: null })
     }
   })
 
@@ -432,6 +505,7 @@ export default function CloseTimesheetPage() {
   })
 
   const [entries, setEntries] = useState<any[]>([])
+  const [entryDays, setEntryDays] = useState<any[]>([])
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [entriesError, setEntriesError] = useState('')
   const [exporting, setExporting] = useState<'standard' | ''>('')
@@ -555,7 +629,7 @@ export default function CloseTimesheetPage() {
               isAdmin,
             })
             results.set(String(empId), {
-              hhmm: balance?.totals?.balance_hhmm ?? null,
+              hhmm: balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null,
               minutes: balance?.balanceMinutes ?? null,
             })
           } catch {
@@ -660,8 +734,8 @@ export default function CloseTimesheetPage() {
   }, [summary.duplicateMap])
 
   const groupedEntries = useMemo(() => {
-    return groupEntriesByDate(normalizedEntries, 'desc')
-  }, [normalizedEntries])
+    return groupEntriesByDate(normalizedEntries, entryDays, 'desc')
+  }, [entryDays, normalizedEntries])
 
   const companyLocation = useMemo(() => {
     if (
@@ -745,13 +819,11 @@ export default function CloseTimesheetPage() {
       from: string
       to: string
     }) => {
-      const { data } = await listTeamEntries({
+      return listTeamEntries({
         userId: employeeId,
         dateFrom: formatISO(startOfDay(parseISO(from))),
         dateTo: formatISO(endOfDay(parseISO(to))),
       })
-
-      return data || []
     },
     [],
   )
@@ -821,7 +893,11 @@ export default function CloseTimesheetPage() {
 
         return {
           ...section,
-          groups: groupEntriesByDate(section.entries, 'desc'),
+          groups: groupEntriesByDate(
+            section.entries,
+            entryDays.filter((day) => String(day?.employeeId ?? '') === String(section.employeeId)),
+            'desc',
+          ),
           summary: employeeSummary,
           duplicatesSet: employeeDuplicatesSet,
         }
@@ -838,6 +914,7 @@ export default function CloseTimesheetPage() {
       })
   }, [
     appliedFilters.employeeIds,
+    entryDays,
     hasAppliedMultipleEmployees,
     normalizedEntries,
     resolveEntryEmployee,
@@ -853,19 +930,21 @@ export default function CloseTimesheetPage() {
         const { from, to, employeeIds } = filters
 
         if (employeeIds.length > 1) {
-          const allEntriesByEmployee = await Promise.all(
+          const allResponses = await Promise.all(
             employeeIds.map((employeeId) => fetchAllEntriesByEmployee({ employeeId, from, to })),
           )
 
-          const mergedEntries = allEntriesByEmployee
-            .flat()
+          const mergedEntries = allResponses
+            .flatMap((response) => response?.data || [])
             .sort((left, right) => {
               const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
               const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
               return rightTime - leftTime
             })
+          const mergedDays = mergeTimesheetDays([], allResponses.flatMap((response) => response?.days || []))
 
           setEntries(mergedEntries)
+          setEntryDays(mergedDays)
           setAppliedFilters({
             employeeIds: [...employeeIds],
             from,
@@ -880,8 +959,9 @@ export default function CloseTimesheetPage() {
           dateTo: formatISO(endOfDay(parseISO(to))),
         }
 
-        const { data } = await listTeamEntries(params)
+        const { data, days } = await listTeamEntries(params)
         setEntries(data || [])
+        setEntryDays(days || [])
         setAppliedFilters({
           employeeIds: [...employeeIds],
           from,
@@ -895,6 +975,7 @@ export default function CloseTimesheetPage() {
           t('closeTimesheetPage.states.entriesError')
         setEntriesError(message)
         setEntries([])
+        setEntryDays([])
         toast({
           title: t('closeTimesheetPage.states.entriesErrorTitle'),
           description: message,
@@ -924,7 +1005,7 @@ export default function CloseTimesheetPage() {
         if (!isValid(parsedClock)) return
 
         const employeeId = userId || appliedFilters.employeeIds[0] || filters.employeeIds[0]
-        const { data } = await listTeamEntries({
+        const { data, days } = await listTeamEntries({
           userId: employeeId || undefined,
           dateFrom: formatISO(startOfDay(parsedClock)),
           dateTo: formatISO(endOfDay(parsedClock)),
@@ -944,6 +1025,12 @@ export default function CloseTimesheetPage() {
             String(entry.timeEntryId ?? entry.id) === String(timeEntryId) ? updatedEntry : entry,
           ),
         )
+        if (days?.length) {
+          setEntryDays((prev) => {
+            const remaining = prev.filter((day) => day?.date !== days[0]?.date)
+            return mergeTimesheetDays(remaining, days)
+          })
+        }
       } catch (error) {
         console.error('[closeTimesheet] failed to refresh single entry', error)
       }
@@ -972,6 +1059,18 @@ export default function CloseTimesheetPage() {
             entry?.timeEntryId ?? entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? null
           return String(entryTimeEntryId) !== String(timeEntryId)
         }),
+      )
+      setEntryDays((prev) =>
+        prev
+          .map((day) => ({
+            ...day,
+            entries: (day?.entries || []).filter((entry: any) => {
+              const entryTimeEntryId =
+                entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? entry?.timeEntryId ?? null
+              return String(entryTimeEntryId) !== String(timeEntryId)
+            }),
+          }))
+          .filter((day) => day.entries.length > 0 || day.summary),
       )
       setDeleteTarget(null)
     } catch (error: any) {
@@ -1062,11 +1161,13 @@ export default function CloseTimesheetPage() {
   const exportPdf = async () => {
     if (!ensureEntriesBeforeExport()) return
     try {
-      const allEntries = await fetchEntriesForExport()
+      const response = await fetchEntriesForExport()
+      const allEntries = response?.data || []
+      const allDays = response?.days || []
       const normalizedExportEntries = allEntries.map((entry: any, index: number) =>
         normalizeEntry(entry, index),
       )
-      const groupedForExport = groupEntriesByDate(normalizedExportEntries, 'asc')
+      const groupedForExport = groupEntriesByDate(normalizedExportEntries, allDays, 'asc')
       const fullDays = addMissingDays([...groupedForExport], appliedFilters.from, appliedFilters.to)
       const employeeLabel =
         appliedSelectedEmployee?.name ||
@@ -1148,7 +1249,7 @@ export default function CloseTimesheetPage() {
     tableSummary,
     tableDuplicatesSet,
   }: {
-    groups: Array<{ dateKey: string; items: any[] }>
+    groups: Array<{ dateKey: string; items: any[]; dailyMetrics?: ReturnType<typeof extractDailyMetrics> }>
     tableSummary: any
     tableDuplicatesSet: Set<string>
   }) => (
@@ -1170,7 +1271,11 @@ export default function CloseTimesheetPage() {
           </thead>
           <tbody>
             {groups.flatMap((group) => {
-              const dayMins = computeDayMinutes(group.items)
+              const workedTimeLabel = formatWorkedTime(
+                group.dailyMetrics?.workedHhmm,
+                group.dailyMetrics?.workedMinutes,
+              )
+              const showDailyWorkedTime = group.items.length > 0
               const dateRows = group.items.map((entry, index) => {
                 const employeeKey =
                   entry?.userId ??
@@ -1410,10 +1515,10 @@ export default function CloseTimesheetPage() {
                           </span>
                         )}
                       </div>
-                      {dayMins > 0 && (
+                      {showDailyWorkedTime && (
                         <div className="flex items-center gap-1.5 text-[11px]">
                           <Timer className="h-3 w-3 text-muted-foreground/70" />
-                          <span className="font-mono font-semibold text-foreground">{formatMinutes(dayMins)}</span>
+                          <span className="font-mono font-semibold text-foreground">{workedTimeLabel}</span>
                           <span className="text-muted-foreground/70">{t('closeTimesheetPage.table.dailyTotal', 'trabalhadas')}</span>
                         </div>
                       )}
@@ -1918,6 +2023,3 @@ export default function CloseTimesheetPage() {
     </div>
   )
 }
-
-
-
