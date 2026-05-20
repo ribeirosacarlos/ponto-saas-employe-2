@@ -148,6 +148,14 @@ const getBalanceTrend = (minutes?: number | null) => {
 
 const getFirstDefinedValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null)
 
+const getEntryDateKey = (entry: any = {}) => {
+  const workDate = entry?.workDate ?? entry?.work_date ?? entry?.dateKey ?? entry?.date_key
+  if (typeof workDate === 'string' && workDate.trim()) return workDate.trim()
+  if (entry?.clockedAt) return format(new Date(entry.clockedAt), 'yyyy-MM-dd')
+  if (entry?.clocked_at) return format(new Date(entry.clocked_at), 'yyyy-MM-dd')
+  return 'unknown'
+}
+
 const getDailyMetricsCandidate = (entry: any = {}) =>
   getFirstDefinedValue(
     entry.summary,
@@ -268,8 +276,39 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     source: entry.source ?? entry.origin ?? '',
     deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
+    workDate: entry.work_date ?? entry.workDate ?? (clock ? format(new Date(clock), 'yyyy-MM-dd') : null),
     dailyMetrics: normalizeDailyMetrics(getDailyMetricsCandidate(entry) ?? entry),
   }
+}
+
+const buildEntryDaysFromEntries = (entries: any[] = []) => {
+  const byKey = new Map<string, { employeeId: string; date: string; entries: any[]; summary: any }>()
+
+  entries.forEach((rawEntry, index) => {
+    const entry = normalizeEntry(rawEntry, index)
+    const employeeId = String(
+      entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? 'unknown',
+    )
+    const date = getEntryDateKey(entry)
+    const key = `${employeeId}::${date}`
+    const current = byKey.get(key)
+    const summary = getDailyMetricsCandidate(entry) ?? null
+
+    if (current) {
+      current.entries.push(entry)
+      if (!current.summary && summary) current.summary = summary
+      return
+    }
+
+    byKey.set(key, {
+      employeeId,
+      date,
+      entries: [entry],
+      summary,
+    })
+  })
+
+  return mergeTimesheetDays([], Array.from(byKey.values()))
 }
 
 const normalizeEmployee = (employee: any = {}, index = 0) => ({
@@ -327,7 +366,7 @@ const buildTimesheetSummary = (entries = []) => {
       duplicateMap.set(clockKey, count + 1)
     }
 
-    const dateKey = clock ? format(new Date(clock), 'yyyy-MM-dd') : 'unknown'
+    const dateKey = getEntryDateKey(entry)
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
     return acc
   }, {})
@@ -373,7 +412,7 @@ const buildTimesheetSummary = (entries = []) => {
 
 const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' | 'desc' = 'desc') => {
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
-    const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
+    const dateKey = getEntryDateKey(entry)
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
     return acc
   }, {})
@@ -819,11 +858,18 @@ export default function CloseTimesheetPage() {
       from: string
       to: string
     }) => {
-      return listTeamEntries({
+      const entriesResponse = await listTeamEntries({
         userId: employeeId,
         dateFrom: formatISO(startOfDay(parseISO(from))),
         dateTo: formatISO(endOfDay(parseISO(to))),
       })
+      const entries = entriesResponse?.data || []
+
+      return {
+        data: entries,
+        days: buildEntryDaysFromEntries(entries),
+        meta: entriesResponse?.meta,
+      }
     },
     [],
   )
@@ -953,13 +999,11 @@ export default function CloseTimesheetPage() {
           return
         }
 
-        const params = {
-          userId: employeeIds[0],
-          dateFrom: formatISO(startOfDay(parseISO(from))),
-          dateTo: formatISO(endOfDay(parseISO(to))),
-        }
-
-        const { data, days } = await listTeamEntries(params)
+        const { data, days } = await fetchAllEntriesByEmployee({
+          employeeId: employeeIds[0],
+          from,
+          to,
+        })
         setEntries(data || [])
         setEntryDays(days || [])
         setAppliedFilters({
@@ -1005,37 +1049,52 @@ export default function CloseTimesheetPage() {
         if (!isValid(parsedClock)) return
 
         const employeeId = userId || appliedFilters.employeeIds[0] || filters.employeeIds[0]
-        const { data, days } = await listTeamEntries({
-          userId: employeeId || undefined,
-          dateFrom: formatISO(startOfDay(parsedClock)),
-          dateTo: formatISO(endOfDay(parsedClock)),
+        if (!employeeId) return
+        const dayLabel = format(parsedClock, 'yyyy-MM-dd')
+        const { data, days } = await fetchAllEntriesByEmployee({
+          employeeId: String(employeeId),
+          from: dayLabel,
+          to: dayLabel,
         })
 
         const normalizedEntriesForDay = (data || []).map((entry: any, index: number) =>
           normalizeEntry(entry, index),
         )
-        const updatedEntry = normalizedEntriesForDay.find(
+        const matchingEntries = normalizedEntriesForDay.filter((entry) => {
+          const entryDateKey = getEntryDateKey(entry)
+          return String(entry?.userId ?? '') === String(employeeId) && entryDateKey === dayLabel
+        })
+        const updatedEntry = matchingEntries.find(
           (entry) => String(entry.timeEntryId ?? entry.id) === String(timeEntryId),
         )
 
         if (!updatedEntry) return
 
-        setEntries((prev) =>
-          prev.map((entry) =>
-            String(entry.timeEntryId ?? entry.id) === String(timeEntryId) ? updatedEntry : entry,
-          ),
-        )
-        if (days?.length) {
-          setEntryDays((prev) => {
-            const remaining = prev.filter((day) => day?.date !== days[0]?.date)
-            return mergeTimesheetDays(remaining, days)
+        setEntries((prev) => {
+          const remaining = prev.filter((entry) => {
+            const entryEmployeeId =
+              entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? ''
+            const entryDateKey = getEntryDateKey(entry)
+            return String(entryEmployeeId) !== String(employeeId) || entryDateKey !== dayLabel
           })
-        }
+
+          return [...remaining, ...matchingEntries].sort((left, right) => {
+            const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
+            const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
+            return rightTime - leftTime
+          })
+        })
+        setEntryDays((prev) => {
+          const remaining = prev.filter(
+            (day) => String(day?.employeeId ?? '') !== String(employeeId) || day?.date !== dayLabel,
+          )
+          return mergeTimesheetDays(remaining, days || [])
+        })
       } catch (error) {
         console.error('[closeTimesheet] failed to refresh single entry', error)
       }
     },
-    [appliedFilters.employeeIds, filters.employeeIds],
+    [appliedFilters.employeeIds, fetchAllEntriesByEmployee, filters.employeeIds],
   )
 
   const handleDeleteTimeEntry = useCallback(async () => {
@@ -1046,6 +1105,21 @@ export default function CloseTimesheetPage() {
 
     try {
       const response = await deleteTimeEntry(timeEntryId)
+      const employeeId = String(
+        deleteTarget?.userId ??
+          deleteTarget?.user_id ??
+          deleteTarget?.employee_id ??
+          deleteTarget?.user?.id ??
+          deleteTarget?.employee?.id ??
+          appliedFilters.employeeIds[0] ??
+          filters.employeeIds[0] ??
+          '',
+      )
+      const parsedClock = deleteTarget?.clockedAt ? new Date(deleteTarget.clockedAt) : null
+      const dayLabel =
+        deleteTarget?.workDate ??
+        deleteTarget?.work_date ??
+        (parsedClock && isValid(parsedClock) ? format(parsedClock, 'yyyy-MM-dd') : null)
       toast({
         title: t('closeTimesheetPage.delete.successTitle', 'Registro excluído'),
         description:
@@ -1072,6 +1146,41 @@ export default function CloseTimesheetPage() {
           }))
           .filter((day) => day.entries.length > 0 || day.summary),
       )
+      if (employeeId && dayLabel) {
+        try {
+          const refreshed = await fetchAllEntriesByEmployee({
+            employeeId,
+            from: dayLabel,
+            to: dayLabel,
+          })
+          const refreshedEntries = (refreshed?.data || []).map((entry: any, index: number) =>
+            normalizeEntry(entry, index),
+          )
+
+          setEntries((prev) => {
+            const remaining = prev.filter((entry) => {
+              const entryEmployeeId =
+                entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? ''
+              const entryDateKey = getEntryDateKey(entry)
+              return String(entryEmployeeId) !== employeeId || entryDateKey !== dayLabel
+            })
+
+            return [...remaining, ...refreshedEntries].sort((left, right) => {
+              const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
+              const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
+              return rightTime - leftTime
+            })
+          })
+          setEntryDays((prev) => {
+            const remaining = prev.filter(
+              (day) => String(day?.employeeId ?? '') !== employeeId || day?.date !== dayLabel,
+            )
+            return mergeTimesheetDays(remaining, refreshed?.days || [])
+          })
+        } catch (refreshError) {
+          console.error('[closeTimesheet] failed to refresh day after delete', refreshError)
+        }
+      }
       setDeleteTarget(null)
     } catch (error: any) {
       const status = error?.response?.status
@@ -1111,7 +1220,7 @@ export default function CloseTimesheetPage() {
     } finally {
       setDeletingEntryId(null)
     }
-  }, [deleteTarget, logout, t, toast])
+  }, [appliedFilters.employeeIds, deleteTarget, fetchAllEntriesByEmployee, filters.employeeIds, logout, t, toast])
 
   const buildFilename = (suffix = 'folha-ponto') => {
     const name =
