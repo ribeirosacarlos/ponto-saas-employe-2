@@ -24,6 +24,8 @@ import { useDateTime } from '../hooks/useDateTime'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { Input } from '../components/ui/input'
 import { mergeTimesheetDays } from '../lib/timesheet'
+import { cn } from '../lib/utils'
+import { GroupedEntriesTable } from '../components/time-entries/GroupedEntriesTable'
 
 const PAGE_SIZE = 20
 
@@ -170,6 +172,38 @@ function summarizeDay(entries = []) {
     breakIntervals,
     workMinutes,
     idleMinutes,
+  }
+}
+
+function formatEntryTypeLabel(type, t) {
+  const normalized = String(type || '').trim().toLowerCase()
+
+  switch (normalized) {
+    case 'in':
+      return t('historyPage.table.type.in', 'Entrada')
+    case 'out':
+      return t('historyPage.table.type.out', 'Saida')
+    case 'break_start':
+      return t('historyPage.table.type.breakStart', 'Inicio da pausa')
+    case 'break_end':
+      return t('historyPage.table.type.breakEnd', 'Fim da pausa')
+    default:
+      return normalized || t('historyPage.table.noType', 'Sem tipo')
+  }
+}
+
+function getEntryTypeTone(type) {
+  const normalized = String(type || '').trim().toLowerCase()
+
+  switch (normalized) {
+    case 'in':
+    case 'break_end':
+      return 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
+    case 'out':
+    case 'break_start':
+      return 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300'
+    default:
+      return 'border-border/70 bg-muted/60 text-muted-foreground'
   }
 }
 
@@ -698,7 +732,7 @@ const handleExportPDF = () => {
                   </div>
                   <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                     <span className="max-w-full rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-center text-[11px] font-semibold tracking-[0.14em] text-primary break-words text-balance">
-                      {t('historyPage.labels.totalEntries', { count: groupedEntries.length })}
+                      {t('historyPage.labels.totalEntries', { count: paginatedEntries.length })}
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
@@ -824,52 +858,50 @@ const handleExportPDF = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                          <th className="px-3 py-3">{t('historyPage.table.headers.date')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.entry')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.break', 'Pausa')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.exit')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.worked')}</th>
-                          <th className="px-3 py-3">{t('historyPage.table.headers.balance', 'Saldo')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedEntries.map((group) => {
-                          const { summary } = group
-                          const entryAt = getGroupEntryAt(group)
-                          const exitAt = getGroupExitAt(group)
-                          const dateCell = formatDateCell(group.dateKey)
-                          const entryLabel = entryAt
-                            ? formatTimeTz(entryAt)
-                            : t('historyPage.labels.timeFallback')
-                          const exitLabel = exitAt
-                            ? formatTimeTz(exitAt)
-                            : t('historyPage.labels.timeFallback')
-                          const intervalLabel =
-                            summary?.realBreakHhmm ||
-                            (summary?.hasBreak
-                              ? formatBreakRanges(summary.breakIntervals)
-                              : t('historyPage.labels.timeFallback'))
-                          const workedLabel =
-                            summary?.workedHhmm ||
-                            (group.duration
-                              ? formatDuration(group.duration)
-                              : t('historyPage.labels.noDuration'))
-                          const balanceLabel =
-                            summary?.balanceHhmm ||
-                            (typeof summary?.idleMinutes === 'number'
-                              ? formatDuration(summary.idleMinutes)
-                              : t('historyPage.labels.timeFallback'))
+                  <div className="mt-5">
+                    <GroupedEntriesTable
+                      groups={groupedEntries}
+                      minWidthClassName="min-w-[920px]"
+                      getGroupLabel={(group) => formatDateLabel(group.dateKey)}
+                      getGroupCountLabel={(_group, count) => `${count} ${t('historyPage.table.records', 'registros')}`}
+                      getGroupMeta={(group) => {
+                        const workedLabel =
+                          group.summary?.workedHhmm ||
+                          (group.duration
+                            ? formatDuration(group.duration)
+                            : t('historyPage.labels.noDuration'))
+                        const balanceMinutes = group.summary?.balanceMinutes
+                        const balanceLabel = group.summary?.balanceHhmm ||
+                          (typeof balanceMinutes === 'number'
+                            ? `${balanceMinutes >= 0 ? '+' : '-'}${formatDuration(Math.abs(balanceMinutes))}`
+                            : t('historyPage.labels.timeFallback'))
 
-                          return (
-                            <tr
-                              key={group.dateKey}
-                              className="border-b border-border/80 last:border-b-0"
-                            >
-                              <td className="px-3 py-4">
+                        return (
+                          <div className="flex flex-wrap items-center justify-end gap-3 text-[11px]">
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="text-muted-foreground/70">
+                                {t('historyPage.table.headers.worked')}
+                              </span>
+                              <span className="font-mono font-semibold text-foreground">{workedLabel}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="text-muted-foreground/70">
+                                {t('historyPage.table.headers.balance', 'Saldo')}
+                              </span>
+                              <span className="font-mono font-semibold text-foreground">{balanceLabel}</span>
+                            </span>
+                          </div>
+                        )
+                      }}
+                      columns={[
+                        {
+                          key: 'date',
+                          header: t('historyPage.table.headers.date'),
+                          headerClassName: 'w-[150px]',
+                          renderCell: (_entry, group) => {
+                            const dateCell = formatDateCell(group.dateKey)
+                            return (
+                              <div>
                                 <p className="font-semibold break-words text-balance">
                                   {dateCell.date}
                                 </p>
@@ -878,17 +910,58 @@ const handleExportPDF = () => {
                                     {dateCell.weekday}
                                   </p>
                                 ) : null}
-                              </td>
-                              <td className="px-3 py-4 break-words">{entryLabel}</td>
-                              <td className="px-3 py-4 break-words">{intervalLabel}</td>
-                              <td className="px-3 py-4 break-words">{exitLabel}</td>
-                              <td className="px-3 py-4 break-words">{workedLabel}</td>
-                              <td className="px-3 py-4 break-words">{balanceLabel}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                              </div>
+                            )
+                          },
+                        },
+                        {
+                          key: 'time',
+                          header: t('historyPage.table.headers.entry'),
+                          headerClassName: 'w-[110px]',
+                          renderCell: (entry) => (
+                            <span className="font-medium text-foreground">
+                              {entry.clockedAt
+                                ? formatTimeTz(entry.clockedAt)
+                                : t('historyPage.labels.timeFallback')}
+                            </span>
+                          ),
+                        },
+                        {
+                          key: 'type',
+                          header: t('historyPage.table.headers.type', 'Tipo'),
+                          headerClassName: 'w-[150px]',
+                          renderCell: (entry) => (
+                            <span
+                              className={cn(
+                                'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
+                                getEntryTypeTone(entry.type),
+                              )}
+                            >
+                              {formatEntryTypeLabel(entry.type, t)}
+                            </span>
+                          ),
+                        },
+                        {
+                          key: 'source',
+                          header: t('historyPage.table.headers.source', 'Origem'),
+                          headerClassName: 'w-[120px]',
+                          renderCell: (entry) => (
+                            <span className="text-muted-foreground">
+                              {entry.source || t('common.sourceFallback')}
+                            </span>
+                          ),
+                        },
+                        {
+                          key: 'notes',
+                          header: t('historyPage.table.headers.notes', 'Observacoes'),
+                          renderCell: (entry) => (
+                            <span className="text-foreground/90">
+                              {entry.notes || t('historyPage.table.noNotes', '—')}
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
                   </div>
                 )}
               </div>

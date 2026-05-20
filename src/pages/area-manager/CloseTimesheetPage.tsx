@@ -59,6 +59,7 @@ import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 import { mergeTimesheetDays } from '../../lib/timesheet'
+import { GroupedEntriesTable } from '../../components/time-entries/GroupedEntriesTable'
 
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
 const ADJUSTMENT_SYNC_KEY = 'admin-adjustment-sync'
@@ -147,14 +148,6 @@ const getBalanceTrend = (minutes?: number | null) => {
 }
 
 const getFirstDefinedValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null)
-
-const getEntryDateKey = (entry: any = {}) => {
-  const workDate = entry?.workDate ?? entry?.work_date ?? entry?.dateKey ?? entry?.date_key
-  if (typeof workDate === 'string' && workDate.trim()) return workDate.trim()
-  if (entry?.clockedAt) return format(new Date(entry.clockedAt), 'yyyy-MM-dd')
-  if (entry?.clocked_at) return format(new Date(entry.clocked_at), 'yyyy-MM-dd')
-  return 'unknown'
-}
 
 const getDailyMetricsCandidate = (entry: any = {}) =>
   getFirstDefinedValue(
@@ -276,39 +269,8 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     source: entry.source ?? entry.origin ?? '',
     deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
-    workDate: entry.work_date ?? entry.workDate ?? (clock ? format(new Date(clock), 'yyyy-MM-dd') : null),
     dailyMetrics: normalizeDailyMetrics(getDailyMetricsCandidate(entry) ?? entry),
   }
-}
-
-const buildEntryDaysFromEntries = (entries: any[] = []) => {
-  const byKey = new Map<string, { employeeId: string; date: string; entries: any[]; summary: any }>()
-
-  entries.forEach((rawEntry, index) => {
-    const entry = normalizeEntry(rawEntry, index)
-    const employeeId = String(
-      entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? 'unknown',
-    )
-    const date = getEntryDateKey(entry)
-    const key = `${employeeId}::${date}`
-    const current = byKey.get(key)
-    const summary = getDailyMetricsCandidate(entry) ?? null
-
-    if (current) {
-      current.entries.push(entry)
-      if (!current.summary && summary) current.summary = summary
-      return
-    }
-
-    byKey.set(key, {
-      employeeId,
-      date,
-      entries: [entry],
-      summary,
-    })
-  })
-
-  return mergeTimesheetDays([], Array.from(byKey.values()))
 }
 
 const normalizeEmployee = (employee: any = {}, index = 0) => ({
@@ -366,7 +328,7 @@ const buildTimesheetSummary = (entries = []) => {
       duplicateMap.set(clockKey, count + 1)
     }
 
-    const dateKey = getEntryDateKey(entry)
+    const dateKey = clock ? format(new Date(clock), 'yyyy-MM-dd') : 'unknown'
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
     return acc
   }, {})
@@ -412,7 +374,7 @@ const buildTimesheetSummary = (entries = []) => {
 
 const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' | 'desc' = 'desc') => {
   const groups = entries.reduce<Record<string, any[]>>((acc, entry) => {
-    const dateKey = getEntryDateKey(entry)
+    const dateKey = entry.clockedAt ? format(new Date(entry.clockedAt), 'yyyy-MM-dd') : 'unknown'
     acc[dateKey] = acc[dateKey] ? [...acc[dateKey], entry] : [entry]
     return acc
   }, {})
@@ -858,18 +820,11 @@ export default function CloseTimesheetPage() {
       from: string
       to: string
     }) => {
-      const entriesResponse = await listTeamEntries({
+      return listTeamEntries({
         userId: employeeId,
         dateFrom: formatISO(startOfDay(parseISO(from))),
         dateTo: formatISO(endOfDay(parseISO(to))),
       })
-      const entries = entriesResponse?.data || []
-
-      return {
-        data: entries,
-        days: buildEntryDaysFromEntries(entries),
-        meta: entriesResponse?.meta,
-      }
     },
     [],
   )
@@ -999,11 +954,13 @@ export default function CloseTimesheetPage() {
           return
         }
 
-        const { data, days } = await fetchAllEntriesByEmployee({
-          employeeId: employeeIds[0],
-          from,
-          to,
-        })
+        const params = {
+          userId: employeeIds[0],
+          dateFrom: formatISO(startOfDay(parseISO(from))),
+          dateTo: formatISO(endOfDay(parseISO(to))),
+        }
+
+        const { data, days } = await listTeamEntries(params)
         setEntries(data || [])
         setEntryDays(days || [])
         setAppliedFilters({
@@ -1049,52 +1006,37 @@ export default function CloseTimesheetPage() {
         if (!isValid(parsedClock)) return
 
         const employeeId = userId || appliedFilters.employeeIds[0] || filters.employeeIds[0]
-        if (!employeeId) return
-        const dayLabel = format(parsedClock, 'yyyy-MM-dd')
-        const { data, days } = await fetchAllEntriesByEmployee({
-          employeeId: String(employeeId),
-          from: dayLabel,
-          to: dayLabel,
+        const { data, days } = await listTeamEntries({
+          userId: employeeId || undefined,
+          dateFrom: formatISO(startOfDay(parsedClock)),
+          dateTo: formatISO(endOfDay(parsedClock)),
         })
 
         const normalizedEntriesForDay = (data || []).map((entry: any, index: number) =>
           normalizeEntry(entry, index),
         )
-        const matchingEntries = normalizedEntriesForDay.filter((entry) => {
-          const entryDateKey = getEntryDateKey(entry)
-          return String(entry?.userId ?? '') === String(employeeId) && entryDateKey === dayLabel
-        })
-        const updatedEntry = matchingEntries.find(
+        const updatedEntry = normalizedEntriesForDay.find(
           (entry) => String(entry.timeEntryId ?? entry.id) === String(timeEntryId),
         )
 
         if (!updatedEntry) return
 
-        setEntries((prev) => {
-          const remaining = prev.filter((entry) => {
-            const entryEmployeeId =
-              entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? ''
-            const entryDateKey = getEntryDateKey(entry)
-            return String(entryEmployeeId) !== String(employeeId) || entryDateKey !== dayLabel
+        setEntries((prev) =>
+          prev.map((entry) =>
+            String(entry.timeEntryId ?? entry.id) === String(timeEntryId) ? updatedEntry : entry,
+          ),
+        )
+        if (days?.length) {
+          setEntryDays((prev) => {
+            const remaining = prev.filter((day) => day?.date !== days[0]?.date)
+            return mergeTimesheetDays(remaining, days)
           })
-
-          return [...remaining, ...matchingEntries].sort((left, right) => {
-            const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
-            const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
-            return rightTime - leftTime
-          })
-        })
-        setEntryDays((prev) => {
-          const remaining = prev.filter(
-            (day) => String(day?.employeeId ?? '') !== String(employeeId) || day?.date !== dayLabel,
-          )
-          return mergeTimesheetDays(remaining, days || [])
-        })
+        }
       } catch (error) {
         console.error('[closeTimesheet] failed to refresh single entry', error)
       }
     },
-    [appliedFilters.employeeIds, fetchAllEntriesByEmployee, filters.employeeIds],
+    [appliedFilters.employeeIds, filters.employeeIds],
   )
 
   const handleDeleteTimeEntry = useCallback(async () => {
@@ -1105,21 +1047,6 @@ export default function CloseTimesheetPage() {
 
     try {
       const response = await deleteTimeEntry(timeEntryId)
-      const employeeId = String(
-        deleteTarget?.userId ??
-          deleteTarget?.user_id ??
-          deleteTarget?.employee_id ??
-          deleteTarget?.user?.id ??
-          deleteTarget?.employee?.id ??
-          appliedFilters.employeeIds[0] ??
-          filters.employeeIds[0] ??
-          '',
-      )
-      const parsedClock = deleteTarget?.clockedAt ? new Date(deleteTarget.clockedAt) : null
-      const dayLabel =
-        deleteTarget?.workDate ??
-        deleteTarget?.work_date ??
-        (parsedClock && isValid(parsedClock) ? format(parsedClock, 'yyyy-MM-dd') : null)
       toast({
         title: t('closeTimesheetPage.delete.successTitle', 'Registro excluído'),
         description:
@@ -1146,41 +1073,6 @@ export default function CloseTimesheetPage() {
           }))
           .filter((day) => day.entries.length > 0 || day.summary),
       )
-      if (employeeId && dayLabel) {
-        try {
-          const refreshed = await fetchAllEntriesByEmployee({
-            employeeId,
-            from: dayLabel,
-            to: dayLabel,
-          })
-          const refreshedEntries = (refreshed?.data || []).map((entry: any, index: number) =>
-            normalizeEntry(entry, index),
-          )
-
-          setEntries((prev) => {
-            const remaining = prev.filter((entry) => {
-              const entryEmployeeId =
-                entry?.userId ?? entry?.user_id ?? entry?.employee_id ?? entry?.user?.id ?? entry?.employee?.id ?? ''
-              const entryDateKey = getEntryDateKey(entry)
-              return String(entryEmployeeId) !== employeeId || entryDateKey !== dayLabel
-            })
-
-            return [...remaining, ...refreshedEntries].sort((left, right) => {
-              const leftTime = left?.clockedAt ? new Date(left.clockedAt).getTime() : 0
-              const rightTime = right?.clockedAt ? new Date(right.clockedAt).getTime() : 0
-              return rightTime - leftTime
-            })
-          })
-          setEntryDays((prev) => {
-            const remaining = prev.filter(
-              (day) => String(day?.employeeId ?? '') !== employeeId || day?.date !== dayLabel,
-            )
-            return mergeTimesheetDays(remaining, refreshed?.days || [])
-          })
-        } catch (refreshError) {
-          console.error('[closeTimesheet] failed to refresh day after delete', refreshError)
-        }
-      }
       setDeleteTarget(null)
     } catch (error: any) {
       const status = error?.response?.status
@@ -1220,7 +1112,7 @@ export default function CloseTimesheetPage() {
     } finally {
       setDeletingEntryId(null)
     }
-  }, [appliedFilters.employeeIds, deleteTarget, fetchAllEntriesByEmployee, filters.employeeIds, logout, t, toast])
+  }, [deleteTarget, logout, t, toast])
 
   const buildFilename = (suffix = 'folha-ponto') => {
     const name =
@@ -1362,285 +1254,278 @@ export default function CloseTimesheetPage() {
     tableSummary: any
     tableDuplicatesSet: Set<string>
   }) => (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card/70">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] table-fixed">
-          <thead>
-            <tr className="border-b border-border/70 text-left text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-              <th className="w-[130px] px-3 py-3">{t('closeTimesheetPage.table.headers.date')}</th>
-              <th className="w-[85px] px-3 py-3">{t('closeTimesheetPage.table.headers.time')}</th>
-              <th className="w-[100px] px-3 py-3">{t('closeTimesheetPage.table.headers.type')}</th>
-              <th className="w-[115px] px-3 py-3">{t('closeTimesheetPage.table.headers.device', 'Dispositivo')}</th>
-              <th className="w-[185px] px-3 py-3">{t('closeTimesheetPage.table.headers.location')}</th>
-              <th className="w-[165px] px-3 py-3">{t('closeTimesheetPage.table.headers.status')}</th>
-              <th className="w-[80px] px-3 py-3 text-right">
-                {t('closeTimesheetPage.table.headers.actions', 'Ações')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.flatMap((group) => {
-              const workedTimeLabel = formatWorkedTime(
-                group.dailyMetrics?.workedHhmm,
-                group.dailyMetrics?.workedMinutes,
-              )
-              const showDailyWorkedTime = group.items.length > 0
-              const dateRows = group.items.map((entry, index) => {
-                const employeeKey =
-                  entry?.userId ??
-                  entry?.user_id ??
-                  entry?.employee_id ??
-                  entry?.user?.id ??
-                  entry?.employee?.id ??
-                  'unknown-user'
-                const clockKey = entry.clockedAt
-                  ? `${employeeKey}:${new Date(entry.clockedAt).toISOString()}`
-                  : ''
-                const isPending = tableSummary.pendingIds.has(entry.id)
-                const isDuplicate = tableDuplicatesSet.has(clockKey)
-                const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
-                const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
-                const distanceFromCompany = companyLocation
-                  ? calculateDistanceInMeters(
-                      entry.latitude,
-                      entry.longitude,
-                      companyLocation.latitude,
-                      companyLocation.longitude,
-                    )
-                  : null
-                const isOutsideCompany =
-                  distanceFromCompany !== null &&
-                  distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
-                const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
-                const isDeletingEntry = deletingEntryId === entry.timeEntryId
-                const statusLabel = hasPendingAdjustment
-                  ? t('closeTimesheetPage.table.status.adjustmentPending')
-                  : isPending
-                    ? t('closeTimesheetPage.table.status.pending')
-                    : isDuplicate
-                      ? t('closeTimesheetPage.table.status.duplicate')
-                      : t('closeTimesheetPage.table.status.ok')
-                const statusClassName = hasPendingAdjustment
-                  ? 'text-sky-700 dark:text-sky-300'
-                  : isPending
-                    ? 'text-amber-700 dark:text-amber-300'
-                    : isDuplicate
-                      ? 'text-rose-700 dark:text-rose-300'
-                      : 'text-emerald-700 dark:text-emerald-300'
-                const locationLabel = !hasCoordinates
-                  ? '—'
-                  : distanceFromCompany !== null
-                    ? isOutsideCompany
-                      ? t('closeTimesheetPage.table.locationStatus.outside')
-                      : t('closeTimesheetPage.table.locationStatus.inside')
-                    : t('closeTimesheetPage.table.locationTitle')
-
-                return (
-                  <tr
-                    key={entry.id}
-                    className={cn(
-                      'border-b border-border/40 text-[13px] transition-colors hover:bg-muted/45',
-                      index === group.items.length - 1 ? 'last:border-b-0' : '',
-                    )}
-                  >
-                    <td className="px-3 py-2.5 align-middle text-muted-foreground">
-                      {group.dateKey && group.dateKey !== 'unknown'
-                        ? format(parseISO(group.dateKey), 'dd/MM/yyyy')
-                        : '—'}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      <span className="font-medium text-foreground">{formatClock(entry.clockedAt)}</span>
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
-                          entry.type === 'in'
-                            ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
-                            : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
-                        )}
-                      >
-                        {formatEntryType(entry.type)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      {entry.deviceType ? (
-                        <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                          {entry.deviceType === 'mobile' ? (
-                            <Smartphone className="h-3.5 w-3.5 shrink-0" />
-                          ) : (
-                            <Monitor className="h-3.5 w-3.5 shrink-0" />
-                          )}
-                          {entry.deviceType === 'mobile'
-                            ? t('closeTimesheetPage.table.device.mobile', 'Mobile')
-                            : t('closeTimesheetPage.table.device.web', 'Web')}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      {hasCoordinates ? (
-                        <div className="flex items-center gap-2 text-[13px] text-foreground">
-                          <span
-                            className={cn(
-                              'truncate',
-                              isOutsideCompany
-                                ? 'font-semibold text-rose-700 dark:text-rose-300'
-                                : 'text-foreground',
-                            )}
-                          >
-                            {locationLabel}
-                          </span>
-                          <Dialog
-                            open={locationEntry?.id === entry.id}
-                            onOpenChange={(open) => !open && setLocationEntry(null)}
-                          >
-                            <DialogTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className={cn(
-                                  'h-6 w-6 shrink-0 rounded-full p-0 hover:bg-muted',
-                                  isOutsideCompany
-                                    ? 'text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200'
-                                    : 'text-muted-foreground hover:text-foreground',
-                                )}
-                                onClick={() => setLocationEntry(entry)}
-                                aria-label={t('closeTimesheetPage.table.viewLocation')}
-                                title={t('closeTimesheetPage.table.viewLocation')}
-                              >
-                                <MapPin className="h-3.5 w-3.5" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader className="space-y-1">
-                                <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
-                                <DialogDescription>
-                                  {t('closeTimesheetPage.table.locationDescription')}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-2 rounded-xl bg-muted/50 p-4">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="font-medium">Latitude</span>
-                                  <span>{entry.latitude}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="font-medium">Longitude</span>
-                                  <span>{entry.longitude}</span>
-                                </div>
-                                {distanceFromCompany !== null ? (
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="font-medium">
-                                      {t('closeTimesheetPage.table.distanceFromCompany')}
-                                    </span>
-                                    <span>
-                                      {t('closeTimesheetPage.table.distanceValue', {
-                                        distance: distanceFromCompany,
-                                      })}
-                                    </span>
-                                  </div>
-                                ) : null}
-                                <a
-                                  href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 text-primary underline"
-                                >
-                                  <MapPin className="h-4 w-4" />
-                                  {t('closeTimesheetPage.table.openMaps')}
-                                </a>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      {hasPendingAdjustment ? (
-                        <button
-                          type="button"
-                          className={cn(
-                            'inline-flex items-center gap-1 font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
-                            statusClassName,
-                          )}
-                          onClick={() => openPendingAdjustments(entry)}
-                          title={statusLabel}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          {statusLabel}
-                        </button>
-                      ) : (
-                        <span className={cn('font-medium', statusClassName)}>{statusLabel}</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      <div className="flex items-center justify-end gap-1">
-                        {canDeleteEntry ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-rose-600 dark:hover:text-rose-400"
-                            disabled={isDeletingEntry}
-                            onClick={() => setDeleteTarget(entry)}
-                            aria-label={
-                              isDeletingEntry
-                                ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
-                                : t('closeTimesheetPage.delete.action', 'Excluir')
-                            }
-                            title={
-                              isDeletingEntry
-                                ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
-                                : t('closeTimesheetPage.delete.action', 'Excluir')
-                            }
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        ) : null}
-                        {!canDeleteEntry ? <span className="text-muted-foreground">—</span> : null}
-                      </div>
-                    </td>
-                  </tr>
+    <GroupedEntriesTable
+      groups={groups}
+      getGroupLabel={(group) => formatDateLabel(group.dateKey)}
+      getGroupCountLabel={(_group, count) => `${count} ${t('closeTimesheetPage.table.records', 'registros')}`}
+      getGroupMeta={(group) => {
+        const workedTimeLabel = formatWorkedTime(
+          group.dailyMetrics?.workedHhmm,
+          group.dailyMetrics?.workedMinutes,
+        )
+        if (!group.items.length) return null
+        return (
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <Timer className="h-3 w-3 text-muted-foreground/70" />
+            <span className="font-mono font-semibold text-foreground">{workedTimeLabel}</span>
+            <span className="text-muted-foreground/70">
+              {t('closeTimesheetPage.table.dailyTotal', 'trabalhadas')}
+            </span>
+          </div>
+        )
+      }}
+      columns={[
+        {
+          key: 'date',
+          header: t('closeTimesheetPage.table.headers.date'),
+          headerClassName: 'w-[130px]',
+          cellClassName: 'text-muted-foreground',
+          renderCell: (_entry, group) =>
+            group.dateKey && group.dateKey !== 'unknown'
+              ? format(parseISO(group.dateKey), 'dd/MM/yyyy')
+              : '—',
+        },
+        {
+          key: 'time',
+          header: t('closeTimesheetPage.table.headers.time'),
+          headerClassName: 'w-[85px]',
+          renderCell: (entry) => (
+            <span className="font-medium text-foreground">{formatClock(entry.clockedAt)}</span>
+          ),
+        },
+        {
+          key: 'type',
+          header: t('closeTimesheetPage.table.headers.type'),
+          headerClassName: 'w-[100px]',
+          renderCell: (entry) => (
+            <span
+              className={cn(
+                'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
+                entry.type === 'in'
+                  ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
+                  : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
+              )}
+            >
+              {formatEntryType(entry.type)}
+            </span>
+          ),
+        },
+        {
+          key: 'device',
+          header: t('closeTimesheetPage.table.headers.device', 'Dispositivo'),
+          headerClassName: 'w-[115px]',
+          renderCell: (entry) =>
+            entry.deviceType ? (
+              <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                {entry.deviceType === 'mobile' ? (
+                  <Smartphone className="h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <Monitor className="h-3.5 w-3.5 shrink-0" />
+                )}
+                {entry.deviceType === 'mobile'
+                  ? t('closeTimesheetPage.table.device.mobile', 'Mobile')
+                  : t('closeTimesheetPage.table.device.web', 'Web')}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            ),
+        },
+        {
+          key: 'location',
+          header: t('closeTimesheetPage.table.headers.location'),
+          headerClassName: 'w-[185px]',
+          renderCell: (entry) => {
+            const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
+            const distanceFromCompany = companyLocation
+              ? calculateDistanceInMeters(
+                  entry.latitude,
+                  entry.longitude,
+                  companyLocation.latitude,
+                  companyLocation.longitude,
                 )
-              })
+              : null
+            const isOutsideCompany =
+              distanceFromCompany !== null &&
+              distanceFromCompany > (companyLocation?.allowedRadiusMeters ?? 0)
+            const locationLabel = !hasCoordinates
+              ? '—'
+              : distanceFromCompany !== null
+                ? isOutsideCompany
+                  ? t('closeTimesheetPage.table.locationStatus.outside')
+                  : t('closeTimesheetPage.table.locationStatus.inside')
+                : t('closeTimesheetPage.table.locationTitle')
 
-              return [
-                <tr key={`${group.dateKey}-separator`} className="border-b border-border/50">
-                  <td
-                    colSpan={7}
-                    className="bg-background/70 px-3 py-2 text-[12px] font-medium text-muted-foreground"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/70" />
-                        <span className="capitalize">{formatDateLabel(group.dateKey)}</span>
-                        {group.items.length > 0 && (
-                          <span className="text-[11px] text-muted-foreground/60">
-                            · {group.items.length} {t('closeTimesheetPage.table.records', 'registros')}
-                          </span>
-                        )}
-                      </div>
-                      {showDailyWorkedTime && (
-                        <div className="flex items-center gap-1.5 text-[11px]">
-                          <Timer className="h-3 w-3 text-muted-foreground/70" />
-                          <span className="font-mono font-semibold text-foreground">{workedTimeLabel}</span>
-                          <span className="text-muted-foreground/70">{t('closeTimesheetPage.table.dailyTotal', 'trabalhadas')}</span>
-                        </div>
+            return hasCoordinates ? (
+              <div className="flex items-center gap-2 text-[13px] text-foreground">
+                <span
+                  className={cn(
+                    'truncate',
+                    isOutsideCompany
+                      ? 'font-semibold text-rose-700 dark:text-rose-300'
+                      : 'text-foreground',
+                  )}
+                >
+                  {locationLabel}
+                </span>
+                <Dialog
+                  open={locationEntry?.id === entry.id}
+                  onOpenChange={(open) => !open && setLocationEntry(null)}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        'h-6 w-6 shrink-0 rounded-full p-0 hover:bg-muted',
+                        isOutsideCompany
+                          ? 'text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200'
+                          : 'text-muted-foreground hover:text-foreground',
                       )}
+                      onClick={() => setLocationEntry(entry)}
+                      aria-label={t('closeTimesheetPage.table.viewLocation')}
+                      title={t('closeTimesheetPage.table.viewLocation')}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader className="space-y-1">
+                      <DialogTitle>{t('closeTimesheetPage.table.locationTitle')}</DialogTitle>
+                      <DialogDescription>
+                        {t('closeTimesheetPage.table.locationDescription')}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2 rounded-xl bg-muted/50 p-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Latitude</span>
+                        <span>{entry.latitude}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Longitude</span>
+                        <span>{entry.longitude}</span>
+                      </div>
+                      {distanceFromCompany !== null ? (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">
+                            {t('closeTimesheetPage.table.distanceFromCompany')}
+                          </span>
+                          <span>
+                            {t('closeTimesheetPage.table.distanceValue', {
+                              distance: distanceFromCompany,
+                            })}
+                          </span>
+                        </div>
+                      ) : null}
+                      <a
+                        href={`https://maps.google.com/?q=${entry.latitude},${entry.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-primary underline"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        {t('closeTimesheetPage.table.openMaps')}
+                      </a>
                     </div>
-                  </td>
-                </tr>,
-                ...dateRows,
-              ]
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          },
+        },
+        {
+          key: 'status',
+          header: t('closeTimesheetPage.table.headers.status'),
+          headerClassName: 'w-[165px]',
+          renderCell: (entry) => {
+            const employeeKey =
+              entry?.userId ??
+              entry?.user_id ??
+              entry?.employee_id ??
+              entry?.user?.id ??
+              entry?.employee?.id ??
+              'unknown-user'
+            const clockKey = entry.clockedAt
+              ? `${employeeKey}:${new Date(entry.clockedAt).toISOString()}`
+              : ''
+            const isPending = tableSummary.pendingIds.has(entry.id)
+            const isDuplicate = tableDuplicatesSet.has(clockKey)
+            const hasPendingAdjustment = isPendingApprovalAdjustment(entry)
+            const statusLabel = hasPendingAdjustment
+              ? t('closeTimesheetPage.table.status.adjustmentPending')
+              : isPending
+                ? t('closeTimesheetPage.table.status.pending')
+                : isDuplicate
+                  ? t('closeTimesheetPage.table.status.duplicate')
+                  : t('closeTimesheetPage.table.status.ok')
+            const statusClassName = hasPendingAdjustment
+              ? 'text-sky-700 dark:text-sky-300'
+              : isPending
+                ? 'text-amber-700 dark:text-amber-300'
+                : isDuplicate
+                  ? 'text-rose-700 dark:text-rose-300'
+                  : 'text-emerald-700 dark:text-emerald-300'
+
+            return hasPendingAdjustment ? (
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 font-medium underline decoration-transparent underline-offset-2 transition hover:decoration-current',
+                  statusClassName,
+                )}
+                onClick={() => openPendingAdjustments(entry)}
+                title={statusLabel}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                {statusLabel}
+              </button>
+            ) : (
+              <span className={cn('font-medium', statusClassName)}>{statusLabel}</span>
+            )
+          },
+        },
+        {
+          key: 'actions',
+          header: t('closeTimesheetPage.table.headers.actions', 'Ações'),
+          headerClassName: 'w-[80px] text-right',
+          cellClassName: 'text-right',
+          renderCell: (entry) => {
+            const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
+            const isDeletingEntry = deletingEntryId === entry.timeEntryId
+
+            return (
+              <div className="flex items-center justify-end gap-1">
+                {canDeleteEntry ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-rose-600 dark:hover:text-rose-400"
+                    disabled={isDeletingEntry}
+                    onClick={() => setDeleteTarget(entry)}
+                    aria-label={
+                      isDeletingEntry
+                        ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                        : t('closeTimesheetPage.delete.action', 'Excluir')
+                    }
+                    title={
+                      isDeletingEntry
+                        ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')
+                        : t('closeTimesheetPage.delete.action', 'Excluir')
+                    }
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                ) : null}
+                {!canDeleteEntry ? <span className="text-muted-foreground">—</span> : null}
+              </div>
+            )
+          },
+        },
+      ]}
+    />
   )
 
   return (
