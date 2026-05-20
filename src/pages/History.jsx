@@ -870,11 +870,6 @@ const handleExportPDF = () => {
                           (group.duration
                             ? formatDuration(group.duration)
                             : t('historyPage.labels.noDuration'))
-                        const balanceMinutes = group.summary?.balanceMinutes
-                        const balanceLabel = group.summary?.balanceHhmm ||
-                          (typeof balanceMinutes === 'number'
-                            ? `${balanceMinutes >= 0 ? '+' : '-'}${formatDuration(Math.abs(balanceMinutes))}`
-                            : t('historyPage.labels.timeFallback'))
 
                         return (
                           <div className="flex flex-wrap items-center justify-end gap-3 text-[11px]">
@@ -883,12 +878,6 @@ const handleExportPDF = () => {
                                 {t('historyPage.table.headers.worked')}
                               </span>
                               <span className="font-mono font-semibold text-foreground">{workedLabel}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-muted-foreground/70">
-                                {t('historyPage.table.headers.balance', 'Saldo')}
-                              </span>
-                              <span className="font-mono font-semibold text-foreground">{balanceLabel}</span>
                             </span>
                           </div>
                         )
