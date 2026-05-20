@@ -9,7 +9,10 @@ import {
   Filter,
   FileText,
   History as HistoryIcon,
+  Monitor,
+  Pencil,
   RefreshCcw,
+  Smartphone,
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { useToast } from '../components/ui/use-toast'
@@ -73,6 +76,7 @@ function normalizeEntry(entry, t) {
     type: entry.type || entry.kind || entry.event_type || entry.status,
     status: entry.status || entry.state || entry.situation,
     notes: entry.notes || entry.observations || entry.reason || entry.comment || '',
+    deviceType: entry.device_type || entry.deviceType || null,
     source: entry.source || entry.origin || entry.channel || t('common.sourceFallback'),
     badges: entry.badges || entry.flags || [],
   }
@@ -204,6 +208,30 @@ function getEntryTypeTone(type) {
       return 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300'
     default:
       return 'border-border/70 bg-muted/60 text-muted-foreground'
+  }
+}
+
+function getEntryOriginPresentation(entry, t) {
+  const deviceType = String(entry.deviceType || '').trim().toLowerCase()
+  const source = String(entry.source || '').trim().toLowerCase()
+
+  if (deviceType === 'mobile') {
+    return {
+      icon: Smartphone,
+      label: t('closeTimesheetPage.table.device.mobile', 'Mobile'),
+    }
+  }
+
+  if (['adjustment', 'proposed_adjustment'].includes(source)) {
+    return {
+      icon: Pencil,
+      label: t('historyPage.table.origin.adjustment', 'Adjustment'),
+    }
+  }
+
+  return {
+    icon: Monitor,
+    label: t('closeTimesheetPage.table.device.web', 'Web'),
   }
 }
 
@@ -886,11 +914,12 @@ const handleExportPDF = () => {
                         {
                           key: 'date',
                           header: t('historyPage.table.headers.date'),
-                          headerClassName: 'w-[150px]',
+                          headerClassName: 'w-[150px] text-center',
+                          cellClassName: 'text-center',
                           renderCell: (_entry, group) => {
                             const dateCell = formatDateCell(group.dateKey)
                             return (
-                              <div>
+                              <div className="flex flex-col items-center gap-0.5">
                                 <p className="font-semibold break-words text-balance">
                                   {dateCell.date}
                                 </p>
@@ -906,7 +935,8 @@ const handleExportPDF = () => {
                         {
                           key: 'time',
                           header: t('historyPage.table.headers.entry'),
-                          headerClassName: 'w-[110px]',
+                          headerClassName: 'w-[110px] text-center',
+                          cellClassName: 'text-center',
                           renderCell: (entry) => (
                             <span className="font-medium text-foreground">
                               {entry.clockedAt
@@ -918,7 +948,8 @@ const handleExportPDF = () => {
                         {
                           key: 'type',
                           header: t('historyPage.table.headers.type', 'Tipo'),
-                          headerClassName: 'w-[150px]',
+                          headerClassName: 'w-[150px] text-center',
+                          cellClassName: 'text-center',
                           renderCell: (entry) => (
                             <span
                               className={cn(
@@ -931,22 +962,33 @@ const handleExportPDF = () => {
                           ),
                         },
                         {
-                          key: 'source',
+                          key: 'origin',
                           header: t('historyPage.table.headers.source', 'Origem'),
-                          headerClassName: 'w-[120px]',
-                          renderCell: (entry) => (
-                            <span className="text-muted-foreground">
-                              {entry.source || t('common.sourceFallback')}
-                            </span>
-                          ),
+                          headerClassName: 'w-[120px] text-center',
+                          cellClassName: 'text-center',
+                          renderCell: (entry) => {
+                            const origin = getEntryOriginPresentation(entry, t)
+                            const Icon = origin.icon
+
+                            return (
+                              <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                                <Icon className="h-3.5 w-3.5 shrink-0" />
+                                {origin.label}
+                              </span>
+                            )
+                          },
                         },
                         {
                           key: 'notes',
                           header: t('historyPage.table.headers.notes', 'Observacoes'),
+                          headerClassName: 'w-[220px] text-center',
+                          cellClassName: 'text-center',
                           renderCell: (entry) => (
-                            <span className="text-foreground/90">
-                              {entry.notes || t('historyPage.table.noNotes', '—')}
-                            </span>
+                            <div className="mx-auto max-w-[220px]">
+                              <span className="block truncate text-foreground/90" title={entry.notes || ''}>
+                                {entry.notes || t('historyPage.table.noNotes', '—')}
+                              </span>
+                            </div>
                           ),
                         },
                       ]}
