@@ -129,19 +129,22 @@ export async function listTeamEntries({
   const parsed = normalizeEntriesResponse(data, { page, perPage })
   return {
     data: parsed.data.map((entry, index) => normalizeTeamEntry(entry, index)),
-    days: parsed.days,
     meta: parsed.meta,
   }
 }
 
-export async function getTeamOvertimeBalance(employeeId, { from = undefined, to = undefined, isAdmin = false } = {}) {
+export async function getTeamOvertimeBalance(
+  employeeId,
+  { from = undefined, to = undefined, isAdmin = false, includeDays = false } = {},
+) {
   if (!employeeId) throw new Error('employeeId is required')
   const params = {}
   if (from) params.from = from
   if (to) params.to = to
+  if (includeDays !== undefined) params.include_days = includeDays ? 1 : 0
   const path = isAdmin
-    ? `/v1/employee/${employeeId}/overtime`
-    : `/v1/team/${employeeId}/overtime`
+    ? `/v1/admin/employees/${employeeId}/overtime`
+    : `/v1/area-manager/team/${employeeId}/overtime`
   const { data } = await api.get(path, { params })
   return normalizeOvertimePayload(data?.data ?? data ?? {})
 }
