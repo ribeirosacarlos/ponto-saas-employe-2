@@ -63,6 +63,14 @@ const normalizeTeamEntry = (entry = {}, index = 0) => ({
   latitude: entry.latitude ?? null,
   longitude: entry.longitude ?? null,
   source: entry.source ?? entry.origin ?? entry.channel ?? '',
+  workDate: entry.work_date ?? entry.workDate ?? null,
+  daySummary:
+    entry.day_summary ??
+    entry.daySummary ??
+    entry.summary ??
+    entry.daily_summary ??
+    entry.dailySummary ??
+    null,
   user: entry.user ?? entry.employee ?? null,
 })
 
@@ -129,6 +137,7 @@ export async function listTeamEntries({
   const parsed = normalizeEntriesResponse(data, { page, perPage })
   return {
     data: parsed.data.map((entry, index) => normalizeTeamEntry(entry, index)),
+    days: parsed.days,
     meta: parsed.meta,
   }
 }

@@ -15,6 +15,106 @@ const toNumber = (value) => {
 
 const normalizeEntriesList = (items) => (Array.isArray(items) ? items : [])
 
+const getTimesheetDaySummarySource = (day = {}) =>
+  firstDefined(
+    day.summary,
+    day.day_summary,
+    day.daySummary,
+    day.daily_summary,
+    day.dailySummary,
+    day.workday_summary,
+    day.workdaySummary,
+    day.totals,
+    day,
+  )
+
+const getTimesheetDayDate = (day = {}) =>
+  firstDefined(day.date, day.day, day.date_key, day.dateKey, day.work_date, day.workDate)
+
+const getTimesheetDayEmployeeId = (day = {}) =>
+  firstDefined(day.employee_id, day.employeeId, day.user_id, day.userId, day.user?.id, day.employee?.id)
+
+const getEntryDateKey = (entry = {}) =>
+  firstDefined(entry.work_date, entry.workDate, entry.date, entry.date_key, entry.dateKey)
+
+const isGroupedEntriesDay = (item = {}) =>
+  Boolean(
+    item &&
+      typeof item === 'object' &&
+      !Array.isArray(item) &&
+      Array.isArray(item.entries) &&
+      (getTimesheetDayDate(item) || getTimesheetDayEmployeeId(item)),
+  )
+
+const flattenGroupedEntriesDays = (items = []) =>
+  items.flatMap((day) => {
+    const userId = getTimesheetDayEmployeeId(day)
+    const date = getTimesheetDayDate(day)
+    const user = day.user ?? day.employee ?? null
+    const daySummary = getTimesheetDaySummarySource(day)
+
+    return normalizeEntriesList(day.entries).map((entry) => ({
+      ...entry,
+      user_id: firstDefined(entry.user_id, entry.userId, entry.employee_id, userId),
+      user: entry.user ?? entry.employee ?? user,
+      work_date: firstDefined(entry.work_date, entry.workDate, date),
+      day_summary: firstDefined(entry.day_summary, entry.daySummary, daySummary),
+    }))
+  })
+
+const buildDaysFromEntryList = (entries = []) => {
+  const grouped = new Map()
+
+  entries.forEach((entry, index) => {
+    const date = getEntryDateKey(entry)
+    if (!date) return
+
+    const employeeId = firstDefined(
+      entry.employee_id,
+      entry.employeeId,
+      entry.user_id,
+      entry.userId,
+      entry.user?.id,
+      entry.employee?.id,
+    )
+    const key = `${employeeId ?? 'unknown'}::${date}`
+    const current = grouped.get(key)
+    const summarySource = firstDefined(
+      entry.day_summary,
+      entry.daySummary,
+      entry.summary,
+      entry.daily_summary,
+      entry.dailySummary,
+      entry.workday_summary,
+      entry.workdaySummary,
+    )
+
+    if (current) {
+      current.entries.push(entry)
+      if (!current.user && (entry.user ?? entry.employee)) current.user = entry.user ?? entry.employee
+      if (!current.summarySource && summarySource) current.summarySource = summarySource
+      return
+    }
+
+    grouped.set(key, {
+      date,
+      employee_id: employeeId,
+      user: entry.user ?? entry.employee ?? null,
+      entries: [entry],
+      summarySource,
+      index,
+    })
+  })
+
+  return Array.from(grouped.values()).map((day) => ({
+    date: day.date,
+    employee_id: day.employee_id,
+    user: day.user,
+    entries: day.entries,
+    day_summary: day.summarySource,
+  }))
+}
+
 export const normalizeTimesheetSummary = (source = {}) => {
   const payload =
     source?.summary && typeof source.summary === 'object' && !Array.isArray(source.summary)
@@ -64,11 +164,11 @@ export const normalizeTimesheetSummary = (source = {}) => {
 
 export const normalizeTimesheetDay = (day = {}, index = 0) => ({
   ...day,
-  id: firstDefined(day.id, `${day.date ?? day.day ?? 'day'}-${index}`),
-  date: firstDefined(day.date, day.day, day.date_key, day.dateKey),
-  employeeId: firstDefined(day.employee_id, day.employeeId, day.user_id, day.userId),
+  id: firstDefined(day.id, `${getTimesheetDayDate(day) ?? 'day'}-${index}`),
+  date: getTimesheetDayDate(day),
+  employeeId: getTimesheetDayEmployeeId(day),
   entries: normalizeEntriesList(day.entries),
-  summary: normalizeTimesheetSummary(day.summary ?? day),
+  summary: normalizeTimesheetSummary(getTimesheetDaySummarySource(day)),
 })
 
 export const mergeTimesheetDays = (current = [], incoming = []) => {
@@ -117,18 +217,25 @@ export const mergeTimesheetDays = (current = [], incoming = []) => {
 
 export const normalizeEntriesResponse = (data, { page, perPage }) => {
   const payload = data?.data && !Array.isArray(data.data) ? data.data : data
-  const entries = Array.isArray(payload?.data)
+  const dataItems = Array.isArray(payload?.data)
     ? payload.data
     : Array.isArray(payload)
       ? payload
       : Array.isArray(payload?.entries)
         ? payload.entries
         : []
+  const groupedDays = dataItems.filter((item) => isGroupedEntriesDay(item))
+  const entries =
+    groupedDays.length === dataItems.length && groupedDays.length
+      ? flattenGroupedEntriesDays(groupedDays)
+      : dataItems
   const daysSource = Array.isArray(payload?.days)
     ? payload.days
     : Array.isArray(data?.days)
       ? data.days
-      : []
+      : groupedDays.length === dataItems.length && groupedDays.length
+        ? groupedDays
+        : buildDaysFromEntryList(entries)
 
   const metaSource = data?.meta || payload?.meta || payload || {}
   const meta = {

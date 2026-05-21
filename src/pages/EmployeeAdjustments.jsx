@@ -11,6 +11,7 @@ import { useDateTime } from '../hooks/useDateTime'
 import { useEmployeeAdjustments } from '../hooks/useEmployeeAdjustments'
 import { cn } from '../lib/utils'
 import { RequestAdjustmentButton } from '../components/RequestAdjustmentButton'
+import { formatSourceDateTime } from '../lib/datetime'
 
 const EMPLOYEE_REQUIRES = { anyOf: ['employee'] }
 const STATUS_OPTIONS = ['all', 'pending', 'approved', 'rejected']
@@ -25,7 +26,7 @@ const STATUS_STYLES = {
 const getStatusClass = (status) => STATUS_STYLES[status] || 'border-slate-200/70 bg-slate-100 text-slate-600'
 
 export default function EmployeeAdjustments({ sidebarOpen = false, onToggleSidebar = () => {} }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const roles = useAuthStore((state) => state.roles)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, EMPLOYEE_REQUIRES), [capabilities])
@@ -211,7 +212,8 @@ export default function EmployeeAdjustments({ sidebarOpen = false, onToggleSideb
                         <span className="flex items-center gap-1">
                           <Clock3 className="h-3.5 w-3.5" />
                           {t('employeeAdjustmentsPage.table.createdAt', 'Solicitado em')}:{' '}
-                          {formatDateTime(adjustment.createdAt) ||
+                          {formatSourceDateTime(adjustment.createdAt, { locale: i18n.language }) ||
+                            formatDateTime(adjustment.createdAt) ||
                             t('employeeAdjustmentsPage.table.unset', 'Nao informado')}
                         </span>
                       </div>
@@ -232,7 +234,8 @@ export default function EmployeeAdjustments({ sidebarOpen = false, onToggleSideb
                         {t('employeeAdjustmentsPage.table.corrected', 'Horario corrigido')}
                       </p>
                       <p className="font-semibold text-foreground">
-                        {formatDateTime(adjustment.correctedTime) ||
+                        {formatSourceDateTime(adjustment.correctedTime, { locale: i18n.language }) ||
+                          formatDateTime(adjustment.correctedTime) ||
                           t('employeeAdjustmentsPage.table.unset', 'Nao informado')}
                       </p>
                     </div>

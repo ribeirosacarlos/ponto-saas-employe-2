@@ -94,7 +94,15 @@ function buildUtcDateFromKey(dateKey) {
 }
 
 function normalizeEntry(entry, t) {
-  const clock = entry.clocked_at || entry.clockedAt || entry.date || entry.timestamp || entry.created_at
+  const clock =
+    entry.clocked_at ||
+    entry.clockedAt ||
+    entry.proposed_clocked_at ||
+    entry.proposedClockedAt ||
+    entry.date ||
+    entry.timestamp ||
+    entry.adjustment_requested_at ||
+    entry.created_at
 
   return {
     ...entry,

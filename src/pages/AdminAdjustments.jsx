@@ -10,6 +10,7 @@ import { bareFieldInputClass, fieldShellClass } from '../components/ui/form-cont
 import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
+import { formatSourceDateTime } from '../lib/datetime'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useDateTime } from '../hooks/useDateTime'
@@ -439,6 +440,7 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
         {filteredAdjustments.map((adjustment) => {
           const disabled = actionLoading[adjustment.id]
           const createdAt =
+            formatSourceDateTime(adjustment.createdAt, { locale: i18n.language }) ||
             formatDateTime(adjustment.createdAt) ||
             t('adminAdjustmentsPage.table.unset', 'Nao informado')
           return (
@@ -474,7 +476,8 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
                     {t('adminAdjustmentsPage.table.corrected', 'Horario corrigido')}
                   </p>
                   <p className="font-semibold text-foreground">
-                    {formatDateTime(adjustment.correctedTime) ||
+                    {formatSourceDateTime(adjustment.correctedTime, { locale: i18n.language }) ||
+                      formatDateTime(adjustment.correctedTime) ||
                       t('adminAdjustmentsPage.table.unset', 'Nao informado')}
                   </p>
                 </div>

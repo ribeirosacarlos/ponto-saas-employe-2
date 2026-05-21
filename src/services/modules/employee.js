@@ -12,8 +12,11 @@ const entriesInflight = new Map()
 const extractClockedAt = (entry) =>
   entry?.clocked_at ||
   entry?.clockedAt ||
+  entry?.proposed_clocked_at ||
+  entry?.proposedClockedAt ||
   entry?.date ||
   entry?.timestamp ||
+  entry?.adjustment_requested_at ||
   entry?.created_at ||
   null
 
@@ -30,6 +33,17 @@ const normalizeProposedType = (value) => {
 }
 
 const hasFiniteNumber = (value) => Number.isFinite(Number(value))
+
+const normalizeLegacyNextAction = (value) => {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+  if (!normalized) return null
+  if (normalized === 'clock_out') return { expected_type: 'out' }
+  if (normalized === 'clock_in') return { expected_type: 'in' }
+  return { expected_type: normalized.replace(/^clock_/, '') }
+}
 
 export async function clockRequest(typeOrCoords = {}, maybeCoords = {}) {
   // Backward compatibility: previous signature was (type, coords). Type is ignored by the API now.
@@ -261,6 +275,9 @@ export async function getWorkedToday(forceRefresh = false) {
 export async function getOpenTimeEntryStatus() {
   const { data } = await api.get('/v1/employee/time-entries/open-status')
   const payload = data?.data ?? data ?? {}
+  const lastEntry = payload.last_entry ?? payload.lastEntry ?? payload.entry ?? payload.open_entry ?? payload.openEntry ?? null
+  const nextEvent =
+    payload.next_event ?? payload.nextEvent ?? normalizeLegacyNextAction(payload.next_action ?? payload.nextAction)
 
   const shiftDayRaw = payload.shift_day ?? payload.shiftDay ?? null
   const shiftDay =
@@ -282,12 +299,20 @@ export async function getOpenTimeEntryStatus() {
   // New contract fields
   const normalized = {
     open: Boolean(payload.open ?? payload.has_open_entry ?? false),
+    has_open_entry: Boolean(payload.has_open_entry ?? payload.open ?? false),
+    date: payload.date ?? null,
+    open_type: payload.open_type ?? payload.openType ?? null,
     open_reason: payload.open_reason ?? payload.reason ?? null,
     expected_next_out_at: payload.expected_next_out_at ?? payload.expectedNextOutAt ?? payload.expected_next_out ?? null,
     last_in_at: payload.last_in_at ?? payload.lastInAt ?? payload.last_in ?? null,
+    last_entry: lastEntry,
+    entry: lastEntry,
+    open_entry: payload.open_entry ?? payload.openEntry ?? lastEntry,
+    next_action: payload.next_action ?? payload.nextAction ?? null,
     shift_day: shiftDay,
+    shift: payload.shift ?? null,
     assignment_id: payload.assignment_id ?? payload.assignmentId ?? null,
-    next_event: payload.next_event ?? payload.nextEvent ?? null,
+    next_event: nextEvent,
     is_outside_shift: Boolean(payload.is_outside_shift ?? payload.outside_shift ?? false),
   }
 

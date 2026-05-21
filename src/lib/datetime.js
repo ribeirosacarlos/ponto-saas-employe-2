@@ -89,6 +89,57 @@ export const formatTime = (value, { locale, timeZone, ...options } = {}) =>
     ...options,
   })
 
+const extractIsoLiteralParts = (value) => {
+  if (typeof value !== 'string') return null
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?$/i,
+  )
+  if (!match) return null
+
+  return {
+    year: match[1],
+    month: match[2],
+    day: match[3],
+    hour: match[4] ?? null,
+    minute: match[5] ?? null,
+    second: match[6] ?? null,
+  }
+}
+
+export const formatSourceDate = (value, { locale } = {}) => {
+  const parts = extractIsoLiteralParts(value)
+  if (!parts) return PLACEHOLDER
+
+  const date = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), 12, 0, 0))
+  if (Number.isNaN(date.getTime())) return PLACEHOLDER
+
+  try {
+    return new Intl.DateTimeFormat(locale || 'pt-BR', {
+      timeZone: 'UTC',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(date)
+  } catch (error) {
+    return `${parts.day}/${parts.month}/${parts.year}`
+  }
+}
+
+export const formatSourceTime = (value) => {
+  const parts = extractIsoLiteralParts(value)
+  if (!parts?.hour || !parts?.minute) return PLACEHOLDER
+  return `${parts.hour}:${parts.minute}`
+}
+
+export const formatSourceDateTime = (value, { locale } = {}) => {
+  const dateLabel = formatSourceDate(value, { locale })
+  const timeLabel = formatSourceTime(value)
+  if (dateLabel === PLACEHOLDER && timeLabel === PLACEHOLDER) return PLACEHOLDER
+  if (timeLabel === PLACEHOLDER) return dateLabel
+  if (dateLabel === PLACEHOLDER) return timeLabel
+  return `${dateLabel} ${timeLabel}`
+}
+
 export const toZonedParts = (value, { locale, timeZone } = {}) => {
   const date = normalizeInput(value)
   if (!date) return null

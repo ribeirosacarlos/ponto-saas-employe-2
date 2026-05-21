@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import {
   Dialog,
@@ -15,6 +14,7 @@ import { Label } from './ui/label'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { cn } from '../lib/utils'
+import { formatSourceDate, formatSourceTime } from '../lib/datetime'
 
 export function EntryAdjustmentModal({
   entry,
@@ -41,8 +41,8 @@ export function EntryAdjustmentModal({
         .map((item) => {
           const dateValue = item.clockedAt || item.clocked_at || item.date || item.timestamp
           const id = item.id || item.uuid
-          const labelDate = dateValue ? format(new Date(dateValue), 'dd/MM/yyyy') : id
-          const labelTime = dateValue ? format(new Date(dateValue), 'HH:mm') : ''
+          const labelDate = dateValue ? formatSourceDate(dateValue) : id
+          const labelTime = dateValue ? formatSourceTime(dateValue) : ''
           const labelType = item.type ? `· ${item.type}` : ''
           return {
             id,
@@ -62,12 +62,18 @@ export function EntryAdjustmentModal({
 
   const dateValue = activeEntry?.clockedAt || activeEntry?.clocked_at || activeEntry?.date || activeEntry?.timestamp || ''
   const fallbackDate = defaultDate ? new Date(defaultDate) : null
-  const formattedDate = dateValue
-    ? format(new Date(dateValue), 'yyyy-MM-dd')
-    : fallbackDate
-      ? format(fallbackDate, 'yyyy-MM-dd')
-      : ''
-  const formattedTime = dateValue ? format(new Date(dateValue), 'HH:mm') : ''
+  const formattedDate =
+    typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue)
+      ? dateValue.slice(0, 10)
+      : fallbackDate
+        ? [
+            fallbackDate.getFullYear(),
+            String(fallbackDate.getMonth() + 1).padStart(2, '0'),
+            String(fallbackDate.getDate()).padStart(2, '0'),
+          ].join('-')
+        : ''
+  const sourceTime = dateValue ? formatSourceTime(dateValue) : ''
+  const formattedTime = sourceTime && sourceTime !== '-' ? sourceTime : ''
 
   useEffect(() => {
     if (!open) return
