@@ -56,6 +56,10 @@ export const ROUTES = {
     aliases: ['/area-manager/close-timesheet'],
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
+  adminMonthlyClosures: {
+    path: '/admin/monthly-closures',
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
   settings: {
     path: '/settings',
     guard: { anyOf: ['admin', 'super_admin'] },
