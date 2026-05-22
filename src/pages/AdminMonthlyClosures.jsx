@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock3,
+  Download,
   FileText,
   PenLine,
   PlusCircle,
@@ -33,12 +34,14 @@ import { cn } from '../lib/utils'
 import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import {
+  listMonthlyClosures,
   createMonthlyClosure,
   listClosureTimesheets,
-  listMonthlyClosures,
-  resolveTimesheetDispute,
   signTimesheetAsManager,
+  resolveTimesheetDispute,
+  fetchAdminTimesheetPdf,
 } from '../services/monthlyClosuresService'
+import { downloadBlob } from '../utils/pdf/downloadBlob'
 
 const ADMIN_REQUIRES = { anyOf: ['admin', 'super_admin'] }
 const MANAGER_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
@@ -80,12 +83,7 @@ const buildPastMonths = () => {
   const result = []
   const now = new Date()
   let year = now.getFullYear()
-  let month = now.getMonth() // 0-based — skip current month
-  month -= 1
-  if (month < 0) {
-    month = 11
-    year -= 1
-  }
+  let month = now.getMonth() // 0-based — include current month for testing
   for (let i = 0; i < 24; i++) {
     result.push({ year, month: month + 1 })
     month -= 1
@@ -126,6 +124,8 @@ export default function AdminMonthlyClosures() {
   const [resolveError, setResolveError] = useState('')
   const [resolving, setResolving] = useState(false)
 
+  const [pdfLoadingId, setPdfLoadingId] = useState(null)
+
   const pastMonths = useMemo(() => buildPastMonths(), [])
 
   const formatMonthYear = useCallback(
@@ -153,7 +153,7 @@ export default function AdminMonthlyClosures() {
     setLoading(true)
     setError('')
     try {
-      const { items } = await listMonthlyClosures({ perPage: 50 })
+      const { items } = await listMonthlyClosures()
       setClosures(items)
     } catch (err) {
       setError(
@@ -298,6 +298,26 @@ export default function AdminMonthlyClosures() {
       )
     } finally {
       setResolving(false)
+    }
+  }
+
+  const handleViewPdf = async (timesheetId) => {
+    setPdfLoadingId(timesheetId)
+    try {
+      const result = await fetchAdminTimesheetPdf(timesheetId)
+      if (result.type === 'url') {
+        window.open(result.url, '_blank', 'noopener,noreferrer')
+      } else {
+        downloadBlob({ blob: result.blob, response: result.response, fallbackFilename: 'folha-ponto.pdf' })
+      }
+    } catch (err) {
+      toast({
+        title: t('adminMonthlyClosuresPage.actions.pdfErrorTitle', 'Erro ao abrir PDF'),
+        description: err?.response?.data?.message || err?.message,
+        variant: 'error',
+      })
+    } finally {
+      setPdfLoadingId(null)
     }
   }
 
@@ -576,6 +596,23 @@ export default function AdminMonthlyClosures() {
                                   </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
+                                  {ts.pdf_path ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-full px-3 text-xs"
+                                      disabled={pdfLoadingId === ts.id}
+                                      onClick={() => handleViewPdf(ts.id)}
+                                    >
+                                      {pdfLoadingId === ts.id ? (
+                                        <RefreshCcw className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <Download className="mr-1 h-3.5 w-3.5" />
+                                      )}
+                                      {t('adminMonthlyClosuresPage.actions.viewPdf', 'Ver PDF')}
+                                    </Button>
+                                  ) : null}
                                   {ts.status === 'pending_manager' ? (
                                     <Button
                                       type="button"

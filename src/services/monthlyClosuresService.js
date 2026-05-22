@@ -55,3 +55,16 @@ export async function resolveTimesheetDispute(timesheetId, disputeId, resolution
   )
   return data?.data ?? data
 }
+
+export async function fetchAdminTimesheetPdf(timesheetId) {
+  const response = await api.get(`/v1/admin/timesheets/${timesheetId}/pdf`, {
+    responseType: 'blob',
+  })
+  const contentType = response.headers?.['content-type'] || ''
+  if (contentType.includes('application/json')) {
+    const text = await response.data.text()
+    const { url } = JSON.parse(text)
+    return { type: 'url', url }
+  }
+  return { type: 'blob', blob: response.data, response }
+}
