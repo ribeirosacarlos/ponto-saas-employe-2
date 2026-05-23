@@ -43,6 +43,10 @@ export const ROUTES = {
     path: '/employee/adjustments',
     guard: { anyOf: ['employee'] },
   },
+  employeeTimesheets: {
+    path: '/employee/timesheets',
+    guard: { anyOf: ['employee'] },
+  },
   adminAnnouncements: {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },

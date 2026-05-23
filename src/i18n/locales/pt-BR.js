@@ -438,6 +438,7 @@ const ptBR = {
         shifts: 'Jornadas',
         adjustments: 'Ajustes de ponto',
         employeeAdjustments: 'Solicitações de ajustes',
+        employeeTimesheets: 'Minhas folhas de ponto',
         closeTimesheet: 'Folha de pontos',
         monthlyClosures: 'Fechamento mensal',
         companyTimezone: 'Fuso horário da empresa',

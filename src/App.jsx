@@ -16,6 +16,7 @@ import AdminAdjustments from './pages/AdminAdjustments.jsx'
 import EmployeeAdjustments from './pages/EmployeeAdjustments.jsx'
 import CloseTimesheetPage from './pages/area-manager/CloseTimesheetPage.tsx'
 import AdminMonthlyClosures from './pages/AdminMonthlyClosures.jsx'
+import EmployeeTimesheets from './pages/EmployeeTimesheets.jsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
@@ -579,6 +580,8 @@ export default function App() {
         return <AdminAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'employeeAdjustments':
         return <EmployeeAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'employeeTimesheets':
+        return <EmployeeTimesheets />
       case 'adminDocuments':
         return <AdminDocuments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminHolidays':

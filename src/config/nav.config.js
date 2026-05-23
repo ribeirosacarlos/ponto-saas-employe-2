@@ -111,6 +111,16 @@ export const NAV_ITEMS = [
     showInDesktop: true,
   },
   {
+    id: 'employeeTimesheets',
+    labelKey: 'sidebar.items.employeeTimesheets',
+    icon: CalendarCheck,
+    page: 'employeeTimesheets',
+    group: 'workspace',
+    requires: { anyOf: ['employee'] },
+    showInDrawer: true,
+    showInDesktop: true,
+  },
+  {
     id: 'adminShifts',
     labelKey: 'sidebar.items.shifts',
     icon: CalendarClock,
