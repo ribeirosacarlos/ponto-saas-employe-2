@@ -426,6 +426,13 @@ const es = {
         admin: 'Administración',
         superAdmin: 'Super Admin',
       },
+      groups: {
+        pointManagement: 'Gestión de tiempo',
+        team: 'Equipo',
+        content: 'Contenido',
+        myRecords: 'Mis registros',
+      },
+      helpCenter: 'Centro de ayuda',
       actions: {
         expand: 'Expandir barra lateral',
         collapse: 'Colapsar barra lateral',

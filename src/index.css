@@ -10,6 +10,8 @@
     --foreground: 229 28% 12%;
     --card: 227 45% 99%;
     --card-foreground: 229 28% 14%;
+    --popover: 227 45% 99%;
+    --popover-foreground: 229 28% 14%;
     --border: 227 24% 86%;
     --border-strong: 227 24% 74%;
     --input: 227 32% 96%;
@@ -25,6 +27,14 @@
     --destructive-foreground: 0 0% 100%;
     --ring: 246 74% 61%;
     --radius: 16px;
+    --sidebar-background: 227 45% 99%;
+    --sidebar-foreground: 229 28% 12%;
+    --sidebar-primary: 246 74% 61%;
+    --sidebar-primary-foreground: 220 40% 98%;
+    --sidebar-accent: 227 20% 92%;
+    --sidebar-accent-foreground: 229 28% 12%;
+    --sidebar-border: 227 24% 86%;
+    --sidebar-ring: 246 74% 61%;
   }
 
   .dark {
@@ -32,6 +42,8 @@
     --foreground: 227 32% 94%;
     --card: 229 28% 12%;
     --card-foreground: 227 32% 94%;
+    --popover: 229 28% 14%;
+    --popover-foreground: 227 32% 94%;
     --border: 229 24% 24%;
     --border-strong: 229 22% 32%;
     --input: 229 22% 16%;
@@ -46,6 +58,14 @@
     --destructive: 0 73% 66%;
     --destructive-foreground: 0 0% 98%;
     --ring: 246 74% 72%;
+    --sidebar-background: 229 28% 12%;
+    --sidebar-foreground: 227 32% 94%;
+    --sidebar-primary: 246 74% 72%;
+    --sidebar-primary-foreground: 229 35% 8%;
+    --sidebar-accent: 229 18% 18%;
+    --sidebar-accent-foreground: 227 32% 94%;
+    --sidebar-border: 229 24% 24%;
+    --sidebar-ring: 246 74% 72%;
   }
 
   * {
@@ -123,6 +143,35 @@
 
   .dialog-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsla(var(--primary), 0.85);
+  }
+
+  /* Sidebar scroll — thin, subtle, only visible on hover */
+  [data-sidebar="content"] {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  [data-sidebar="content"]:hover {
+    scrollbar-color: hsl(var(--border-strong)) transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+
+  [data-sidebar="content"]:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--border-strong));
   }
 }
 

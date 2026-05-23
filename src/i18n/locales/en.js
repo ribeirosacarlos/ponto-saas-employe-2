@@ -428,6 +428,13 @@ const en = {
         admin: 'Administration',
         superAdmin: 'Super Admin',
       },
+      groups: {
+        pointManagement: 'Time management',
+        team: 'Team',
+        content: 'Content',
+        myRecords: 'My records',
+      },
+      helpCenter: 'Help center',
       actions: {
         expand: 'Expand sidebar',
         collapse: 'Collapse sidebar',

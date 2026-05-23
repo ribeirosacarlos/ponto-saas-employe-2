@@ -413,6 +413,13 @@ const ptBR = {
         admin: 'Administração',
         superAdmin: 'Super Admin',
       },
+      groups: {
+        pointManagement: 'Gestão de ponto',
+        team: 'Equipe',
+        content: 'Conteúdo',
+        myRecords: 'Meus registros',
+      },
+      helpCenter: 'Central de ajuda',
       actions: {
         expand: 'Expandir barra lateral',
         collapse: 'Recolher barra lateral',

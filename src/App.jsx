@@ -34,9 +34,11 @@ import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
 import SubscribePage from './pages/SubscribePage.jsx'
 import ForbiddenPage from './pages/ForbiddenPage.jsx'
-import { DesktopSidebar } from './components/sidebar/DesktopSidebar.jsx'
+import { EfferdSidebar } from './components/sidebar/EfferdSidebar.jsx'
+import { EfferdTopBar } from './components/sidebar/EfferdTopBar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
 import { BottomNavigation } from './components/sidebar/BottomNavigation.jsx'
+import { SidebarProvider } from './components/ui/sidebar.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { HelpContactDialog } from './components/HelpContactDialog.jsx'
 import { useAuthStore } from './store/useAuth.js'
@@ -210,6 +212,12 @@ export default function App() {
     () => allNavItems.filter((item) => item.showInDesktop !== false),
     [allNavItems],
   )
+
+  const currentPageTitle = useMemo(() => {
+    const cfg = PAGE_TITLE_CONFIG[currentPage]
+    if (cfg) return t(cfg.key, { defaultValue: cfg.fallback })
+    return ''
+  }, [currentPage, t])
 
   const drawerNavItems = useMemo(
     () => allNavItems.filter((item) => item.showInDrawer !== false),
@@ -701,73 +709,76 @@ export default function App() {
         ) : token ? (
           <>
             {!isMobile ? (
-              <DesktopSidebar
-                open={sidebarOpen}
-                collapsed={sidebarCollapsed}
-                navItems={desktopNavItems}
-                currentPage={currentPage}
-                onNavigate={navigateTo}
-                user={user}
-                onProfile={handleProfile}
-                onHelp={handleHelp}
-                onLogout={handleLogout}
-                onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-              />
+              <SidebarProvider
+                open={!sidebarCollapsed}
+                onOpenChange={(open) => setSidebarCollapsed(!open)}
+              >
+                <EfferdSidebar
+                  navItems={desktopNavItems}
+                  currentPage={currentPage}
+                  onNavigate={navigateTo}
+                  user={user}
+                  onProfile={handleProfile}
+                  onHelp={handleHelp}
+                  onLogout={handleLogout}
+                />
+                <main className="relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300 overflow-hidden">
+                  <EfferdTopBar
+                    user={user}
+                    onProfile={handleProfile}
+                    onHelp={handleHelp}
+                    onSettings={() => navigateTo('settings')}
+                    onLogout={handleLogout}
+                    pageTitle={currentPageTitle}
+                  />
+                  <div className="flex-1 min-h-0">
+                    <div className="mx-auto w-full max-w-[1320px]">
+                      {renderCurrentPage()}
+                    </div>
+                  </div>
+                </main>
+              </SidebarProvider>
             ) : (
-              <MobileSidebarDrawer
-                open={sidebarOpen}
-                onOpenChange={setSidebarOpen}
-                navItems={drawerNavItems}
-                currentPage={currentPage}
-                user={user}
-                onNavigate={navigateTo}
-                onProfile={handleProfile}
-                onHelp={handleHelp}
-                onLogout={handleLogout}
-              />
+              <>
+                <MobileSidebarDrawer
+                  open={sidebarOpen}
+                  onOpenChange={setSidebarOpen}
+                  navItems={drawerNavItems}
+                  currentPage={currentPage}
+                  user={user}
+                  onNavigate={navigateTo}
+                  onProfile={handleProfile}
+                  onHelp={handleHelp}
+                  onLogout={handleLogout}
+                />
+                <main
+                  className="relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300"
+                  style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
+                >
+                  <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
+                    <button
+                      type="button"
+                      aria-label={t('sidebar.actions.openMenu', { defaultValue: 'Open menu' })}
+                      onClick={() => setSidebarOpen(true)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-muted text-foreground transition hover:bg-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </button>
+                    <BrandSignature />
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <div className="mx-auto w-full max-w-[1320px]">
+                      {renderCurrentPage()}
+                    </div>
+                  </div>
+                </main>
+                <BottomNavigation
+                  items={bottomNavItems}
+                  currentPage={currentPage}
+                  onNavigate={navigateTo}
+                />
+              </>
             )}
-
-            <main
-              className={cn(
-                'relative flex-1 flex min-h-screen flex-col min-w-0 pb-24 md:pb-0 transition-all duration-300',
-                !isMobile && sidebarOpen
-                  ? sidebarCollapsed
-                    ? 'md:ml-16'
-                    : 'md:ml-64'
-                  : 'md:ml-0',
-              )}
-              style={
-                isMobile
-                  ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }
-                  : undefined
-              }
-            >
-              {isMobile ? (
-                <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
-                  <button
-                    type="button"
-                    aria-label={t('sidebar.actions.openMenu', { defaultValue: 'Open menu' })}
-                    onClick={() => setSidebarOpen(true)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-muted text-foreground transition hover:bg-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </button>
-                  <BrandSignature />
-                </div>
-              ) : null}
-              <div className="flex-1 min-h-0">
-                <div className="mx-auto w-full max-w-[1320px]">
-                  {renderCurrentPage()}
-                </div>
-              </div>
-            </main>
-            {isMobile ? (
-              <BottomNavigation
-                items={bottomNavItems}
-                currentPage={currentPage}
-                onNavigate={navigateTo}
-              />
-            ) : null}
             <HelpContactDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
           </>
         ) : (
