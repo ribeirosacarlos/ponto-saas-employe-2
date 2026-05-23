@@ -2280,7 +2280,7 @@ const ptBR = {
         refresh: 'Atualizar',
         closePeriod: 'Fechar mês',
         collapse: 'Recolher',
-        expand: 'Ver timesheets',
+        expand: 'Ver registros',
         viewPdf: 'Ver PDF',
         pdfErrorTitle: 'Erro ao abrir PDF',
         sign: 'Assinar',

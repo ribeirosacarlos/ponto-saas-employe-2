@@ -2286,7 +2286,7 @@ const es = {
         refresh: 'Actualizar',
         closePeriod: 'Cerrar mes',
         collapse: 'Colapsar',
-        expand: 'Ver timesheets',
+        expand: 'Ver registros',
         viewPdf: 'Ver PDF',
         pdfErrorTitle: 'Error al abrir PDF',
         sign: 'Firmar',

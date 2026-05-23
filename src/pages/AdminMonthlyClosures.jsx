@@ -79,12 +79,19 @@ const formatBalanceMinutes = (minutes) => {
   return `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`
 }
 
+const WEEKDAY_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const weekdayFromDate = (dateStr) => {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr + 'T12:00:00')
+  return WEEKDAY_SHORT[d.getDay()] ?? '—'
+}
+
 const buildPastMonths = () => {
   const result = []
   const now = new Date()
   let year = now.getFullYear()
   let month = now.getMonth() // 0-based — include current month for testing
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 4; i++) {
     result.push({ year, month: month + 1 })
     month -= 1
     if (month < 0) {
@@ -126,6 +133,8 @@ export default function AdminMonthlyClosures() {
 
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
 
+  const [expandedTimesheetId, setExpandedTimesheetId] = useState(null)
+
   const pastMonths = useMemo(() => buildPastMonths(), [])
 
   const formatMonthYear = useCallback(
@@ -152,6 +161,9 @@ export default function AdminMonthlyClosures() {
   const loadClosures = useCallback(async () => {
     setLoading(true)
     setError('')
+    setTimesheets({})
+    setTimesheetsLoading({})
+    setTimesheetsError({})
     try {
       const { items } = await listMonthlyClosures()
       setClosures(items)
@@ -191,6 +203,17 @@ export default function AdminMonthlyClosures() {
     },
     [t],
   )
+
+  useEffect(() => {
+    if (
+      expandedId &&
+      !timesheets[expandedId] &&
+      !timesheetsLoading[expandedId] &&
+      !timesheetsError[expandedId]
+    ) {
+      loadTimesheets(expandedId)
+    }
+  }, [expandedId, timesheets, timesheetsLoading, timesheetsError, loadTimesheets])
 
   const handleToggleExpand = (closureId) => {
     if (expandedId === closureId) {
@@ -354,9 +377,7 @@ export default function AdminMonthlyClosures() {
                 onClick={loadClosures}
                 disabled={loading}
               >
-                {loading ? (
-                  <RefreshCcw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
+                <RefreshCcw className={cn('mr-1.5 h-3.5 w-3.5', loading && 'animate-spin')} />
                 {t('adminMonthlyClosuresPage.actions.refresh')}
               </Button>
               {isAdmin ? (
@@ -531,128 +552,281 @@ export default function AdminMonthlyClosures() {
                                   : Number(balance) < 0
                                     ? 'text-rose-600 dark:text-rose-300'
                                     : 'text-foreground'
+                            const days = ts?.snapshot?.days ?? []
+                            const isTsExpanded = expandedTimesheetId === ts.id
 
                             return (
                               <div
                                 key={ts.id}
-                                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                                className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background/60 px-4 py-3"
                               >
-                                <div className="flex min-w-0 items-start gap-3">
-                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-muted-foreground">
-                                    <UserRound className="h-4 w-4" />
-                                  </span>
-                                  <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <p className="truncate text-xs font-semibold text-foreground">
-                                        {employeeName}
-                                      </p>
-                                      <span
-                                        className={cn(
-                                          'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]',
-                                          tsStatusStyle,
-                                        )}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex min-w-0 items-start gap-3">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-muted-foreground">
+                                      <UserRound className="h-4 w-4" />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="truncate text-xs font-semibold text-foreground">
+                                          {employeeName}
+                                        </p>
+                                        <span
+                                          className={cn(
+                                            'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]',
+                                            tsStatusStyle,
+                                          )}
+                                        >
+                                          {t(
+                                            `adminMonthlyClosuresPage.timesheetStatus.${ts.status}`,
+                                            ts.status,
+                                          )}
+                                        </span>
+                                        {dispute && dispute.status === 'open' ? (
+                                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-200/70 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:border-rose-500/30 dark:text-rose-300">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {t('adminMonthlyClosuresPage.dispute.openLabel')}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                                        {worked != null ? (
+                                          <span className="inline-flex items-center gap-1">
+                                            <Clock3 className="h-3 w-3" />
+                                            {formatWorkedMinutes(worked)}h
+                                          </span>
+                                        ) : null}
+                                        {balance != null ? (
+                                          <span className={cn('font-semibold', balanceClass)}>
+                                            {formatBalanceMinutes(balance)}
+                                          </span>
+                                        ) : null}
+                                        {sigCount > 0 ? (
+                                          <span className="inline-flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                            {t('adminMonthlyClosuresPage.table.sigCount', {
+                                              count: sigCount,
+                                            })}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      {dispute?.reason ? (
+                                        <p className="mt-1 line-clamp-1 text-[11px] text-rose-600 dark:text-rose-300">
+                                          <span className="font-semibold">
+                                            {t('adminMonthlyClosuresPage.dispute.reason')}:
+                                          </span>{' '}
+                                          {dispute.reason}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {days.length > 0 ? (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-full px-3 text-xs"
+                                        onClick={() =>
+                                          setExpandedTimesheetId(isTsExpanded ? null : ts.id)
+                                        }
+                                        aria-expanded={isTsExpanded}
                                       >
-                                        {t(
-                                          `adminMonthlyClosuresPage.timesheetStatus.${ts.status}`,
-                                          ts.status,
+                                        {isTsExpanded ? (
+                                          <>
+                                            <ChevronUp className="mr-1 h-3.5 w-3.5" />
+                                            Recolher
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="mr-1 h-3.5 w-3.5" />
+                                            Ver pontos
+                                          </>
                                         )}
-                                      </span>
-                                      {dispute && dispute.status === 'open' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full border border-rose-200/70 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:border-rose-500/30 dark:text-rose-300">
-                                          <AlertCircle className="h-3 w-3" />
-                                          {t('adminMonthlyClosuresPage.dispute.openLabel')}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                    <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                                      {worked != null ? (
-                                        <span className="inline-flex items-center gap-1">
-                                          <Clock3 className="h-3 w-3" />
-                                          {formatWorkedMinutes(worked)}h
-                                        </span>
-                                      ) : null}
-                                      {balance != null ? (
-                                        <span className={cn('font-semibold', balanceClass)}>
-                                          {formatBalanceMinutes(balance)}
-                                        </span>
-                                      ) : null}
-                                      {sigCount > 0 ? (
-                                        <span className="inline-flex items-center gap-1">
-                                          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                          {t('adminMonthlyClosuresPage.table.sigCount', {
-                                            count: sigCount,
-                                          })}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                    {dispute?.reason ? (
-                                      <p className="mt-1 line-clamp-1 text-[11px] text-rose-600 dark:text-rose-300">
-                                        <span className="font-semibold">
-                                          {t('adminMonthlyClosuresPage.dispute.reason')}:
-                                        </span>{' '}
-                                        {dispute.reason}
-                                      </p>
+                                      </Button>
+                                    ) : null}
+                                    {ts.pdf_path ? (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="rounded-full px-3 text-xs"
+                                        disabled={pdfLoadingId === ts.id}
+                                        onClick={() => handleViewPdf(ts.id)}
+                                      >
+                                        {pdfLoadingId === ts.id ? (
+                                          <RefreshCcw className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                          <Download className="mr-1 h-3.5 w-3.5" />
+                                        )}
+                                        {t('adminMonthlyClosuresPage.actions.viewPdf')}
+                                      </Button>
+                                    ) : null}
+                                    {ts.status === 'pending_manager' ? (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="rounded-full px-3 text-xs"
+                                        disabled={isSigning}
+                                        onClick={() => handleSign(ts.id, closure.id)}
+                                      >
+                                        {isSigning ? (
+                                          <RefreshCcw className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                          <PenLine className="mr-1 h-3.5 w-3.5" />
+                                        )}
+                                        {isSigning
+                                          ? t('adminMonthlyClosuresPage.actions.signing')
+                                          : t('adminMonthlyClosuresPage.actions.sign')}
+                                      </Button>
+                                    ) : null}
+                                    {dispute && dispute.status === 'open' ? (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="rounded-full border-rose-200/70 px-3 text-xs text-rose-600 hover:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-300"
+                                        onClick={() => {
+                                          setResolveTarget({
+                                            timesheetId: ts.id,
+                                            disputeId: dispute.id,
+                                            closureId: closure.id,
+                                          })
+                                          setResolveNote('')
+                                          setResolveError('')
+                                        }}
+                                      >
+                                        <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                                        {t('adminMonthlyClosuresPage.actions.resolveDispute')}
+                                      </Button>
                                     ) : null}
                                   </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {ts.pdf_path ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      className="rounded-full px-3 text-xs"
-                                      disabled={pdfLoadingId === ts.id}
-                                      onClick={() => handleViewPdf(ts.id)}
-                                    >
-                                      {pdfLoadingId === ts.id ? (
-                                        <RefreshCcw className="mr-1 h-3.5 w-3.5 animate-spin" />
-                                      ) : (
-                                        <Download className="mr-1 h-3.5 w-3.5" />
-                                      )}
-                                      {t('adminMonthlyClosuresPage.actions.viewPdf')}
-                                    </Button>
-                                  ) : null}
-                                  {ts.status === 'pending_manager' ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      className="rounded-full px-3 text-xs"
-                                      disabled={isSigning}
-                                      onClick={() => handleSign(ts.id, closure.id)}
-                                    >
-                                      {isSigning ? (
-                                        <RefreshCcw className="mr-1 h-3.5 w-3.5 animate-spin" />
-                                      ) : (
-                                        <PenLine className="mr-1 h-3.5 w-3.5" />
-                                      )}
-                                      {isSigning
-                                        ? t('adminMonthlyClosuresPage.actions.signing')
-                                        : t('adminMonthlyClosuresPage.actions.sign')}
-                                    </Button>
-                                  ) : null}
-                                  {dispute && dispute.status === 'open' ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      className="rounded-full border-rose-200/70 px-3 text-xs text-rose-600 hover:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-300"
-                                      onClick={() => {
-                                        setResolveTarget({
-                                          timesheetId: ts.id,
-                                          disputeId: dispute.id,
-                                          closureId: closure.id,
-                                        })
-                                        setResolveNote('')
-                                        setResolveError('')
-                                      }}
-                                    >
-                                      <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                                      {t('adminMonthlyClosuresPage.actions.resolveDispute')}
-                                    </Button>
-                                  ) : null}
-                                </div>
+
+                                {isTsExpanded && days.length > 0 ? (
+                                  <div className="mt-1 border-t border-border/70 pt-3">
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full min-w-[480px] text-[12px]">
+                                        <thead>
+                                          <tr className="text-left text-muted-foreground">
+                                            <th className="pb-2 font-medium w-[90px]">Data</th>
+                                            <th className="pb-2 font-medium w-[60px]">Dia</th>
+                                            <th className="pb-2 font-medium">Batidas</th>
+                                            <th className="pb-2 font-medium text-right w-[80px]">Trabalhado</th>
+                                            <th className="pb-2 font-medium text-right w-[80px]">Saldo</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/40">
+                                          {days.map((day) => {
+                                            const summary = day.summary ?? {}
+                                            const dayBalance = summary.balance_minutes ?? 0
+                                            const isHoliday = summary.is_holiday ?? false
+                                            const dayBalanceClass =
+                                              dayBalance > 0
+                                                ? 'text-emerald-600 dark:text-emerald-300'
+                                                : dayBalance < 0
+                                                  ? 'text-rose-600 dark:text-rose-300'
+                                                  : 'text-foreground'
+                                            return (
+                                              <tr
+                                                key={day.date}
+                                                className={cn(isHoliday ? 'opacity-60' : '')}
+                                              >
+                                                <td className="py-2 text-muted-foreground">
+                                                  {day.date}
+                                                </td>
+                                                <td className="py-2 text-muted-foreground">
+                                                  {weekdayFromDate(day.date)}
+                                                  {isHoliday ? (
+                                                    <span className="ml-1 text-[10px] text-amber-600">
+                                                      feriado
+                                                    </span>
+                                                  ) : null}
+                                                </td>
+                                                <td className="py-2">
+                                                  {day.entries?.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                      {day.entries.map((entry, idx) => (
+                                                        <span
+                                                          key={idx}
+                                                          className={cn(
+                                                            'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium',
+                                                            entry.type === 'in'
+                                                              ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
+                                                              : 'border-sky-200/60 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
+                                                            entry.is_adjusted ? 'italic' : '',
+                                                          )}
+                                                        >
+                                                          {entry.clocked_at
+                                                            ? entry.clocked_at.slice(11, 16)
+                                                            : '—'}
+                                                          {entry.is_adjusted ? '*' : ''}
+                                                        </span>
+                                                      ))}
+                                                    </div>
+                                                  ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                  )}
+                                                </td>
+                                                <td className="py-2 text-right font-mono">
+                                                  {summary.worked_hhmm ??
+                                                    (summary.worked_minutes != null
+                                                      ? `${formatWorkedMinutes(summary.worked_minutes)}h`
+                                                      : '—')}
+                                                </td>
+                                                <td
+                                                  className={cn(
+                                                    'py-2 text-right font-mono font-semibold',
+                                                    dayBalanceClass,
+                                                  )}
+                                                >
+                                                  {summary.balance_hhmm ??
+                                                    (summary.balance_minutes != null
+                                                      ? formatBalanceMinutes(dayBalance)
+                                                      : '—')}
+                                                </td>
+                                              </tr>
+                                            )
+                                          })}
+                                        </tbody>
+                                        {worked != null ? (
+                                          <tfoot>
+                                            <tr className="border-t border-border/70 text-[12px] font-semibold">
+                                              <td colSpan={3} className="pt-2 text-muted-foreground">
+                                                Total do período
+                                              </td>
+                                              <td className="pt-2 text-right font-mono">
+                                                {formatWorkedMinutes(worked)}h
+                                              </td>
+                                              <td
+                                                className={cn('pt-2 text-right font-mono', balanceClass)}
+                                              >
+                                                {balance != null
+                                                  ? formatBalanceMinutes(balance)
+                                                  : '—'}
+                                              </td>
+                                            </tr>
+                                          </tfoot>
+                                        ) : null}
+                                      </table>
+                                    </div>
+                                    {ts.signatures?.length > 0 ? (
+                                      <div className="mt-3 flex flex-wrap gap-2">
+                                        {ts.signatures.map((sig) => (
+                                          <span
+                                            key={sig.id}
+                                            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300"
+                                          >
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            {sig.role === 'employee' ? 'Colaborador' : 'Gestor'}
+                                            {' · '}
+                                            {formatDate(sig.signed_at)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
                               </div>
                             )
                           })}
