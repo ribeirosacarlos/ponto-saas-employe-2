@@ -43,6 +43,10 @@ export const ROUTES = {
     path: '/employee/adjustments',
     guard: { anyOf: ['employee'] },
   },
+  employeeTimesheets: {
+    path: '/employee/timesheets',
+    guard: { anyOf: ['employee'] },
+  },
   adminAnnouncements: {
     path: '/admin/announcements',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
@@ -54,6 +58,10 @@ export const ROUTES = {
   closeTimesheet: {
     path: '/area-manager/payroll-close',
     aliases: ['/area-manager/close-timesheet'],
+    guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
+  },
+  adminMonthlyClosures: {
+    path: '/admin/monthly-closures',
     guard: { anyOf: ['area_manager', 'admin', 'super_admin'] },
   },
   settings: {

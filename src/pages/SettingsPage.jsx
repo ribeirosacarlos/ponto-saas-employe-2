@@ -21,6 +21,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select } from '../components/ui/select'
+import { TimezoneCombobox } from '../components/ui/timezone-combobox'
 import { Switch } from '../components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import {
@@ -910,20 +911,13 @@ export default function SettingsPage() {
                     label={t('settingsPage.preferences.fields.timezone')}
                     hint={t('settingsPage.preferences.helper')}
                   >
-                    <MinimalSelect
+                    <TimezoneCombobox
                       value={timezoneValue}
-                      onChange={(event) => setTimezoneValue(event.target.value)}
+                      onChange={setTimezoneValue}
+                      options={timezoneSelectOptions}
                       disabled={timezoneLoading || timezoneSaving}
-                    >
-                      <option value="">
-                        {t('settingsPage.preferences.fields.timezonePlaceholder')}
-                      </option>
-                      {timezoneSelectOptions.map((timezoneOption) => (
-                        <option key={timezoneOption} value={timezoneOption}>
-                          {timezoneOption}
-                        </option>
-                      ))}
-                    </MinimalSelect>
+                      placeholder={t('settingsPage.preferences.fields.timezonePlaceholder')}
+                    />
                   </InlineField>
 
                   <div className="flex flex-wrap items-center gap-3">

@@ -15,6 +15,8 @@ import AdminVacations from './pages/AdminVacations.jsx'
 import AdminAdjustments from './pages/AdminAdjustments.jsx'
 import EmployeeAdjustments from './pages/EmployeeAdjustments.jsx'
 import CloseTimesheetPage from './pages/area-manager/CloseTimesheetPage.tsx'
+import AdminMonthlyClosures from './pages/AdminMonthlyClosures.jsx'
+import EmployeeTimesheets from './pages/EmployeeTimesheets.jsx'
 import Announcements from './pages/Announcements.jsx'
 import PlatformCompanies from './pages/PlatformCompanies.jsx'
 import AdminAnnouncements from './pages/AdminAnnouncements.jsx'
@@ -92,6 +94,7 @@ const PAGE_TITLE_CONFIG = {
   adminAnnouncements: { key: 'announcementsPage.title', fallback: 'Comunicados' },
   adminCompanyTimezone: { key: 'adminTimezonePage.title', fallback: 'Fuso horario da empresa' },
   closeTimesheet: { key: NAV_PAGE_TITLE_KEYS.closeTimesheet, fallback: 'Folha de pontos' },
+  adminMonthlyClosures: { key: 'adminMonthlyClosuresPage.title', fallback: 'Fechamento mensal' },
   auditLogs: { key: 'sidebar.items.auditLogs', fallback: 'Auditoria' },
   platformBillingPlans: { key: 'platformBillingPlans.title', fallback: 'Planos de cobranca' },
   platformCompanies: { key: 'platformCompanies.title', fallback: 'Empresas' },
@@ -577,6 +580,8 @@ export default function App() {
         return <AdminAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'employeeAdjustments':
         return <EmployeeAdjustments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'employeeTimesheets':
+        return <EmployeeTimesheets />
       case 'adminDocuments':
         return <AdminDocuments sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'adminHolidays':
@@ -593,6 +598,8 @@ export default function App() {
         return <AdminCompanyTimezone sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'closeTimesheet':
         return <CloseTimesheetPage sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
+      case 'adminMonthlyClosures':
+        return <AdminMonthlyClosures />
       case 'platformBillingPlans':
         return <PlatformBillingPlans sidebarOpen={sidebarOpen} onToggleSidebar={handleToggleSidebar} />
       case 'platformCompanies':
