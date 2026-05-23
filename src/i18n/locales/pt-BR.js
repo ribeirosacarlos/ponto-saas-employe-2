@@ -2281,6 +2281,8 @@ const ptBR = {
         closePeriod: 'Fechar mês',
         collapse: 'Recolher',
         expand: 'Ver timesheets',
+        viewPdf: 'Ver PDF',
+        pdfErrorTitle: 'Erro ao abrir PDF',
         sign: 'Assinar',
         signing: 'Assinando...',
         resolveDispute: 'Resolver contestação',

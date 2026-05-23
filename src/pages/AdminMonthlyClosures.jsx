@@ -312,7 +312,7 @@ export default function AdminMonthlyClosures() {
       }
     } catch (err) {
       toast({
-        title: t('adminMonthlyClosuresPage.actions.pdfErrorTitle', 'Erro ao abrir PDF'),
+        title: t('adminMonthlyClosuresPage.actions.pdfErrorTitle'),
         description: err?.response?.data?.message || err?.message,
         variant: 'error',
       })
@@ -610,7 +610,7 @@ export default function AdminMonthlyClosures() {
                                       ) : (
                                         <Download className="mr-1 h-3.5 w-3.5" />
                                       )}
-                                      {t('adminMonthlyClosuresPage.actions.viewPdf', 'Ver PDF')}
+                                      {t('adminMonthlyClosuresPage.actions.viewPdf')}
                                     </Button>
                                   ) : null}
                                   {ts.status === 'pending_manager' ? (
