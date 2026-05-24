@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { ROUTES } from '../../routes/config'
 
 const WORKSPACE_STORAGE_KEY = 'sidebar_group_workspace_open'
 const ADMIN_STORAGE_KEY = 'sidebar_group_admin_open'
@@ -164,7 +165,7 @@ export function SidebarNavContent({
                 const isActive = item.page ? currentPage === item.page : item.active
                 const isCta = item.variant === 'cta'
                 const badgeLabel = item.badgeKey ? t(item.badgeKey) : item.badge
-                const itemHref = item.path || '#'
+                const itemHref = ROUTES[item.page]?.path || item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
@@ -230,7 +231,7 @@ export function SidebarNavContent({
               {adminItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.page ? currentPage === item.page : item.active
-                const itemHref = item.path || '#'
+                const itemHref = ROUTES[item.page]?.path || item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
@@ -284,7 +285,7 @@ export function SidebarNavContent({
               {superAdminItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.page ? currentPage === item.page : item.active
-                const itemHref = item.path || '#'
+                const itemHref = ROUTES[item.page]?.path || item.path || '#'
                 return (
                   <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
                     <a
