@@ -440,6 +440,7 @@ const ptBR = {
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Empresas',
         settings: 'Configurações',
+        profile: 'Meu Perfil',
         calendar: 'Calendário',
         areas: 'Areas',
         shifts: 'Jornadas',

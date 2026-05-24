@@ -453,6 +453,7 @@ const es = {
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Empresas',
         settings: 'Configuración',
+        profile: 'Mi Perfil',
         calendar: 'Calendario',
         areas: 'Areas',
         shifts: 'Jornadas',

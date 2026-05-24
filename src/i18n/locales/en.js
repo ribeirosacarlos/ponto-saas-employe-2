@@ -455,6 +455,7 @@ const en = {
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Companies',
         settings: 'Settings',
+        profile: 'My Profile',
         calendar: 'Calendar',
         areas: 'Areas',
         shifts: 'Shifts',

@@ -6,6 +6,8 @@ const ThemeContext = createContext({
   theme: 'light',
   setTheme: () => {},
   toggleTheme: () => {},
+  isSystemMode: false,
+  resetToSystem: () => {},
 })
 
 const getSystemTheme = () => {
@@ -68,13 +70,21 @@ export function ThemeProvider({ children, defaultTheme = 'light' }) {
     setThemeState(value)
   }, [])
 
+  const resetToSystem = useCallback(() => {
+    setUserPreference(null)
+    setThemeState(getSystemTheme())
+    window.localStorage.removeItem(THEME_STORAGE_KEY)
+  }, [])
+
   const value = useMemo(
     () => ({
       theme,
       setTheme: applyTheme,
       toggleTheme: () => applyTheme(theme === 'dark' ? 'light' : 'dark'),
+      isSystemMode: userPreference === null,
+      resetToSystem,
     }),
-    [applyTheme, theme],
+    [applyTheme, theme, userPreference, resetToSystem],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
