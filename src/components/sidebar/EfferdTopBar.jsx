@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BellIcon, CircleHelp, LogOutIcon, Settings, UserIcon } from 'lucide-react'
+import { BellIcon, ChevronDown, CircleHelp, LogOutIcon, Settings, UserIcon } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -53,11 +53,20 @@ function TopBarUserMenu({ user, onProfile, onHelp, onSettings, onLogout }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="size-8 cursor-pointer ring-2 ring-transparent transition hover:ring-primary/30">
-          <AvatarFallback className="bg-primary text-[11px] font-semibold text-primary-foreground">
-            {initials || 'EU'}
-          </AvatarFallback>
-        </Avatar>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-2 py-1 text-left transition hover:border-primary/20 hover:bg-muted/70"
+        >
+          <Avatar className="size-8 cursor-pointer ring-2 ring-transparent transition hover:ring-primary/30">
+            <AvatarFallback className="bg-primary text-[11px] font-semibold text-primary-foreground">
+              {initials || 'EU'}
+            </AvatarFallback>
+          </Avatar>
+          <span className="hidden max-w-32 truncate text-[12px] font-semibold text-foreground sm:block">
+            {displayName}
+          </span>
+          <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
+        </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-60">
