@@ -106,7 +106,7 @@ export function LocaleSection() {
     <div className="space-y-6">
       <div>
         <h3 className="text-[13px] font-semibold text-foreground">
-          {t('settingsLocale.title', { defaultValue: 'Locale e País' })}
+          {t('settingsLocale.title', { defaultValue: 'Idioma e País' })}
         </h3>
         <p className="mt-0.5 text-[12px] text-muted-foreground">
           {t('settingsLocale.description', { defaultValue: 'País de operação e idioma padrão da empresa.' })}
