@@ -13,6 +13,94 @@ const normalizePaginationMeta = (meta = {}) => ({
   total: meta.total ?? 0,
 })
 
+const normalizeSeriesPoint = (point, index = 0) => {
+  if (!point) return null
+  if (Array.isArray(point)) {
+    return {
+      id: `series-point-${index}`,
+      date: point[0] ?? '',
+      value: Number(point[1] ?? 0),
+    }
+  }
+
+  return {
+    id: point?.id ?? `series-point-${index}`,
+    date: point?.date ?? point?.day ?? point?.label ?? '',
+    value: Number(point?.value ?? point?.count ?? point?.total ?? point?.entries ?? point?.companies ?? 0),
+  }
+}
+
+const normalizeSeriesWindowMap = (payload = {}) =>
+  ['30d', '60d', '90d'].reduce((acc, key) => {
+    const rawSeries = payload?.[key] ?? payload?.[key.replace('d', '_days')] ?? []
+    acc[key] = Array.isArray(rawSeries) ? rawSeries.map(normalizeSeriesPoint).filter(Boolean) : []
+    return acc
+  }, {})
+
+const normalizeBreakdownItems = (payload, valueKeys = ['count', 'value', 'total']) => {
+  if (Array.isArray(payload)) {
+    return payload.map((item, index) => ({
+      id: item?.id ?? item?.key ?? item?.slug ?? item?.status ?? item?.name ?? `breakdown-${index}`,
+      key: item?.key ?? item?.slug ?? item?.status ?? item?.name ?? `breakdown-${index}`,
+      label: item?.label ?? item?.name ?? item?.status_label ?? item?.statusLabel ?? item?.slug ?? item?.status ?? '--',
+      value: Number(
+        valueKeys.reduce(
+          (resolved, currentKey) => (resolved !== undefined ? resolved : item?.[currentKey]),
+          undefined,
+        ) ?? 0,
+      ),
+      raw: item,
+    }))
+  }
+
+  if (payload && typeof payload === 'object') {
+    return Object.entries(payload).map(([key, value], index) => ({
+      id: `breakdown-${index}-${key}`,
+      key,
+      label: key,
+      value: Number(value ?? 0),
+      raw: value,
+    }))
+  }
+
+  return []
+}
+
+const normalizeRecentEvent = (event = {}, index = 0) => ({
+  id: event?.id ?? `recent-event-${index}`,
+  type: event?.type ?? event?.event_type ?? event?.eventType ?? 'event',
+  title: event?.title ?? event?.label ?? event?.message ?? event?.description ?? '',
+  description: event?.description ?? event?.details ?? event?.message ?? '',
+  occurredAt: event?.occurred_at ?? event?.occurredAt ?? event?.created_at ?? event?.createdAt ?? null,
+  companyName: event?.company_name ?? event?.companyName ?? event?.company?.name ?? '',
+  companyId: event?.company_id ?? event?.companyId ?? event?.company?.id ?? null,
+  severity: event?.severity ?? event?.level ?? '',
+  raw: event,
+})
+
+const normalizeActivityCompany = (company = {}, index = 0) => ({
+  id: company?.id ?? `activity-company-${index}`,
+  name: company?.name ?? company?.company_name ?? 'Empresa',
+  slug: company?.slug ?? '',
+  timeEntries30d: Number(company?.time_entries_30d ?? company?.timeEntries30d ?? 0),
+  activeBillableUsers30d: Number(
+    company?.active_billable_users_30d ?? company?.activeBillableUsers30d ?? company?.active_employees_30d ?? 0,
+  ),
+  raw: company,
+})
+
+const normalizeRiskCompany = (company = {}, index = 0) => ({
+  id: company?.id ?? `risk-company-${index}`,
+  name: company?.name ?? company?.company_name ?? 'Empresa',
+  slug: company?.slug ?? '',
+  riskScore: Number(company?.risk_score ?? company?.riskScore ?? 0),
+  blocked: Boolean(company?.blocked ?? company?.is_blocked ?? company?.isBlocked ?? false),
+  pastDue: Boolean(company?.past_due ?? company?.pastDue ?? false),
+  inactiveDays: Number(company?.inactive_days ?? company?.inactiveDays ?? 0),
+  healthStatus: company?.health_status ?? company?.healthStatus ?? '',
+  raw: company,
+})
+
 export const normalizeSuperAdminDashboard = (payload = {}) => {
   const data = payload?.data ?? payload
 
@@ -52,6 +140,21 @@ export const normalizeSuperAdminDashboard = (payload = {}) => {
       averageTicket: data?.revenue?.average_ticket ?? 0,
       currency: data?.revenue?.currency ?? 'EUR',
     },
+    timeEntriesSeries: normalizeSeriesWindowMap(data?.time_entries_series ?? data?.timeEntriesSeries),
+    activeCompaniesSeries: normalizeSeriesWindowMap(data?.active_companies_series ?? data?.activeCompaniesSeries),
+    subscriptionStatusBreakdown: normalizeBreakdownItems(
+      data?.subscription_status_breakdown ?? data?.subscriptionStatusBreakdown,
+    ),
+    planBreakdown: normalizeBreakdownItems(data?.plan_breakdown ?? data?.planBreakdown),
+    recentEvents: Array.isArray(data?.recent_events ?? data?.recentEvents)
+      ? (data?.recent_events ?? data?.recentEvents).map(normalizeRecentEvent)
+      : [],
+    topCompaniesByActivity: Array.isArray(data?.top_companies_by_activity ?? data?.topCompaniesByActivity)
+      ? (data?.top_companies_by_activity ?? data?.topCompaniesByActivity).map(normalizeActivityCompany)
+      : [],
+    topCompaniesByRisk: Array.isArray(data?.top_companies_by_risk ?? data?.topCompaniesByRisk)
+      ? (data?.top_companies_by_risk ?? data?.topCompaniesByRisk).map(normalizeRiskCompany)
+      : [],
     raw: data,
   }
 }
