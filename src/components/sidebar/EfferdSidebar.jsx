@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/sidebar'
 import { BrandSignature } from '@/components/BrandSignature'
 import { cn } from '@/lib/utils'
+import { ROUTES } from '@/routes/config'
 
 // ─── nav group config ──────────────────────────────────────────────────────
 
@@ -130,23 +131,30 @@ function FlatNavItem({ item, currentPage, onNavigate, t }) {
   const isActive = item.page ? currentPage === item.page : item.active
   const isCta = item.variant === 'cta'
   const badgeLabel = item.badge
+  const href = (item.page && ROUTES[item.page]?.path) || item.path
+
+  const handleClick = (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    if (item.onClick) item.onClick()
+    else if (item.page && onNavigate) onNavigate(item.page)
+  }
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
+        asChild
         isActive={isActive}
         tooltip={t(item.labelKey)}
-        onClick={() => {
-          if (item.onClick) item.onClick()
-          else if (item.page && onNavigate) onNavigate(item.page)
-        }}
         className={cn(
           isCta &&
             'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90',
         )}
       >
-        <Icon />
-        <span>{t(item.labelKey)}</span>
+        <a href={href || '#'} onClick={handleClick}>
+          <Icon />
+          <span>{t(item.labelKey)}</span>
+        </a>
       </SidebarMenuButton>
       {badgeLabel ? <SidebarMenuBadge>{badgeLabel}</SidebarMenuBadge> : null}
     </SidebarMenuItem>
@@ -172,11 +180,15 @@ function CollapsibleNavSubGroup({ subGroup, items, currentPage, onNavigate, t })
             {items.map((item) => {
               const ItemIcon = item.icon
               const isActive = item.page ? currentPage === item.page : item.active
+              const subHref = (item.page && ROUTES[item.page]?.path) || item.path
               return (
                 <SidebarMenuSubItem key={item.id}>
                   <SidebarMenuSubButton
                     isActive={isActive}
-                    onClick={() => {
+                    href={subHref || '#'}
+                    onClick={(e) => {
+                      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                      e.preventDefault()
                       if (item.onClick) item.onClick()
                       else if (item.page && onNavigate) onNavigate(item.page)
                     }}
