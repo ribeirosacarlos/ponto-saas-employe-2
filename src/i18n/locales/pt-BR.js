@@ -307,6 +307,23 @@ const ptBR = {
         manageAccess: 'Gerenciar acessos',
       },
     },
+    settingsLocale: {
+      title: 'Idioma e País',
+      description: 'País de operação e idioma padrão da empresa.',
+      fields: {
+        country: 'País',
+        countryHint: 'País onde a empresa opera.',
+        locale: 'Idioma',
+        localeHint: 'Idioma padrão do sistema para a empresa.',
+      },
+      unsavedChanges: 'Você tem alterações não salvas.',
+      toast: {
+        successTitle: 'Localização atualizada',
+        successDescription: 'O país e idioma da empresa foram salvos.',
+        errorTitle: 'Erro ao salvar',
+        errorDescription: 'Não foi possível salvar.',
+      },
+    },
     access: {
       shared: {
         retry: 'Tentar novamente',
