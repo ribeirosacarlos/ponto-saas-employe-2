@@ -216,6 +216,10 @@ export default function App() {
   const currentPageTitle = useMemo(() => {
     const cfg = PAGE_TITLE_CONFIG[currentPage]
     if (cfg) return t(cfg.key, { defaultValue: cfg.fallback })
+
+    const navTitleKey = NAV_PAGE_TITLE_KEYS[currentPage]
+    if (navTitleKey) return t(navTitleKey)
+
     return ''
   }, [currentPage, t])
 
