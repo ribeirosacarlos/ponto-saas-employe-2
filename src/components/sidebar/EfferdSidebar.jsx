@@ -287,10 +287,16 @@ export function EfferdSidebar({
 }) {
   const { t } = useTranslation()
 
+  const bottomItems = useMemo(
+    () => navItems.filter((item) => item.group === 'bottom'),
+    [navItems],
+  )
+
   const navGroups = useMemo(() => {
     const grouped = {}
     navItems.forEach((item) => {
       const g = item.group || 'workspace'
+      if (g === 'bottom') return
       if (!grouped[g]) grouped[g] = []
       grouped[g].push(item)
     })
@@ -343,6 +349,15 @@ export function EfferdSidebar({
 
       <SidebarFooter>
         <SidebarMenu>
+          {bottomItems.map((item) => (
+            <FlatNavItem
+              key={item.id}
+              item={item}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+              t={t}
+            />
+          ))}
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip={t('sidebar.helpCenter', { defaultValue: 'Central de ajuda' })}

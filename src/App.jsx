@@ -496,10 +496,7 @@ export default function App() {
   const handleGoToAdminShifts = () => navigateTo('adminShifts')
   const handleGoToAdminReports = () => navigateTo('adminAdjustments')
   const handleProfile = () => {
-    toast({
-      title: t('dashboardPage.toasts.profile.title'),
-      description: t('dashboardPage.toasts.profile.description'),
-    })
+    navigateTo('settings')
   }
   const handleHelp = () => {
     setHelpDialogOpen(true)
