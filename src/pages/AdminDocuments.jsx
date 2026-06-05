@@ -142,10 +142,10 @@ export default function AdminDocuments() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadForm, setUploadForm] = useState({
-    employee: '',
+    employeeId: '',
     category: '',
-    priority: '',
-    important: false,
+    title: '',
+    notes: '',
     file: null,
   })
 
@@ -227,7 +227,7 @@ export default function AdminDocuments() {
         page: pageIndex,
         category,
         search,
-        employee: employeeId,
+        employeeId,
       })
 
       collected.push(...(data || []))
@@ -268,31 +268,30 @@ export default function AdminDocuments() {
       })
       return
     }
-    if (!uploadForm.priority) {
+    if (!uploadForm.employeeId) {
       toast({
-        title: t('documentsPage.admin.upload.errors.priorityTitle'),
-        description: t('documentsPage.admin.upload.errors.priorityDescription'),
+        title: t('documentsPage.admin.upload.errors.employeeTitle'),
+        description: t('documentsPage.admin.upload.errors.employeeDescription'),
         variant: 'destructive',
       })
       return
     }
 
-    const payload = new FormData()
-    payload.append('file', uploadForm.file)
-    payload.append('category', uploadForm.category)
-    payload.append('priority', uploadForm.priority)
-    payload.append('important', uploadForm.important ? '1' : '0')
-    if (uploadForm.employee) payload.append('employee', uploadForm.employee)
-
     setUploading(true)
     try {
-      await uploadTeamDocument(payload)
+      await uploadTeamDocument({
+        userId: uploadForm.employeeId,
+        category: uploadForm.category,
+        title: uploadForm.title,
+        notes: uploadForm.notes,
+        file: uploadForm.file,
+      })
       toast({
         title: t('documentsPage.admin.upload.successTitle'),
         description: t('documentsPage.admin.upload.successDescription'),
       })
       setUploadOpen(false)
-      setUploadForm({ employee: '', category: '', priority: '', important: false, file: null })
+      setUploadForm({ employeeId: '', category: '', title: '', notes: '', file: null })
       setPage(1)
       fetchDocuments({ page: 1 })
     } catch (err) {
@@ -352,7 +351,7 @@ export default function AdminDocuments() {
           page: query.page,
           category: query.category,
           search: query.search,
-          employee: query.employeeIds?.[0] || '',
+          employeeId: query.employeeIds?.[0] || '',
         })
         setDocuments(data)
         setMeta({
@@ -571,9 +570,9 @@ export default function AdminDocuments() {
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.employeeLabel')}</label>
                       <EmployeeMultiSelect
                         options={employees}
-                        value={uploadForm.employee ? [String(uploadForm.employee)] : []}
+                        value={uploadForm.employeeId ? [String(uploadForm.employeeId)] : []}
                         onChange={(employeeIds) =>
-                          setUploadForm((prev) => ({ ...prev, employee: employeeIds[0] || '' }))
+                          setUploadForm((prev) => ({ ...prev, employeeId: employeeIds[0] || '' }))
                         }
                         multiple={false}
                         loading={employeesLoading}
@@ -617,36 +616,25 @@ export default function AdminDocuments() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.priorityLabel')}</label>
-                      <Select
-                        value={uploadForm.priority}
-                        onChange={(event) =>
-                          setUploadForm((prev) => ({ ...prev, priority: event.target.value }))
-                        }
-                        required
-                      >
-                        <option value="">{t('documentsPage.admin.upload.priorityPlaceholder')}</option>
-                        {PRIORITY_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {t(opt.labelKey)}
-                          </option>
-                        ))}
-                      </Select>
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.titleLabel')}</label>
+                      <Input
+                        value={uploadForm.title}
+                        onChange={(event) => setUploadForm((prev) => ({ ...prev, title: event.target.value }))}
+                        placeholder={t('documentsPage.admin.upload.titlePlaceholder')}
+                        maxLength={180}
+                      />
                     </div>
 
-                    <label className="flex items-start gap-2 rounded-2xl border border-border/70 bg-muted/30 px-3 py-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={uploadForm.important}
-                        onChange={(event) =>
-                          setUploadForm((prev) => ({ ...prev, important: event.target.checked }))
-                        }
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">{t('documentsPage.admin.upload.notesLabel')}</label>
+                      <Textarea
+                        rows={4}
+                        value={uploadForm.notes}
+                        onChange={(event) => setUploadForm((prev) => ({ ...prev, notes: event.target.value }))}
+                        placeholder={t('documentsPage.admin.upload.notesPlaceholder')}
+                        maxLength={2000}
                       />
-                      <span className="font-semibold">
-                        {t('documentsPage.admin.upload.importantLabel')}
-                      </span>
-                    </label>
+                    </div>
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.fileLabel')}</label>
