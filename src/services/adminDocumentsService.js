@@ -1,12 +1,27 @@
 import { api } from "./http/api"
 import { formatBytes } from "../lib/formatBytes"
 
-const WARNED = new Set()
-const warnOnce = (key, message) => {
-  if (WARNED.has(key)) return
-  WARNED.add(key)
-  console.warn(message)
+const ensureAdminUploadFormData = (payload) => {
+  if (payload instanceof FormData) return payload
+
+  const formData = new FormData()
+  if (!payload || typeof payload !== "object") return formData
+
+  if (payload.userId) formData.append("user_id", payload.userId)
+  if (payload.category) formData.append("category", payload.category)
+  if (payload.title) formData.append("title", payload.title)
+  if (payload.notes) formData.append("notes", payload.notes)
+
+  const files = Array.isArray(payload.files)
+    ? payload.files
+    : payload.file
+      ? [payload.file]
+      : []
+
+  files.filter(Boolean).forEach((file) => formData.append("files[]", file))
+  return formData
 }
+
 const normalizeAdminDocument = (item = {}, index = 0) => {
   const status = (item.status ?? item.state ?? "").toString().toLowerCase()
   const category = (item.category ?? item.type ?? "").toString().toLowerCase()
@@ -75,12 +90,14 @@ const normalizePaginated = (data, fallbackPage = 1, fallbackPerPage) => {
 }
 
 export async function listPending(params = {}) {
-  const { page = 1, category, search, employee } = params
+  const { page = 1, perPage, sort, category, search, employeeId } = params
   const query = {}
   if (page) query.page = page
+  if (perPage) query.per_page = perPage
+  if (sort) query.sort = sort
   if (category && category !== "all") query.category = category
   if (search) query.search = search
-  if (employee) query.employee = employee
+  if (employeeId) query.employee_id = employeeId
 
   const { data } = await api.get("/v1/admin/documents/pending", { params: query })
   const { items, meta } = normalizePaginated(data, page)
@@ -88,12 +105,14 @@ export async function listPending(params = {}) {
 }
 
 export async function listReview(params = {}) {
-  const { page = 1, category, search, employee } = params
+  const { page = 1, perPage, sort, category, search, employeeId } = params
   const query = {}
   if (page) query.page = page
+  if (perPage) query.per_page = perPage
+  if (sort) query.sort = sort
   if (category && category !== "all") query.category = category
   if (search) query.search = search
-  if (employee) query.employee = employee
+  if (employeeId) query.employee_id = employeeId
 
   const { data } = await api.get("/v1/admin/documents/review", { params: query })
   const { items, meta } = normalizePaginated(data, page)
@@ -117,12 +136,10 @@ export async function reject(id, comment) {
 }
 
 export async function uploadTeamDocument(payload) {
-  // TODO: wire admin document upload endpoint when backend is ready.
-  warnOnce('admin-document-upload', '[adminDocumentsService] Missing admin upload endpoint.')
-  return {
-    id: `admin-document-${Date.now()}`,
-    mocked: true,
-    payload,
-  }
+  const formData = ensureAdminUploadFormData(payload)
+  const { data } = await api.post("/v1/admin/documents/upload-for-employee", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data?.data ?? data
 }
 

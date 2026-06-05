@@ -7,6 +7,27 @@ const warnOnce = (key, message) => {
   WARNED.add(key)
   console.warn(message)
 }
+
+const ensureFormData = (payload) => {
+  if (payload instanceof FormData) return payload
+
+  const formData = new FormData()
+  if (!payload || typeof payload !== "object") return formData
+
+  if (payload.category) formData.append("category", payload.category)
+  if (payload.title) formData.append("title", payload.title)
+  if (payload.notes) formData.append("notes", payload.notes)
+
+  const files = Array.isArray(payload.files)
+    ? payload.files
+    : payload.file
+      ? [payload.file]
+      : []
+
+  files.filter(Boolean).forEach((file) => formData.append("files[]", file))
+  return formData
+}
+
 const normalizeDocument = (item = {}, index = 0) => {
   const status = (item.status ?? item.state ?? "").toString().toLowerCase()
   const category = (item.category ?? item.type ?? "").toString().toLowerCase()
@@ -86,7 +107,8 @@ export async function listMyDocuments({ page = 1, status, category, search } = {
 }
 
 export async function uploadDocuments(formData) {
-  const { data } = await api.post("/v1/documents", formData, {
+  const payload = ensureFormData(formData)
+  const { data } = await api.post("/v1/documents", payload, {
     headers: { "Content-Type": "multipart/form-data" },
   })
   return data?.data ?? data
@@ -128,7 +150,12 @@ export async function deleteDocument(id) {
 }
 
 export async function resendDocument(id, formData) {
-  const { data } = await api.post(`/v1/documents/${id}/resend`, formData, {
+  const payload = formData instanceof FormData ? formData : new FormData()
+  if (!(formData instanceof FormData) && formData?.file) {
+    payload.append("file", formData.file)
+  }
+
+  const { data } = await api.post(`/v1/documents/${id}/resend`, payload, {
     headers: { "Content-Type": "multipart/form-data" },
   })
   return data?.data ?? data

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Eye, FileText, PenLine, RefreshCcw } from 'lucide-react'
+import { Download, Eye, FileText, RefreshCcw, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { actionIconButtonClass } from '../components/ui/form-controls'
@@ -10,11 +10,19 @@ import { Select } from '../components/ui/select'
 import { cn } from '../lib/utils'
 import { useToast } from '../components/ui/use-toast'
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog'
+import {
   downloadDocument,
-  listMyDocuments,
   fetchDocumentBlob,
-  trackDocumentSignature,
-  trackDocumentView,
+  listMyDocuments,
+  resendDocument,
 } from '../services/documentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 
@@ -67,7 +75,10 @@ export default function Documents() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [signingId, setSigningId] = useState(null)
+  const [resendOpen, setResendOpen] = useState(false)
+  const [resendTarget, setResendTarget] = useState(null)
+  const [resendFile, setResendFile] = useState(null)
+  const [resending, setResending] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState('')
@@ -159,7 +170,6 @@ export default function Documents() {
     setPreviewOpen(true)
     setPreviewLoading(true)
     setPreviewError('')
-    trackDocumentView(doc.id).catch(() => {})
     fetchDocumentBlob(doc.id)
       .then(({ blob, mimeType }) => {
         const url = URL.createObjectURL(blob)
@@ -182,34 +192,41 @@ export default function Documents() {
       })
       .finally(() => setPreviewLoading(false))
   }
-  const handleSign = async (doc) => {
-    if (!doc?.id) return
-    setSigningId(doc.id)
-    try {
-      await trackDocumentSignature(doc.id)
-      setDocuments((prev) =>
-        prev.map((item) =>
-          item.id === doc.id
-            ? {
-                ...item,
-                signatureStatus: 'signed',
-                signedAt: new Date().toISOString(),
-              }
-            : item,
-        ),
-      )
+  const handleResend = async (event) => {
+    event?.preventDefault()
+    if (!resendTarget?.id || !resendFile) {
       toast({
-        title: t('documentsPage.employee.toasts.signSuccessTitle'),
-        description: t('documentsPage.employee.toasts.signSuccessDescription'),
+        title: t('documentsPage.employee.toasts.resendFileRequiredTitle'),
+        description: t('documentsPage.employee.toasts.resendFileRequiredDescription'),
+        variant: 'destructive',
       })
+      return
+    }
+
+    const payload = new FormData()
+    payload.append('file', resendFile)
+
+    setResending(true)
+    try {
+      const updatedDocument = await resendDocument(resendTarget.id, payload)
+      setDocuments((prev) => prev.map((item) => (item.id === resendTarget.id ? { ...item, ...updatedDocument } : item)))
+      setResendOpen(false)
+      setResendTarget(null)
+      setResendFile(null)
+      setPage(1)
+      toast({
+        title: t('documentsPage.employee.toasts.resendSuccessTitle'),
+        description: t('documentsPage.employee.toasts.resendSuccessDescription'),
+      })
+      loadDocuments({ page: 1, status: filters.status })
     } catch (err) {
       toast({
-        title: t('documentsPage.employee.toasts.signErrorTitle'),
-        description: err?.message || t('documentsPage.employee.toasts.signErrorDescription'),
+        title: t('documentsPage.employee.toasts.resendErrorTitle'),
+        description: err?.response?.data?.message || err?.message || t('documentsPage.employee.toasts.resendErrorDescription'),
         variant: 'destructive',
       })
     } finally {
-      setSigningId(null)
+      setResending(false)
     }
   }
   const emptyState = !loading && documents.length === 0
@@ -246,6 +263,12 @@ export default function Documents() {
       setPreviewMime('')
       setSelectedDocument(null)
     }
+  }
+
+  const openResendDialog = (doc) => {
+    setResendTarget(doc)
+    setResendFile(null)
+    setResendOpen(true)
   }
 
   return (
@@ -381,17 +404,14 @@ export default function Documents() {
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      {(doc.requiresSignature ?? doc.isImportant) &&
-                      doc.signatureStatus !== 'signed' &&
-                      !doc.signedAt ? (
+                      {doc.status === 'review' ? (
                         <button
                           type="button"
                           className={actionIconButtonClass}
-                          title={t('documentsPage.employee.actions.sign')}
-                          onClick={() => handleSign(doc)}
-                          disabled={signingId === doc.id}
+                          title={t('documentsPage.employee.actions.resend')}
+                          onClick={() => openResendDialog(doc)}
                         >
-                          <PenLine className="h-4 w-4" />
+                          <Upload className="h-4 w-4" />
                         </button>
                       ) : null}
                     </div>
@@ -465,19 +485,16 @@ export default function Documents() {
                           >
                             <Download className="h-4 w-4" />
                           </button>
-                          {(doc.requiresSignature ?? doc.isImportant) &&
-                          doc.signatureStatus !== 'signed' &&
-                          !doc.signedAt ? (
+                          {doc.status === 'review' ? (
                             <button
                               type="button"
                               className={actionIconButtonClass}
-                              title={t('documentsPage.employee.actions.sign')}
-                              onClick={() => handleSign(doc)}
-                              disabled={signingId === doc.id}
+                              title={t('documentsPage.employee.actions.resend')}
+                              onClick={() => openResendDialog(doc)}
                             >
-                              <PenLine className="h-4 w-4" />
+                              <Upload className="h-4 w-4" />
                             </button>
-                           ) : null}
+                          ) : null}
                         </div>
                       </div>
                     ))}
@@ -498,6 +515,50 @@ export default function Documents() {
         error={previewError}
         onDownload={handleDownloadFromPreview}
       />
+
+      <Dialog
+        open={resendOpen}
+        onOpenChange={(open) => {
+          setResendOpen(open)
+          if (!open) {
+            setResendTarget(null)
+            setResendFile(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('documentsPage.employee.resend.title')}</DialogTitle>
+            <DialogDescription>{t('documentsPage.employee.resend.description')}</DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleResend}>
+            {resendTarget?.rejectedComment ? (
+              <div className="rounded-2xl border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-800">
+                {resendTarget.rejectedComment}
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">{t('documentsPage.employee.resend.fileLabel')}</label>
+              <Input
+                type="file"
+                onChange={(event) => setResendFile((event.target.files || [])[0] || null)}
+                required
+              />
+              <p className="text-[11px] text-muted-foreground">{t('documentsPage.employee.resend.fileHint')}</p>
+            </div>
+            <DialogFooter className="pt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="ghost">
+                  {t('common.actions.cancel')}
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={resending || !resendFile} className="min-w-[140px]">
+                {resending ? t('documentsPage.employee.resend.sending') : t('documentsPage.employee.resend.submit')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
