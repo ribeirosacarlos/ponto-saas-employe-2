@@ -681,7 +681,7 @@ export default function App() {
   return (
     <div
       className={cn(
-        'relative min-h-screen overflow-hidden bg-background text-foreground transition-colors duration-300',
+        'relative h-dvh overflow-hidden bg-background text-foreground transition-colors duration-300',
         theme === 'dark'
           ? 'bg-gradient-to-b from-[#060915] via-[#0d1629] to-background'
           : 'bg-gradient-to-b from-primary/8 via-[#f3f5ff] to-background',
@@ -692,7 +692,7 @@ export default function App() {
         <div className="absolute right-[-5%] top-1/4 h-72 w-72 rounded-full bg-sky-300/16 blur-[120px] dark:bg-sky-400/12" />
         <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
-      <div className="relative z-10">
+      <div className="relative z-10 h-full">
         {shouldRenderPublicAuthPage ? (
           currentPage === 'activateAccount' ? (
             <ActivateAccount />
@@ -702,7 +702,7 @@ export default function App() {
             <ForgotPassword />
           )
         ) : isRestoringProtectedSession ? (
-          <div className="flex min-h-screen items-center justify-center px-6">
+          <div className="flex h-full items-center justify-center px-6">
             <div className="rounded-3xl border border-border/70 bg-card/80 px-6 py-5 text-sm font-medium text-muted-foreground shadow-[0_30px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur-xl">
               {t('common.loading')}
             </div>
@@ -713,6 +713,7 @@ export default function App() {
               <SidebarProvider
                 open={!sidebarCollapsed}
                 onOpenChange={(open) => setSidebarCollapsed(!open)}
+                className="h-full"
               >
                 <EfferdSidebar
                   navItems={desktopNavItems}
@@ -723,7 +724,7 @@ export default function App() {
                   onHelp={handleHelp}
                   onLogout={handleLogout}
                 />
-                <main className="relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300 overflow-hidden">
+                <main className="relative flex-1 flex h-full flex-col min-w-0 transition-all duration-300 overflow-hidden">
                   <EfferdTopBar
                     user={user}
                     onProfile={handleProfile}
@@ -732,7 +733,7 @@ export default function App() {
                     onLogout={handleLogout}
                     pageTitle={currentPageTitle}
                   />
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-y-auto">
                     <div className="mx-auto w-full max-w-[1320px]">
                       {renderCurrentPage()}
                     </div>
@@ -753,10 +754,10 @@ export default function App() {
                   onLogout={handleLogout}
                 />
                 <main
-                  className="relative flex-1 flex min-h-screen flex-col min-w-0 transition-all duration-300"
+                  className="relative flex-1 flex h-full flex-col min-w-0 transition-all duration-300"
                   style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
                 >
-                  <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
+                  <div className="shrink-0 flex items-center gap-3 border-b border-border/70 bg-card/90 px-4 py-3 shadow-[0_12px_45px_-30px_rgba(62,82,152,0.6)] backdrop-blur-xl">
                     <button
                       type="button"
                       aria-label={t('sidebar.actions.openMenu', { defaultValue: 'Open menu' })}
@@ -767,7 +768,7 @@ export default function App() {
                     </button>
                     <BrandSignature />
                   </div>
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-y-auto">
                     <div className="mx-auto w-full max-w-[1320px]">
                       {renderCurrentPage()}
                     </div>
