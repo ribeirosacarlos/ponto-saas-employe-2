@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Download, Eye, FileText, RefreshCcw, Search, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
@@ -142,7 +142,7 @@ export default function AdminDocuments() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadForm, setUploadForm] = useState({
-    employeeId: '',
+    employee: '',
     category: '',
     title: '',
     notes: '',
@@ -160,16 +160,6 @@ export default function AdminDocuments() {
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewMime, setPreviewMime] = useState('')
   const [selectedDocument, setSelectedDocument] = useState(null)
-
-  const formatRole = useCallback(
-    (role) => {
-      const normalized =
-        typeof role === 'string' ? role : role?.name || role?.role || role?.slug || role?.id || ''
-      if (!normalized) return t('equipoPage.roles.unknown')
-      return t(`equipoPage.roles.${normalized}`, normalized)
-    },
-    [t],
-  )
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -268,7 +258,7 @@ export default function AdminDocuments() {
       })
       return
     }
-    if (!uploadForm.employeeId) {
+    if (!uploadForm.employee) {
       toast({
         title: t('documentsPage.admin.upload.errors.employeeTitle'),
         description: t('documentsPage.admin.upload.errors.employeeDescription'),
@@ -277,21 +267,22 @@ export default function AdminDocuments() {
       return
     }
 
+    const payload = new FormData()
+    payload.append('files[]', uploadForm.file)
+    payload.append('user_id', uploadForm.employee)
+    payload.append('category', uploadForm.category)
+    if (uploadForm.title) payload.append('title', uploadForm.title)
+    if (uploadForm.notes) payload.append('notes', uploadForm.notes)
+
     setUploading(true)
     try {
-      await uploadTeamDocument({
-        userId: uploadForm.employeeId,
-        category: uploadForm.category,
-        title: uploadForm.title,
-        notes: uploadForm.notes,
-        file: uploadForm.file,
-      })
+      await uploadTeamDocument(payload)
       toast({
         title: t('documentsPage.admin.upload.successTitle'),
         description: t('documentsPage.admin.upload.successDescription'),
       })
       setUploadOpen(false)
-      setUploadForm({ employeeId: '', category: '', title: '', notes: '', file: null })
+      setUploadForm({ employee: '', category: '', title: '', notes: '', file: null })
       setPage(1)
       fetchDocuments({ page: 1 })
     } catch (err) {
@@ -570,9 +561,9 @@ export default function AdminDocuments() {
                       <label className="text-sm font-semibold">{t('documentsPage.admin.upload.employeeLabel')}</label>
                       <EmployeeMultiSelect
                         options={employees}
-                        value={uploadForm.employeeId ? [String(uploadForm.employeeId)] : []}
+                        value={uploadForm.employee ? [String(uploadForm.employee)] : []}
                         onChange={(employeeIds) =>
-                          setUploadForm((prev) => ({ ...prev, employeeId: employeeIds[0] || '' }))
+                          setUploadForm((prev) => ({ ...prev, employee: employeeIds[0] || '' }))
                         }
                         multiple={false}
                         loading={employeesLoading}
@@ -621,7 +612,6 @@ export default function AdminDocuments() {
                         value={uploadForm.title}
                         onChange={(event) => setUploadForm((prev) => ({ ...prev, title: event.target.value }))}
                         placeholder={t('documentsPage.admin.upload.titlePlaceholder')}
-                        maxLength={180}
                       />
                     </div>
 
@@ -632,7 +622,6 @@ export default function AdminDocuments() {
                         value={uploadForm.notes}
                         onChange={(event) => setUploadForm((prev) => ({ ...prev, notes: event.target.value }))}
                         placeholder={t('documentsPage.admin.upload.notesPlaceholder')}
-                        maxLength={2000}
                       />
                     </div>
 

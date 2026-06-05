@@ -3,6 +3,12 @@ import { Download, Eye, FileText, RefreshCcw, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { actionIconButtonClass } from '../components/ui/form-controls'
+import { Input } from '../components/ui/input'
+import { PageContainer } from '../components/ui/PageContainer'
+import { AppTopBar } from '../components/ui/AppTopBar'
+import { Select } from '../components/ui/select'
+import { cn } from '../lib/utils'
+import { useToast } from '../components/ui/use-toast'
 import {
   Dialog,
   DialogClose,
@@ -12,18 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
-import { Input } from '../components/ui/input'
-import { PageContainer } from '../components/ui/PageContainer'
-import { AppTopBar } from '../components/ui/AppTopBar'
-import { Select } from '../components/ui/select'
-import { cn } from '../lib/utils'
-import { useToast } from '../components/ui/use-toast'
 import {
   downloadDocument,
-  listMyDocuments,
   fetchDocumentBlob,
+  listMyDocuments,
   resendDocument,
-  trackDocumentView,
 } from '../services/documentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 
@@ -77,9 +76,9 @@ export default function Documents() {
   const [error, setError] = useState('')
 
   const [resendOpen, setResendOpen] = useState(false)
-  const [resending, setResending] = useState(false)
-  const [resendFile, setResendFile] = useState(null)
   const [resendTarget, setResendTarget] = useState(null)
+  const [resendFile, setResendFile] = useState(null)
+  const [resending, setResending] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState('')
@@ -171,7 +170,6 @@ export default function Documents() {
     setPreviewOpen(true)
     setPreviewLoading(true)
     setPreviewError('')
-    trackDocumentView(doc.id).catch(() => {})
     fetchDocumentBlob(doc.id)
       .then(({ blob, mimeType }) => {
         const url = URL.createObjectURL(blob)
@@ -194,12 +192,6 @@ export default function Documents() {
       })
       .finally(() => setPreviewLoading(false))
   }
-  const openResendDialog = (doc) => {
-    setResendTarget(doc)
-    setResendFile(null)
-    setResendOpen(true)
-  }
-
   const handleResend = async (event) => {
     event?.preventDefault()
     if (!resendTarget?.id || !resendFile) {
@@ -211,18 +203,22 @@ export default function Documents() {
       return
     }
 
+    const payload = new FormData()
+    payload.append('file', resendFile)
+
     setResending(true)
     try {
-      await resendDocument(resendTarget.id, { file: resendFile })
+      const updatedDocument = await resendDocument(resendTarget.id, payload)
+      setDocuments((prev) => prev.map((item) => (item.id === resendTarget.id ? { ...item, ...updatedDocument } : item)))
       setResendOpen(false)
-      setResendFile(null)
       setResendTarget(null)
-      await loadDocuments({ page: 1 })
+      setResendFile(null)
       setPage(1)
       toast({
         title: t('documentsPage.employee.toasts.resendSuccessTitle'),
         description: t('documentsPage.employee.toasts.resendSuccessDescription'),
       })
+      loadDocuments({ page: 1, status: filters.status })
     } catch (err) {
       toast({
         title: t('documentsPage.employee.toasts.resendErrorTitle'),
@@ -233,7 +229,6 @@ export default function Documents() {
       setResending(false)
     }
   }
-
   const emptyState = !loading && documents.length === 0
 
   const handleDownloadFromPreview = async () => {
@@ -268,6 +263,12 @@ export default function Documents() {
       setPreviewMime('')
       setSelectedDocument(null)
     }
+  }
+
+  const openResendDialog = (doc) => {
+    setResendTarget(doc)
+    setResendFile(null)
+    setResendOpen(true)
   }
 
   return (

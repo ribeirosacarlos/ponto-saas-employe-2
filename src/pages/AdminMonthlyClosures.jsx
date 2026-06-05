@@ -275,7 +275,7 @@ export default function AdminMonthlyClosures() {
         description: t('adminMonthlyClosuresPage.actions.signSuccessDescription'),
         variant: 'success',
       })
-      loadClosures()
+      loadTimesheets(closureId)
     } catch (err) {
       toast({
         title: t('adminMonthlyClosuresPage.actions.signErrorTitle'),

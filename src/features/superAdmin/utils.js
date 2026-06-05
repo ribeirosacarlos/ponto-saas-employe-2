@@ -75,11 +75,23 @@ export const parseNaiveDateTime = (value) => {
 }
 
 export const formatCurrencyEUR = (value, locale = 'pt-BR') => {
+  return formatSuperAdminCurrency(value, 'EUR', locale)
+}
+
+export const formatSuperAdminCurrency = (value, currency = 'EUR', locale = 'pt-BR') => {
   const amount = Number(value ?? 0)
   return amount.toLocaleString(locale || 'pt-BR', {
     style: 'currency',
-    currency: 'EUR',
+    currency: currency || 'EUR',
     minimumFractionDigits: 2,
+  })
+}
+
+export const formatSuperAdminCompactNumber = (value, locale = 'pt-BR') => {
+  const amount = Number(value ?? 0)
+  return amount.toLocaleString(locale || 'pt-BR', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
   })
 }
 
