@@ -25,6 +25,7 @@ import PlatformBillingPlans from './pages/PlatformBillingPlans.jsx'
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
 import SuperAdminCompanies from './pages/SuperAdminCompanies.jsx'
 import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails.jsx'
+import SuperAdminBlog from './pages/SuperAdminBlog.jsx'
 import AuditLogs from './pages/AuditLogs.jsx'
 import AdminShifts from './pages/AdminShifts.jsx'
 import AdminAreas from './pages/AdminAreas.jsx'
@@ -102,6 +103,7 @@ const PAGE_TITLE_CONFIG = {
   platformCompanies: { key: 'platformCompanies.title', fallback: 'Empresas' },
   superAdminDashboard: { key: NAV_PAGE_TITLE_KEYS.superAdminDashboard, fallback: 'Dashboard' },
   superAdminCompanies: { key: NAV_PAGE_TITLE_KEYS.superAdminCompanies, fallback: 'Empresas' },
+  superAdminBlog: { key: 'superAdmin.blog.title', fallback: 'Blog' },
   superAdminCompanyDetails: { key: 'superAdmin.companyDetails.title', fallback: 'Detalhes da empresa' },
   announcements: { key: 'announcementsPage.title', fallback: 'Comunicados' },
   equipo: { key: 'equipoPage.title', fallback: 'Equipe' },
@@ -623,6 +625,8 @@ export default function App() {
             }
           />
         )
+      case 'superAdminBlog':
+        return <SuperAdminBlog />
       case 'superAdminCompanyDetails':
         return (
           <SuperAdminCompanyDetails

@@ -456,6 +456,7 @@ const ptBR = {
         auditLogs: 'Auditoria',
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Empresas',
+        superAdminBlog: 'Blog',
         settings: 'Configurações',
         profile: 'Meu Perfil',
         calendar: 'Calendário',
@@ -575,6 +576,9 @@ const ptBR = {
     superAdmin: {
       nav: {
         section: 'Super Admin',
+      },
+      blog: {
+        title: 'Blog',
       },
       shared: {
         values: {
