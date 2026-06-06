@@ -454,6 +454,7 @@ const en = {
         auditLogs: 'Audit logs',
         superAdminDashboard: 'Dashboard',
         superAdminCompanies: 'Companies',
+        superAdminBlog: 'Blog',
         settings: 'Settings',
         profile: 'My Profile',
         calendar: 'Calendar',
@@ -571,6 +572,9 @@ const en = {
     superAdmin: {
       nav: {
         section: 'Super Admin',
+      },
+      blog: {
+        title: 'Blog',
       },
       shared: {
         values: {

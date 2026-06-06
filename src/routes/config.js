@@ -83,6 +83,10 @@ export const ROUTES = {
     path: '/super-admin/companies',
     guard: { anyOf: ['super_admin'] },
   },
+  superAdminBlog: {
+    path: '/super-admin/blog',
+    guard: { anyOf: ['super_admin'] },
+  },
   superAdminCompanyDetails: {
     path: '/super-admin/companies/:id',
     guard: { anyOf: ['super_admin'] },
