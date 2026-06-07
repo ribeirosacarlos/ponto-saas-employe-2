@@ -3,6 +3,7 @@ import { format, subMonths } from 'date-fns'
 import { listEmployees } from '../../services/modules/employees'
 import { normalizeEmployee } from '../employees/useEmployeesManagement'
 import { listAbsencesByUser } from '../../services/absencesService'
+import { listAdminMedicalCertificates } from '../../services/medicalCertificatesService'
 import {
   getAdminVacationSummary,
   listAdminVacationsByUser,
@@ -21,6 +22,7 @@ export function useAdminVacations({ enabled = true } = {}) {
   const [employeesError, setEmployeesError] = useState('')
 
   const [pendingRequests, setPendingRequests] = useState([])
+  const [pendingMedicalRequests, setPendingMedicalRequests] = useState([])
   const [pendingLoading, setPendingLoading] = useState(false)
   const [pendingError, setPendingError] = useState('')
 
@@ -54,15 +56,23 @@ export function useAdminVacations({ enabled = true } = {}) {
     setPendingLoading(true)
     setPendingError('')
     try {
-      const response = await listPendingAdminVacations({ page: 1 })
-      setPendingRequests(response.data || [])
-      return response.data || []
+      const [vacationsResponse, medicalResponse] = await Promise.all([
+        listPendingAdminVacations({ page: 1 }),
+        listAdminMedicalCertificates({ status: 'pending', page: 1, perPage: 100 }),
+      ])
+      setPendingRequests(vacationsResponse.data || [])
+      setPendingMedicalRequests(medicalResponse.data || [])
+      return {
+        vacations: vacationsResponse.data || [],
+        medicalCertificates: medicalResponse.data || [],
+      }
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || 'Unable to load pending vacations.'
+        err?.response?.data?.message || err?.message || 'Unable to load pending requests.'
       setPendingError(message)
       setPendingRequests([])
-      return []
+      setPendingMedicalRequests([])
+      return { vacations: [], medicalCertificates: [] }
     } finally {
       setPendingLoading(false)
     }
@@ -104,8 +114,15 @@ export function useAdminVacations({ enabled = true } = {}) {
     const entries = await Promise.all(
       employeeList.map(async (employee) => {
         if (!employee?.id) return [employee?.id, []]
-        const response = await listAbsencesByUser({ userId: employee.id, from, to, page: 1 })
-        return [employee.id, response.data || []]
+        const [absencesResponse, medicalResponse] = await Promise.allSettled([
+          listAbsencesByUser({ userId: employee.id, from, to, page: 1 }),
+          listAdminMedicalCertificates({ userId: employee.id, from, to, page: 1 }),
+        ])
+        const absences =
+          absencesResponse.status === 'fulfilled' ? absencesResponse.value.data || [] : []
+        const medicalCertificates =
+          medicalResponse.status === 'fulfilled' ? medicalResponse.value.data || [] : []
+        return [employee.id, [...medicalCertificates, ...absences]]
       }),
     )
     setAbsencesByUserId(Object.fromEntries(entries))
@@ -188,6 +205,7 @@ export function useAdminVacations({ enabled = true } = {}) {
     employeesLoading,
     employeesError,
     pendingRequests,
+    pendingMedicalRequests,
     pendingLoading,
     pendingError,
     balancesByUserId,
