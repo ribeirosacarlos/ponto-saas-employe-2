@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  FilePlus2,
   Plane,
   PlusCircle,
   UserCheck,
@@ -40,6 +41,11 @@ import {
   rejectAdminVacation,
 } from '../services/adminVacationsService'
 import { createAbsence, hasEmployeePresenceOnDate } from '../services/absencesService'
+import {
+  approveAdminMedicalCertificate,
+  createAdminMedicalCertificate,
+  rejectAdminMedicalCertificate,
+} from '../services/medicalCertificatesService'
 
 const MANAGEMENT_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
 
@@ -78,6 +84,17 @@ const buildVacationForm = () => ({
   notes: '',
 })
 
+const buildMedicalCertificateForm = () => ({
+  coverageType: 'full_day',
+  startDate: format(new Date(), 'yyyy-MM-dd'),
+  endDate: '',
+  date: format(new Date(), 'yyyy-MM-dd'),
+  startTime: '',
+  endTime: '',
+  comment: '',
+  files: [],
+})
+
 const formatDateLabel = (value, locale) => {
   if (!value) return ''
   const date = new Date(value)
@@ -100,6 +117,30 @@ const normalizeAbsence = (absence = {}, index = 0) => ({
     absence.startDate ??
     absence.created_at ??
     '',
+  endDate: absence.end_date ?? absence.endDate ?? absence.date ?? absence.day ?? '',
+  startTime: absence.start_time ?? absence.startTime ?? '',
+  endTime: absence.end_time ?? absence.endTime ?? '',
+  coverageType: absence.coverage_type ?? absence.coverageType ?? '',
+  status: absence.status ?? absence.state ?? '',
+  source:
+    absence.coverage_type || absence.coverageType || Array.isArray(absence.documents)
+      ? 'medical-certificate'
+      : 'absence',
+})
+
+const normalizePendingMedicalCertificate = (certificate = {}, index = 0) => ({
+  id: certificate.id ?? certificate.uuid ?? `medical-pending-${index}`,
+  requestType: 'medical-certificate',
+  userId: certificate.userId ?? certificate.user_id ?? certificate.employee_id ?? certificate.employeeId,
+  user: certificate.user ?? certificate.employee ?? null,
+  status: certificate.status ?? certificate.state ?? 'pending',
+  coverageType: certificate.coverageType ?? certificate.coverage_type ?? 'full_day',
+  startDate: certificate.startDate ?? certificate.start_date ?? certificate.date ?? '',
+  endDate: certificate.endDate ?? certificate.end_date ?? certificate.date ?? '',
+  date: certificate.date ?? certificate.startDate ?? certificate.start_date ?? '',
+  startTime: certificate.startTime ?? certificate.start_time ?? '',
+  endTime: certificate.endTime ?? certificate.end_time ?? '',
+  comment: certificate.comment ?? certificate.notes ?? certificate.description ?? '',
 })
 
 const pickBalanceValue = (balance, keys) => {
@@ -171,6 +212,7 @@ export default function AdminVacations() {
     employeesLoading,
     employeesError,
     pendingRequests,
+    pendingMedicalRequests,
     pendingLoading,
     pendingError,
     balancesByUserId,
@@ -201,6 +243,11 @@ export default function AdminVacations() {
   const [vacationError, setVacationError] = useState('')
   const [vacationSaving, setVacationSaving] = useState(false)
 
+  const [medicalTarget, setMedicalTarget] = useState(null)
+  const [medicalForm, setMedicalForm] = useState(buildMedicalCertificateForm)
+  const [medicalError, setMedicalError] = useState('')
+  const [medicalSaving, setMedicalSaving] = useState(false)
+
   const [openCards, setOpenCards] = useState({})
 
   const pendingByUser = useMemo(() => {
@@ -210,10 +257,17 @@ export default function AdminVacations() {
         request.userId ?? request.user?.id ?? request.employee_id ?? request.employeeId
       if (!userId) return
       if (!map[userId]) map[userId] = []
-      map[userId].push(request)
+      map[userId].push({ ...request, requestType: 'vacation' })
+    })
+    pendingMedicalRequests.forEach((request, index) => {
+      const normalized = normalizePendingMedicalCertificate(request, index)
+      const userId = normalized.userId ?? normalized.user?.id
+      if (!userId) return
+      if (!map[userId]) map[userId] = []
+      map[userId].push(normalized)
     })
     return map
-  }, [pendingRequests])
+  }, [pendingMedicalRequests, pendingRequests])
 
   const vacationDays = useMemo(() => {
     if (!vacationForm.startDate || !vacationForm.endDate) return 0
@@ -243,10 +297,23 @@ export default function AdminVacations() {
         email: user?.email ?? '',
       })
     })
+    pendingMedicalRequests.forEach((request, index) => {
+      const normalized = normalizePendingMedicalCertificate(request, index)
+      const user = normalized.user || {}
+      const userId = normalized.userId ?? user?.id
+      if (!userId) return
+      const key = String(userId)
+      if (map.has(key)) return
+      map.set(key, {
+        id: userId,
+        name: user?.name ?? user?.full_name ?? user?.fullName ?? 'Colaborador',
+        email: user?.email ?? '',
+      })
+    })
     return Array.from(map.values()).sort((a, b) =>
       (a.name || '').localeCompare(b.name || '', i18n.language),
     )
-  }, [employees, pendingRequests, i18n.language])
+  }, [employees, pendingMedicalRequests, pendingRequests, i18n.language])
 
   const renderStatusPill = (status) => {
     const normalized = (status || '').toLowerCase()
@@ -269,26 +336,46 @@ export default function AdminVacations() {
     const requestId = approvalTarget.id
     const userId =
       approvalTarget.userId ?? approvalTarget.user?.id ?? approvalTarget.employee_id
+    const requestType = approvalTarget.requestType || 'vacation'
     setActionLoading((prev) => ({ ...prev, [requestId]: 'approve' }))
     try {
-      await approveAdminVacation(requestId, approvalNote.trim() || undefined)
+      if (requestType === 'medical-certificate') {
+        await approveAdminMedicalCertificate(requestId)
+      } else {
+        await approveAdminVacation(requestId, approvalNote.trim() || undefined)
+      }
       toast({
-        title: t('vacationsPage.actions.approveSuccessTitle', 'Solicitacao aprovada'),
-        description: t(
-          'vacationsPage.actions.approveSuccessDescription',
-          'O periodo foi aprovado e o colaborador foi notificado.',
-        ),
+        title:
+          requestType === 'medical-certificate'
+            ? t('vacationsPage.medicalCertificates.approveSuccessTitle', 'Atestado aprovado')
+            : t('vacationsPage.actions.approveSuccessTitle', 'Solicitacao aprovada'),
+        description:
+          requestType === 'medical-certificate'
+            ? t(
+                'vacationsPage.medicalCertificates.approveSuccessDescription',
+                'O atestado foi aprovado e o colaborador foi notificado.',
+              )
+            : t(
+                'vacationsPage.actions.approveSuccessDescription',
+                'O periodo foi aprovado e o colaborador foi notificado.',
+              ),
         variant: 'success',
       })
-      removePendingRequest(requestId)
-      if (userId) {
+      if (requestType !== 'medical-certificate' && userId) {
         await refreshBalanceForUser(userId)
       }
+      await refreshAll()
       setApprovalTarget(null)
       setApprovalNote('')
     } catch (err) {
       toast({
-        title: t('vacationsPage.actions.approveErrorTitle', 'Nao foi possivel aprovar'),
+        title:
+          requestType === 'medical-certificate'
+            ? t(
+                'vacationsPage.medicalCertificates.approveErrorTitle',
+                'Nao foi possivel aprovar o atestado',
+              )
+            : t('vacationsPage.actions.approveErrorTitle', 'Nao foi possivel aprovar'),
         description:
           err?.response?.data?.message ||
           err?.message ||
@@ -305,6 +392,7 @@ export default function AdminVacations() {
     const requestId = rejectionTarget.id
     const userId =
       rejectionTarget.userId ?? rejectionTarget.user?.id ?? rejectionTarget.employee_id
+    const requestType = rejectionTarget.requestType || 'vacation'
     if (!rejectionReason.trim()) {
       setRejectionError(
         t('vacationsPage.actions.rejectionRequired', 'Informe a justificativa para recusar.'),
@@ -314,24 +402,43 @@ export default function AdminVacations() {
     setRejectionError('')
     setActionLoading((prev) => ({ ...prev, [requestId]: 'reject' }))
     try {
-      await rejectAdminVacation(requestId, rejectionReason.trim())
+      if (requestType === 'medical-certificate') {
+        await rejectAdminMedicalCertificate(requestId, rejectionReason.trim())
+      } else {
+        await rejectAdminVacation(requestId, rejectionReason.trim())
+      }
       toast({
-        title: t('vacationsPage.actions.rejectSuccessTitle', 'Solicitacao recusada'),
-        description: t(
-          'vacationsPage.actions.rejectSuccessDescription',
-          'A recusa foi registrada com a justificativa informada.',
-        ),
+        title:
+          requestType === 'medical-certificate'
+            ? t('vacationsPage.medicalCertificates.rejectSuccessTitle', 'Atestado recusado')
+            : t('vacationsPage.actions.rejectSuccessTitle', 'Solicitacao recusada'),
+        description:
+          requestType === 'medical-certificate'
+            ? t(
+                'vacationsPage.medicalCertificates.rejectSuccessDescription',
+                'A recusa do atestado foi registrada com a justificativa informada.',
+              )
+            : t(
+                'vacationsPage.actions.rejectSuccessDescription',
+                'A recusa foi registrada com a justificativa informada.',
+              ),
         variant: 'success',
       })
-      removePendingRequest(requestId)
-      if (userId) {
+      if (requestType !== 'medical-certificate' && userId) {
         await refreshBalanceForUser(userId)
       }
+      await refreshAll()
       setRejectionTarget(null)
       setRejectionReason('')
     } catch (err) {
       toast({
-        title: t('vacationsPage.actions.rejectErrorTitle', 'Nao foi possivel recusar'),
+        title:
+          requestType === 'medical-certificate'
+            ? t(
+                'vacationsPage.medicalCertificates.rejectErrorTitle',
+                'Nao foi possivel recusar o atestado',
+              )
+            : t('vacationsPage.actions.rejectErrorTitle', 'Nao foi possivel recusar'),
         description:
           err?.response?.data?.message ||
           err?.message ||
@@ -354,6 +461,12 @@ export default function AdminVacations() {
     setVacationTarget(employee)
     setVacationForm(buildVacationForm())
     setVacationError('')
+  }
+
+  const handleMedicalOpen = (employee) => {
+    setMedicalTarget(employee)
+    setMedicalForm(buildMedicalCertificateForm())
+    setMedicalError('')
   }
 
   const commitAbsence = useCallback(
@@ -471,6 +584,99 @@ export default function AdminVacations() {
       )
     } finally {
       setVacationSaving(false)
+    }
+  }
+
+  const handleMedicalSubmit = async (event) => {
+    event.preventDefault()
+    if (!medicalTarget?.id) return
+
+    if (medicalForm.coverageType === 'hours') {
+      if (!medicalForm.date || !medicalForm.startTime || !medicalForm.endTime) {
+        setMedicalError(
+          t(
+            'vacationsPage.medicalCertificates.errors.hoursRequired',
+            'Preencha data, hora inicial e hora final.',
+          ),
+        )
+        return
+      }
+      if (medicalForm.endTime <= medicalForm.startTime) {
+        setMedicalError(
+          t(
+            'vacationsPage.medicalCertificates.errors.invalidHours',
+            'A hora final deve ser maior que a hora inicial.',
+          ),
+        )
+        return
+      }
+    } else {
+      if (!medicalForm.startDate) {
+        setMedicalError(
+          t(
+            'vacationsPage.medicalCertificates.errors.startDateRequired',
+            'Informe a data inicial do atestado.',
+          ),
+        )
+        return
+      }
+      if (medicalForm.endDate && medicalForm.endDate < medicalForm.startDate) {
+        setMedicalError(
+          t(
+            'vacationsPage.medicalCertificates.errors.invalidRange',
+            'A data final nao pode ser anterior a inicial.',
+          ),
+        )
+        return
+      }
+    }
+
+    setMedicalSaving(true)
+    setMedicalError('')
+    try {
+      const payload =
+        medicalForm.coverageType === 'hours'
+          ? {
+              user_id: medicalTarget.id,
+              coverage_type: 'hours',
+              date: medicalForm.date,
+              start_time: medicalForm.startTime,
+              end_time: medicalForm.endTime,
+              comment: medicalForm.comment || undefined,
+              files: medicalForm.files,
+            }
+          : {
+              user_id: medicalTarget.id,
+              coverage_type: 'full_day',
+              start_date: medicalForm.startDate,
+              end_date: medicalForm.endDate || undefined,
+              comment: medicalForm.comment || undefined,
+              files: medicalForm.files,
+            }
+
+      const response = await createAdminMedicalCertificate(payload)
+      addAbsenceForUser(medicalTarget.id, response)
+      toast({
+        title: t('vacationsPage.medicalCertificates.adminSuccessTitle', 'Atestado registrado'),
+        description: t(
+          'vacationsPage.medicalCertificates.adminSuccessDescription',
+          'O atestado foi registrado diretamente para o colaborador.',
+        ),
+        variant: 'success',
+      })
+      setMedicalTarget(null)
+      setMedicalForm(buildMedicalCertificateForm())
+    } catch (err) {
+      setMedicalError(
+        err?.response?.data?.message ||
+          err?.message ||
+          t(
+            'vacationsPage.medicalCertificates.adminErrorDescription',
+            'Nao foi possivel registrar o atestado.',
+          ),
+      )
+    } finally {
+      setMedicalSaving(false)
     }
   }
 
@@ -638,6 +844,16 @@ export default function AdminVacations() {
                         size="sm"
                         variant="outline"
                         className="rounded-full px-4"
+                        onClick={() => handleMedicalOpen(employee)}
+                      >
+                        <FilePlus2 className="h-4 w-4" />
+                        {t('vacationsPage.medicalCertificates.adminAction', 'Registrar atestado')}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full px-4"
                         onClick={() => handleAbsenceOpen(employee)}
                       >
                         <PlusCircle className="h-4 w-4" />
@@ -703,16 +919,59 @@ export default function AdminVacations() {
                               </div>
                             ) : (
                               pendingList.map((request) => {
-                                const startLabel = formatDateLabel(request.startDate, i18n.language)
-                                const endLabel = formatDateLabel(request.endDate, i18n.language)
+                                const isMedicalRequest = request.requestType === 'medical-certificate'
+                                const recordStartLabel = formatDateLabel(
+                                  request.startDate || request.date,
+                                  i18n.language,
+                                )
+                                const recordEndLabel = formatDateLabel(
+                                  request.endDate || request.date,
+                                  i18n.language,
+                                )
+                                const startLabel = isMedicalRequest
+                                  ? request.coverageType === 'hours'
+                                    ? t(
+                                        'vacationsPage.medicalCertificates.types.partialDay',
+                                        'Atestado por horas',
+                                      )
+                                    : t(
+                                        'vacationsPage.medicalCertificates.types.fullDay',
+                                        'Atestado medico',
+                                      )
+                                  : recordStartLabel
+                                const endLabel = isMedicalRequest
+                                  ? request.coverageType === 'hours'
+                                    ? [
+                                        recordStartLabel,
+                                        request.startTime && request.endTime
+                                          ? `${request.startTime} - ${request.endTime}`
+                                          : '',
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' - ')
+                                    : recordStartLabel && recordEndLabel
+                                      ? recordStartLabel === recordEndLabel
+                                        ? recordStartLabel
+                                        : `${recordStartLabel} - ${recordEndLabel}`
+                                      : t(
+                                          'vacationsPage.absences.dateFallback',
+                                          'Data nao informada',
+                                        )
+                                  : recordEndLabel
                                 const days =
-                                  request.requestedDays ||
-                                  (request.startDate && request.endDate
-                                    ? differenceInCalendarDays(
-                                        parseISO(request.endDate),
-                                        parseISO(request.startDate),
-                                      ) + 1
-                                    : null)
+                                  isMedicalRequest
+                                    ? request.comment ||
+                                      t(
+                                        'vacationsPage.medicalCertificates.pendingHint',
+                                        'Aguardando revisao do gestor.',
+                                      )
+                                    : request.requestedDays ||
+                                      (request.startDate && request.endDate
+                                        ? differenceInCalendarDays(
+                                            parseISO(request.endDate),
+                                            parseISO(request.startDate),
+                                          ) + 1
+                                        : null)
                                 const isApproving = actionLoading[request.id] === 'approve'
                                 const isRejecting = actionLoading[request.id] === 'reject'
                                 return (
@@ -816,14 +1075,47 @@ export default function AdminVacations() {
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
                                       <p className="text-sm font-semibold">
-                                        {absence.type || t('vacationsPage.absences.typeFallback', 'Ausencia')}
+                                        {absence.source === 'medical-certificate'
+                                          ? absence.coverageType === 'hours'
+                                            ? t(
+                                                'vacationsPage.medicalCertificates.types.partialDay',
+                                                'Atestado por horas',
+                                              )
+                                            : t(
+                                                'vacationsPage.medicalCertificates.types.fullDay',
+                                                'Atestado medico',
+                                              )
+                                          : absence.type || t('vacationsPage.absences.typeFallback', 'Ausencia')}
                                       </p>
                                       <p className="mt-1 text-xs text-muted-foreground">
-                                        {absence.date
-                                          ? formatDateLabel(absence.date, i18n.language)
-                                          : t('vacationsPage.absences.dateFallback', 'Data não informada')}
+                                        {absence.source === 'medical-certificate' &&
+                                        absence.coverageType === 'hours'
+                                          ? [
+                                              absence.date
+                                                ? formatDateLabel(absence.date, i18n.language)
+                                                : t(
+                                                    'vacationsPage.absences.dateFallback',
+                                                    'Data nao informada',
+                                                  ),
+                                              absence.startTime && absence.endTime
+                                                ? `${absence.startTime} - ${absence.endTime}`
+                                                : '',
+                                            ]
+                                              .filter(Boolean)
+                                              .join(' - ')
+                                          : absence.date
+                                            ? absence.endDate && absence.endDate !== absence.date
+                                              ? `${formatDateLabel(absence.date, i18n.language)} - ${formatDateLabel(absence.endDate, i18n.language)}`
+                                              : formatDateLabel(absence.date, i18n.language)
+                                            : t(
+                                                'vacationsPage.absences.dateFallback',
+                                                'Data nao informada',
+                                              )}
                                       </p>
                                     </div>
+                                    {absence.source === 'medical-certificate'
+                                      ? renderStatusPill(absence.status || 'approved')
+                                      : null}
                                   </div>
                                   {absence.comment ? (
                                     <p className="mt-2 text-xs text-muted-foreground">
@@ -856,12 +1148,21 @@ export default function AdminVacations() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('vacationsPage.actions.approveTitle', 'Aprovar solicitacao')}</DialogTitle>
+            <DialogTitle>
+              {approvalTarget?.requestType === 'medical-certificate'
+                ? t('vacationsPage.medicalCertificates.approveTitle', 'Aprovar atestado')
+                : t('vacationsPage.actions.approveTitle', 'Aprovar solicitacao')}
+            </DialogTitle>
             <DialogDescription>
-              {t(
-                'vacationsPage.actions.approveDescription',
-                'A justificativa e opcional e sera registrada no historico.',
-              )}
+              {approvalTarget?.requestType === 'medical-certificate'
+                ? t(
+                    'vacationsPage.medicalCertificates.approveDescription',
+                    'Confirme a aprovacao do atestado pendente.',
+                  )
+                : t(
+                    'vacationsPage.actions.approveDescription',
+                    'A justificativa e opcional e sera registrada no historico.',
+                  )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -1054,6 +1355,188 @@ export default function AdminVacations() {
                 {vacationSaving
                   ? t('vacationsPage.actions.saving', 'Salvando')
                   : t('vacationsPage.actions.registerVacation', 'Registrar ferias')}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(medicalTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMedicalTarget(null)
+            setMedicalForm(buildMedicalCertificateForm())
+            setMedicalError('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('vacationsPage.medicalCertificates.adminTitle', 'Registrar atestado')}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                'vacationsPage.medicalCertificates.adminDescription',
+                'Registre diretamente um atestado aprovado para este colaborador.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4 pt-2" onSubmit={handleMedicalSubmit}>
+            <div className="rounded-2xl border border-border/70 bg-muted/70 px-4 py-3 text-sm">
+              <p className="font-semibold text-foreground">
+                {medicalTarget?.name || t('equipoPage.table.emptyName', 'Colaborador')}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {medicalTarget?.email || medicalTarget?.id}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-medical-coverage-type">
+                {t('vacationsPage.medicalCertificates.coverageTypeLabel', 'Cobertura')}
+              </Label>
+              <Select
+                id="admin-medical-coverage-type"
+                value={medicalForm.coverageType}
+                onChange={(event) =>
+                  setMedicalForm((prev) => ({
+                    ...buildMedicalCertificateForm(),
+                    coverageType: event.target.value,
+                    comment: prev.comment,
+                    files: prev.files,
+                  }))
+                }
+              >
+                <option value="full_day">
+                  {t('vacationsPage.medicalCertificates.coverageOptions.fullDay', 'Dia inteiro')}
+                </option>
+                <option value="hours">
+                  {t('vacationsPage.medicalCertificates.coverageOptions.hours', 'Por horas')}
+                </option>
+              </Select>
+            </div>
+            {medicalForm.coverageType === 'hours' ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="admin-medical-date">
+                    {t('vacationsPage.medicalCertificates.dateLabel', 'Data')}
+                  </Label>
+                  <Input
+                    id="admin-medical-date"
+                    type="date"
+                    value={medicalForm.date}
+                    onChange={(event) =>
+                      setMedicalForm((prev) => ({ ...prev, date: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-medical-start-time">
+                    {t('vacationsPage.medicalCertificates.startTimeLabel', 'Hora inicial')}
+                  </Label>
+                  <Input
+                    id="admin-medical-start-time"
+                    type="time"
+                    value={medicalForm.startTime}
+                    onChange={(event) =>
+                      setMedicalForm((prev) => ({ ...prev, startTime: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-medical-end-time">
+                    {t('vacationsPage.medicalCertificates.endTimeLabel', 'Hora final')}
+                  </Label>
+                  <Input
+                    id="admin-medical-end-time"
+                    type="time"
+                    value={medicalForm.endTime}
+                    onChange={(event) =>
+                      setMedicalForm((prev) => ({ ...prev, endTime: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-medical-start-date">
+                    {t('vacationsPage.medicalCertificates.startDateLabel', 'Data inicial')}
+                  </Label>
+                  <Input
+                    id="admin-medical-start-date"
+                    type="date"
+                    value={medicalForm.startDate}
+                    onChange={(event) =>
+                      setMedicalForm((prev) => ({ ...prev, startDate: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-medical-end-date">
+                    {t('vacationsPage.medicalCertificates.endDateLabel', 'Data final')}
+                  </Label>
+                  <Input
+                    id="admin-medical-end-date"
+                    type="date"
+                    value={medicalForm.endDate}
+                    onChange={(event) =>
+                      setMedicalForm((prev) => ({ ...prev, endDate: event.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="admin-medical-comment">
+                {t('vacationsPage.medicalCertificates.commentLabel', 'Observacoes')}
+              </Label>
+              <Textarea
+                id="admin-medical-comment"
+                value={medicalForm.comment}
+                onChange={(event) =>
+                  setMedicalForm((prev) => ({ ...prev, comment: event.target.value }))
+                }
+                placeholder={t(
+                  'vacationsPage.medicalCertificates.commentPlaceholder',
+                  'Descreva rapidamente o contexto, se necessario.',
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-medical-files">
+                {t('vacationsPage.medicalCertificates.filesLabel', 'Anexos')}
+              </Label>
+              <Input
+                id="admin-medical-files"
+                type="file"
+                multiple
+                onChange={(event) =>
+                  setMedicalForm((prev) => ({
+                    ...prev,
+                    files: Array.from(event.target.files || []),
+                  }))
+                }
+              />
+            </div>
+            {medicalError ? (
+              <p className="text-xs font-semibold text-rose-500">{medicalError}</p>
+            ) : null}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="ghost">
+                  {t('common.actions.cancel', 'Cancelar')}
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={medicalSaving} className="min-w-[180px]">
+                {medicalSaving
+                  ? t('vacationsPage.actions.saving', 'Salvando')
+                  : t('vacationsPage.medicalCertificates.adminAction', 'Registrar atestado')}
               </Button>
             </div>
           </form>
