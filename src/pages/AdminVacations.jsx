@@ -40,7 +40,7 @@ import {
   createAdminVacationEntry,
   rejectAdminVacation,
 } from '../services/adminVacationsService'
-import { createAbsence, hasEmployeePresenceOnDate } from '../services/absencesService'
+import { createAbsence } from '../services/absencesService'
 import {
   approveAdminMedicalCertificate,
   createAdminMedicalCertificate,
@@ -555,25 +555,7 @@ export default function AdminVacations() {
       return
     }
 
-    try {
-      const conflictDate =
-        absenceForm.coverageType === 'hours' ? absenceForm.date : absenceForm.startDate
-      const hasPresence = await hasEmployeePresenceOnDate({
-        userId: absenceTarget.id,
-        date: conflictDate,
-      })
-      if (hasPresence) {
-        setPresenceConflict({ employee: absenceTarget, form: { ...absenceForm } })
-        return
-      }
-      await commitAbsence(absenceTarget, absenceForm)
-    } catch (err) {
-      setAbsenceError(
-        err?.response?.data?.message ||
-          err?.message ||
-          t('vacationsPage.absences.presenceError', 'Nao foi possivel validar a presenca.'),
-      )
-    }
+    await commitAbsence(absenceTarget, absenceForm)
   }
 
   const handleVacationSubmit = async (event) => {
