@@ -66,15 +66,24 @@ const STATUS_LABELS = {
 }
 
 const ABSENCE_TYPES = [
-  { value: 'ATESTADO_MEDICO', label: 'Atestado medico' },
-  { value: 'AUSENCIA_SEM_JUSTIFICATIVA', label: 'Ausencia sem justificativa' },
-  { value: 'ASSUNTOS_PESSOAIS', label: 'Assuntos pessoais' },
-  { value: 'OUTROS', label: 'Outros' },
+  { value: 'excused_absence', label: 'Abono administrativo' },
+  { value: 'personal_reason', label: 'Motivo pessoal' },
+  { value: 'unjustified_absence', label: 'Ausencia sem justificativa' },
+  { value: 'other', label: 'Outros' },
 ]
 
+const ABSENCE_TYPE_LABELS = ABSENCE_TYPES.reduce((labels, option) => {
+  labels[option.value] = option.label
+  return labels
+}, {})
+
 const buildAbsenceForm = () => ({
-  type: '',
+  coverageType: 'full_day',
+  type: 'excused_absence',
+  startDate: format(new Date(), 'yyyy-MM-dd'),
   date: format(new Date(), 'yyyy-MM-dd'),
+  startTime: '',
+  endTime: '',
   comment: '',
 })
 
@@ -122,10 +131,7 @@ const normalizeAbsence = (absence = {}, index = 0) => ({
   endTime: absence.end_time ?? absence.endTime ?? '',
   coverageType: absence.coverage_type ?? absence.coverageType ?? '',
   status: absence.status ?? absence.state ?? '',
-  source:
-    absence.coverage_type || absence.coverageType || Array.isArray(absence.documents)
-      ? 'medical-certificate'
-      : 'absence',
+  source: Array.isArray(absence.documents) ? 'medical-certificate' : 'absence',
 })
 
 const normalizePendingMedicalCertificate = (certificate = {}, index = 0) => ({
@@ -475,13 +481,24 @@ export default function AdminVacations() {
       setAbsenceSaving(true)
       setAbsenceError('')
       try {
-        const payload = {
-          user_id: employee.id,
-          type: form.type,
-          date: form.date,
-          comment: form.comment || undefined,
-        }
-        // TODO: wire real absence creation once backend is available.
+        const payload =
+          form.coverageType === 'hours'
+            ? {
+                user_id: employee.id,
+                type: form.type || undefined,
+                coverage_type: 'hours',
+                date: form.date,
+                start_time: form.startTime,
+                end_time: form.endTime,
+                comment: form.comment || undefined,
+              }
+            : {
+                user_id: employee.id,
+                type: form.type || undefined,
+                coverage_type: 'full_day',
+                start_date: form.startDate,
+                comment: form.comment || undefined,
+              }
         const response = await createAbsence(payload)
         const normalized = normalizeAbsence({ ...payload, ...response })
         addAbsenceForUser(employee.id, normalized)
@@ -511,7 +528,27 @@ export default function AdminVacations() {
   const handleAbsenceSubmit = async (event) => {
     event.preventDefault()
     if (!absenceTarget?.id) return
-    if (!absenceForm.type || !absenceForm.date) {
+
+    if (absenceForm.coverageType === 'hours') {
+      if (!absenceForm.date || !absenceForm.startTime || !absenceForm.endTime) {
+        setAbsenceError(
+          t(
+            'vacationsPage.medicalCertificates.errors.hoursRequired',
+            'Preencha data, hora inicial e hora final.',
+          ),
+        )
+        return
+      }
+      if (absenceForm.endTime <= absenceForm.startTime) {
+        setAbsenceError(
+          t(
+            'vacationsPage.medicalCertificates.errors.invalidHours',
+            'A hora final deve ser maior que a hora inicial.',
+          ),
+        )
+        return
+      }
+    } else if (!absenceForm.startDate) {
       setAbsenceError(
         t('vacationsPage.absences.formError', 'Selecione o tipo e a data da ausencia.'),
       )
@@ -519,9 +556,11 @@ export default function AdminVacations() {
     }
 
     try {
+      const conflictDate =
+        absenceForm.coverageType === 'hours' ? absenceForm.date : absenceForm.startDate
       const hasPresence = await hasEmployeePresenceOnDate({
         userId: absenceTarget.id,
-        date: absenceForm.date,
+        date: conflictDate,
       })
       if (hasPresence) {
         setPresenceConflict({ employee: absenceTarget, form: { ...absenceForm } })
@@ -1085,11 +1124,12 @@ export default function AdminVacations() {
                                                 'vacationsPage.medicalCertificates.types.fullDay',
                                                 'Atestado medico',
                                               )
-                                          : absence.type || t('vacationsPage.absences.typeFallback', 'Ausencia')}
+                                          : ABSENCE_TYPE_LABELS[absence.type] ||
+                                            absence.type ||
+                                            t('vacationsPage.absences.typeFallback', 'Ausencia')}
                                       </p>
                                       <p className="mt-1 text-xs text-muted-foreground">
-                                        {absence.source === 'medical-certificate' &&
-                                        absence.coverageType === 'hours'
+                                        {absence.coverageType === 'hours'
                                           ? [
                                               absence.date
                                                 ? formatDateLabel(absence.date, i18n.language)
@@ -1565,6 +1605,38 @@ export default function AdminVacations() {
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4 pt-2" onSubmit={handleAbsenceSubmit}>
+            <div className="rounded-2xl border border-border/70 bg-muted/70 px-4 py-3 text-sm">
+              <p className="font-semibold text-foreground">
+                {absenceTarget?.name || t('equipoPage.table.emptyName', 'Colaborador')}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {absenceTarget?.email || absenceTarget?.id}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="absence-coverage-type">
+                {t('vacationsPage.medicalCertificates.coverageTypeLabel', 'Cobertura')}
+              </Label>
+              <Select
+                id="absence-coverage-type"
+                value={absenceForm.coverageType}
+                onChange={(event) =>
+                  setAbsenceForm((prev) => ({
+                    ...buildAbsenceForm(),
+                    coverageType: event.target.value,
+                    type: prev.type,
+                    comment: prev.comment,
+                  }))
+                }
+              >
+                <option value="full_day">
+                  {t('vacationsPage.medicalCertificates.coverageOptions.fullDay', 'Dia inteiro')}
+                </option>
+                <option value="hours">
+                  {t('vacationsPage.medicalCertificates.coverageOptions.hours', 'Por horas')}
+                </option>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="absence-type">{t('vacationsPage.absences.typeLabel', 'Tipo')}</Label>
               <Select
@@ -1573,9 +1645,7 @@ export default function AdminVacations() {
                 onChange={(event) =>
                   setAbsenceForm((prev) => ({ ...prev, type: event.target.value }))
                 }
-                required
               >
-                <option value="">{t('vacationsPage.absences.typePlaceholder', 'Selecione o tipo')}</option>
                 {ABSENCE_TYPES.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -1583,18 +1653,65 @@ export default function AdminVacations() {
                 ))}
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="absence-date">{t('vacationsPage.absences.dateLabel', 'Data')}</Label>
-              <Input
-                id="absence-date"
-                type="date"
-                value={absenceForm.date}
-                onChange={(event) =>
-                  setAbsenceForm((prev) => ({ ...prev, date: event.target.value }))
-                }
-                required
-              />
-            </div>
+            {absenceForm.coverageType === 'hours' ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="absence-date">{t('vacationsPage.absences.dateLabel', 'Data')}</Label>
+                  <Input
+                    id="absence-date"
+                    type="date"
+                    value={absenceForm.date}
+                    onChange={(event) =>
+                      setAbsenceForm((prev) => ({ ...prev, date: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="absence-start-time">
+                    {t('vacationsPage.medicalCertificates.startTimeLabel', 'Hora inicial')}
+                  </Label>
+                  <Input
+                    id="absence-start-time"
+                    type="time"
+                    value={absenceForm.startTime}
+                    onChange={(event) =>
+                      setAbsenceForm((prev) => ({ ...prev, startTime: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="absence-end-time">
+                    {t('vacationsPage.medicalCertificates.endTimeLabel', 'Hora final')}
+                  </Label>
+                  <Input
+                    id="absence-end-time"
+                    type="time"
+                    value={absenceForm.endTime}
+                    onChange={(event) =>
+                      setAbsenceForm((prev) => ({ ...prev, endTime: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="absence-start-date">
+                  {t('vacationsPage.medicalCertificates.startDateLabel', 'Data inicial')}
+                </Label>
+                <Input
+                  id="absence-start-date"
+                  type="date"
+                  value={absenceForm.startDate}
+                  onChange={(event) =>
+                    setAbsenceForm((prev) => ({ ...prev, startDate: event.target.value }))
+                  }
+                  required
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="absence-comment">
                 {t('vacationsPage.absences.commentLabel', 'Comentario')}
@@ -1651,8 +1768,13 @@ export default function AdminVacations() {
                   {t('vacationsPage.absences.alertCopy', 'Registro de presenca encontrado')}
                 </p>
                 <p className="mt-1 text-xs text-amber-700/80">
-                  {presenceConflict?.form?.date
-                    ? formatDateLabel(presenceConflict.form.date, i18n.language)
+                  {presenceConflict?.form
+                    ? formatDateLabel(
+                        presenceConflict.form.coverageType === 'hours'
+                          ? presenceConflict.form.date
+                          : presenceConflict.form.startDate,
+                        i18n.language,
+                      )
                     : ''}
                 </p>
               </div>
@@ -1680,4 +1802,3 @@ export default function AdminVacations() {
     </div>
   )
 }
-
