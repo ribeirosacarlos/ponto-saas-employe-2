@@ -147,6 +147,16 @@ const getBalanceTrend = (minutes?: number | null) => {
   }
 }
 
+type OvertimeDisplayData = {
+  hhmm: string | null
+  minutes: number | null
+}
+
+const getOvertimeDisplayData = (balance: any = {}): OvertimeDisplayData => ({
+  hhmm: balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null,
+  minutes: balance?.balanceMinutes ?? null,
+})
+
 const getFirstDefinedValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null)
 
 const getDailyMetricsCandidate = (entry: any = {}) =>
@@ -515,7 +525,8 @@ export default function CloseTimesheetPage() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | number | null>(null)
   const [locationSettings, setLocationSettings] = useState<any | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
-  const [overtimeData, setOvertimeData] = useState<Map<string, { hhmm: string | null; minutes: number | null }>>(new Map())
+  const [overtimeData, setOvertimeData] = useState<Map<string, OvertimeDisplayData>>(new Map())
+  const [periodOvertimeData, setPeriodOvertimeData] = useState<Map<string, OvertimeDisplayData>>(new Map())
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [employeeComboboxOpen, setEmployeeComboboxOpen] = useState(false)
   const [employeeComboboxOpenUpward, setEmployeeComboboxOpenUpward] = useState(false)
@@ -622,24 +633,31 @@ export default function CloseTimesheetPage() {
     setOvertimeLoading(true)
 
     const fetchAll = async () => {
-      const results = new Map<string, { hhmm: string | null; minutes: number | null }>()
+      const totalResults = new Map<string, OvertimeDisplayData>()
+      const periodResults = new Map<string, OvertimeDisplayData>()
       await Promise.all(
         appliedFilters.employeeIds.map(async (empId) => {
           try {
-            const balance = await getTeamOvertimeBalance(empId, {
+            const periodParams: any = {
+              from: appliedFilters.from,
+              to: appliedFilters.to,
               isAdmin,
-            })
-            results.set(String(empId), {
-              hhmm: balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null,
-              minutes: balance?.balanceMinutes ?? null,
-            })
+            }
+            const [totalBalance, periodBalance] = await Promise.all([
+              getTeamOvertimeBalance(empId, { isAdmin }),
+              getTeamOvertimeBalance(empId, periodParams),
+            ])
+            totalResults.set(String(empId), getOvertimeDisplayData(totalBalance))
+            periodResults.set(String(empId), getOvertimeDisplayData(periodBalance))
           } catch {
-            results.set(String(empId), { hhmm: null, minutes: null })
+            totalResults.set(String(empId), { hhmm: null, minutes: null })
+            periodResults.set(String(empId), { hhmm: null, minutes: null })
           }
         }),
       )
       if (!active) return
-      setOvertimeData(results)
+      setOvertimeData(totalResults)
+      setPeriodOvertimeData(periodResults)
       setOvertimeLoading(false)
     }
 
@@ -690,6 +708,23 @@ export default function CloseTimesheetPage() {
       }
     },
     [overtimeData],
+  )
+
+  const getPeriodOvertimeDisplay = useCallback(
+    (employeeId?: string | number | null) => {
+      const overtime = employeeId ? periodOvertimeData.get(String(employeeId)) : undefined
+      const minutes = overtime?.minutes ?? null
+      const trend = getBalanceTrend(minutes)
+
+      return {
+        minutes,
+        label: overtime?.hhmm ?? formatBalanceMinutes(minutes),
+        toneClass: getBalanceToneClass(minutes),
+        TrendIcon: trend.icon,
+        trendClassName: trend.className,
+      }
+    },
+    [periodOvertimeData],
   )
 
   const filteredEmployees = useMemo(() => {
@@ -1811,13 +1846,31 @@ export default function CloseTimesheetPage() {
               {hasSearched ? (
                 <div className="space-y-4 border-t border-border/70 pt-5">
                   {!hasAppliedMultipleEmployees ? (
-                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
                         <p className="text-[11px] leading-none text-muted-foreground">
                           {t('closeTimesheetPage.summary.overtime')}
                         </p>
                         {(() => {
                           const overtime = getOvertimeDisplay(appliedFilters.employeeIds[0])
+                          const TrendIcon = overtime.TrendIcon
+
+                          return (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <TrendIcon className={cn('h-3 w-3', overtime.trendClassName)} />
+                              <span className={cn('text-lg font-semibold leading-none', overtime.toneClass)}>
+                                {overtimeLoading ? '...' : overtime.label}
+                              </span>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-[11px] leading-none text-muted-foreground">
+                          {t('closeTimesheetPage.summary.periodOvertime')}
+                        </p>
+                        {(() => {
+                          const overtime = getPeriodOvertimeDisplay(appliedFilters.employeeIds[0])
                           const TrendIcon = overtime.TrendIcon
 
                           return (
