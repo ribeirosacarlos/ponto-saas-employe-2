@@ -3,7 +3,13 @@ import { api } from '../services/http/api'
 import { loginRequest, logoutRequest } from '../services/modules/auth'
 import { clearAuthCache, getCurrentUser } from '../services/authService'
 import { emitAccessClear } from '../lib/accessDenied'
-import { clearStoredAuthSession, persistAuthSession, readStoredToken, readStoredUser } from '../lib/authStorage'
+import {
+  clearStoredAuthSession,
+  persistAuthSession,
+  readStoredRoles,
+  readStoredToken,
+  readStoredUser,
+} from '../lib/authStorage'
 import i18n from '../i18n/i18n.js'
 
 const loadStoredAuth = () => {
@@ -14,7 +20,7 @@ const loadStoredAuth = () => {
   return {
     token: readStoredToken(),
     user: readStoredUser(),
-    roles: [],
+    roles: readStoredRoles(),
   }
 }
 
@@ -61,6 +67,7 @@ export const useAuthStore = create((set, get) => ({
   error: null,
   restoreSession: async () => {
     const { token, user } = loadStoredAuth()
+    const roles = readStoredRoles()
 
     if (!token) {
       delete api.defaults.headers.common.Authorization
@@ -69,26 +76,19 @@ export const useAuthStore = create((set, get) => ({
     }
 
     api.defaults.headers.common.Authorization = `Bearer ${token}`
-    set({ token, user, roles: [], error: null, isSessionReady: false })
+    set({ token, user, roles, error: null, isSessionReady: false })
 
     try {
       const profile = await getCurrentUser(true)
       const nextUser = profile?.user || user || null
-      const nextRoles = Array.isArray(profile?.roles) ? profile.roles : []
+      const nextRoles = Array.isArray(profile?.roles) && profile.roles.length ? profile.roles : roles
 
-      persistAuthSession({ token, user: nextUser })
+      persistAuthSession({ token, user: nextUser, roles: nextRoles })
       set({ token, user: nextUser, roles: nextRoles, error: null, isSessionReady: true })
       emitAccessClear()
       return profile
     } catch (error) {
-      const status = error?.response?.status
-
-      if (status === 401 || status === 403) {
-        resetAuthState(set)
-        return null
-      }
-
-      set({ roles: [], error: null, isSessionReady: true })
+      set({ token, user, roles, error: null, isSessionReady: true })
       return null
     }
   },
@@ -108,8 +108,8 @@ export const useAuthStore = create((set, get) => ({
       const nextUser = profile?.user || user || null
       const nextRoles = Array.isArray(profile?.roles) ? profile.roles : []
 
-      persistAuthSession({ token, user: nextUser })
-      set({ user: nextUser, token, roles: nextRoles, isSessionReady: true })
+      persistAuthSession({ token, user: nextUser, roles: nextRoles })
+      set({ user: nextUser, token, roles: nextRoles, error: null, isSessionReady: true })
       emitAccessClear()
       return {
         ...data,
@@ -147,7 +147,7 @@ export const useAuthStore = create((set, get) => ({
   },
   syncProfile: (user, roles = []) => {
     if (!user) return
-    persistAuthSession({ token: get().token, user: user || null })
-    set({ user, roles, isSessionReady: true })
+    persistAuthSession({ token: get().token, user: user || null, roles })
+    set({ user, roles, error: null, isSessionReady: true })
   },
 }))

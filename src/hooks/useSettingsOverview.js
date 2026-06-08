@@ -2,12 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../components/ui/use-toast'
 import { getSettingsOverview } from '../services/settings/getSettingsOverview'
-import { useAuthStore } from '../store/useAuth'
 
 export function useSettingsOverview() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const logout = useAuthStore((state) => state.logout)
 
   const [data, setData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -34,7 +32,6 @@ export function useSettingsOverview() {
           description: err?.response?.data?.message || t('toast.sessionExpired.description'),
           variant: 'error',
         })
-        await logout()
       } else if (status === 403) {
         const fallbackData = err?.response?.data?.data ?? err?.response?.data ?? null
         if (fallbackData) {
@@ -44,7 +41,7 @@ export function useSettingsOverview() {
     } finally {
       setIsLoading(false)
     }
-  }, [logout, t, toast])
+  }, [t, toast])
 
   useEffect(() => {
     load()

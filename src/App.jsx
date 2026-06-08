@@ -325,10 +325,8 @@ export default function App() {
       typeof window !== 'undefined' ? resolvePageFromPath(window.location.pathname) : 'timeClock'
 
     if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
-      setCurrentPage(pageFromPath)
-      setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
-      setIsHandlingPublicAuthRoute(true)
-      void logout()
+      setIsHandlingPublicAuthRoute(false)
+      navigateTo(getDefaultAuthenticatedPage(), true)
       return
     }
 
@@ -406,10 +404,8 @@ export default function App() {
         return
       }
       if (PUBLIC_AUTH_PAGES.has(pageFromPath)) {
-        setCurrentPage(pageFromPath)
-        setCurrentRouteParams(getRouteParams(pageFromPath, window.location.pathname))
-        setIsHandlingPublicAuthRoute(true)
-        void logout()
+        setIsHandlingPublicAuthRoute(false)
+        navigateTo(getDefaultAuthenticatedPage(), true)
         return
       }
 
@@ -527,10 +523,9 @@ export default function App() {
           description: error.response?.data?.message || t('toast.sessionExpired.description'),
           variant: 'error',
         })
-        await logout()
       }
     }
-  }, [clearAccessDenied, getDefaultAuthenticatedPage, logout, navigateTo, syncProfile, t, toast])
+  }, [clearAccessDenied, getDefaultAuthenticatedPage, navigateTo, syncProfile, t, toast])
 
   useEffect(() => {
     if (accessDeniedReason !== ACCESS_DENIED_REASONS.FORBIDDEN) return
