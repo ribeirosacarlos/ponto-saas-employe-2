@@ -45,6 +45,22 @@ import { downloadBlob } from '../utils/pdf/downloadBlob'
 
 const ADMIN_REQUIRES = { anyOf: ['admin', 'super_admin'] }
 const MANAGER_REQUIRES = { anyOf: ['area_manager', 'admin', 'super_admin'] }
+const MONTHLY_CLOSURES_QUERY_PARAM = 'closureId'
+const MONTHLY_CLOSURES_DEBUG_PREFIX = '[AdminMonthlyClosures]'
+const LEGACY_MONTHLY_CLOSURES_STORAGE_KEYS = [
+  'selectedClosure',
+  'selectedClosureId',
+  'monthlyClosure',
+  'timesheets',
+  'monthlyClosures:selectedClosure',
+  'monthlyClosures:selectedClosureId',
+  'adminMonthlyClosures:selectedClosure',
+  'adminMonthlyClosures:selectedClosureId',
+  'adminMonthlyClosures:monthlyClosure',
+  'adminMonthlyClosures:timesheets',
+  'adminMonthlyClosures:filters',
+  'adminMonthlyClosures:pagination',
+]
 
 const CLOSURE_STATUS_STYLES = {
   processing:
@@ -102,9 +118,52 @@ const buildPastMonths = () => {
   return result
 }
 
+const getUserCompanyScope = (user) =>
+  user?.company_id ||
+  user?.companyId ||
+  user?.company_uuid ||
+  user?.companyUuid ||
+  user?.company?.id ||
+  user?.company?.uuid ||
+  'no-company'
+
+const clearMonthlyClosureStorage = () => {
+  if (typeof window === 'undefined') return
+
+  const storages = [window.localStorage, window.sessionStorage]
+  storages.forEach((storage) => {
+    if (!storage) return
+    LEGACY_MONTHLY_CLOSURES_STORAGE_KEYS.forEach((key) => storage.removeItem(key))
+  })
+}
+
+const readClosureIdFromUrl = () => {
+  if (typeof window === 'undefined') return null
+
+  const params = new URLSearchParams(window.location.search)
+  return params.get(MONTHLY_CLOSURES_QUERY_PARAM)
+}
+
+const writeClosureIdToUrl = (closureId) => {
+  if (typeof window === 'undefined') return
+
+  const params = new URLSearchParams(window.location.search)
+  if (closureId) {
+    params.set(MONTHLY_CLOSURES_QUERY_PARAM, String(closureId))
+  } else {
+    params.delete(MONTHLY_CLOSURES_QUERY_PARAM)
+  }
+
+  const search = params.toString()
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash || ''}`
+  window.history.replaceState(window.history.state, '', nextUrl)
+}
+
 export default function AdminMonthlyClosures() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
+  const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const roles = useAuthStore((state) => state.roles)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const isAdmin = useMemo(() => canRenderCard(capabilities, ADMIN_REQUIRES), [capabilities])
@@ -136,6 +195,10 @@ export default function AdminMonthlyClosures() {
   const [expandedTimesheetId, setExpandedTimesheetId] = useState(null)
 
   const pastMonths = useMemo(() => buildPastMonths(), [])
+  const sessionScope = useMemo(
+    () => `${token || 'anon'}:${user?.id || user?.email || 'no-user'}:${getUserCompanyScope(user)}`,
+    [token, user],
+  )
 
   const formatMonthYear = useCallback(
     (month, year) =>
@@ -158,14 +221,47 @@ export default function AdminMonthlyClosures() {
     [i18n.language],
   )
 
+  const clearSelectedClosureState = useCallback((reason = 'reset-selection') => {
+    console.info(`${MONTHLY_CLOSURES_DEBUG_PREFIX} clearing selected closure state`, { reason })
+    setExpandedId(null)
+    setTimesheets({})
+    setTimesheetsLoading({})
+    setTimesheetsError({})
+    setExpandedTimesheetId(null)
+    setResolveTarget(null)
+    setResolveNote('')
+    setResolveError('')
+    setSigningId(null)
+    setPdfLoadingId(null)
+    writeClosureIdToUrl(null)
+  }, [])
+
+  const resetMonthlyClosureState = useCallback((reason = 'reset') => {
+    clearSelectedClosureState(reason)
+    setClosures([])
+    setError('')
+  }, [clearSelectedClosureState])
+
+  const getClosureFromList = useCallback(
+    (closureId, sourceClosures = closures) =>
+      sourceClosures.find((closure) => String(closure.id) === String(closureId)) || null,
+    [closures],
+  )
+
   const loadClosures = useCallback(async () => {
     setLoading(true)
     setError('')
+    setExpandedTimesheetId(null)
     setTimesheets({})
     setTimesheetsLoading({})
     setTimesheetsError({})
     try {
       const { items } = await listMonthlyClosures()
+      console.info(`${MONTHLY_CLOSURES_DEBUG_PREFIX} loaded closures`, {
+        ids: items.map((item) => item.id),
+        total: items.length,
+        sessionScope,
+      })
       setClosures(items)
     } catch (err) {
       setError(
@@ -176,33 +272,114 @@ export default function AdminMonthlyClosures() {
     } finally {
       setLoading(false)
     }
-  }, [t])
-
-  useEffect(() => {
-    loadClosures()
-  }, [loadClosures])
+  }, [sessionScope, t])
 
   const loadTimesheets = useCallback(
     async (closureId) => {
-      setTimesheetsLoading((prev) => ({ ...prev, [closureId]: true }))
-      setTimesheetsError((prev) => ({ ...prev, [closureId]: '' }))
+      const selectedClosure = getClosureFromList(closureId)
+
+      if (!selectedClosure) {
+        console.warn(`${MONTHLY_CLOSURES_DEBUG_PREFIX} blocked stale closureId before timesheets request`, {
+          closureId,
+          validClosureIds: closures.map((closure) => closure.id),
+          sessionScope,
+        })
+        clearSelectedClosureState('invalid-closure-before-timesheets-request')
+        return
+      }
+
+      const safeClosureId = selectedClosure.id
+      console.info(`${MONTHLY_CLOSURES_DEBUG_PREFIX} requesting timesheets for validated closure`, {
+        closureId: safeClosureId,
+        validClosureIds: closures.map((closure) => closure.id),
+        sessionScope,
+      })
+
+      setTimesheetsLoading((prev) => ({ ...prev, [safeClosureId]: true }))
+      setTimesheetsError((prev) => ({ ...prev, [safeClosureId]: '' }))
       try {
-        const { items } = await listClosureTimesheets(closureId)
-        setTimesheets((prev) => ({ ...prev, [closureId]: items }))
+        const { items } = await listClosureTimesheets(safeClosureId, {
+          skipAccessDeniedHandling: true,
+        })
+        setTimesheets((prev) => ({ ...prev, [safeClosureId]: items }))
       } catch (err) {
+        if (err?.response?.status === 403) {
+          console.warn(`${MONTHLY_CLOSURES_DEBUG_PREFIX} received 403 for timesheets, clearing stale selection`, {
+            closureId: safeClosureId,
+            validClosureIds: closures.map((closure) => closure.id),
+            sessionScope,
+          })
+          clearSelectedClosureState('timesheets-403-invalid-frontend-state')
+          return
+        }
+
         setTimesheetsError((prev) => ({
           ...prev,
-          [closureId]:
+          [safeClosureId]:
             err?.response?.data?.message ||
             err?.message ||
             t('adminMonthlyClosuresPage.states.errorTimesheets'),
         }))
       } finally {
-        setTimesheetsLoading((prev) => ({ ...prev, [closureId]: false }))
+        setTimesheetsLoading((prev) => ({ ...prev, [safeClosureId]: false }))
       }
     },
-    [t],
+    [clearSelectedClosureState, closures, getClosureFromList, sessionScope, t],
   )
+
+  useEffect(() => {
+    clearMonthlyClosureStorage()
+    resetMonthlyClosureState('session-scope-changed')
+    if (token && canManage) {
+      loadClosures()
+    }
+  }, [canManage, loadClosures, resetMonthlyClosureState, sessionScope, token])
+
+  useEffect(() => {
+    if (loading) return
+
+    if (!closures.length) {
+      if (expandedId !== null) {
+        resetMonthlyClosureState('closures-list-empty')
+      } else {
+        writeClosureIdToUrl(null)
+      }
+      return
+    }
+
+    const requestedClosureId = readClosureIdFromUrl()
+    if (requestedClosureId) {
+      const requestedClosure = getClosureFromList(requestedClosureId)
+      if (!requestedClosure) {
+        console.warn(`${MONTHLY_CLOSURES_DEBUG_PREFIX} rejected closureId from URL`, {
+          requestedClosureId,
+          validClosureIds: closures.map((closure) => closure.id),
+          sessionScope,
+        })
+        clearSelectedClosureState('invalid-closure-from-url')
+        return
+      }
+
+      if (String(expandedId) !== String(requestedClosure.id)) {
+        console.info(`${MONTHLY_CLOSURES_DEBUG_PREFIX} accepted closureId from URL`, {
+          requestedClosureId: requestedClosure.id,
+          validClosureIds: closures.map((closure) => closure.id),
+          sessionScope,
+        })
+        setExpandedId(requestedClosure.id)
+      }
+      return
+    }
+
+    if (expandedId !== null && !getClosureFromList(expandedId)) {
+      console.warn(`${MONTHLY_CLOSURES_DEBUG_PREFIX} clearing stale selected closure`, {
+        expandedId,
+        validClosureIds: closures.map((closure) => closure.id),
+        sessionScope,
+      })
+      clearSelectedClosureState('selected-closure-not-in-current-list')
+    }
+  }, [clearSelectedClosureState, closures, expandedId, getClosureFromList, loading, resetMonthlyClosureState, sessionScope])
 
   useEffect(() => {
     if (
@@ -215,15 +392,29 @@ export default function AdminMonthlyClosures() {
     }
   }, [expandedId, timesheets, timesheetsLoading, timesheetsError, loadTimesheets])
 
+  useEffect(() => {
+    writeClosureIdToUrl(expandedId)
+  }, [expandedId])
+
   const handleToggleExpand = (closureId) => {
-    if (expandedId === closureId) {
-      setExpandedId(null)
+    const selectedClosure = getClosureFromList(closureId)
+
+    if (!selectedClosure) {
+      console.warn(`${MONTHLY_CLOSURES_DEBUG_PREFIX} ignored expand for unknown closure`, {
+        closureId,
+        validClosureIds: closures.map((closure) => closure.id),
+        sessionScope,
+      })
       return
     }
-    setExpandedId(closureId)
-    if (!timesheets[closureId]) {
-      loadTimesheets(closureId)
+
+    if (String(expandedId) === String(selectedClosure.id)) {
+      setExpandedId(null)
+      setExpandedTimesheetId(null)
+      return
     }
+    setExpandedId(selectedClosure.id)
+    setExpandedTimesheetId(null)
   }
 
   const handleCloseMonth = async () => {

@@ -31,9 +31,13 @@ export async function getMonthlyClosure(closureId) {
   return data?.data ?? data
 }
 
-export async function listClosureTimesheets(closureId, { page = 1, perPage = 100 } = {}) {
+export async function listClosureTimesheets(
+  closureId,
+  { page = 1, perPage = 100, skipAccessDeniedHandling = false } = {},
+) {
   const { data } = await api.get(`/v1/admin/monthly-closures/${closureId}/timesheets`, {
     params: { page, per_page: perPage },
+    skipAccessDeniedHandling,
   })
   return normalizeListResponse(data, page)
 }
