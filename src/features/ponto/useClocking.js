@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui/use-toast'
 import { clockRequest, endBreak, listEntries, startBreak } from '../../services/modules/employee'
-import { useAuthStore } from '../../store/useAuth'
 import { useDateTime } from '../../hooks/useDateTime'
 
 const WORK_TYPES = ['in', 'out']
@@ -10,7 +9,6 @@ const BREAK_START = 'break_start'
 const BREAK_END = 'break_end'
 
 export function useClocking() {
-  const logout = useAuthStore((state) => state.logout)
   const { toast } = useToast()
   const { t } = useTranslation()
   const { formatTime, isSameDay } = useDateTime()
@@ -39,7 +37,6 @@ export function useClocking() {
           description: error.response?.data?.message || t('toast.sessionExpired.description'),
           variant: 'error',
         })
-        await logout()
       } else if (error.response?.status === 403) {
       } else {
         toast({
@@ -51,7 +48,7 @@ export function useClocking() {
     } finally {
       setLoadingEntries(false)
     }
-  }, [logout, toast, t])
+  }, [toast, t])
 
   const registerClock = useCallback(
     async (type, coords) => {
@@ -113,7 +110,6 @@ export function useClocking() {
             description: error.response?.data?.message || t('toast.sessionExpired.description'),
             variant: 'error',
           })
-          await logout()
         } else if (error.response?.status === 403) {
           toast({
             title: t('toast.clockError.title'),
@@ -132,7 +128,7 @@ export function useClocking() {
         setClocking('')
       }
     },
-    [formatTime, logout, refreshEntries, toast, t],
+    [formatTime, refreshEntries, toast, t],
   )
 
   const registerBreak = useCallback(
@@ -161,7 +157,6 @@ export function useClocking() {
             description: error.response?.data?.message || t('toast.sessionExpired.description'),
             variant: 'error',
           })
-          await logout()
         } else if (error.response?.status === 403) {
           toast({
             title: t('timeClock.breakError') || t('toast.clockError.title'),
@@ -179,7 +174,7 @@ export function useClocking() {
         setBreakLoading(false)
       }
     },
-    [formatTime, logout, refreshEntries, toast, t],
+    [formatTime, refreshEntries, toast, t],
   )
 
   const todaysEntries = useMemo(

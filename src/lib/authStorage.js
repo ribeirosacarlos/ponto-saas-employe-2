@@ -1,18 +1,23 @@
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
-const LEGACY_KEYS = [TOKEN_KEY, USER_KEY, 'auth_roles']
+const ROLES_KEY = 'auth_roles'
+const LEGACY_KEYS = [TOKEN_KEY, USER_KEY, ROLES_KEY]
 
 const isBrowser = () => typeof window !== 'undefined'
 
-const getSessionStorage = () => (isBrowser() ? window.sessionStorage : null)
-
 const getLocalStorage = () => (isBrowser() ? window.localStorage : null)
 
-const clearLegacyAuthStorage = () => {
-  const local = getLocalStorage()
-  if (!local) return
+const getSessionStorage = () => (isBrowser() ? window.sessionStorage : null)
 
-  LEGACY_KEYS.forEach((key) => local.removeItem(key))
+const getAuthStorages = () => {
+  if (!isBrowser()) return []
+  return [getSessionStorage(), getLocalStorage()].filter(Boolean)
+}
+
+const clearLegacyAuthStorage = () => {
+  getAuthStorages().forEach((storage) => {
+    LEGACY_KEYS.forEach((key) => storage.removeItem(key))
+  })
 }
 
 const parseStoredUser = (value) => {
@@ -26,45 +31,75 @@ const parseStoredUser = (value) => {
   }
 }
 
+const parseStoredRoles = (value) => {
+  if (!value) return []
+
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    console.warn('[authStorage] Failed to parse stored roles payload', error)
+    return []
+  }
+}
+
+const readFromStorages = (key) => {
+  const storages = getAuthStorages()
+
+  for (const storage of storages) {
+    const value = storage.getItem(key)
+    if (value) return value
+  }
+
+  return null
+}
+
 export function readStoredToken() {
-  const storage = getSessionStorage()
-  return storage?.getItem(TOKEN_KEY) || null
+  return readFromStorages(TOKEN_KEY)
 }
 
 export function readStoredUser() {
-  const storage = getSessionStorage()
-  return parseStoredUser(storage?.getItem(USER_KEY) || null)
+  return parseStoredUser(readFromStorages(USER_KEY))
+}
+
+export function readStoredRoles() {
+  return parseStoredRoles(readFromStorages(ROLES_KEY))
 }
 
 export function hasStoredToken() {
   return Boolean(readStoredToken())
 }
 
-export function persistAuthSession({ token, user }) {
-  const storage = getSessionStorage()
-  if (!storage) return
-
+export function persistAuthSession({ token, user, roles = [] }) {
   clearLegacyAuthStorage()
 
-  if (token) {
-    storage.setItem(TOKEN_KEY, token)
-  } else {
-    storage.removeItem(TOKEN_KEY)
-  }
+  getAuthStorages().forEach((storage) => {
+    if (token) {
+      storage.setItem(TOKEN_KEY, token)
+    } else {
+      storage.removeItem(TOKEN_KEY)
+    }
 
-  if (user) {
-    storage.setItem(USER_KEY, JSON.stringify(user))
-  } else {
-    storage.removeItem(USER_KEY)
-  }
+    if (user) {
+      storage.setItem(USER_KEY, JSON.stringify(user))
+    } else {
+      storage.removeItem(USER_KEY)
+    }
+
+    if (Array.isArray(roles) && roles.length > 0) {
+      storage.setItem(ROLES_KEY, JSON.stringify(roles))
+    } else {
+      storage.removeItem(ROLES_KEY)
+    }
+  })
 }
 
 export function clearStoredAuthSession() {
-  const storage = getSessionStorage()
-  if (storage) {
+  getAuthStorages().forEach((storage) => {
     storage.removeItem(TOKEN_KEY)
     storage.removeItem(USER_KEY)
-  }
+    storage.removeItem(ROLES_KEY)
+  })
 
   clearLegacyAuthStorage()
 }

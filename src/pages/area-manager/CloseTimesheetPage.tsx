@@ -490,7 +490,6 @@ export default function CloseTimesheetPage() {
   const { toast } = useToast()
   const authUser = useAuthStore((state) => state.user)
   const roles = useAuthStore((state) => state.roles)
-  const logout = useAuthStore((state) => state.logout)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const canDeleteTimeEntries = useMemo(
     () => canRenderCard(capabilities, DELETE_TIME_ENTRY_REQUIRES),
@@ -1119,7 +1118,6 @@ export default function CloseTimesheetPage() {
           variant: 'error',
         })
         setDeleteTarget(null)
-        await logout()
         return
       }
 
@@ -1147,7 +1145,7 @@ export default function CloseTimesheetPage() {
     } finally {
       setDeletingEntryId(null)
     }
-  }, [deleteTarget, logout, t, toast])
+  }, [deleteTarget, t, toast])
 
   const buildFilename = (suffix = 'folha-ponto') => {
     const name =
