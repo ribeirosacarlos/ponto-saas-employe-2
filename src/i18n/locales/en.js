@@ -1,4 +1,4 @@
-﻿// src/i18n/locales/en.js
+// src/i18n/locales/en.js
 const en = {
   translation: {
     common: {
@@ -2262,6 +2262,7 @@ const en = {
         value: 'Value',
         entries: 'Total punches',
         overtime: 'Overtime',
+        periodOvertime: 'Overtime in period',
         days: 'Days with records',
         hours: 'Total hours',
         hoursOnly: '{{count}} hours',
@@ -2504,5 +2505,4 @@ const en = {
 }
 
 export default en
-
 

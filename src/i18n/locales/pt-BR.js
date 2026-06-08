@@ -1,4 +1,4 @@
-﻿// src/i18n/locales/pt-BR.js
+// src/i18n/locales/pt-BR.js
 const ptBR = {
   translation: {
     common: {
@@ -2418,6 +2418,7 @@ const ptBR = {
         value: 'Valor',
         entries: 'Total de batidas',
         overtime: 'Horas extras',
+        periodOvertime: 'Horas extras no período',
         days: 'Dias com registros',
         hours: 'Horas totais',
         hoursOnly: '{{count}} horas',
@@ -2665,7 +2666,6 @@ const ptBR = {
 }
 
 export default ptBR
-
 
 
 
