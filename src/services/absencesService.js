@@ -1,13 +1,12 @@
 import { api } from './http/api'
 
 export const ABSENCE_ENDPOINTS = {
-  // TODO: wire real absence endpoints from the backend.
   employee: {
     list: null,
     today: null,
   },
   admin: {
-    create: null,
+    create: '/v1/admin/absences',
     list: null,
     update: null,
     remove: null,
@@ -84,15 +83,6 @@ export async function getAbsenceToday() {
 }
 
 export async function createAbsence(payload = {}) {
-  if (!ABSENCE_ENDPOINTS.admin.create) {
-    warnOnce('absence-create', '[absencesService] Missing admin absence create endpoint.')
-    return {
-      id: `absence-mock-${Date.now()}`,
-      ...payload,
-      mocked: true,
-    }
-  }
-
   const { data } = await api.post(ABSENCE_ENDPOINTS.admin.create, payload)
   return data?.data ?? data
 }
