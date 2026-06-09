@@ -115,6 +115,24 @@ const buildDaysFromEntryList = (entries = []) => {
   }))
 }
 
+const normalizeEntriesMeta = (metaSource = {}, payload = {}, { page, perPage } = {}) => ({
+  currentPage:
+    metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
+  perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
+  total:
+    metaSource.total ??
+    payload?.total ??
+    metaSource.total_entries ??
+    payload?.total_entries,
+  totalEntries:
+    metaSource.total_entries ??
+    payload?.total_entries ??
+    metaSource.total ??
+    payload?.total,
+  totalDays: metaSource.total_days ?? payload?.total_days,
+  lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
+})
+
 export const normalizeTimesheetSummary = (source = {}) => {
   const payload =
     source?.summary && typeof source.summary === 'object' && !Array.isArray(source.summary)
@@ -236,20 +254,16 @@ export const normalizeEntriesResponse = (data, { page, perPage }) => {
       : groupedDays.length === dataItems.length && groupedDays.length
         ? groupedDays
         : buildDaysFromEntryList(entries)
+  const groupedByDay = groupedDays.length === dataItems.length && groupedDays.length > 0
 
   const metaSource = data?.meta || payload?.meta || payload || {}
-  const meta = {
-    currentPage:
-      metaSource.current_page ?? metaSource.currentPage ?? payload?.current_page ?? metaSource.page ?? page,
-    perPage: metaSource.per_page ?? metaSource.perPage ?? payload?.per_page ?? perPage,
-    total: metaSource.total ?? payload?.total,
-    lastPage: metaSource.last_page ?? metaSource.lastPage ?? payload?.last_page,
-  }
+  const meta = normalizeEntriesMeta(metaSource, payload, { page, perPage })
 
   return {
     data: entries,
     days: daysSource.map((day, index) => normalizeTimesheetDay(day, index)),
     meta,
+    groupedByDay,
   }
 }
 

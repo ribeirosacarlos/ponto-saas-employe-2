@@ -1,5 +1,5 @@
 import { api } from './http/api'
-import { normalizeEntriesResponse, normalizeOvertimePayload } from '../lib/timesheet'
+import { normalizeEntriesResponse, normalizeOvertimePayload, normalizeTimesheetSummary } from '../lib/timesheet'
 
 const normalizeProposedType = (value) => {
   if (value === undefined || value === null) return null
@@ -65,12 +65,14 @@ const normalizeTeamEntry = (entry = {}, index = 0) => ({
   source: entry.source ?? entry.origin ?? entry.channel ?? '',
   workDate: entry.work_date ?? entry.workDate ?? null,
   daySummary:
-    entry.day_summary ??
-    entry.daySummary ??
-    entry.summary ??
-    entry.daily_summary ??
-    entry.dailySummary ??
-    null,
+    normalizeTimesheetSummary(
+      entry.day_summary ??
+        entry.daySummary ??
+        entry.summary ??
+        entry.daily_summary ??
+        entry.dailySummary ??
+        null,
+    ),
   user: entry.user ?? entry.employee ?? null,
 })
 
@@ -139,6 +141,7 @@ export async function listTeamEntries({
     data: parsed.data.map((entry, index) => normalizeTeamEntry(entry, index)),
     days: parsed.days,
     meta: parsed.meta,
+    groupedByDay: parsed.groupedByDay,
   }
 }
 
