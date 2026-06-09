@@ -91,6 +91,8 @@ function EmployeeActionsMenu({
   resendInviteLoading = false,
   onEdit,
   onAssignShift,
+  onOpenVacations,
+  onOpenAdjustments,
   onResendFirstAccessEmail,
   onDeactivate,
 }) {
@@ -162,6 +164,22 @@ function EmployeeActionsMenu({
           >
             <CalendarCheck className="h-4 w-4 text-primary" />
             {t('equipoPage.actions.assignShift')}
+          </button>
+          <button
+            type="button"
+            className={actionMenuItemClass}
+            onClick={() => runAction(onOpenVacations)}
+          >
+            <Users className="h-4 w-4 text-primary" />
+            {t('equipoPage.actions.openVacations', 'Abrir ferias')}
+          </button>
+          <button
+            type="button"
+            className={actionMenuItemClass}
+            onClick={() => runAction(onOpenAdjustments)}
+          >
+            <RefreshCcw className="h-4 w-4 text-primary" />
+            {t('equipoPage.actions.openAdjustments', 'Abrir ajustes de ponto')}
           </button>
           {showResendFirstAccessEmail ? (
             <button
@@ -624,8 +642,6 @@ export default function Equipo() {
     shifts,
     shiftsLoading,
     mutationLoading,
-    totalPages,
-    canGoNext,
     refreshEmployees,
     ensureShifts,
     createEmployeeEntry,
@@ -691,6 +707,34 @@ export default function Equipo() {
       year: 'numeric',
     })
   }
+
+  const navigateWithSearch = useCallback((pathname, searchParams = {}) => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams()
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return
+      params.set(key, String(value))
+    })
+    const search = params.toString()
+    window.history.pushState({}, '', search ? `${pathname}?${search}` : pathname)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, [])
+
+  const handleOpenEmployeeVacations = useCallback(
+    (employee) => {
+      if (!employee?.id) return
+      navigateWithSearch('/admin/vacations', { userId: employee.id })
+    },
+    [navigateWithSearch],
+  )
+
+  const handleOpenEmployeeAdjustments = useCallback(
+    (employee) => {
+      if (!employee?.id) return
+      navigateWithSearch('/admin/adjustments', { userId: employee.id, status: 'pending' })
+    },
+    [navigateWithSearch],
+  )
 
   const selectedEditShift = useMemo(
     () => shifts.find((shift) => String(shift.id) === String(editForm.shift_id)),
@@ -1194,6 +1238,8 @@ export default function Equipo() {
                             resendInviteLoading={mutationLoading.resendInvite}
                             onEdit={() => handleEditOpen(employee)}
                             onAssignShift={() => handleAssignOpen(employee)}
+                            onOpenVacations={() => handleOpenEmployeeVacations(employee)}
+                            onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
                             onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
                             onDeactivate={() => setDeleteTarget(employee)}
                           />
@@ -1282,6 +1328,8 @@ export default function Equipo() {
                                   resendInviteLoading={mutationLoading.resendInvite}
                                   onEdit={() => handleEditOpen(employee)}
                                   onAssignShift={() => handleAssignOpen(employee)}
+                                  onOpenVacations={() => handleOpenEmployeeVacations(employee)}
+                                  onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
                                   onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
                                   onDeactivate={() => setDeleteTarget(employee)}
                                 />
@@ -1297,34 +1345,11 @@ export default function Equipo() {
             ) : null}
 
             {!loading && !error && filteredEmployees.length > 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
-                <span>
-                  {totalPages
-                    ? t('equipoPage.pagination.pageOf', { page, total: totalPages })
-                    : t('equipoPage.pagination.page', { page })}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full px-3 text-xs"
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                    disabled={page <= 1 || loading}
-                  >
-                    {t('equipoPage.pagination.previous')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full px-3 text-xs"
-                    onClick={() => setPage((prev) => prev + 1)}
-                    disabled={!canGoNext || loading}
-                  >
-                    {t('equipoPage.pagination.next')}
-                  </Button>
-                </div>
+              <div className="pt-2 text-xs text-muted-foreground">
+                {t(
+                  'equipoPage.pagination.allLoaded',
+                  'Busca aplicada em toda a lista de colaboradores.',
+                )}
               </div>
             ) : null}
           </div>

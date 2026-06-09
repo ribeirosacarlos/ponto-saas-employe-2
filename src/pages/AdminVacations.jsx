@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
@@ -10,6 +10,7 @@ import {
   FilePlus2,
   Plane,
   PlusCircle,
+  Search,
   UserCheck,
   X,
 } from 'lucide-react'
@@ -72,11 +73,6 @@ const ABSENCE_TYPES = [
   { value: 'other', label: 'Outros' },
 ]
 
-const ABSENCE_TYPE_LABELS = ABSENCE_TYPES.reduce((labels, option) => {
-  labels[option.value] = option.label
-  return labels
-}, {})
-
 const buildAbsenceForm = () => ({
   coverageType: 'full_day',
   type: 'excused_absence',
@@ -103,6 +99,18 @@ const buildMedicalCertificateForm = () => ({
   comment: '',
   files: [],
 })
+
+const readAdminVacationsFiltersFromSearch = () => {
+  if (typeof window === 'undefined') {
+    return { userId: '', query: '' }
+  }
+
+  const params = new URLSearchParams(window.location.search)
+  return {
+    userId: params.get('userId') || '',
+    query: params.get('q') || '',
+  }
+}
 
 const formatDateLabel = (value, locale) => {
   if (!value) return ''
@@ -255,6 +263,7 @@ export default function AdminVacations() {
   const [medicalSaving, setMedicalSaving] = useState(false)
 
   const [openCards, setOpenCards] = useState({})
+  const [listFilters, setListFilters] = useState(readAdminVacationsFiltersFromSearch)
 
   const pendingByUser = useMemo(() => {
     const map = {}
@@ -321,6 +330,42 @@ export default function AdminVacations() {
     )
   }, [employees, pendingMedicalRequests, pendingRequests, i18n.language])
 
+  const employeeFilterOptions = useMemo(
+    () => [
+      { value: '', label: 'Todos os colaboradores' },
+      ...employeesToRender.map((employee) => ({
+        value: String(employee.id),
+        label: employee.name || employee.email || String(employee.id),
+      })),
+    ],
+    [employeesToRender],
+  )
+
+  const visibleEmployees = useMemo(() => {
+    const normalizedQuery = listFilters.query.trim().toLowerCase()
+    return employeesToRender.filter((employee) => {
+      if (listFilters.userId && String(employee.id) !== String(listFilters.userId)) {
+        return false
+      }
+
+      if (!normalizedQuery) return true
+
+      const pendingCount = (pendingByUser[employee.id] || []).length
+      const searchBase = [
+        employee.name,
+        employee.email,
+        employee.area_name,
+        employee.areaName,
+        pendingCount ? `${pendingCount} pendentes` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return searchBase.includes(normalizedQuery)
+    })
+  }, [employeesToRender, listFilters.query, listFilters.userId, pendingByUser])
+
   const renderStatusPill = (status) => {
     const normalized = (status || '').toLowerCase()
     const label = STATUS_LABELS[normalized] || status || t('vacationsPage.status.unknown', 'Desconhecido')
@@ -336,6 +381,27 @@ export default function AdminVacations() {
       </span>
     )
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+
+    if (listFilters.userId) {
+      params.set('userId', listFilters.userId)
+    } else {
+      params.delete('userId')
+    }
+
+    if (listFilters.query) {
+      params.set('q', listFilters.query)
+    } else {
+      params.delete('q')
+    }
+
+    const nextSearch = params.toString()
+    const nextUrl = nextSearch ? `${window.location.pathname}?${nextSearch}` : window.location.pathname
+    window.history.replaceState({}, '', nextUrl)
+  }, [listFilters])
 
   const handleApprove = async () => {
     if (!approvalTarget?.id) return
@@ -768,6 +834,46 @@ export default function AdminVacations() {
           </section>
         ) : null}
 
+        {!employeesLoading && employeesToRender.length > 0 ? (
+          <section className="rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-44px_rgba(62,82,152,0.35)] sm:p-6">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Buscar colaborador
+                </span>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={listFilters.query}
+                    onChange={(event) =>
+                      setListFilters((prev) => ({ ...prev, query: event.target.value }))
+                    }
+                    placeholder="Buscar por nome ou email"
+                    className="pl-9"
+                  />
+                </div>
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Pessoa
+                </span>
+                <Select
+                  value={listFilters.userId}
+                  onChange={(event) =>
+                    setListFilters((prev) => ({ ...prev, userId: event.target.value }))
+                  }
+                >
+                  {employeeFilterOptions.map((option) => (
+                    <option key={option.value || 'all'} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+          </section>
+        ) : null}
+
         {!employeesLoading && employeesToRender.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-border/70 bg-card/90 px-5 py-6 text-sm text-muted-foreground shadow-[0_18px_50px_-40px_rgba(62,82,152,0.35)]">
             <p className="font-semibold text-foreground">
@@ -782,15 +888,22 @@ export default function AdminVacations() {
           </section>
         ) : null}
 
-        {!employeesLoading && employeesToRender.length > 0 ? (
+        {!employeesLoading && employeesToRender.length > 0 && visibleEmployees.length === 0 ? (
+          <section className="rounded-2xl border border-dashed border-border/70 bg-card/90 px-5 py-6 text-sm text-muted-foreground shadow-[0_18px_50px_-40px_rgba(62,82,152,0.35)]">
+            <p className="font-semibold text-foreground">Nenhum resultado para os filtros atuais</p>
+            <p className="mt-1">Ajuste a busca ou selecione outro colaborador.</p>
+          </section>
+        ) : null}
+
+        {!employeesLoading && visibleEmployees.length > 0 ? (
           <section className="space-y-6">
-            {employeesToRender.map((employee) => {
+            {visibleEmployees.map((employee) => {
               const pendingList = pendingByUser[employee.id] || []
               const balanceState = balancesByUserId[employee.id]
               const balance = balanceState?.data || null
               const vacations = vacationsByUserId[employee.id] || []
               const vacationMeta = getVacationMeta(vacations)
-              const absences = (absencesByUserId[employee.id] || [])
+              const medicalCertificates = (absencesByUserId[employee.id] || [])
                 .map(normalizeAbsence)
                 .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
               const isOpen = openCards[employee.id] ?? false
@@ -1065,88 +1178,101 @@ export default function AdminVacations() {
                               </span>
                               <div>
                                 <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                                  {t('vacationsPage.absences.tag', 'Ausencias')}
+                                  Historico
                                 </p>
                                 <h3 className="text-sm font-semibold">
-                                  {t('vacationsPage.absences.title', 'Ultimos 3 meses')}
+                                  Ferias registradas
                                 </h3>
                               </div>
                             </div>
                           </div>
 
                           <div className="mt-4 space-y-3">
-                            {absences.length === 0 ? (
+                            {vacations.length === 0 ? (
                               <div className="rounded-2xl border border-dashed border-border/70 bg-card/90 px-4 py-5 text-sm text-muted-foreground">
                                 <p className="font-semibold text-foreground">
-                                  {t('vacationsPage.absences.emptyTitle', 'Nenhuma ausencia registrada')}
+                                  Nenhuma feria registrada
                                 </p>
                                 <p className="mt-1">
-                                  {t(
-                                    'vacationsPage.absences.emptyDescription',
-                                    'Use o botao de registro para adicionar uma ausencia.',
-                                  )}
+                                  As ferias criadas ou solicitadas para este colaborador aparecerao aqui.
                                 </p>
                               </div>
                             ) : (
-                              absences.map((absence) => (
+                              vacations.map((vacation) => (
                                 <div
-                                  key={absence.id}
+                                  key={vacation.id}
                                   className="rounded-2xl border border-border/70 bg-card/90 px-4 py-4 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.2)]"
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
                                       <p className="text-sm font-semibold">
-                                        {absence.source === 'medical-certificate'
-                                          ? absence.coverageType === 'hours'
-                                            ? t(
-                                                'vacationsPage.medicalCertificates.types.partialDay',
-                                                'Atestado por horas',
-                                              )
-                                            : t(
-                                                'vacationsPage.medicalCertificates.types.fullDay',
-                                                'Atestado medico',
-                                              )
-                                          : ABSENCE_TYPE_LABELS[absence.type] ||
-                                            absence.type ||
-                                            t('vacationsPage.absences.typeFallback', 'Ausencia')}
+                                        {vacation.startDate && vacation.endDate
+                                          ? `${formatDateLabel(vacation.startDate, i18n.language)} - ${formatDateLabel(vacation.endDate, i18n.language)}`
+                                          : t('vacationsPage.history.periodFallback', 'Periodo nao informado')}
                                       </p>
                                       <p className="mt-1 text-xs text-muted-foreground">
-                                        {absence.coverageType === 'hours'
-                                          ? [
-                                              absence.date
-                                                ? formatDateLabel(absence.date, i18n.language)
-                                                : t(
-                                                    'vacationsPage.absences.dateFallback',
-                                                    'Data nao informada',
-                                                  ),
-                                              absence.startTime && absence.endTime
-                                                ? `${absence.startTime} - ${absence.endTime}`
-                                                : '',
-                                            ]
-                                              .filter(Boolean)
-                                              .join(' - ')
-                                          : absence.date
-                                            ? absence.endDate && absence.endDate !== absence.date
-                                              ? `${formatDateLabel(absence.date, i18n.language)} - ${formatDateLabel(absence.endDate, i18n.language)}`
-                                              : formatDateLabel(absence.date, i18n.language)
-                                            : t(
-                                                'vacationsPage.absences.dateFallback',
-                                                'Data nao informada',
-                                              )}
+                                        {vacation.requestedDays
+                                          ? t('vacationsPage.history.days', '{{count}} dias', {
+                                              count: vacation.requestedDays,
+                                            })
+                                          : t('vacationsPage.history.daysEmpty', 'Dias nao informados')}
                                       </p>
                                     </div>
-                                    {absence.source === 'medical-certificate'
-                                      ? renderStatusPill(absence.status || 'approved')
-                                      : null}
+                                    {renderStatusPill(vacation.status || 'pending')}
                                   </div>
-                                  {absence.comment ? (
+                                  {vacation.notes ? (
                                     <p className="mt-2 text-xs text-muted-foreground">
-                                      {absence.comment}
+                                      {vacation.notes}
                                     </p>
                                   ) : null}
                                 </div>
                               ))
                             )}
+                            {medicalCertificates.length > 0 ? (
+                              <div className="border-t border-border/70 pt-4">
+                                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                  Atestados recentes
+                                </p>
+                                <div className="space-y-3">
+                                  {medicalCertificates.map((absence) => (
+                                    <div
+                                      key={absence.id}
+                                      className="rounded-2xl border border-border/70 bg-card/90 px-4 py-4 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.2)]"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="text-sm font-semibold">
+                                            {absence.coverageType === 'hours'
+                                              ? t(
+                                                  'vacationsPage.medicalCertificates.types.partialDay',
+                                                  'Atestado por horas',
+                                                )
+                                              : t(
+                                                  'vacationsPage.medicalCertificates.types.fullDay',
+                                                  'Atestado medico',
+                                                )}
+                                          </p>
+                                          <p className="mt-1 text-xs text-muted-foreground">
+                                            {absence.date
+                                              ? formatDateLabel(absence.date, i18n.language)
+                                              : t(
+                                                  'vacationsPage.absences.dateFallback',
+                                                  'Data nao informada',
+                                                )}
+                                          </p>
+                                        </div>
+                                        {renderStatusPill(absence.status || 'approved')}
+                                      </div>
+                                      {absence.comment ? (
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                          {absence.comment}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>

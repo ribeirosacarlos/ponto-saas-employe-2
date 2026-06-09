@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { format, subMonths } from 'date-fns'
-import { listEmployees } from '../../services/modules/employees'
+import { listAllEmployees } from '../../services/modules/employees'
 import { normalizeEmployee } from '../employees/useEmployeesManagement'
-import { listAbsencesByUser } from '../../services/absencesService'
 import { listAdminMedicalCertificates } from '../../services/medicalCertificatesService'
 import {
   getAdminVacationSummary,
-  listAdminVacationsByUser,
+  listAllAdminVacationsByUser,
   listPendingAdminVacations,
 } from '../../services/adminVacationsService'
 
@@ -37,8 +36,8 @@ export function useAdminVacations({ enabled = true } = {}) {
     setEmployeesLoading(true)
     setEmployeesError('')
     try {
-      const response = await listEmployees(1)
-      const normalized = (response.data || []).map((item, index) => normalizeEmployee(item, index))
+      const response = await listAllEmployees({ perPage: 100 })
+      const normalized = (response || []).map((item, index) => normalizeEmployee(item, index))
       setEmployees(normalized)
       return normalized
     } catch (err) {
@@ -114,15 +113,12 @@ export function useAdminVacations({ enabled = true } = {}) {
     const entries = await Promise.all(
       employeeList.map(async (employee) => {
         if (!employee?.id) return [employee?.id, []]
-        const [absencesResponse, medicalResponse] = await Promise.allSettled([
-          listAbsencesByUser({ userId: employee.id, from, to, page: 1 }),
-          listAdminMedicalCertificates({ userId: employee.id, from, to, page: 1 }),
+        const [medicalResponse] = await Promise.allSettled([
+          listAdminMedicalCertificates({ userId: employee.id, from, to, page: 1, perPage: 100 }),
         ])
-        const absences =
-          absencesResponse.status === 'fulfilled' ? absencesResponse.value.data || [] : []
         const medicalCertificates =
           medicalResponse.status === 'fulfilled' ? medicalResponse.value.data || [] : []
-        return [employee.id, [...medicalCertificates, ...absences]]
+        return [employee.id, medicalCertificates]
       }),
     )
     setAbsencesByUserId(Object.fromEntries(entries))
@@ -138,8 +134,8 @@ export function useAdminVacations({ enabled = true } = {}) {
       employeeList.map(async (employee) => {
         if (!employee?.id) return [employee?.id, []]
         try {
-          const response = await listAdminVacationsByUser({ userId: employee.id, page: 1 })
-          return [employee.id, response.data || []]
+          const response = await listAllAdminVacationsByUser({ userId: employee.id })
+          return [employee.id, response || []]
         } catch (err) {
           return [employee.id, []]
         }
