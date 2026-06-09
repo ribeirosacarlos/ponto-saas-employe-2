@@ -51,6 +51,7 @@ import { PageContainer } from '../../components/ui/PageContainer'
 import { useToast } from '../../components/ui/use-toast'
 import { canRenderCard, getCapabilitiesFromRoles } from '../../auth/acl'
 import { fetchAdminLocationSettings } from '../../services/adminLocationSettingsService'
+import { deleteAdminAbsence } from '../../services/absencesService'
 import { listEmployees } from '../../services/modules/employees'
 import { deleteTimeEntry, getTeamOvertimeBalance, listTeamEntries } from '../../services/adminAdjustmentsService'
 import { cn } from '../../lib/utils'
@@ -267,10 +268,28 @@ const calculateDistanceInMeters = (
 
 const normalizeEntry = (entry: any = {}, index = 0) => {
   const clock = entry.clocked_at ?? entry.clockedAt ?? entry.date ?? entry.timestamp ?? ''
+  const absenceSource =
+    entry.absence ??
+    entry.absence_data ??
+    entry.absenceData ??
+    entry.summary ??
+    entry.day_summary ??
+    entry.daySummary ??
+    entry.daily_summary ??
+    entry.dailySummary ??
+    null
+
   return {
     ...entry,
     id: entry.id ?? entry.uuid ?? entry.entry_id ?? `timesheet-entry-${index}`,
-    timeEntryId: entry.timeEntryId ?? entry.id ?? entry.time_entry_id ?? entry.uuid ?? null,
+    timeEntryId:
+      entry.timeEntryId ??
+      entry.time_entry_id ??
+      entry.timeEntry?.id ??
+      entry.time_entry?.id ??
+      entry.id ??
+      entry.uuid ??
+      null,
     userId: entry.userId ?? entry.user_id ?? entry.employee_id ?? entry.user?.id ?? entry.employee?.id ?? null,
     clockedAt: clock,
     type: entry.type ?? entry.event_type ?? entry.kind ?? '',
@@ -280,6 +299,93 @@ const normalizeEntry = (entry: any = {}, index = 0) => {
     deviceType: entry.device_type ?? entry.deviceType ?? null,
     user: entry.user ?? entry.employee ?? null,
     dailyMetrics: normalizeDailyMetrics(getDailyMetricsCandidate(entry) ?? entry),
+    isAbsence: Boolean(
+      getFirstDefinedValue(
+        entry.is_absence,
+        entry.isAbsence,
+        absenceSource?.is_absence,
+        absenceSource?.isAbsence,
+        false,
+      ),
+    ),
+    absenceType: getFirstDefinedValue(
+      entry.absence_type,
+      entry.absenceType,
+      absenceSource?.absence_type,
+      absenceSource?.absenceType,
+      entry.type_label,
+      entry.typeLabel,
+    ),
+    absenceStatus: getFirstDefinedValue(
+      entry.absence_status,
+      entry.absenceStatus,
+      entry.status,
+      entry.state,
+      absenceSource?.status,
+      absenceSource?.state,
+    ),
+    absenceComment: getFirstDefinedValue(
+      entry.comment,
+      entry.notes,
+      entry.justification,
+      entry.description,
+      absenceSource?.comment,
+      absenceSource?.notes,
+      absenceSource?.justification,
+      absenceSource?.description,
+    ),
+    absenceCoverageType: getFirstDefinedValue(
+      entry.coverage_type,
+      entry.coverageType,
+      absenceSource?.coverage_type,
+      absenceSource?.coverageType,
+    ),
+    absenceStartDate: getFirstDefinedValue(
+      entry.start_date,
+      entry.startDate,
+      entry.date,
+      entry.day,
+      absenceSource?.start_date,
+      absenceSource?.startDate,
+      absenceSource?.date,
+      absenceSource?.day,
+      entry.work_date,
+      entry.workDate,
+    ),
+    absenceEndDate: getFirstDefinedValue(
+      entry.end_date,
+      entry.endDate,
+      absenceSource?.end_date,
+      absenceSource?.endDate,
+      entry.work_date,
+      entry.workDate,
+    ),
+    absenceStartTime: getFirstDefinedValue(
+      entry.start_time,
+      entry.startTime,
+      absenceSource?.start_time,
+      absenceSource?.startTime,
+    ),
+    absenceEndTime: getFirstDefinedValue(
+      entry.end_time,
+      entry.endTime,
+      absenceSource?.end_time,
+      absenceSource?.endTime,
+    ),
+    absenceId: getFirstDefinedValue(
+      entry.absence_id,
+      entry.absenceId,
+      absenceSource?.absence_id,
+      absenceSource?.absenceId,
+      entry.absence?.id,
+      entry.absenceData?.id,
+    ),
+    medicalCertificateId: getFirstDefinedValue(
+      entry.medical_certificate_id,
+      entry.medicalCertificateId,
+      absenceSource?.medical_certificate_id,
+      absenceSource?.medicalCertificateId,
+    ),
   }
 }
 
@@ -413,13 +519,72 @@ const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' 
   const dayGroups = days.map((day) => {
     const dateKey = day?.date ?? day?.dateKey ?? 'unknown'
     const fallback = fallbackByDate.get(dateKey)
-    const items = Array.isArray(day?.entries) && day.entries.length
+    const normalizedDayEntries = Array.isArray(day?.entries) && day.entries.length
       ? day.entries.map((entry: any, index: number) => normalizeEntry(entry, index))
-      : fallback?.items || []
+      : []
+    const daySummary = normalizeDailyMetrics(day?.summary ?? day)
+    const sourceSummary = day?.summary ?? day ?? {}
+    const summaryIsAbsence = Boolean(
+      getFirstDefinedValue(
+        sourceSummary?.isAbsence,
+        sourceSummary?.is_absence,
+        false,
+      ),
+    )
+    const syntheticAbsenceRow =
+      normalizedDayEntries.length === 0 && summaryIsAbsence
+        ? [
+            normalizeEntry(
+              {
+                id:
+                  getFirstDefinedValue(
+                    sourceSummary?.time_entry_id,
+                    sourceSummary?.timeEntryId,
+                    sourceSummary?.id,
+                    `absence-${dateKey}`,
+                  ),
+                time_entry_id: getFirstDefinedValue(
+                  sourceSummary?.time_entry_id,
+                  sourceSummary?.timeEntryId,
+                  sourceSummary?.id,
+                ),
+                user_id: getFirstDefinedValue(day?.employeeId, day?.employee_id, day?.user?.id),
+                user: day?.user ?? null,
+                type: 'absence',
+                source: 'absence',
+                work_date: dateKey,
+                day_summary: sourceSummary,
+                is_absence: true,
+                absence_type: getFirstDefinedValue(sourceSummary?.absence_type, sourceSummary?.absenceType),
+                absence_status: getFirstDefinedValue(sourceSummary?.status, sourceSummary?.state),
+                comment: getFirstDefinedValue(
+                  sourceSummary?.comment,
+                  sourceSummary?.notes,
+                  sourceSummary?.justification,
+                  sourceSummary?.description,
+                ),
+                coverage_type: getFirstDefinedValue(
+                  sourceSummary?.coverage_type,
+                  sourceSummary?.coverageType,
+                ),
+                start_date: getFirstDefinedValue(sourceSummary?.start_date, sourceSummary?.startDate, dateKey),
+                end_date: getFirstDefinedValue(sourceSummary?.end_date, sourceSummary?.endDate, dateKey),
+                start_time: getFirstDefinedValue(sourceSummary?.start_time, sourceSummary?.startTime),
+                end_time: getFirstDefinedValue(sourceSummary?.end_time, sourceSummary?.endTime),
+              },
+              0,
+            ),
+          ]
+        : []
+    const items = normalizedDayEntries.length
+      ? normalizedDayEntries
+      : syntheticAbsenceRow.length
+        ? syntheticAbsenceRow
+        : fallback?.items || []
 
     return {
       dateKey,
-      dailyMetrics: normalizeDailyMetrics(day?.summary ?? day),
+      dailyMetrics: daySummary,
       items: [...items].sort((a, b) => {
         const left = a.clockedAt ? new Date(a.clockedAt).getTime() : 0
         const right = b.clockedAt ? new Date(b.clockedAt).getTime() : 0
@@ -443,6 +608,30 @@ const getTimesheetDayMergeKey = (day: any = {}) => {
     day?.employeeId ?? day?.employee_id ?? day?.userId ?? day?.user_id ?? day?.user?.id ?? day?.employee?.id ?? 'unknown'
   const date = day?.date ?? day?.dateKey ?? day?.work_date ?? day?.workDate ?? 'unknown'
   return `${String(employeeId)}::${String(date)}`
+}
+
+const isAbsenceEntry = (entry: any = {}) =>
+  Boolean(
+    getFirstDefinedValue(
+      entry?.isAbsence,
+      entry?.is_absence,
+      entry?.dailyMetrics?.isAbsence,
+      entry?.source === 'absence',
+      entry?.type === 'absence',
+      false,
+    ),
+  )
+
+const isAbsenceAllowanceSource = (entry: any = {}) =>
+  String(entry?.source || '')
+    .trim()
+    .toLowerCase() === 'absence_allowance'
+
+const isMedicalCertificateSource = (entry: any = {}) => {
+  const source = String(entry?.source || '')
+    .trim()
+    .toLowerCase()
+  return ['medical_certificate', 'medical-certificate', 'medical_certificate_allowance'].includes(source)
 }
 
 const firstNonEmpty = (...values: any[]) => values.find((value) => {
@@ -812,9 +1001,60 @@ export default function CloseTimesheetPage() {
 
       if (normalized === 'in') return t('types.in')
       if (normalized === 'out') return t('types.out')
+      if (normalized === 'absence') return t('closeTimesheetPage.table.absence.badge', 'Ausencia')
       return value || t('closeTimesheetPage.table.noType')
     },
     [t],
+  )
+
+  const formatAbsenceType = useCallback(
+    (entry: any) => {
+      const value = String(entry?.absenceType || '')
+        .trim()
+        .toLowerCase()
+
+      if (!value) return t('closeTimesheetPage.table.absence.typeFallback', 'Ausencia registrada')
+
+      const labels: Record<string, string> = {
+        excused_absence: t('closeTimesheetPage.table.absence.types.excused', 'Ausencia abonada'),
+        unjustified_absence: t(
+          'closeTimesheetPage.table.absence.types.unjustified',
+          'Ausencia sem justificativa',
+        ),
+        medical_leave: t('closeTimesheetPage.table.absence.types.medical', 'Afastamento medico'),
+        medical_certificate: t(
+          'closeTimesheetPage.table.absence.types.medicalCertificate',
+          'Atestado medico',
+        ),
+        vacation: t('closeTimesheetPage.table.absence.types.vacation', 'Ferias'),
+      }
+
+      return labels[value] || entry?.absenceType
+    },
+    [t],
+  )
+
+  const formatAbsencePeriod = useCallback(
+    (entry: any) => {
+      if (entry?.absenceCoverageType === 'hours') {
+        const dateLabel = entry?.absenceStartDate
+          ? formatDateLabel(entry.absenceStartDate)
+          : t('closeTimesheetPage.table.noDate')
+        const rangeLabel =
+          entry?.absenceStartTime && entry?.absenceEndTime
+            ? `${entry.absenceStartTime} - ${entry.absenceEndTime}`
+            : t('closeTimesheetPage.table.noTime')
+        return `${dateLabel} · ${rangeLabel}`
+      }
+
+      if (entry?.absenceStartDate && entry?.absenceEndDate && entry.absenceEndDate !== entry.absenceStartDate) {
+        return `${formatDateLabel(entry.absenceStartDate)} - ${formatDateLabel(entry.absenceEndDate)}`
+      }
+
+      if (entry?.absenceStartDate) return formatDateLabel(entry.absenceStartDate)
+      return t('closeTimesheetPage.table.noDate')
+    },
+    [formatDateLabel, t],
   )
 
   const formatDateLabel = useCallback(
@@ -1082,13 +1322,17 @@ export default function CloseTimesheetPage() {
   )
 
   const handleDeleteTimeEntry = useCallback(async () => {
-    if (!deleteTarget?.timeEntryId) return
+    const isAbsenceDelete = isAbsenceAllowanceSource(deleteTarget) && Boolean(deleteTarget?.absenceId)
+    const deletionId = isAbsenceDelete ? deleteTarget?.absenceId : deleteTarget?.timeEntryId
+    if (!deletionId) return
 
-    const timeEntryId = deleteTarget.timeEntryId
-    setDeletingEntryId(timeEntryId)
+    const timeEntryId = deleteTarget?.timeEntryId
+    setDeletingEntryId(deletionId)
 
     try {
-      const response = await deleteTimeEntry(timeEntryId)
+      const response = isAbsenceDelete
+        ? await deleteAdminAbsence(deleteTarget.absenceId)
+        : await deleteTimeEntry(timeEntryId)
       toast({
         title: t('closeTimesheetPage.delete.successTitle', 'Registro excluído'),
         description:
@@ -1098,6 +1342,10 @@ export default function CloseTimesheetPage() {
       })
       setEntries((prev) =>
         prev.filter((entry) => {
+          if (isAbsenceDelete) {
+            return String(entry?.absenceId ?? '') !== String(deleteTarget?.absenceId)
+          }
+
           const entryTimeEntryId =
             entry?.timeEntryId ?? entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? null
           return String(entryTimeEntryId) !== String(timeEntryId)
@@ -1105,14 +1353,35 @@ export default function CloseTimesheetPage() {
       )
       setEntryDays((prev) =>
         prev
-          .map((day) => ({
-            ...day,
-            entries: (day?.entries || []).filter((entry: any) => {
-              const entryTimeEntryId =
-                entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? entry?.timeEntryId ?? null
-              return String(entryTimeEntryId) !== String(timeEntryId)
-            }),
-          }))
+          .map((day) => {
+            const summaryTimeEntryId = getFirstDefinedValue(
+              day?.summary?.time_entry_id,
+              day?.summary?.timeEntryId,
+              day?.summary?.id,
+            )
+            const summaryAbsenceId = getFirstDefinedValue(
+              day?.summary?.absence_id,
+              day?.summary?.absenceId,
+            )
+
+            return {
+              ...day,
+              summary:
+                (isAbsenceDelete && String(summaryAbsenceId) === String(deleteTarget?.absenceId)) ||
+                (!isAbsenceDelete && String(summaryTimeEntryId) === String(timeEntryId))
+                  ? null
+                  : day?.summary,
+              entries: (day?.entries || []).filter((entry: any) => {
+                if (isAbsenceDelete) {
+                  return String(entry?.absence_id ?? entry?.absenceId ?? '') !== String(deleteTarget?.absenceId)
+                }
+
+                const entryTimeEntryId =
+                  entry?.id ?? entry?.time_entry_id ?? entry?.uuid ?? entry?.timeEntryId ?? null
+                return String(entryTimeEntryId) !== String(timeEntryId)
+              }),
+            }
+          })
           .filter((day) => day.entries.length > 0 || day.summary),
       )
       setDeleteTarget(null)
@@ -1300,11 +1569,22 @@ export default function CloseTimesheetPage() {
       getGroupLabel={(group) => formatDateLabel(group.dateKey)}
       getGroupCountLabel={(_group, count) => `${count} ${t('closeTimesheetPage.table.records', 'registros')}`}
       getGroupMeta={(group) => {
+        const hasOnlyAbsenceRows = group.items.length > 0 && group.items.every((entry) => isAbsenceEntry(entry))
         const workedTimeLabel = formatWorkedTime(
           group.dailyMetrics?.workedHhmm,
           group.dailyMetrics?.workedMinutes,
         )
         if (!group.items.length) return null
+        if (hasOnlyAbsenceRows) {
+          return (
+            <div className="flex items-center gap-1.5 text-[11px] text-violet-700 dark:text-violet-300">
+              <Timer className="h-3 w-3" />
+              <span className="font-medium">
+                {t('closeTimesheetPage.table.absence.groupMeta', 'Ausencia registrada no dia')}
+              </span>
+            </div>
+          )
+        }
         return (
           <div className="flex items-center gap-1.5 text-[11px]">
             <Timer className="h-3 w-3 text-muted-foreground/70" />
@@ -1329,25 +1609,41 @@ export default function CloseTimesheetPage() {
         {
           key: 'time',
           header: t('closeTimesheetPage.table.headers.time'),
-          headerClassName: 'w-[85px]',
-          renderCell: (entry) => (
-            <span className="font-medium text-foreground">{formatClock(entry.clockedAt)}</span>
-          ),
+          headerClassName: 'w-[145px]',
+          renderCell: (entry) =>
+            isAbsenceEntry(entry) ? (
+              <div className="space-y-0.5">
+                <p className="font-medium text-foreground">
+                  {t('closeTimesheetPage.table.absence.timeLabel', 'Ausencia no periodo')}
+                </p>
+                <p className="text-[11px] text-muted-foreground">{formatAbsencePeriod(entry)}</p>
+              </div>
+            ) : (
+              <span className="font-medium text-foreground">{formatClock(entry.clockedAt)}</span>
+            ),
         },
         {
           key: 'type',
           header: t('closeTimesheetPage.table.headers.type'),
-          headerClassName: 'w-[100px]',
+          headerClassName: 'w-[145px]',
           renderCell: (entry) => (
             <span
               className={cn(
                 'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none',
-                entry.type === 'in'
+                isAbsenceAllowanceSource(entry)
+                  ? 'border-amber-200/70 bg-amber-500/10 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'
+                  : isAbsenceEntry(entry)
+                  ? 'border-violet-200/70 bg-violet-500/10 text-violet-700 dark:border-violet-500/30 dark:text-violet-300'
+                  : entry.type === 'in'
                   ? 'border-emerald-200/60 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300'
                   : 'border-sky-200/70 bg-sky-500/10 text-sky-700 dark:border-sky-500/30 dark:text-sky-300',
               )}
             >
-              {formatEntryType(entry.type)}
+              {isAbsenceAllowanceSource(entry)
+                ? t('closeTimesheetPage.table.absence.allowanceBadge', 'ABONO')
+                : isAbsenceEntry(entry)
+                ? t('closeTimesheetPage.table.absence.badge', 'Ausencia')
+                : formatEntryType(entry.type)}
             </span>
           ),
         },
@@ -1376,6 +1672,14 @@ export default function CloseTimesheetPage() {
           header: t('closeTimesheetPage.table.headers.location'),
           headerClassName: 'w-[185px]',
           renderCell: (entry) => {
+            if (isAbsenceEntry(entry)) {
+              return (
+                <span className="text-[12px] font-medium text-muted-foreground">
+                  {t('closeTimesheetPage.table.absence.locationFallback', 'Sem marcacao de localizacao')}
+                </span>
+              )
+            }
+
             const hasCoordinates = hasFiniteCoordinates(entry.latitude, entry.longitude)
             const distanceFromCompany = companyLocation
               ? calculateDistanceInMeters(
@@ -1479,8 +1783,33 @@ export default function CloseTimesheetPage() {
         {
           key: 'status',
           header: t('closeTimesheetPage.table.headers.status'),
-          headerClassName: 'w-[165px]',
+          headerClassName: 'w-[320px]',
           renderCell: (entry) => {
+            if (isAbsenceEntry(entry)) {
+              return (
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex rounded-full border border-violet-200/70 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300">
+                      {formatAbsenceType(entry)}
+                    </span>
+                    <span className="inline-flex rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {entry?.absenceCoverageType === 'hours'
+                        ? t('closeTimesheetPage.table.absence.coverage.hours', 'Cobertura por horas')
+                        : t('closeTimesheetPage.table.absence.coverage.days', 'Cobertura por dia')}
+                    </span>
+                  </div>
+                  <p className="text-[12px] font-medium text-foreground">{formatAbsencePeriod(entry)}</p>
+                  <p className="text-[11px] leading-4 text-muted-foreground">
+                    {entry?.absenceComment ||
+                      t(
+                        'closeTimesheetPage.table.absence.commentFallback',
+                        'Sem observacao adicional para esta ausencia.',
+                      )}
+                  </p>
+                </div>
+              )
+            }
+
             const employeeKey =
               entry?.userId ??
               entry?.user_id ??
@@ -1533,8 +1862,13 @@ export default function CloseTimesheetPage() {
           headerClassName: 'w-[80px] text-right',
           cellClassName: 'text-right',
           renderCell: (entry) => {
-            const canDeleteEntry = canDeleteTimeEntries && Boolean(entry.timeEntryId)
-            const isDeletingEntry = deletingEntryId === entry.timeEntryId
+            const canDeleteEntry =
+              canDeleteTimeEntries &&
+              !isMedicalCertificateSource(entry) &&
+              (Boolean(entry.timeEntryId) || (isAbsenceAllowanceSource(entry) && Boolean(entry.absenceId)))
+            const deletingId =
+              isAbsenceAllowanceSource(entry) && entry.absenceId ? entry.absenceId : entry.timeEntryId
+            const isDeletingEntry = deletingEntryId === deletingId
 
             return (
               <div className="flex items-center justify-end gap-1">
@@ -2047,7 +2381,13 @@ export default function CloseTimesheetPage() {
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('closeTimesheetPage.delete.title', 'Excluir registro de ponto')}</DialogTitle>
+            <DialogTitle>
+              {isAbsenceAllowanceSource(deleteTarget)
+                ? t('closeTimesheetPage.delete.absenceTitle', 'Excluir abono')
+                : isMedicalCertificateSource(deleteTarget)
+                  ? t('closeTimesheetPage.delete.medicalTitle', 'Excluir atestado medico')
+                  : t('closeTimesheetPage.delete.title', 'Excluir registro de ponto')}
+            </DialogTitle>
             <DialogDescription>
               {t(
                 'closeTimesheetPage.delete.description',
@@ -2064,7 +2404,10 @@ export default function CloseTimesheetPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteTimeEntry}
-              disabled={Boolean(deletingEntryId) || !deleteTarget?.timeEntryId}
+              disabled={
+                Boolean(deletingEntryId) ||
+                !(deleteTarget?.timeEntryId || (isAbsenceAllowanceSource(deleteTarget) && deleteTarget?.absenceId))
+              }
             >
               {deletingEntryId
                 ? t('closeTimesheetPage.delete.deleting', 'Excluindo...')

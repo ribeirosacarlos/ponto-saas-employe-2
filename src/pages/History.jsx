@@ -216,8 +216,22 @@ function summarizeDay(entries = []) {
   }
 }
 
-function formatEntryTypeLabel(type, t) {
-  const normalized = String(type || '').trim().toLowerCase()
+function isAbsenceAllowanceEntry(entry = {}) {
+  return String(entry.source || '')
+    .trim()
+    .toLowerCase() === 'absence_allowance'
+}
+
+function formatEntryTypeLabel(entryOrType, t) {
+  const entry =
+    entryOrType && typeof entryOrType === 'object' && !Array.isArray(entryOrType)
+      ? entryOrType
+      : { type: entryOrType }
+  const normalized = String(entry.type || '').trim().toLowerCase()
+
+  if (isAbsenceAllowanceEntry(entry)) {
+    return t('historyPage.table.type.allowance', 'ABONO')
+  }
 
   switch (normalized) {
     case 'in':
@@ -251,6 +265,13 @@ function getEntryTypeTone(type) {
 function getEntryOriginPresentation(entry, t) {
   const deviceType = String(entry.deviceType || '').trim().toLowerCase()
   const source = String(entry.source || '').trim().toLowerCase()
+
+  if (source === 'absence_allowance') {
+    return {
+      icon: FileText,
+      label: t('historyPage.table.origin.allowance', 'Abono'),
+    }
+  }
 
   if (deviceType === 'mobile') {
     return {
@@ -1000,7 +1021,7 @@ const handleExportPDF = () => {
                                 getEntryTypeTone(entry.type),
                               )}
                             >
-                              {formatEntryTypeLabel(entry.type, t)}
+                              {formatEntryTypeLabel(entry, t)}
                             </span>
                           ),
                         },

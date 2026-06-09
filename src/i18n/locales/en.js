@@ -2340,6 +2340,25 @@ const en = {
           duplicate: 'Duplicated',
           ok: 'Complete',
         },
+        absence: {
+          badge: 'Absence',
+          timeLabel: 'Absence in period',
+          groupMeta: 'Absence recorded for the day',
+          locationFallback: 'No location punch recorded',
+          typeFallback: 'Recorded absence',
+          commentFallback: 'No additional note for this absence.',
+          coverage: {
+            hours: 'Hourly coverage',
+            days: 'Daily coverage',
+          },
+          types: {
+            excused: 'Excused absence',
+            unjustified: 'Unjustified absence',
+            medical: 'Medical leave',
+            medicalCertificate: 'Medical certificate',
+            vacation: 'Vacation',
+          },
+        },
         locationStatus: {
           inside: 'Inside company',
           outside: 'Outside company',
