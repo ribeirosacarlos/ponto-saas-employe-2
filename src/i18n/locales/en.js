@@ -1746,6 +1746,7 @@ const en = {
         subtitle: 'Upload documents and track the team status.',
         listCount: '{{count}} documents',
         tabs: {
+          all: 'All',
           pending: 'Pending',
           review: 'In review',
         },

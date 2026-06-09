@@ -25,6 +25,7 @@ import {
   resendDocument,
 } from '../services/documentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
+import { useAuthStore } from '../store/useAuth'
 
 const CATEGORY_OPTIONS = [
   { value: 'all', labelKey: 'documentsPage.tabs.all' },
@@ -67,6 +68,7 @@ const formatDate = (value, locale = 'pt-BR') => {
 export default function Documents() {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
+  const currentUser = useAuthStore((state) => state.user)
 
   const [filters, setFilters] = useState({ category: 'all', status: 'all', search: '' })
   const [page, setPage] = useState(1)
@@ -97,6 +99,7 @@ export default function Documents() {
         category: params.category ?? filters.category,
         status: params.status ?? filters.status,
         search: params.search ?? searchTerm,
+        employeeId: currentUser?.id,
       })
       setDocuments(data)
       setMeta({

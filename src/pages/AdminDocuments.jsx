@@ -24,7 +24,7 @@ import { useToast } from '../components/ui/use-toast'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { downloadDocument, fetchDocumentBlob } from '../services/documentsService'
-import { approve, listPending, listReview, reject, uploadTeamDocument } from '../services/adminDocumentsService'
+import { approve, listAll, listPending, listReview, reject, uploadTeamDocument } from '../services/adminDocumentsService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 import { listEmployees } from '../services/modules/employees'
 import { normalizeEmployee } from '../features/employees/useEmployeesManagement'
@@ -308,7 +308,7 @@ export default function AdminDocuments() {
       employeeIds: params.employeeIds ?? filters.employeeIds,
     }
     try {
-      const service = tab === 'pending' ? listPending : listReview
+      const service = tab === 'pending' ? listPending : tab === 'review' ? listReview : listAll
 
       if ((query.employeeIds || []).length > 1) {
         const results = await Promise.all(
@@ -662,7 +662,7 @@ export default function AdminDocuments() {
         />
 
         <div className="flex flex-wrap items-center gap-3 rounded-[18px] border border-border/70 bg-muted/20 p-2">
-          {['pending', 'review'].map((key) => (
+          {['all', 'pending', 'review'].map((key) => (
             <button
               key={key}
               type="button"
