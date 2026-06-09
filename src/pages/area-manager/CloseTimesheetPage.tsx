@@ -438,6 +438,13 @@ const groupEntriesByDate = (entries: any[] = [], days: any[] = [], order: 'asc' 
   })
 }
 
+const getTimesheetDayMergeKey = (day: any = {}) => {
+  const employeeId =
+    day?.employeeId ?? day?.employee_id ?? day?.userId ?? day?.user_id ?? day?.user?.id ?? day?.employee?.id ?? 'unknown'
+  const date = day?.date ?? day?.dateKey ?? day?.work_date ?? day?.workDate ?? 'unknown'
+  return `${String(employeeId)}::${String(date)}`
+}
+
 const firstNonEmpty = (...values: any[]) => values.find((value) => {
   if (value === undefined || value === null) return false
   const str = String(value).trim()
@@ -1062,7 +1069,8 @@ export default function CloseTimesheetPage() {
         )
         if (days?.length) {
           setEntryDays((prev) => {
-            const remaining = prev.filter((day) => day?.date !== days[0]?.date)
+            const refreshedKeys = new Set(days.map((day: any) => getTimesheetDayMergeKey(day)))
+            const remaining = prev.filter((day) => !refreshedKeys.has(getTimesheetDayMergeKey(day)))
             return mergeTimesheetDays(remaining, days)
           })
         }
