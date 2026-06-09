@@ -3,7 +3,7 @@ import {
   assignEmployeeShift,
   createEmployee,
   deleteEmployee,
-  listEmployees,
+  listAllEmployees,
   resendEmployeeInvite,
   updateEmployee,
 } from '../../services/modules/employees'
@@ -243,9 +243,15 @@ export function useEmployeesManagement({
       setLoading(true)
       setError('')
       try {
-        const response = await listEmployees(targetPage, currentFilters)
-        setEmployees((response.data || []).map((item, index) => normalizeEmployee(item, index)))
-        setMeta(response.meta || null)
+        const data = await listAllEmployees(currentFilters)
+        const normalized = (data || []).map((item, index) => normalizeEmployee(item, index))
+        setEmployees(normalized)
+        setMeta({
+          currentPage: 1,
+          perPage: normalized.length,
+          total: normalized.length,
+          lastPage: 1,
+        })
         return { ok: true }
       } catch (err) {
         const message =
@@ -309,11 +315,6 @@ export function useEmployeesManagement({
     setPage(1)
   }, [enabled, filters, loadEmployees])
 
-  useEffect(() => {
-    if (!enabled || page === 1) return
-    loadEmployees(page, filters)
-  }, [enabled, filters, loadEmployees, page])
-
   const filteredByRole = useMemo(() => {
     if (filters.role === 'all') return employees
     return employees
@@ -368,16 +369,10 @@ export function useEmployeesManagement({
 
   const totalPages = useMemo(() => {
     if (meta?.lastPage) return meta.lastPage
-    if (meta?.perPage && meta?.total) {
-      return Math.max(1, Math.ceil(meta.total / meta.perPage))
-    }
-    return Math.max(1, page)
-  }, [meta?.lastPage, meta?.perPage, meta?.total, page])
+    return 1
+  }, [meta?.lastPage])
 
-  const canGoNext = useMemo(() => {
-    if (meta?.next_page_url || meta?.has_more) return true
-    return page < totalPages
-  }, [meta, page, totalPages])
+  const canGoNext = useMemo(() => false, [])
 
   const refreshEmployees = useCallback(
     async (targetPage = page) => {
