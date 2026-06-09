@@ -1791,6 +1791,7 @@ const es = {
         subtitle: 'Carga documentos y supervisa su estado en el equipo.',
         listCount: '{{count}} documentos',
         tabs: {
+          all: 'Todos',
           pending: 'Pendientes',
           review: 'En revisión',
         },

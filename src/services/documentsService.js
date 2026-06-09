@@ -94,12 +94,13 @@ const normalizePaginated = (data, fallbackPage = 1, fallbackPerPage) => {
   return { items, meta }
 }
 
-export async function listMyDocuments({ page = 1, status, category, search } = {}) {
+export async function listMyDocuments({ page = 1, status, category, search, employeeId } = {}) {
   const params = {}
   if (page) params.page = page
   if (status && status !== "all") params.status = status
   if (category && category !== "all") params.category = category
   if (search) params.search = search
+  if (employeeId) params.employee_id = employeeId
 
   const { data } = await api.get("/v1/documents", { params })
   const { items, meta } = normalizePaginated(data, page)

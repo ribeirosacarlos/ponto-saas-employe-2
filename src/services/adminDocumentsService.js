@@ -89,6 +89,21 @@ const normalizePaginated = (data, fallbackPage = 1, fallbackPerPage) => {
   return { items, meta }
 }
 
+export async function listAll(params = {}) {
+  const { page = 1, perPage, sort, category, search, employeeId } = params
+  const query = {}
+  if (page) query.page = page
+  if (perPage) query.per_page = perPage
+  if (sort) query.sort = sort
+  if (category && category !== "all") query.category = category
+  if (search) query.search = search
+  if (employeeId) query.employee_id = employeeId
+
+  const { data } = await api.get("/v1/admin/documents", { params: query })
+  const { items, meta } = normalizePaginated(data, page)
+  return { data: items.map((item, index) => normalizeAdminDocument(item, index)), meta }
+}
+
 export async function listPending(params = {}) {
   const { page = 1, perPage, sort, category, search, employeeId } = params
   const query = {}

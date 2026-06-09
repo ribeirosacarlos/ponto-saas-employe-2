@@ -1852,6 +1852,7 @@ const ptBR = {
         subtitle: 'Envie documentos e acompanhe o status do time.',
         listCount: '{{count}} documentos',
         tabs: {
+          all: 'Todos',
           pending: 'Pendentes',
           review: 'Em revisão',
         },
