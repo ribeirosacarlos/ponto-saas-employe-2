@@ -18,8 +18,9 @@ export async function listMonthlyClosures({ page = 1, perPage = 20 } = {}) {
   return normalizeListResponse(data, page)
 }
 
-export async function createMonthlyClosure({ referenceYear, referenceMonth }) {
+export async function createMonthlyClosure({ referenceYear, referenceMonth, employeeId }) {
   const { data } = await api.post('/v1/admin/monthly-closures', {
+    employee_id: employeeId,
     reference_year: referenceYear,
     reference_month: referenceMonth,
   })

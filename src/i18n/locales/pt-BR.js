@@ -2559,10 +2559,12 @@ const ptBR = {
       },
       form: {
         title: 'Fechar período',
-        description: 'Selecione o mês e o ano para iniciar o fechamento da folha de ponto.',
+        description: 'Selecione o funcionário, o mês e o ano para iniciar o fechamento.',
+        employeeLabel: 'Funcionário',
+        selectEmployee: 'Selecione o funcionário',
         monthYearLabel: 'Mês de referência',
         selectMonth: 'Selecione o mês',
-        selectError: 'Selecione o mês e o ano.',
+        selectError: 'Selecione o funcionário, o mês e o ano.',
         submit: 'Fechar período',
         submitting: 'Processando...',
       },
@@ -2597,6 +2599,7 @@ const ptBR = {
         sigCount: '{{count}} assinatura(s)',
       },
       closure: {
+        employee: 'Funcionário: {{name}}',
         closedBy: 'Fechado por {{name}}',
         timesheets_one: '{{count}} timesheet',
         timesheets_other: '{{count}} timesheets',

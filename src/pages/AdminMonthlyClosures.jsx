@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
+import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { useToast } from '../components/ui/use-toast'
@@ -41,6 +42,7 @@ import {
   resolveTimesheetDispute,
   fetchAdminTimesheetPdf,
 } from '../services/monthlyClosuresService'
+import { listAllEmployees } from '../services/modules/employees'
 import { downloadBlob } from '../utils/pdf/downloadBlob'
 
 const ADMIN_REQUIRES = { anyOf: ['admin', 'super_admin'] }
@@ -179,9 +181,12 @@ export default function AdminMonthlyClosures() {
   const [timesheetsError, setTimesheetsError] = useState({})
 
   const [closeDialog, setCloseDialog] = useState(false)
-  const [closeForm, setCloseForm] = useState({ year: '', month: '' })
+  const [closeForm, setCloseForm] = useState({ year: '', month: '', employeeId: '' })
   const [closeError, setCloseError] = useState('')
   const [closing, setClosing] = useState(false)
+
+  const [employees, setEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
 
   const [signingId, setSigningId] = useState(null)
 
@@ -396,6 +401,15 @@ export default function AdminMonthlyClosures() {
     writeClosureIdToUrl(expandedId)
   }, [expandedId])
 
+  useEffect(() => {
+    if (!closeDialog || employees.length > 0) return
+    setEmployeesLoading(true)
+    listAllEmployees({ perPage: 100 })
+      .then(setEmployees)
+      .catch(() => {})
+      .finally(() => setEmployeesLoading(false))
+  }, [closeDialog, employees.length])
+
   const handleToggleExpand = (closureId) => {
     const selectedClosure = getClosureFromList(closureId)
 
@@ -418,7 +432,7 @@ export default function AdminMonthlyClosures() {
   }
 
   const handleCloseMonth = async () => {
-    if (!closeForm.year || !closeForm.month) {
+    if (!closeForm.year || !closeForm.month || !closeForm.employeeId) {
       setCloseError(t('adminMonthlyClosuresPage.form.selectError'))
       return
     }
@@ -428,6 +442,7 @@ export default function AdminMonthlyClosures() {
       const result = await createMonthlyClosure({
         referenceYear: Number(closeForm.year),
         referenceMonth: Number(closeForm.month),
+        employeeId: closeForm.employeeId,
       })
       toast({
         title: t('adminMonthlyClosuresPage.actions.closeSuccessTitle'),
@@ -435,11 +450,12 @@ export default function AdminMonthlyClosures() {
         variant: 'success',
       })
       setCloseDialog(false)
-      setCloseForm({ year: '', month: '' })
+      setCloseForm({ year: '', month: '', employeeId: '' })
       setClosures((prev) => [result, ...prev])
     } catch (err) {
       const apiErrors = err?.response?.data?.errors
       const msg =
+        apiErrors?.employee_id?.[0] ||
         apiErrors?.reference_month?.[0] ||
         apiErrors?.reference_year?.[0] ||
         err?.response?.data?.message ||
@@ -578,7 +594,7 @@ export default function AdminMonthlyClosures() {
                   className="rounded-full px-4"
                   onClick={() => {
                     setCloseDialog(true)
-                    setCloseForm({ year: '', month: '' })
+                    setCloseForm({ year: '', month: '', employeeId: '' })
                     setCloseError('')
                   }}
                 >
@@ -665,6 +681,12 @@ export default function AdminMonthlyClosures() {
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
+                          {closure.employee?.name
+                            ? t('adminMonthlyClosuresPage.closure.employee', {
+                                name: closure.employee.name,
+                              })
+                            : null}
+                          {closure.employee?.name && (closure.closed_by?.name || closure.closed_at) ? ' · ' : ''}
                           {closure.closed_by?.name
                             ? t('adminMonthlyClosuresPage.closure.closedBy', {
                                 name: closure.closed_by.name,
@@ -1045,12 +1067,27 @@ export default function AdminMonthlyClosures() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
+              <Label>{t('adminMonthlyClosuresPage.form.employeeLabel')}</Label>
+              <EmployeeMultiSelect
+                options={employees}
+                value={closeForm.employeeId ? [closeForm.employeeId] : []}
+                onChange={(ids) => {
+                  setCloseForm((prev) => ({ ...prev, employeeId: ids[0] ?? '' }))
+                  setCloseError('')
+                }}
+                multiple={false}
+                loading={employeesLoading}
+                triggerPlaceholder={t('adminMonthlyClosuresPage.form.selectEmployee')}
+                showSelectedChips={false}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>{t('adminMonthlyClosuresPage.form.monthYearLabel')}</Label>
               <Select
                 value={closeForm.year && closeForm.month ? `${closeForm.year}-${closeForm.month}` : ''}
                 onChange={(e) => {
                   const [year, month] = e.target.value.split('-')
-                  setCloseForm({ year: year ?? '', month: month ?? '' })
+                  setCloseForm((prev) => ({ ...prev, year: year ?? '', month: month ?? '' }))
                   setCloseError('')
                 }}
               >
@@ -1073,7 +1110,7 @@ export default function AdminMonthlyClosures() {
               </DialogClose>
               <Button
                 type="button"
-                disabled={closing || !closeForm.year || !closeForm.month}
+                disabled={closing || !closeForm.year || !closeForm.month || !closeForm.employeeId}
                 onClick={handleCloseMonth}
               >
                 {closing
