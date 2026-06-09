@@ -2496,6 +2496,25 @@ const ptBR = {
           duplicate: 'Duplicado',
           ok: 'Completo',
         },
+        absence: {
+          badge: 'Ausencia',
+          timeLabel: 'Ausencia no periodo',
+          groupMeta: 'Ausencia registrada no dia',
+          locationFallback: 'Sem marcacao de localizacao',
+          typeFallback: 'Ausencia registrada',
+          commentFallback: 'Sem observacao adicional para esta ausencia.',
+          coverage: {
+            hours: 'Cobertura por horas',
+            days: 'Cobertura por dia',
+          },
+          types: {
+            excused: 'Ausencia abonada',
+            unjustified: 'Ausencia sem justificativa',
+            medical: 'Afastamento medico',
+            medicalCertificate: 'Atestado medico',
+            vacation: 'Ferias',
+          },
+        },
         locationStatus: {
           inside: 'Dentro da empresa',
           outside: 'Fora da empresa',

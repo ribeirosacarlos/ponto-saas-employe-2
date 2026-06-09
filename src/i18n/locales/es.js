@@ -2429,6 +2429,25 @@ const es = {
           duplicate: 'Duplicado',
           ok: 'Completo',
         },
+        absence: {
+          badge: 'Ausencia',
+          timeLabel: 'Ausencia en el periodo',
+          groupMeta: 'Ausencia registrada en el dia',
+          locationFallback: 'Sin marcacion de ubicacion',
+          typeFallback: 'Ausencia registrada',
+          commentFallback: 'Sin observacion adicional para esta ausencia.',
+          coverage: {
+            hours: 'Cobertura por horas',
+            days: 'Cobertura por dia',
+          },
+          types: {
+            excused: 'Ausencia justificada',
+            unjustified: 'Ausencia injustificada',
+            medical: 'Licencia medica',
+            medicalCertificate: 'Certificado medico',
+            vacation: 'Vacaciones',
+          },
+        },
         locationStatus: {
           inside: 'Dentro de la empresa',
           outside: 'Fuera de la empresa',

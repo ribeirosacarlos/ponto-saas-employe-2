@@ -87,6 +87,12 @@ export async function createAbsence(payload = {}) {
   return data?.data ?? data
 }
 
+export async function deleteAdminAbsence(id) {
+  if (!id) return null
+  const { data } = await api.delete(`/v1/admin/absences/${id}`)
+  return data?.data ?? data ?? null
+}
+
 export async function listAdminTimeEntries({ start, end, page } = {}) {
   const params = {}
   if (start) params.start = start
