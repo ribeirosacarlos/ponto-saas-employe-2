@@ -1034,6 +1034,20 @@ export default function CloseTimesheetPage() {
     [t],
   )
 
+  const formatDateLabel = useCallback(
+    (value?: string) => {
+      if (!value || value === 'unknown') return t('closeTimesheetPage.table.unknownDate')
+      const date = parseISO(value)
+      if (!isValid(date)) return value
+      return date.toLocaleDateString(i18n.language, {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'short',
+      })
+    },
+    [i18n.language, t],
+  )
+
   const formatAbsencePeriod = useCallback(
     (entry: any) => {
       if (entry?.absenceCoverageType === 'hours') {
@@ -1055,20 +1069,6 @@ export default function CloseTimesheetPage() {
       return t('closeTimesheetPage.table.noDate')
     },
     [formatDateLabel, t],
-  )
-
-  const formatDateLabel = useCallback(
-    (value?: string) => {
-      if (!value || value === 'unknown') return t('closeTimesheetPage.table.unknownDate')
-      const date = parseISO(value)
-      if (!isValid(date)) return value
-      return date.toLocaleDateString(i18n.language, {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'short',
-      })
-    },
-    [i18n.language, t],
   )
 
   const handleQuickRange = (key: keyof typeof quickRanges) => {
