@@ -46,7 +46,7 @@ const STATUS_OPTIONS = ['draft', 'published', 'archived']
 const PER_PAGE_OPTIONS = [10, 20, 50]
 
 const makeLocalized = () => ({ pt: '', es: '', en: '' })
-const makeToc = () => ({ pt: [], es: [], en: [] })
+const makeToc = () => ({ pt: '', es: '', en: '' })
 const makeFaqItem = () => ({ id: `faq-${Date.now()}-${Math.random()}`, question: makeLocalized(), answer: makeLocalized() })
 
 const createEmptyForm = () => ({
