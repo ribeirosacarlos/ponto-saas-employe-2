@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Download, Eye, FileText, RefreshCcw, Search, Upload, X } from 'lucide-react'
+import { Check, Download, Eye, FileText, PenLine, RefreshCcw, Search, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { actionIconButtonClass, actionTabButtonClass } from '../components/ui/form-controls'
@@ -25,6 +25,7 @@ import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { downloadDocument, fetchDocumentBlob } from '../services/documentsService'
 import { approve, listAll, listPending, listReview, reject, uploadTeamDocument } from '../services/adminDocumentsService'
+import { signTimesheetAsManager } from '../services/monthlyClosuresService'
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 import { listEmployees } from '../services/modules/employees'
 import { normalizeEmployee } from '../features/employees/useEmployeesManagement'
@@ -154,6 +155,7 @@ export default function AdminDocuments() {
   const [rejectReason, setRejectReason] = useState('')
   const [rejecting, setRejecting] = useState(false)
   const [approving, setApproving] = useState(false)
+  const [signingId, setSigningId] = useState(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState('')
@@ -437,6 +439,26 @@ export default function AdminDocuments() {
       setApproving(false)
     }
   }
+  const handleSignTimesheet = async (item) => {
+    setSigningId(item.id)
+    try {
+      await signTimesheetAsManager(item.id)
+      toast({
+        title: t('documentsPage.admin.toasts.signSuccessTitle'),
+        description: t('documentsPage.admin.toasts.signSuccessDescription'),
+      })
+      fetchDocuments({ page })
+    } catch (err) {
+      toast({
+        title: t('documentsPage.admin.toasts.signErrorTitle'),
+        description: err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.signErrorDescription'),
+        variant: 'destructive',
+      })
+    } finally {
+      setSigningId(null)
+    }
+  }
+
   const handleDownloadFromPreview = async () => {
     if (!selectedDocument) return
     try {
@@ -767,6 +789,7 @@ export default function AdminDocuments() {
 
                   {!loading &&
                     documents.map((doc) => {
+                      const isTimesheetSignature = doc.type === 'timesheet_signature'
                       const employee = doc.user || doc.employee
                       const employeeName =
                         employee?.name || employee?.full_name || t('documentsPage.admin.labels.employeeFallback')
@@ -774,10 +797,10 @@ export default function AdminDocuments() {
                       const employeeLabel = employee
                         ? `${employeeName} (${employeeEmail})`
                         : t('documentsPage.admin.labels.employeeFallback')
-                      const priorityLabel = getPriorityLabel(doc.priority)
-                      const signatureLabel = getSignatureLabel(doc)
-                      const signatureTone = getSignatureTone(doc)
-                      const lastViewLabel = getLastViewLabel(doc)
+                      const priorityLabel = isTimesheetSignature ? '—' : getPriorityLabel(doc.priority)
+                      const signatureLabel = isTimesheetSignature ? '—' : getSignatureLabel(doc)
+                      const signatureTone = isTimesheetSignature ? 'text-muted-foreground' : getSignatureTone(doc)
+                      const lastViewLabel = isTimesheetSignature ? '—' : getLastViewLabel(doc)
 
                       return (
                         <div
@@ -792,13 +815,34 @@ export default function AdminDocuments() {
                               })}
                             </p>
                           </div>
-                          <span className="block min-w-0 truncate">{doc.title}</span>
-                          <span className="block min-w-0 truncate">{t(`documentsPage.tabs.${doc.category}`, doc.category)}</span>
+                          <div className="min-w-0 space-y-1">
+                            <span className="block truncate">{doc.title}</span>
+                            {!isTimesheetSignature && doc.absence ? (
+                              <span className="inline-flex items-center rounded-full border border-violet-200/70 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                                {t('documentsPage.admin.labels.absenceType', { type: doc.absence.type })}
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="block min-w-0 truncate">
+                            {isTimesheetSignature ? '—' : t(`documentsPage.tabs.${doc.category}`, doc.category)}
+                          </span>
                           <span>{priorityLabel}</span>
                           <span className={cn('text-xs font-semibold', signatureTone)}>{signatureLabel}</span>
                           <span className="text-xs text-muted-foreground">{lastViewLabel}</span>
                           <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
                           <div className="flex justify-end gap-2">
+                            {isTimesheetSignature ? (
+                              <button
+                                type="button"
+                                className={actionIconButtonClass}
+                                title={t('documentsPage.admin.actions.sign')}
+                                disabled={signingId === doc.id}
+                                onClick={() => handleSignTimesheet(doc)}
+                              >
+                                <PenLine className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <>
                             <button
                               type="button"
                               className={actionIconButtonClass}
@@ -881,6 +925,8 @@ export default function AdminDocuments() {
                                 </form>
                               </DialogContent>
                             </Dialog>
+                              </>
+                            )}
                           </div>
                         </div>
                       )
@@ -903,6 +949,7 @@ export default function AdminDocuments() {
             ) : null}
             {!loading &&
               documents.map((doc) => {
+                const isTimesheetSignature = doc.type === 'timesheet_signature'
                 const employee = doc.user || doc.employee
                 const employeeName =
                   employee?.name || employee?.full_name || t('documentsPage.admin.labels.employeeFallback')
@@ -910,10 +957,10 @@ export default function AdminDocuments() {
                 const employeeLabel = employee
                   ? `${employeeName} - ${employeeEmail}`
                   : t('documentsPage.admin.labels.employeeFallback')
-                const priorityLabel = getPriorityLabel(doc.priority)
-                const signatureLabel = getSignatureLabel(doc)
-                const signatureTone = getSignatureTone(doc)
-                const lastViewLabel = getLastViewLabel(doc)
+                const priorityLabel = isTimesheetSignature ? null : getPriorityLabel(doc.priority)
+                const signatureLabel = isTimesheetSignature ? null : getSignatureLabel(doc)
+                const signatureTone = isTimesheetSignature ? '' : getSignatureTone(doc)
+                const lastViewLabel = isTimesheetSignature ? null : getLastViewLabel(doc)
 
                 return (
                   <div key={doc.id} className="rounded-2xl border border-border/70 bg-card/95 p-4 shadow-sm">
@@ -921,85 +968,119 @@ export default function AdminDocuments() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold">{doc.title}</p>
                         <p className="text-xs text-muted-foreground">{employeeLabel}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatDate(doc.updatedAt, i18n.language)} - {t(`documentsPage.tabs.${doc.category}`, doc.category)}
-                        </p>
-                        <p className="mt-2 text-[11px] text-muted-foreground">
-                          {t('documentsPage.admin.labels.priority', { value: priorityLabel })}
-                        </p>
-                        <p className={cn('text-[11px] font-semibold', signatureTone)}>{signatureLabel}</p>
-                        <p className="text-[11px] text-muted-foreground">{lastViewLabel}</p>
+                        {!isTimesheetSignature ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatDate(doc.updatedAt, i18n.language)} - {t(`documentsPage.tabs.${doc.category}`, doc.category)}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatDate(doc.updatedAt, i18n.language)}
+                          </p>
+                        )}
+                        {!isTimesheetSignature && doc.absence ? (
+                          <span className="mt-1 inline-flex items-center rounded-full border border-violet-200/70 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                            {t('documentsPage.admin.labels.absenceType', { type: doc.absence.type })}
+                          </span>
+                        ) : null}
+                        {priorityLabel ? (
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            {t('documentsPage.admin.labels.priority', { value: priorityLabel })}
+                          </p>
+                        ) : null}
+                        {signatureLabel ? (
+                          <p className={cn('text-[11px] font-semibold', signatureTone)}>{signatureLabel}</p>
+                        ) : null}
+                        {lastViewLabel ? (
+                          <p className="text-[11px] text-muted-foreground">{lastViewLabel}</p>
+                        ) : null}
                       </div>
                       <Badge status={doc.status}>{t(`documentsPage.status.${doc.status}`, doc.status)}</Badge>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                      <Button type="button" size="sm" variant="outline" onClick={() => handleView(doc)}>
-                        <Eye className="h-4 w-4" />
-                        {t('documentsPage.actions.view')}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          downloadDocument(
-                            doc.id,
-                            `${doc.title || t('documentsPage.admin.fileFallback')}.${doc.extension || 'pdf'}`,
-                          )
-                        }
-                      >
-                        <Download className="h-4 w-4" />
-                        {t('documentsPage.actions.download')}
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => handleApprove(doc)} disabled={approving}>
-                        <Check className="h-4 w-4" />
-                        {t('documentsPage.admin.actions.approve')}
-                      </Button>
-                      <Dialog
-                        open={rejectOpen && rejectTarget?.id === doc.id}
-                        onOpenChange={(open) => {
-                          setRejectOpen(open)
-                          setRejectTarget(open ? doc : null)
-                          setRejectReason('')
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button type="button" size="sm" variant="outline">
-                            <X className="h-4 w-4" />
-                            {t('documentsPage.admin.actions.reject')}
+                      {isTimesheetSignature ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={signingId === doc.id}
+                          onClick={() => handleSignTimesheet(doc)}
+                        >
+                          <PenLine className="h-4 w-4" />
+                          {signingId === doc.id
+                            ? t('documentsPage.admin.actions.signing')
+                            : t('documentsPage.admin.actions.sign')}
+                        </Button>
+                      ) : (
+                        <>
+                          <Button type="button" size="sm" variant="outline" onClick={() => handleView(doc)}>
+                            <Eye className="h-4 w-4" />
+                            {t('documentsPage.actions.view')}
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{t('documentsPage.admin.reject.title')}</DialogTitle>
-                            <DialogDescription>
-                              {t('documentsPage.admin.reject.description')}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form className="space-y-4" onSubmit={handleReject}>
-                            <Textarea
-                              rows={4}
-                              minLength={5}
-                              value={rejectReason}
-                              onChange={(event) => setRejectReason(event.target.value)}
-                              placeholder={t('documentsPage.admin.reject.placeholder')}
-                              required
-                            />
-                            <DialogFooter className="pt-2">
-                              <DialogClose asChild>
-                                <Button type="button" variant="ghost">
-                                  {t('common.actions.cancel')}
-                                </Button>
-                              </DialogClose>
-                              <Button type="submit" disabled={rejecting || rejectReason.length < 5} className="min-w-[140px]">
-                                {rejecting
-                                  ? t('documentsPage.admin.actions.rejecting')
-                                  : t('documentsPage.admin.actions.reject')}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              downloadDocument(
+                                doc.id,
+                                `${doc.title || t('documentsPage.admin.fileFallback')}.${doc.extension || 'pdf'}`,
+                              )
+                            }
+                          >
+                            <Download className="h-4 w-4" />
+                            {t('documentsPage.actions.download')}
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => handleApprove(doc)} disabled={approving}>
+                            <Check className="h-4 w-4" />
+                            {t('documentsPage.admin.actions.approve')}
+                          </Button>
+                          <Dialog
+                            open={rejectOpen && rejectTarget?.id === doc.id}
+                            onOpenChange={(open) => {
+                              setRejectOpen(open)
+                              setRejectTarget(open ? doc : null)
+                              setRejectReason('')
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button type="button" size="sm" variant="outline">
+                                <X className="h-4 w-4" />
+                                {t('documentsPage.admin.actions.reject')}
                               </Button>
-                            </DialogFooter>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{t('documentsPage.admin.reject.title')}</DialogTitle>
+                                <DialogDescription>
+                                  {t('documentsPage.admin.reject.description')}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <form className="space-y-4" onSubmit={handleReject}>
+                                <Textarea
+                                  rows={4}
+                                  minLength={5}
+                                  value={rejectReason}
+                                  onChange={(event) => setRejectReason(event.target.value)}
+                                  placeholder={t('documentsPage.admin.reject.placeholder')}
+                                  required
+                                />
+                                <DialogFooter className="pt-2">
+                                  <DialogClose asChild>
+                                    <Button type="button" variant="ghost">
+                                      {t('common.actions.cancel')}
+                                    </Button>
+                                  </DialogClose>
+                                  <Button type="submit" disabled={rejecting || rejectReason.length < 5} className="min-w-[140px]">
+                                    {rejecting
+                                      ? t('documentsPage.admin.actions.rejecting')
+                                      : t('documentsPage.admin.actions.reject')}
+                                  </Button>
+                                </DialogFooter>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      )}
                     </div>
                   </div>
                 )

@@ -1705,6 +1705,7 @@ const es = {
         pending: 'Pendiente',
         review: 'En revisión',
         expired: 'Vencido',
+        pending_manager: 'Esperando firma',
       },
       tabs: {
         all: 'Todos',
@@ -1820,6 +1821,8 @@ const es = {
           employeeFallback: 'Sin colaborador',
           updatedAt: 'Actualizado el {{date}}',
           priority: 'Prioridad: {{value}}',
+          absenceType: 'Ausencia: {{type}}',
+          timesheetPeriod: 'Nómina de horas - {{month}}/{{year}}',
         },
         fileFallback: 'Documento',
         actions: {
@@ -1828,6 +1831,8 @@ const es = {
           approve: 'Aprobar',
           reject: 'Rechazar',
           rejecting: 'Rechazando...',
+          sign: 'Firmar',
+          signing: 'Firmando...',
         },
         upload: {
           title: 'Subir documento',
@@ -1872,6 +1877,10 @@ const es = {
           rejectSuccessDescription: 'Se rechazó {{title}}.',
           rejectErrorTitle: 'Error al rechazar',
           rejectErrorDescription: 'No se pudo rechazar el documento.',
+          signSuccessTitle: 'Nómina firmada',
+          signSuccessDescription: 'La nómina de horas fue firmada correctamente.',
+          signErrorTitle: 'Error al firmar',
+          signErrorDescription: 'No se pudo firmar la nómina de horas.',
         },
         errors: {
           viewGeneric: 'No se pudo abrir el documento.',

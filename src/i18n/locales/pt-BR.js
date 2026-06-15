@@ -1766,6 +1766,7 @@ const ptBR = {
         pending: 'Pendente',
         review: 'Em revisão',
         expired: 'Vencido',
+        pending_manager: 'Aguardando assinatura',
       },
       tabs: {
         all: 'Todos',
@@ -1881,6 +1882,8 @@ const ptBR = {
           employeeFallback: 'Sem colaborador',
           updatedAt: 'Atualizado em {{date}}',
           priority: 'Prioridade: {{value}}',
+          absenceType: 'Ausência: {{type}}',
+          timesheetPeriod: 'Folha de ponto - {{month}}/{{year}}',
         },
         fileFallback: 'Documento',
         actions: {
@@ -1889,6 +1892,8 @@ const ptBR = {
           approve: 'Aprovar',
           reject: 'Rejeitar',
           rejecting: 'Rejeitando...',
+          sign: 'Assinar',
+          signing: 'Assinando...',
         },
         upload: {
           title: 'Subir documento',
@@ -1933,6 +1938,10 @@ const ptBR = {
           rejectSuccessDescription: 'O documento {{title}} foi rejeitado.',
           rejectErrorTitle: 'Erro ao rejeitar',
           rejectErrorDescription: 'Não foi possível rejeitar o documento.',
+          signSuccessTitle: 'Folha assinada',
+          signSuccessDescription: 'A folha de ponto foi assinada com sucesso.',
+          signErrorTitle: 'Erro ao assinar',
+          signErrorDescription: 'Não foi possível assinar a folha de ponto.',
         },
         errors: {
           viewGeneric: 'Não foi possível abrir o documento.',
