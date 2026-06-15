@@ -22,9 +22,43 @@ const ensureAdminUploadFormData = (payload) => {
   return formData
 }
 
+const normalizeTimesheetSignature = (item = {}, index = 0) => {
+  const closure = item.monthly_closure ?? {}
+  const month = closure.reference_month ?? ""
+  const year = closure.reference_year ?? ""
+  const paddedMonth = month ? String(month).padStart(2, "0") : ""
+  const generatedTitle = paddedMonth && year ? `Folha de ponto - ${paddedMonth}/${year}` : (item.title ?? "Folha de ponto")
+
+  return {
+    ...item,
+    id: item.id ?? `timesheet-${index}`,
+    type: "timesheet_signature",
+    title: generatedTitle,
+    status: (item.status ?? "").toString().toLowerCase(),
+    category: "",
+    priority: "",
+    isImportant: false,
+    requiresSignature: false,
+    signatureStatus: "",
+    signedAt: null,
+    lastViewedAt: null,
+    sizeBytes: null,
+    sizeLabel: "",
+    extension: "",
+    updatedAt: item.updated_at ?? item.updatedAt ?? item.created_at ?? "",
+    employee: item.employee ?? null,
+    user: item.employee ?? null,
+    monthlyClosure: closure,
+  }
+}
+
 const normalizeAdminDocument = (item = {}, index = 0) => {
+  if (item.type === "timesheet_signature") {
+    return normalizeTimesheetSignature(item, index)
+  }
+
   const status = (item.status ?? item.state ?? "").toString().toLowerCase()
-  const category = (item.category ?? item.type ?? "").toString().toLowerCase()
+  const category = (item.category ?? "").toString().toLowerCase()
   const sizeBytes = item.size_bytes ?? item.sizeBytes ?? item.size ?? null
   const priority = (item.priority ?? item.priority_level ?? item.priorityLevel ?? "").toString().toLowerCase()
   const isImportant = Boolean(
@@ -53,6 +87,7 @@ const normalizeAdminDocument = (item = {}, index = 0) => {
   return {
     ...item,
     id: item.id ?? item.uuid ?? `admin-document-${index}`,
+    type: "document",
     title: item.title ?? item.name ?? item.filename ?? "Documento",
     category,
     status,
@@ -68,6 +103,9 @@ const normalizeAdminDocument = (item = {}, index = 0) => {
     updatedAt: item.updated_at ?? item.updatedAt ?? item.modified_at ?? item.created_at ?? "",
     user: item.user ?? item.employee ?? item.owner ?? null,
     employee: item.employee ?? item.user ?? null,
+    absence: item.absence ?? null,
+    rejectedComment: item.rejected_comment ?? item.rejection_comment ?? null,
+    rejectedAt: item.rejected_at ?? null,
   }
 }
 

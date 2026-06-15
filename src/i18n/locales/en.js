@@ -1660,6 +1660,7 @@ const en = {
         pending: 'Pending',
         review: 'In review',
         expired: 'Expired',
+        pending_manager: 'Awaiting signature',
       },
       tabs: {
         all: 'All',
@@ -1775,6 +1776,8 @@ const en = {
           employeeFallback: 'No employee',
           updatedAt: 'Updated on {{date}}',
           priority: 'Priority: {{value}}',
+          absenceType: 'Absence: {{type}}',
+          timesheetPeriod: 'Timesheet - {{month}}/{{year}}',
         },
         fileFallback: 'Document',
         actions: {
@@ -1783,6 +1786,8 @@ const en = {
           approve: 'Approve',
           reject: 'Reject',
           rejecting: 'Rejecting...',
+          sign: 'Sign',
+          signing: 'Signing...',
         },
         upload: {
           title: 'Upload document',
@@ -1827,6 +1832,10 @@ const en = {
           rejectSuccessDescription: '{{title}} was rejected.',
           rejectErrorTitle: 'Reject error',
           rejectErrorDescription: "We couldn't reject the document.",
+          signSuccessTitle: 'Timesheet signed',
+          signSuccessDescription: 'The timesheet was signed successfully.',
+          signErrorTitle: 'Sign error',
+          signErrorDescription: "We couldn't sign the timesheet.",
         },
         errors: {
           viewGeneric: "We couldn't open the document.",
