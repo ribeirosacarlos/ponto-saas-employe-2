@@ -1126,24 +1126,33 @@ function LocalizedFaqGroup({ title, value, multiline = false, onChange }) {
 }
 
 function UploadUrlField({ label, value, onChange, onTriggerUpload, uploading }) {
+  const filename = value ? decodeURIComponent(value.split('/').pop().split('?')[0]) : null
+
   return (
-    <div className="grid gap-2 lg:grid-cols-[1fr_auto]">
-      <Field label={label}>
-        <div className="flex gap-2">
+    <div className="space-y-1.5">
+      <div className="grid gap-2 lg:grid-cols-[1fr_auto]">
+        <Field label={label}>
           <input
             type="text"
             value={value}
             onChange={(event) => onChange(event.target.value)}
             className={formControlClass}
+            placeholder="https://..."
           />
+        </Field>
+        <div className="flex items-end">
+          <Button type="button" variant="outline" onClick={onTriggerUpload} disabled={uploading}>
+            {uploading ? <Upload className="h-4 w-4" /> : <ImageUp className="h-4 w-4" />}
+            {uploading ? 'Upload...' : 'Upload'}
+          </Button>
         </div>
-      </Field>
-      <div className="flex items-end">
-        <Button type="button" variant="outline" onClick={onTriggerUpload} disabled={uploading}>
-          {uploading ? <Upload className="h-4 w-4" /> : <ImageUp className="h-4 w-4" />}
-          {uploading ? 'Upload...' : 'Upload'}
-        </Button>
       </div>
+      {value ? (
+        <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-2 py-1.5">
+          <img src={value} alt="" className="h-8 w-8 flex-shrink-0 rounded object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          <span className="truncate text-[11px] text-muted-foreground">{filename}</span>
+        </div>
+      ) : null}
     </div>
   )
 }
