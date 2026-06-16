@@ -111,8 +111,8 @@ const createPayloadFromForm = (form) => ({
   content_html: normalizeLocalizedPayload(form.contentHtml, true),
   hero_image_alt: normalizeLocalizedPayload(form.heroImageAlt, true),
   hero_caption: normalizeLocalizedPayload(form.heroCaption, true),
-  seo_title: normalizeLocalizedPayload(form.seoTitle, true),
-  seo_description: normalizeLocalizedPayload(form.seoDescription, true),
+  seo_title: normalizeLocalizedPayload(form.seoTitle),
+  seo_description: normalizeLocalizedPayload(form.seoDescription),
   toc: LANGS.reduce((acc, lang) => {
     acc[lang] = parseTocTextarea(form.toc[lang])
     return acc
