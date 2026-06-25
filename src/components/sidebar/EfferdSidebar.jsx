@@ -29,10 +29,11 @@ import { ROUTES } from '@/routes/config'
 
 // ─── nav group config ──────────────────────────────────────────────────────
 
-const NAV_GROUP_ORDER = ['workspace', 'admin', 'superAdmin']
+const NAV_GROUP_ORDER = ['workspace', 'admin', 'commercial', 'superAdmin']
 const NAV_GROUP_LABEL_KEYS = {
   workspace: 'sidebar.sections.workspace',
   admin: 'sidebar.sections.admin',
+  commercial: 'sidebar.sections.commercial',
   superAdmin: 'sidebar.sections.superAdmin',
 }
 

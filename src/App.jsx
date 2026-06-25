@@ -35,6 +35,15 @@ import SettingsPage from './pages/SettingsPage.jsx'
 import CompanyMissingPage from './pages/CompanyMissingPage.jsx'
 import SubscribePage from './pages/SubscribePage.jsx'
 import ForbiddenPage from './pages/ForbiddenPage.jsx'
+import CommercialDashboard from './pages/CommercialDashboard.jsx'
+import CommercialLeads from './pages/CommercialLeads.jsx'
+import CommercialSteps from './pages/CommercialSteps.jsx'
+import CommercialAffiliates from './pages/CommercialAffiliates.jsx'
+import CommercialCommissions from './pages/CommercialCommissions.jsx'
+import CommercialTeam from './pages/CommercialTeam.jsx'
+import AffiliateActivate from './pages/AffiliateActivate.jsx'
+import AffiliateLogin from './pages/AffiliateLogin.jsx'
+import AffiliatePanel from './pages/AffiliatePanel.jsx'
 import { EfferdSidebar } from './components/sidebar/EfferdSidebar.jsx'
 import { EfferdTopBar } from './components/sidebar/EfferdTopBar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
@@ -60,11 +69,12 @@ import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 import { getWorkedTodayMinutes } from './lib/timesheet'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
-const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword'])
+const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword', 'affiliateActivate', 'affiliateLogin', 'affiliatePanel'])
 const NAV_GROUP_ORDER = {
   workspace: 0,
   admin: 1,
-  superAdmin: 2,
+  commercial: 2,
+  superAdmin: 3,
 }
 const ADMIN_LAST_ITEM_IDS = new Set(['settings'])
 const APP_TITLE_FALLBACK = 'Jornafy'
@@ -108,6 +118,12 @@ const PAGE_TITLE_CONFIG = {
   announcements: { key: 'announcementsPage.title', fallback: 'Comunicados' },
   equipo: { key: 'equipoPage.title', fallback: 'Equipe' },
   settings: { key: 'settingsPage.title', fallback: 'Configuracoes' },
+  commercialDashboard: { key: 'sidebar.items.commercialDashboard', fallback: 'Dashboard Comercial' },
+  commercialLeads: { key: 'sidebar.items.commercialLeads', fallback: 'Leads' },
+  commercialSteps: { key: 'sidebar.items.commercialSteps', fallback: 'Etapas do Pipeline' },
+  commercialAffiliates: { key: 'sidebar.items.commercialAffiliates', fallback: 'Afiliados' },
+  commercialCommissions: { key: 'sidebar.items.commercialCommissions', fallback: 'Comissões e Bônus' },
+  commercialTeam: { key: 'sidebar.items.commercialTeam', fallback: 'Equipe Comercial' },
 }
 
 const getInitialSidebarCollapsed = () => {
@@ -184,7 +200,7 @@ export default function App() {
         }
       })
         .filter((item) => canRenderCard(capabilities, item.requires))
-        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' : true))
+        .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' || item.group === 'commercial' : true))
         .filter((item) => {
           if (item.id !== 'auditLogsAdmin') return true
           return companyAuditAccess === true
@@ -657,6 +673,18 @@ export default function App() {
             onRetry={handleRetryAccess}
           />
         )
+      case 'commercialDashboard':
+        return <CommercialDashboard />
+      case 'commercialLeads':
+        return <CommercialLeads />
+      case 'commercialSteps':
+        return <CommercialSteps />
+      case 'commercialAffiliates':
+        return <CommercialAffiliates />
+      case 'commercialCommissions':
+        return <CommercialCommissions />
+      case 'commercialTeam':
+        return <CommercialTeam />
       default:
         return (
           <TimeClock
@@ -673,8 +701,9 @@ export default function App() {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
+  const AFFILIATE_PAGES = new Set(['affiliateActivate', 'affiliateLogin', 'affiliatePanel'])
   const shouldRenderPublicAuthPage =
-    PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute)
+    PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute || AFFILIATE_PAGES.has(currentPage))
   const isRestoringProtectedSession = token && !isSessionReady && !shouldRenderPublicAuthPage
 
   return (
@@ -697,6 +726,12 @@ export default function App() {
             <ActivateAccount />
           ) : currentPage === 'resetPassword' ? (
             <ResetPassword />
+          ) : currentPage === 'affiliateActivate' ? (
+            <AffiliateActivate />
+          ) : currentPage === 'affiliateLogin' ? (
+            <AffiliateLogin />
+          ) : currentPage === 'affiliatePanel' ? (
+            <AffiliatePanel />
           ) : (
             <ForgotPassword />
           )

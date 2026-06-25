@@ -428,6 +428,7 @@ const ptBR = {
       sections: {
         workspace: 'Área de trabalho',
         admin: 'Administração',
+        commercial: 'Comercial',
         superAdmin: 'Super Admin',
       },
       groups: {
@@ -469,6 +470,12 @@ const ptBR = {
         monthlyClosures: 'Fechamento mensal',
         companyTimezone: 'Fuso horário da empresa',
         holidays: 'Feriados',
+        commercialDashboard: 'Dashboard Comercial',
+        commercialLeads: 'Leads',
+        commercialSteps: 'Etapas do Pipeline',
+        commercialAffiliates: 'Afiliados',
+        commercialCommissions: 'Comissões e Bônus',
+        commercialTeam: 'Equipe Comercial',
       },
     },
     adminOnboarding: {

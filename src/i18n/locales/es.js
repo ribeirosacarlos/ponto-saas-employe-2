@@ -424,6 +424,7 @@ const es = {
       sections: {
         workspace: 'Área de trabajo',
         admin: 'Administración',
+        commercial: 'Comercial',
         superAdmin: 'Super Admin',
       },
       groups: {
@@ -464,6 +465,12 @@ const es = {
         monthlyClosures: 'Cierre mensual',
         companyTimezone: 'Zona horaria de la empresa',
         holidays: 'Feriados',
+        commercialDashboard: 'Dashboard Comercial',
+        commercialLeads: 'Leads',
+        commercialSteps: 'Etapas del Pipeline',
+        commercialAffiliates: 'Afiliados',
+        commercialCommissions: 'Comisiones y Bonos',
+        commercialTeam: 'Equipo Comercial',
       },
     },
     adminOnboarding: {
