@@ -52,6 +52,7 @@ import { SidebarProvider } from './components/ui/sidebar.jsx'
 import { BrandSignature } from './components/BrandSignature.jsx'
 import { HelpContactDialog } from './components/HelpContactDialog.jsx'
 import { useAuthStore } from './store/useAuth.js'
+import { useAffiliateAuth } from './store/useAffiliateAuth.js'
 import { getWorkedToday } from './services/modules/employee'
 import { getCurrentUser } from './services/authService'
 import { listAuditLogs } from './services/auditLogsService'
@@ -141,6 +142,7 @@ export default function App() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const roles = useAuthStore((state) => state.roles)
+  const setAffiliateSession = useAffiliateAuth((s) => s.setSession)
   const syncProfile = useAuthStore((state) => state.syncProfile)
   const { theme } = useTheme()
   const { toast } = useToast()
@@ -308,6 +310,16 @@ export default function App() {
   useEffect(() => {
     void restoreSession()
   }, [restoreSession])
+
+  // Afiliados que logam pelo login principal são redirecionados para o portal do afiliado
+  useEffect(() => {
+    if (!isSessionReady || !token) return
+    const isAffiliate = roles?.some((r) => String(r).toLowerCase() === 'affiliate')
+    if (!isAffiliate) return
+    setAffiliateSession(token, user)
+    logout()
+    window.location.href = '/affiliate/panel'
+  }, [isSessionReady, token, roles, user, setAffiliateSession, logout])
 
   useEffect(() => {
     if (isMobile) {
