@@ -141,7 +141,6 @@ export default function App() {
   const restoreSession = useAuthStore((state) => state.restoreSession)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
-  const clearLocalSession = useAuthStore((state) => state.clearLocalSession)
   const roles = useAuthStore((state) => state.roles)
   const setAffiliateSession = useAffiliateAuth((s) => s.setSession)
   const syncProfile = useAuthStore((state) => state.syncProfile)
@@ -187,6 +186,10 @@ export default function App() {
   const isCompanyAdmin = useMemo(
     () => roles?.some((role) => String(role).toLowerCase() === 'admin'),
     [roles],
+  )
+  const isAffiliateUser = useMemo(
+    () => Boolean(token) && roles?.some((r) => String(r).toLowerCase() === 'affiliate'),
+    [token, roles],
   )
   const canViewForbiddenRequestDetails = isCompanyAdmin || isSuperAdmin
 
@@ -313,6 +316,12 @@ export default function App() {
   }, [restoreSession])
 
   useEffect(() => {
+    if (isAffiliateUser && token && user) {
+      setAffiliateSession(token, user)
+    }
+  }, [isAffiliateUser, token, user, setAffiliateSession])
+
+  useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false)
     } else {
@@ -323,13 +332,8 @@ export default function App() {
   useEffect(() => {
     if (!isSessionReady) return
 
-    // Afiliados que logam pelo login principal → transferir para portal sem invalidar o token
-    if (token && roles?.some((r) => String(r).toLowerCase() === 'affiliate')) {
-      setAffiliateSession(token, user)
-      clearLocalSession()
-      window.location.href = '/affiliate/panel'
-      return
-    }
+    // Afiliados são renderizados diretamente pelo App — sem navegação
+    if (isAffiliateUser) return
 
     if (!token) {
       setCompanyAuditAccess(null)
@@ -371,7 +375,7 @@ export default function App() {
     }
     setCurrentPage(allowedPage)
     setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
-  }, [canAccessPage, clearAccessDenied, clearLocalSession, getDefaultAuthenticatedPage, isSessionReady, navigateTo, roles, setAffiliateSession, token, user])
+  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, isAffiliateUser, isSessionReady, navigateTo, roles, token])
 
   useEffect(() => {
     if (!isSessionReady) return
@@ -732,7 +736,9 @@ export default function App() {
         <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
       <div className="relative z-10 h-full">
-        {shouldRenderPublicAuthPage ? (
+        {isAffiliateUser && isSessionReady ? (
+          <AffiliatePanel authToken={token} authAffiliate={user} onLogout={logout} />
+        ) : shouldRenderPublicAuthPage ? (
           currentPage === 'activateAccount' ? (
             <ActivateAccount />
           ) : currentPage === 'resetPassword' ? (

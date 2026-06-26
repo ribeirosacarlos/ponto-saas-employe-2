@@ -737,8 +737,10 @@ const TABS = [
   { id: 'bonuses', label: 'Bônus', icon: Gift },
 ]
 
-export default function AffiliatePanel() {
-  const { token, affiliate, clearSession } = useAffiliateAuth()
+export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = {}) {
+  const { token: storedToken, affiliate: storedAffiliate, clearSession } = useAffiliateAuth()
+  const token = authToken ?? storedToken
+  const affiliate = authAffiliate ?? storedAffiliate
   const { toast } = useToast()
 
   const [me, setMe] = useState(null)
@@ -775,11 +777,14 @@ export default function AffiliatePanel() {
   const handleLogout = async () => {
     setLoggingOut(true)
     try {
-      if (token) await affiliateLogout(token)
+      if (token && !onLogout) await affiliateLogout(token)
     } catch {
       // ignore logout errors
     } finally {
       clearSession()
+      if (onLogout) {
+        await onLogout()
+      }
       window.location.href = '/affiliate/login'
     }
   }
