@@ -64,8 +64,14 @@ export default function CommercialTeam() {
     if (!hasAccess) return
     setLoading(true)
     try {
-      const data = await listAllEmployees({ perPage: 200 })
-      setAllEmployees(Array.isArray(data) ? data : [])
+      const raw = await listAllEmployees({ perPage: 200 })
+      const data = (Array.isArray(raw) ? raw : []).map((emp) => ({
+        ...emp,
+        role: typeof emp.role === 'object' && emp.role !== null
+          ? (emp.role.name ?? emp.role.id ?? emp.role.display_name)
+          : emp.role,
+      }))
+      setAllEmployees(data)
     } catch (err) {
       console.error('[CommercialTeam]', err)
       toast({ title: 'Erro', description: 'Não foi possível carregar os funcionários.', variant: 'error' })
