@@ -4,6 +4,8 @@ const ROLE_CAPABILITIES = {
   manager: ['manager', 'area_manager', 'employee'],
   admin: ['admin', 'area_manager', 'employee'],
   super_admin: ['super_admin', 'admin', 'area_manager', 'employee'],
+  commercial_manager: ['commercial_manager'],
+  commercial_agent: ['commercial_agent'],
 }
 
 function normalizeRoles(roles) {

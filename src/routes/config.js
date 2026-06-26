@@ -1,5 +1,8 @@
 export const ROUTES = {
   login: { path: '/', isPublic: true },
+  affiliateActivate: { path: '/affiliate/activate', isPublic: true },
+  affiliateLogin: { path: '/affiliate/login', isPublic: true },
+  affiliatePanel: { path: '/affiliate/panel', isPublic: true },
   activateAccount: { path: '/activate-account', isPublic: true },
   resetPassword: { path: '/reset-password', isPublic: true },
   forgotPassword: { path: '/forgot-password', isPublic: true },
@@ -96,6 +99,30 @@ export const ROUTES = {
     guard: { anyOf: ['employee'] },
   },
   equipo: { path: '/equipo', guard: { anyOf: ['area_manager'] } },
+  commercialDashboard: {
+    path: '/commercial/dashboard',
+    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+  },
+  commercialLeads: {
+    path: '/commercial/leads',
+    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+  },
+  commercialSteps: {
+    path: '/commercial/steps',
+    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+  },
+  commercialAffiliates: {
+    path: '/commercial/affiliates',
+    guard: { anyOf: ['super_admin', 'commercial_manager'] },
+  },
+  commercialCommissions: {
+    path: '/commercial/commissions',
+    guard: { anyOf: ['super_admin', 'commercial_manager'] },
+  },
+  commercialTeam: {
+    path: '/commercial/team',
+    guard: { anyOf: ['super_admin'] },
+  },
 }
 
 const ROUTE_ENTRIES = Object.entries(ROUTES)
