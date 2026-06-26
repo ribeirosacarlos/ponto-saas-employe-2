@@ -150,4 +150,7 @@ export const useAuthStore = create((set, get) => ({
     persistAuthSession({ token: get().token, user: user || null, roles })
     set({ user, roles, error: null, isSessionReady: true })
   },
+  clearLocalSession: () => {
+    resetAuthState(set)
+  },
 }))
