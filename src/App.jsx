@@ -141,6 +141,7 @@ export default function App() {
   const restoreSession = useAuthStore((state) => state.restoreSession)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const clearLocalSession = useAuthStore((state) => state.clearLocalSession)
   const roles = useAuthStore((state) => state.roles)
   const setAffiliateSession = useAffiliateAuth((s) => s.setSession)
   const syncProfile = useAuthStore((state) => state.syncProfile)
@@ -311,16 +312,6 @@ export default function App() {
     void restoreSession()
   }, [restoreSession])
 
-  // Afiliados que logam pelo login principal são redirecionados para o portal do afiliado
-  useEffect(() => {
-    if (!isSessionReady || !token) return
-    const isAffiliate = roles?.some((r) => String(r).toLowerCase() === 'affiliate')
-    if (!isAffiliate) return
-    setAffiliateSession(token, user)
-    logout()
-    window.location.href = '/affiliate/panel'
-  }, [isSessionReady, token, roles, user, setAffiliateSession, logout])
-
   useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false)
@@ -331,6 +322,14 @@ export default function App() {
 
   useEffect(() => {
     if (!isSessionReady) return
+
+    // Afiliados que logam pelo login principal → transferir para portal sem invalidar o token
+    if (token && roles?.some((r) => String(r).toLowerCase() === 'affiliate')) {
+      setAffiliateSession(token, user)
+      clearLocalSession()
+      window.location.href = '/affiliate/panel'
+      return
+    }
 
     if (!token) {
       setCompanyAuditAccess(null)
@@ -372,7 +371,7 @@ export default function App() {
     }
     setCurrentPage(allowedPage)
     setCurrentRouteParams(getRouteParams(allowedPage, window.location.pathname))
-  }, [canAccessPage, clearAccessDenied, getDefaultAuthenticatedPage, isSessionReady, navigateTo, token])
+  }, [canAccessPage, clearAccessDenied, clearLocalSession, getDefaultAuthenticatedPage, isSessionReady, navigateTo, roles, setAffiliateSession, token, user])
 
   useEffect(() => {
     if (!isSessionReady) return
