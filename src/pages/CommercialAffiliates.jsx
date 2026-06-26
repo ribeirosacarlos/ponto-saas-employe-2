@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ExternalLink, Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
+import { ExternalLink, Link2, Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { Button } from '../components/ui/button'
@@ -31,6 +31,7 @@ const buildForm = (aff = null) => ({
   email: aff?.email ?? '',
   phone: aff?.phone ?? '',
   status: aff?.status ?? 'active',
+  create_account: false,
 })
 
 const STATUS_LABELS = { active: 'Ativo', inactive: 'Inativo' }
@@ -94,10 +95,11 @@ export default function CommercialAffiliates() {
         ...(form.email && { email: form.email.trim() }),
         ...(form.phone && { phone: form.phone.trim() }),
         status: form.status,
+        ...(formMode === 'create' && { create_account: form.create_account }),
       }
       if (formMode === 'create') {
         await createAffiliate(payload)
-        toast({ title: 'Afiliado criado' })
+        toast({ title: 'Afiliado criado', description: form.create_account ? 'Convite de acesso enviado por e-mail.' : undefined })
       } else {
         await updateAffiliate(form.id, payload)
         toast({ title: 'Afiliado atualizado' })
@@ -196,6 +198,18 @@ export default function CommercialAffiliates() {
                     /{aff.slug}
                     {aff.email && ` · ${aff.email}`}
                   </p>
+                  {aff.referral_url && (
+                    <a
+                      href={aff.referral_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link2 className="h-3 w-3" />
+                      {aff.referral_url}
+                    </a>
+                  )}
                   {aff.commission_plan && (
                     <p className="text-[10px] text-muted-foreground">
                       Plano: {aff.commission_plan.name} — {aff.commission_plan.commission_percentage}% por{' '}
@@ -311,6 +325,20 @@ export default function CommercialAffiliates() {
                 <option value="inactive">Inativo</option>
               </select>
             </div>
+            {formMode === 'create' && (
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-border/70 bg-muted/30 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded accent-primary"
+                  checked={form.create_account}
+                  onChange={(e) => setForm((f) => ({ ...f, create_account: e.target.checked }))}
+                />
+                <div>
+                  <p className="text-[12px] font-medium">Criar conta de acesso</p>
+                  <p className="text-[11px] text-muted-foreground">Envia convite por e-mail para o afiliado definir sua senha</p>
+                </div>
+              </label>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
