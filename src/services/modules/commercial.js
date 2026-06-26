@@ -71,6 +71,9 @@ const normalizeAffiliateRecord = (aff = {}, index = 0) => ({
   slug: aff.slug ?? '',
   commission_plan_id: aff.commission_plan_id ?? null,
   status: aff.status ?? 'active',
+  user_id: aff.user_id ?? null,
+  referral_url: aff.referral_url ?? null,
+  user: aff.user ? normalizeUser(aff.user) : null,
   commission_plan: aff.commission_plan
     ? {
         id: aff.commission_plan.id ?? '',
