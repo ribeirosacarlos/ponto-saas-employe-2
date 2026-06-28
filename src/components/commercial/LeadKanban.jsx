@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -258,6 +258,13 @@ export function LeadKanban({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
 
+  // Optimistic local state — syncs from prop, updated immediately on actions
+  const [localLeads, setLocalLeads] = useState(leads)
+  useEffect(() => { setLocalLeads(leads) }, [leads])
+
+  const patchLead = (id, updates) =>
+    setLocalLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)))
+
   const [activeLead, setActiveLead] = useState(null)
 
   // Dialogs state
@@ -272,15 +279,12 @@ export function LeadKanban({
 
   const [wonTarget, setWonTarget] = useState(null)
   const [wonAmount, setWonAmount] = useState('')
-  const [markingWon, setMarkingWon] = useState(false)
 
   const [lostTarget, setLostTarget] = useState(null)
   const [lostReason, setLostReason] = useState('')
-  const [markingLost, setMarkingLost] = useState(false)
 
   const [nextActionTarget, setNextActionTarget] = useState(null)
   const [nextActionForm, setNextActionForm] = useState({ type: 'ligacao', at: '', user_id: '' })
-  const [settingNextAction, setSettingNextAction] = useState(false)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
@@ -293,34 +297,36 @@ export function LeadKanban({
   const leadsByColumn = useMemo(() => {
     const map = {}
     allColumns.forEach((col) => { map[col.id] = [] })
-    leads.forEach((lead) => {
+    localLeads.forEach((lead) => {
       const key = lead.current_step_id ?? NO_STEP_ID
       if (map[key]) map[key].push(lead)
       else map[NO_STEP_ID].push(lead)
     })
     return map
-  }, [allColumns, leads])
+  }, [allColumns, localLeads])
 
   // ── DnD handlers ──────────────────────────────────────────────────────────
 
   const handleDragStart = ({ active }) => {
-    setActiveLead(leads.find((l) => l.id === active.id) ?? null)
+    setActiveLead(localLeads.find((l) => l.id === active.id) ?? null)
   }
 
   const handleDragEnd = async ({ active, over }) => {
     setActiveLead(null)
     if (!over) return
-    const lead = leads.find((l) => l.id === active.id)
+    const lead = localLeads.find((l) => l.id === active.id)
     if (!lead) return
     const fromColId = lead.current_step_id ?? NO_STEP_ID
     const toColId = over.id
     if (fromColId === toColId) return
     const toStepId = toColId === NO_STEP_ID ? null : toColId
+    // Optimistic: move card to target column immediately
+    patchLead(lead.id, { current_step_id: toStepId })
     try {
       await onMoveStep(lead.id, toStepId, undefined)
-      onRefresh()
     } catch {
-      // handled by parent
+      // Revert on failure
+      patchLead(lead.id, { current_step_id: lead.current_step_id })
     }
   }
 
@@ -339,14 +345,16 @@ export function LeadKanban({
     })
   }
 
+  // Fire-and-forget: close dialog immediately, API runs in background
   const handleAddNote = async () => {
     if (!noteTarget || !noteText.trim()) return
     setAddingNote(true)
+    const id = noteTarget.id
+    const text = noteText.trim()
+    setNoteTarget(null)
+    setNoteText('')
     try {
-      await onAddNote(noteTarget.id, noteText.trim())
-      setNoteTarget(null)
-      setNoteText('')
-      onRefresh()
+      await onAddNote(id, text)
     } finally {
       setAddingNote(false)
     }
@@ -355,10 +363,15 @@ export function LeadKanban({
   const handleMoveStep = async () => {
     if (!moveTarget || !moveStepId) return
     setMoving(true)
+    const snapshot = { current_step_id: moveTarget.current_step_id }
+    const id = moveTarget.id
+    // Optimistic update
+    patchLead(id, { current_step_id: moveStepId })
+    setMoveTarget(null)
     try {
-      await onMoveStep(moveTarget.id, moveStepId, moveNote.trim() || undefined)
-      setMoveTarget(null)
-      onRefresh()
+      await onMoveStep(id, moveStepId, moveNote.trim() || undefined)
+    } catch {
+      patchLead(id, snapshot)
     } finally {
       setMoving(false)
     }
@@ -366,41 +379,51 @@ export function LeadKanban({
 
   const handleMarkWon = async () => {
     if (!wonTarget) return
-    setMarkingWon(true)
+    const id = wonTarget.id
+    const snapshot = { status: wonTarget.status }
+    // Optimistic update
+    patchLead(id, { status: 'won' })
+    setWonTarget(null)
     try {
-      await onMarkWon(wonTarget.id, wonAmount ? { base_amount: Number(wonAmount) } : {})
-      setWonTarget(null)
-      onRefresh()
-    } finally {
-      setMarkingWon(false)
+      await onMarkWon(id, wonAmount ? { base_amount: Number(wonAmount) } : {})
+    } catch {
+      patchLead(id, snapshot)
     }
   }
 
   const handleMarkLost = async () => {
     if (!lostTarget) return
-    setMarkingLost(true)
+    const id = lostTarget.id
+    const snapshot = { status: lostTarget.status }
+    // Optimistic update
+    patchLead(id, { status: 'lost' })
+    setLostTarget(null)
     try {
-      await onMarkLost(lostTarget.id, lostReason.trim() || undefined)
-      setLostTarget(null)
-      onRefresh()
-    } finally {
-      setMarkingLost(false)
+      await onMarkLost(id, lostReason.trim() || undefined)
+    } catch {
+      patchLead(id, snapshot)
     }
   }
 
   const handleSetNextAction = async () => {
     if (!nextActionTarget || !nextActionForm.at) return
-    setSettingNextAction(true)
+    const id = nextActionTarget.id
+    const snapshot = {
+      next_action_type: nextActionTarget.next_action_type,
+      next_action_at: nextActionTarget.next_action_at,
+    }
+    const payload = {
+      next_action_type: nextActionForm.type,
+      next_action_at: nextActionForm.at,
+      ...(nextActionForm.user_id && { next_action_user_id: nextActionForm.user_id }),
+    }
+    // Optimistic update
+    patchLead(id, { next_action_type: nextActionForm.type, next_action_at: nextActionForm.at })
+    setNextActionTarget(null)
     try {
-      await onSetNextAction(nextActionTarget.id, {
-        next_action_type: nextActionForm.type,
-        next_action_at: nextActionForm.at,
-        ...(nextActionForm.user_id && { next_action_user_id: nextActionForm.user_id }),
-      })
-      setNextActionTarget(null)
-      onRefresh()
-    } finally {
-      setSettingNextAction(false)
+      await onSetNextAction(id, payload)
+    } catch {
+      patchLead(id, snapshot)
     }
   }
 
@@ -419,6 +442,7 @@ export function LeadKanban({
       await onCreateLead(payload)
       setCreateOpen(false)
       setCreateForm({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
+      // Refresh needed here to get the server-generated ID and data
       onRefresh()
     } finally {
       setCreating(false)
@@ -440,7 +464,7 @@ export function LeadKanban({
       {/* Toolbar */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          {leads.length} lead{leads.length !== 1 ? 's' : ''} no pipeline
+          {localLeads.length} lead{localLeads.length !== 1 ? 's' : ''} no pipeline
         </p>
         {onCreateLead && (
           <Button size="sm" onClick={() => setCreateOpen(true)}>
@@ -469,7 +493,7 @@ export function LeadKanban({
         </div>
 
         {/* Drag overlay — shows floating card while dragging */}
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeLead ? (
             <div className="w-[270px] rounded-[14px] border border-primary/30 bg-card/95 px-3 py-2.5 shadow-[0_12px_40px_-10px_rgba(92,134,255,0.4)] backdrop-blur-xl ring-1 ring-primary/20">
               <CardContent lead={activeLead} steps={steps} onNote={() => {}} onMoveStep={() => {}} onMarkWon={() => {}} onMarkLost={() => {}} onNextAction={() => {}} />
