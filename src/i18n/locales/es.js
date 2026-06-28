@@ -425,6 +425,7 @@ const es = {
         workspace: 'Área de trabajo',
         admin: 'Administración',
         commercial: 'Comercial',
+        affiliate: 'Panel de Afiliado',
         superAdmin: 'Super Admin',
       },
       groups: {
@@ -471,6 +472,10 @@ const es = {
         commercialAffiliates: 'Afiliados',
         commercialCommissions: 'Comisiones y Bonos',
         commercialTeam: 'Equipo Comercial',
+        affiliateOverview: 'Visión General',
+        affiliateLeads: 'Mis Leads',
+        affiliateCommissions: 'Mis Comisiones',
+        affiliateBonuses: 'Mis Bonos',
       },
     },
     adminOnboarding: {

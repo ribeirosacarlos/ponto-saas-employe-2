@@ -429,6 +429,7 @@ const ptBR = {
         workspace: 'Área de trabalho',
         admin: 'Administração',
         commercial: 'Comercial',
+        affiliate: 'Painel de Afiliado',
         superAdmin: 'Super Admin',
       },
       groups: {
@@ -476,6 +477,10 @@ const ptBR = {
         commercialAffiliates: 'Afiliados',
         commercialCommissions: 'Comissões e Bônus',
         commercialTeam: 'Equipe Comercial',
+        affiliateOverview: 'Visão Geral',
+        affiliateLeads: 'Meus Leads',
+        affiliateCommissions: 'Minhas Comissões',
+        affiliateBonuses: 'Meus Bônus',
       },
     },
     adminOnboarding: {

@@ -6,6 +6,7 @@ const ROLE_CAPABILITIES = {
   super_admin: ['super_admin', 'admin', 'area_manager', 'employee'],
   commercial_manager: ['commercial_manager'],
   commercial_agent: ['commercial_agent'],
+  affiliate: ['affiliate'],
 }
 
 function normalizeRoles(roles) {

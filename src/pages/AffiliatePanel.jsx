@@ -737,7 +737,7 @@ const TABS = [
   { id: 'bonuses', label: 'Bônus', icon: Gift },
 ]
 
-export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = {}) {
+export default function AffiliatePanel({ onLogout, authToken, authAffiliate, embeddedMode = false, initialTab = 'overview' } = {}) {
   const { token: storedToken, affiliate: storedAffiliate, clearSession } = useAffiliateAuth()
   const token = authToken ?? storedToken
   const affiliate = authAffiliate ?? storedAffiliate
@@ -746,7 +746,7 @@ export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = 
   const [me, setMe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   useEffect(() => {
     if (!token) {
@@ -761,7 +761,7 @@ export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = 
       const data = await getAffiliateMe(token)
       setMe(data)
     } catch (err) {
-      if (err?.response?.status === 401) {
+      if (err?.response?.status === 401 && !embeddedMode) {
         clearSession()
         window.location.href = '/affiliate/login'
       } else {
@@ -770,7 +770,7 @@ export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = 
     } finally {
       setLoading(false)
     }
-  }, [token, clearSession, toast])
+  }, [token, clearSession, embeddedMode, toast])
 
   useEffect(() => { loadMe() }, [loadMe])
 
@@ -793,6 +793,41 @@ export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = 
 
   const displayAffiliate = me ?? affiliate ?? {}
   const metrics = me?.metrics ?? {}
+
+  const content = (
+    <>
+      {loading && (
+        <p className="mt-20 text-center text-sm text-muted-foreground">Carregando...</p>
+      )}
+
+      {!loading && (
+        <div className="flex flex-col gap-5">
+          {activeTab === 'overview' && (
+            <OverviewTab displayAffiliate={displayAffiliate} metrics={metrics} />
+          )}
+          {activeTab === 'leads' && (
+            <LeadsTab token={token} toast={toast} />
+          )}
+          {activeTab === 'commissions' && (
+            <CommissionsTab token={token} toast={toast} />
+          )}
+          {activeTab === 'bonuses' && (
+            <BonusesTab token={token} toast={toast} />
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  if (embeddedMode) {
+    return (
+      <div className="px-4 py-6 sm:px-6">
+        <div className="mx-auto w-full max-w-3xl">
+          {content}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -822,50 +857,7 @@ export default function AffiliatePanel({ onLogout, authToken, authAffiliate } = 
 
         {/* Content */}
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6">
-          {loading && (
-            <p className="mt-20 text-center text-sm text-muted-foreground">Carregando...</p>
-          )}
-
-          {!loading && (
-            <div className="flex flex-col gap-5">
-              {/* Tabs */}
-              <div className="flex gap-1 overflow-x-auto rounded-[14px] border border-border/60 bg-muted/40 p-1">
-                {TABS.map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={cn(
-                        'flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-[11px] font-semibold transition-all whitespace-nowrap',
-                        activeTab === tab.id
-                          ? 'bg-card text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground',
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      {tab.label}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Tab content */}
-              {activeTab === 'overview' && (
-                <OverviewTab displayAffiliate={displayAffiliate} metrics={metrics} />
-              )}
-              {activeTab === 'leads' && (
-                <LeadsTab token={token} toast={toast} />
-              )}
-              {activeTab === 'commissions' && (
-                <CommissionsTab token={token} toast={toast} />
-              )}
-              {activeTab === 'bonuses' && (
-                <BonusesTab token={token} toast={toast} />
-              )}
-            </div>
-          )}
+          {content}
         </main>
       </div>
     </div>

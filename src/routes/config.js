@@ -123,6 +123,22 @@ export const ROUTES = {
     path: '/commercial/team',
     guard: { anyOf: ['super_admin'] },
   },
+  affiliateOverview: {
+    path: '/affiliate/overview',
+    guard: { anyOf: ['affiliate'] },
+  },
+  affiliateLeads: {
+    path: '/affiliate/leads',
+    guard: { anyOf: ['affiliate'] },
+  },
+  affiliateCommissions: {
+    path: '/affiliate/commissions',
+    guard: { anyOf: ['affiliate'] },
+  },
+  affiliateBonuses: {
+    path: '/affiliate/bonuses',
+    guard: { anyOf: ['affiliate'] },
+  },
 }
 
 const ROUTE_ENTRIES = Object.entries(ROUTES)

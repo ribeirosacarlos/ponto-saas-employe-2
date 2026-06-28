@@ -75,7 +75,8 @@ const NAV_GROUP_ORDER = {
   workspace: 0,
   admin: 1,
   commercial: 2,
-  superAdmin: 3,
+  affiliate: 3,
+  superAdmin: 4,
 }
 const ADMIN_LAST_ITEM_IDS = new Set(['settings'])
 const APP_TITLE_FALLBACK = 'Jornafy'
@@ -125,6 +126,10 @@ const PAGE_TITLE_CONFIG = {
   commercialAffiliates: { key: 'sidebar.items.commercialAffiliates', fallback: 'Afiliados' },
   commercialCommissions: { key: 'sidebar.items.commercialCommissions', fallback: 'Comissões e Bônus' },
   commercialTeam: { key: 'sidebar.items.commercialTeam', fallback: 'Equipe Comercial' },
+  affiliateOverview: { key: 'sidebar.items.affiliateOverview', fallback: 'Visão Geral' },
+  affiliateLeads: { key: 'sidebar.items.affiliateLeads', fallback: 'Meus Leads' },
+  affiliateCommissions: { key: 'sidebar.items.affiliateCommissions', fallback: 'Minhas Comissões' },
+  affiliateBonuses: { key: 'sidebar.items.affiliateBonuses', fallback: 'Meus Bônus' },
 }
 
 const getInitialSidebarCollapsed = () => {
@@ -152,6 +157,10 @@ export default function App() {
   const isSuperAdminOnlyNav = useMemo(
     () => roles?.some((role) => String(role).toLowerCase() === 'super_admin'),
     [roles],
+  )
+  const isAffiliateOnlyNav = useMemo(
+    () => !isSuperAdminOnlyNav && roles?.some((role) => String(role).toLowerCase() === 'affiliate'),
+    [isSuperAdminOnlyNav, roles],
   )
   const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(() =>
@@ -207,6 +216,7 @@ export default function App() {
       })
         .filter((item) => canRenderCard(capabilities, item.requires))
         .filter((item) => (isSuperAdminOnlyNav ? item.group === 'superAdmin' || item.group === 'commercial' : true))
+        .filter((item) => (isAffiliateOnlyNav ? item.group === 'affiliate' || item.group === 'bottom' : true))
         .filter((item) => {
           if (item.id !== 'auditLogsAdmin') return true
           return companyAuditAccess === true
@@ -229,7 +239,7 @@ export default function App() {
             sensitivity: 'base',
           })
         }),
-    [capabilities, companyAuditAccess, isSuperAdminOnlyNav, t, todayBadge],
+    [capabilities, companyAuditAccess, isAffiliateOnlyNav, isSuperAdminOnlyNav, t, todayBadge],
   )
 
   const desktopNavItems = useMemo(
@@ -286,6 +296,7 @@ export default function App() {
 
   const getDefaultAuthenticatedPage = useCallback(() => {
     if (canAccessPage('superAdminDashboard')) return 'superAdminDashboard'
+    if (canAccessPage('affiliateOverview')) return 'affiliateOverview'
     if (canAccessPage('dashboard')) return 'dashboard'
     if (canAccessPage('timeClock')) return 'timeClock'
     return 'dashboard'
@@ -331,9 +342,6 @@ export default function App() {
 
   useEffect(() => {
     if (!isSessionReady) return
-
-    // Afiliados são renderizados diretamente pelo App — sem navegação
-    if (isAffiliateUser) return
 
     if (!token) {
       setCompanyAuditAccess(null)
@@ -700,6 +708,14 @@ export default function App() {
         return <CommercialCommissions />
       case 'commercialTeam':
         return <CommercialTeam />
+      case 'affiliateOverview':
+        return <AffiliatePanel key="overview" embeddedMode initialTab="overview" authToken={token} authAffiliate={user} onLogout={handleLogout} />
+      case 'affiliateLeads':
+        return <AffiliatePanel key="leads" embeddedMode initialTab="leads" authToken={token} authAffiliate={user} onLogout={handleLogout} />
+      case 'affiliateCommissions':
+        return <AffiliatePanel key="commissions" embeddedMode initialTab="commissions" authToken={token} authAffiliate={user} onLogout={handleLogout} />
+      case 'affiliateBonuses':
+        return <AffiliatePanel key="bonuses" embeddedMode initialTab="bonuses" authToken={token} authAffiliate={user} onLogout={handleLogout} />
       default:
         return (
           <TimeClock
@@ -736,9 +752,7 @@ export default function App() {
         <div className="absolute bottom-[-12%] right-[-12%] h-80 w-80 rounded-full bg-indigo-200/14 blur-[130px] dark:bg-indigo-500/12" />
       </div>
       <div className="relative z-10 h-full">
-        {isAffiliateUser && isSessionReady ? (
-          <AffiliatePanel authToken={token} authAffiliate={user} onLogout={logout} />
-        ) : shouldRenderPublicAuthPage ? (
+        {shouldRenderPublicAuthPage ? (
           currentPage === 'activateAccount' ? (
             <ActivateAccount />
           ) : currentPage === 'resetPassword' ? (
