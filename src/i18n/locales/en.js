@@ -427,6 +427,7 @@ const en = {
         workspace: 'Workspace',
         admin: 'Administration',
         commercial: 'Commercial',
+        affiliate: 'Affiliate Panel',
         superAdmin: 'Super Admin',
       },
       groups: {
@@ -472,6 +473,10 @@ const en = {
         commercialAffiliates: 'Affiliates',
         commercialCommissions: 'Commissions & Bonuses',
         commercialTeam: 'Commercial Team',
+        affiliateOverview: 'Overview',
+        affiliateLeads: 'My Leads',
+        affiliateCommissions: 'My Commissions',
+        affiliateBonuses: 'My Bonuses',
       },
     },
     adminOnboarding: {

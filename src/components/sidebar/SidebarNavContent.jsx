@@ -6,6 +6,8 @@ import { ROUTES } from '../../routes/config'
 
 const WORKSPACE_STORAGE_KEY = 'sidebar_group_workspace_open'
 const ADMIN_STORAGE_KEY = 'sidebar_group_admin_open'
+const COMMERCIAL_STORAGE_KEY = 'sidebar_group_commercial_open'
+const AFFILIATE_STORAGE_KEY = 'sidebar_group_affiliate_open'
 const SUPER_ADMIN_STORAGE_KEY = 'sidebar_group_super_admin_open'
 
 const readStoredGroupState = (key, defaultOpen) => {
@@ -70,12 +72,20 @@ export function SidebarNavContent({
     readStoredGroupState(WORKSPACE_STORAGE_KEY, true),
   )
   const [adminOpen, setAdminOpen] = useState(() => readStoredGroupState(ADMIN_STORAGE_KEY, true))
+  const [commercialOpen, setCommercialOpen] = useState(() =>
+    readStoredGroupState(COMMERCIAL_STORAGE_KEY, true),
+  )
+  const [affiliateOpen, setAffiliateOpen] = useState(() =>
+    readStoredGroupState(AFFILIATE_STORAGE_KEY, true),
+  )
   const [superAdminOpen, setSuperAdminOpen] = useState(() =>
     readStoredGroupState(SUPER_ADMIN_STORAGE_KEY, true),
   )
 
   const workspaceExpanded = collapsed ? true : workspaceOpen
   const adminExpanded = collapsed ? true : adminOpen
+  const commercialExpanded = collapsed ? true : commercialOpen
+  const affiliateExpanded = collapsed ? true : affiliateOpen
   const superAdminExpanded = collapsed ? true : superAdminOpen
 
   const workspaceItems = useMemo(
@@ -83,6 +93,14 @@ export function SidebarNavContent({
     [items],
   )
   const adminItems = useMemo(() => items.filter((item) => item.group === 'admin'), [items])
+  const commercialItems = useMemo(
+    () => items.filter((item) => item.group === 'commercial'),
+    [items],
+  )
+  const affiliateItems = useMemo(
+    () => items.filter((item) => item.group === 'affiliate'),
+    [items],
+  )
   const superAdminItems = useMemo(
     () => items.filter((item) => item.group === 'superAdmin'),
     [items],
@@ -122,6 +140,16 @@ export function SidebarNavContent({
     if (typeof window === 'undefined') return
     window.localStorage.setItem(ADMIN_STORAGE_KEY, adminOpen ? '1' : '0')
   }, [adminOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(COMMERCIAL_STORAGE_KEY, commercialOpen ? '1' : '0')
+  }, [commercialOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(AFFILIATE_STORAGE_KEY, affiliateOpen ? '1' : '0')
+  }, [affiliateOpen])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -229,6 +257,114 @@ export function SidebarNavContent({
           >
             <div className="space-y-1 pt-1">
               {adminItems.map((item) => {
+                const Icon = item.icon
+                const isActive = item.page ? currentPage === item.page : item.active
+                const itemHref = ROUTES[item.page]?.path || item.path || '#'
+                return (
+                  <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
+                    <a
+                      aria-label={t(item.labelKey)}
+                      className={getNavItemClass({ collapsed, isActive })}
+                      href={itemHref}
+                      onClick={(event) => handleItemAnchorClick(event, item)}
+                    >
+                      <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
+                        <Icon className={getNavIconClass({ isActive })} />
+                        <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
+                      </div>
+                    </a>
+                  </SidebarTooltip>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {commercialItems.length > 0 ? (
+        <div className="space-y-2">
+          <div className="mx-2 h-px bg-border/60" />
+          {collapsed ? null : (
+            <button
+              type="button"
+              onClick={() => setCommercialOpen((prev) => !prev)}
+              aria-expanded={commercialOpen}
+              aria-controls="sidebar-group-commercial"
+              className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+            >
+              <span>{t('sidebar.sections.commercial')}</span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  commercialOpen ? 'rotate-0' : '-rotate-90',
+                )}
+              />
+            </button>
+          )}
+          <div
+            id="sidebar-group-commercial"
+            aria-hidden={!commercialExpanded}
+            className={cn(
+              'overflow-hidden transition-[max-height,opacity] duration-200',
+              commercialExpanded ? 'max-h-[999px] opacity-100' : 'max-h-0 opacity-0',
+            )}
+          >
+            <div className="space-y-1 pt-1">
+              {commercialItems.map((item) => {
+                const Icon = item.icon
+                const isActive = item.page ? currentPage === item.page : item.active
+                const itemHref = ROUTES[item.page]?.path || item.path || '#'
+                return (
+                  <SidebarTooltip key={item.id} label={t(item.labelKey)} collapsed={collapsed}>
+                    <a
+                      aria-label={t(item.labelKey)}
+                      className={getNavItemClass({ collapsed, isActive })}
+                      href={itemHref}
+                      onClick={(event) => handleItemAnchorClick(event, item)}
+                    >
+                      <div className={cn('flex items-center gap-1.5', collapsed && 'justify-center')}>
+                        <Icon className={getNavIconClass({ isActive })} />
+                        <span className={cn(collapsed ? 'sr-only' : '')}>{t(item.labelKey)}</span>
+                      </div>
+                    </a>
+                  </SidebarTooltip>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {affiliateItems.length > 0 ? (
+        <div className="space-y-2">
+          <div className="mx-2 h-px bg-border/60" />
+          {collapsed ? null : (
+            <button
+              type="button"
+              onClick={() => setAffiliateOpen((prev) => !prev)}
+              aria-expanded={affiliateOpen}
+              aria-controls="sidebar-group-affiliate"
+              className="flex w-full items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground/80"
+            >
+              <span>{t('sidebar.sections.affiliate')}</span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  affiliateOpen ? 'rotate-0' : '-rotate-90',
+                )}
+              />
+            </button>
+          )}
+          <div
+            id="sidebar-group-affiliate"
+            aria-hidden={!affiliateExpanded}
+            className={cn(
+              'overflow-hidden transition-[max-height,opacity] duration-200',
+              affiliateExpanded ? 'max-h-[999px] opacity-100' : 'max-h-0 opacity-0',
+            )}
+          >
+            <div className="space-y-1 pt-1">
+              {affiliateItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.page ? currentPage === item.page : item.active
                 const itemHref = ROUTES[item.page]?.path || item.path || '#'

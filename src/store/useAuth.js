@@ -106,7 +106,9 @@ export const useAuthStore = create((set, get) => ({
       persistAuthSession({ token, user: user || null })
       const profile = await getCurrentUser(true)
       const nextUser = profile?.user || user || null
-      const nextRoles = Array.isArray(profile?.roles) ? profile.roles : []
+      const loginRoles = Array.isArray(data.roles) && data.roles.length > 0 ? data.roles : []
+      const profileRoles = Array.isArray(profile?.roles) && profile.roles.length > 0 ? profile.roles : []
+      const nextRoles = profileRoles.length > 0 ? profileRoles : loginRoles
 
       persistAuthSession({ token, user: nextUser, roles: nextRoles })
       set({ user: nextUser, token, roles: nextRoles, error: null, isSessionReady: true })
