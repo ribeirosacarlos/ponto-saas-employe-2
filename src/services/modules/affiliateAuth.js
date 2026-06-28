@@ -91,6 +91,15 @@ export async function getAffiliateDashboard(token) {
 }
 
 // ---------------------------------------------------------------------------
+// Steps (read-only — affiliate role has read access to /admin/commercial/steps)
+// ---------------------------------------------------------------------------
+
+export async function listAffiliateSteps(token) {
+  const { data } = await api.get('/v1/admin/commercial/steps', authHeader(token))
+  return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+}
+
+// ---------------------------------------------------------------------------
 // Leads
 // ---------------------------------------------------------------------------
 

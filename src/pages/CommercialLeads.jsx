@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   CheckCircle2,
+  KanbanSquare,
+  List,
   MessageSquarePlus,
   MoveRight,
   Pencil,
@@ -39,6 +41,7 @@ import {
   setLeadNextAction,
   updateLead,
 } from '../services/modules/commercial'
+import { LeadKanban } from '../components/commercial/LeadKanban'
 
 const ACCESS_REQUIRES = { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] }
 const MANAGE_REQUIRES = { anyOf: ['super_admin', 'commercial_manager'] }
@@ -98,6 +101,8 @@ export default function CommercialLeads() {
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, ACCESS_REQUIRES), [capabilities])
   const hasManage = useMemo(() => canRenderCard(capabilities, MANAGE_REQUIRES), [capabilities])
+
+  const [viewMode, setViewMode] = useState('list')
 
   const [leads, setLeads] = useState([])
   const [meta, setMeta] = useState(null)
@@ -333,6 +338,89 @@ export default function CommercialLeads() {
     }
   }
 
+  // ── Kanban API adapters ────────────────────────────────────────────────────
+
+  const loadKanban = useCallback(async () => {
+    if (!hasAccess) return
+    setLoading(true)
+    try {
+      const [stepsResult, leadsResult] = await Promise.all([
+        listSteps(),
+        listLeads({ per_page: 200, page: 1, search: search || undefined, status: statusFilter || undefined }),
+      ])
+      setSteps(stepsResult ?? [])
+      setLeads(leadsResult.data ?? [])
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível carregar o pipeline.', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [hasAccess, search, statusFilter, toast])
+
+  const handleKanbanMoveStep = async (leadId, stepId, note) => {
+    try {
+      await moveLeadStep(leadId, { step_id: stepId, ...(note && { note }) })
+      toast({ title: 'Etapa atualizada' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao mover etapa.', variant: 'error' })
+      throw new Error('move-step failed')
+    }
+  }
+
+  const handleKanbanAddNote = async (leadId, note) => {
+    try {
+      await addLeadNote(leadId, note)
+      toast({ title: 'Nota adicionada' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao adicionar nota.', variant: 'error' })
+      throw new Error('note failed')
+    }
+  }
+
+  const handleKanbanMarkWon = async (leadId, payload) => {
+    try {
+      await markLeadWon(leadId, payload)
+      toast({ title: 'Lead marcado como ganho!' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao marcar como ganho.', variant: 'error' })
+      throw new Error('won failed')
+    }
+  }
+
+  const handleKanbanMarkLost = async (leadId, reason) => {
+    try {
+      await markLeadLost(leadId, reason ? { lost_reason: reason } : {})
+      toast({ title: 'Lead marcado como perdido.' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao marcar como perdido.', variant: 'error' })
+      throw new Error('lost failed')
+    }
+  }
+
+  const handleKanbanNextAction = async (leadId, payload) => {
+    try {
+      await setLeadNextAction(leadId, payload)
+      toast({ title: 'Próxima ação salva.' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao salvar próxima ação.', variant: 'error' })
+      throw new Error('next-action failed')
+    }
+  }
+
+  const handleKanbanCreate = async (payload) => {
+    try {
+      const result = await createLead(payload)
+      if (result.duplicate_warning && result.possible_duplicates?.length) {
+        toast({ title: 'Lead criado', description: `Possível duplicata: ${result.possible_duplicates.map((d) => d.company_name).join(', ')}` })
+      } else {
+        toast({ title: 'Lead criado' })
+      }
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao criar lead.', variant: 'error' })
+      throw err
+    }
+  }
+
   if (!hasAccess) {
     return (
       <PageContainer>
@@ -350,10 +438,37 @@ export default function CommercialLeads() {
           title="Leads"
           subtitle="Gerencie o pipeline de leads comerciais"
           actions={
-            <Button size="sm" onClick={handleOpenCreate}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Novo lead
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* View toggle */}
+              <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => { if (viewMode !== 'list') { setViewMode('list'); load(1, search, statusFilter) } }}
+                  className={cn(
+                    'flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors',
+                    viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <List className="h-3 w-3" />
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (viewMode !== 'kanban') { setViewMode('kanban'); loadKanban() } }}
+                  className={cn(
+                    'flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors',
+                    viewMode === 'kanban' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <KanbanSquare className="h-3 w-3" />
+                  Kanban
+                </button>
+              </div>
+              <Button size="sm" onClick={handleOpenCreate}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Novo lead
+              </Button>
+            </div>
           }
           filters={
             <div className="flex flex-wrap items-center gap-2">
@@ -380,15 +495,32 @@ export default function CommercialLeads() {
           }
         />
 
-        {loading && (
+        {/* Kanban view */}
+        {viewMode === 'kanban' && (
+          <LeadKanban
+            steps={steps}
+            leads={leads}
+            loading={loading}
+            onMoveStep={handleKanbanMoveStep}
+            onAddNote={handleKanbanAddNote}
+            onMarkWon={handleKanbanMarkWon}
+            onMarkLost={handleKanbanMarkLost}
+            onSetNextAction={handleKanbanNextAction}
+            onCreateLead={handleKanbanCreate}
+            onRefresh={loadKanban}
+          />
+        )}
+
+        {/* List view */}
+        {viewMode === 'list' && loading && (
           <p className="text-center text-sm text-muted-foreground py-10">Carregando...</p>
         )}
 
-        {!loading && leads.length === 0 && (
+        {viewMode === 'list' && !loading && leads.length === 0 && (
           <p className="text-center text-sm text-muted-foreground py-10">Nenhum lead encontrado.</p>
         )}
 
-        {!loading && leads.length > 0 && (
+        {viewMode === 'list' && !loading && leads.length > 0 && (
           <div className="flex flex-col gap-2">
             {leads.map((lead) => (
               <div
@@ -498,7 +630,7 @@ export default function CommercialLeads() {
           </div>
         )}
 
-        {meta && meta.lastPage > 1 && (
+        {viewMode === 'list' && meta && meta.lastPage > 1 && (
           <div className="flex items-center justify-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage((p) => p - 1); load(page - 1) }}>Anterior</Button>
             <span className="text-[11px] text-muted-foreground">{page} / {meta.lastPage} — {meta.total} leads</span>
