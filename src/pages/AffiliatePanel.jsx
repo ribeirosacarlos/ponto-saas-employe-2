@@ -4,6 +4,8 @@ import {
   CheckCircle2,
   ExternalLink,
   Gift,
+  KanbanSquare,
+  List,
   LogOut,
   MousePointerClick,
   Plus,
@@ -20,10 +22,13 @@ import {
   affiliateLogout,
   getAffiliateMe,
   listAffiliateLeads,
+  listAffiliateSteps,
   createAffiliateLead,
   addAffiliateLeadNote,
   markAffiliateLeadWon,
   markAffiliateLeadLost,
+  moveAffiliateLeadStep,
+  setAffiliateLeadNextAction,
   listAffiliateCommissions,
   listAffiliateBonuses,
 } from '../services/modules/affiliateAuth'
@@ -36,6 +41,7 @@ import {
 } from '../components/ui/dialog'
 import { formControlClass } from '../components/ui/form-controls'
 import { cn } from '../lib/utils'
+import { LeadKanban } from '../components/commercial/LeadKanban'
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -202,55 +208,40 @@ function OverviewTab({ displayAffiliate, metrics }) {
 }
 
 // ---------------------------------------------------------------------------
-// Leads tab
+// Leads tab — Kanban + List toggle
 // ---------------------------------------------------------------------------
 
-const LEAD_STATUS_OPTIONS = [
-  { value: '', label: 'Todos os status' },
-  { value: 'new', label: 'Novo' },
-  { value: 'in_progress', label: 'Em progresso' },
-  { value: 'demo_scheduled', label: 'Demo agendada' },
-  { value: 'proposal_sent', label: 'Proposta enviada' },
-  { value: 'won', label: 'Ganho' },
-  { value: 'lost', label: 'Perdido' },
-  { value: 'nurturing', label: 'Nutrição' },
-]
-
-const buildLeadForm = () => ({
-  company_name: '',
-  contact_name: '',
-  email: '',
-  phone: '',
-  whatsapp: '',
-  priority: 'medium',
-  general_notes: '',
-})
-
 function LeadsTab({ token, toast }) {
+  const [viewMode, setViewMode] = useState('kanban')
+
+  // Kanban data
+  const [steps, setSteps] = useState([])
   const [leads, setLeads] = useState([])
-  const [meta, setMeta] = useState(null)
-  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+
+  // List-specific state
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [form, setForm] = useState(buildLeadForm)
-  const [saving, setSaving] = useState(false)
+  const loadKanban = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [stepsResult, leadsResult] = await Promise.all([
+        listAffiliateSteps(token),
+        listAffiliateLeads(token, { per_page: 200, page: 1 }),
+      ])
+      setSteps(Array.isArray(stepsResult) ? stepsResult : [])
+      setLeads(leadsResult.data ?? [])
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível carregar o pipeline.', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [token, toast])
 
-  const [noteTarget, setNoteTarget] = useState(null)
-  const [noteText, setNoteText] = useState('')
-  const [addingNote, setAddingNote] = useState(false)
-
-  const [wonTarget, setWonTarget] = useState(null)
-  const [wonAmount, setWonAmount] = useState('')
-  const [markingWon, setMarkingWon] = useState(false)
-
-  const [lostTarget, setLostTarget] = useState(null)
-  const [lostReason, setLostReason] = useState('')
-  const [markingLost, setMarkingLost] = useState(false)
-
-  const load = useCallback(async (nextPage = page, q = search, st = statusFilter) => {
+  const loadList = useCallback(async (nextPage = page, q = search, st = statusFilter) => {
     setLoading(true)
     try {
       const result = await listAffiliateLeads(token, {
@@ -267,7 +258,185 @@ function LeadsTab({ token, toast }) {
     }
   }, [token, page, search, statusFilter, toast])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (viewMode === 'kanban') {
+      loadKanban()
+    } else {
+      loadList(1, search, statusFilter)
+    }
+  }, [viewMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRefresh = () => {
+    if (viewMode === 'kanban') loadKanban()
+    else loadList(page, search, statusFilter)
+  }
+
+  // Kanban API callbacks
+  const handleMoveStep = async (leadId, stepId, note) => {
+    try {
+      await moveAffiliateLeadStep(token, leadId, {
+        step_id: stepId,
+        ...(note && { note }),
+      })
+      toast({ title: 'Etapa atualizada' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao mover etapa.', variant: 'error' })
+      throw new Error('move-step failed')
+    }
+  }
+
+  const handleAddNote = async (leadId, note) => {
+    try {
+      await addAffiliateLeadNote(token, leadId, note)
+      toast({ title: 'Nota adicionada' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao adicionar nota.', variant: 'error' })
+      throw new Error('note failed')
+    }
+  }
+
+  const handleMarkWon = async (leadId, payload) => {
+    try {
+      await markAffiliateLeadWon(token, leadId, payload)
+      toast({ title: 'Lead marcado como ganho!' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao marcar como ganho.', variant: 'error' })
+      throw new Error('won failed')
+    }
+  }
+
+  const handleMarkLost = async (leadId, reason) => {
+    try {
+      await markAffiliateLeadLost(token, leadId, reason ? { lost_reason: reason } : {})
+      toast({ title: 'Lead marcado como perdido.' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao marcar como perdido.', variant: 'error' })
+      throw new Error('lost failed')
+    }
+  }
+
+  const handleSetNextAction = async (leadId, payload) => {
+    try {
+      await setAffiliateLeadNextAction(token, leadId, payload)
+      toast({ title: 'Próxima ação salva.' })
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao salvar próxima ação.', variant: 'error' })
+      throw new Error('next-action failed')
+    }
+  }
+
+  const handleCreateLead = async (payload) => {
+    try {
+      const { duplicate_warning } = await createAffiliateLead(token, payload)
+      toast({
+        title: 'Lead criado',
+        description: duplicate_warning ? 'Possível duplicata detectada.' : undefined,
+      })
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao criar lead.', variant: 'error' })
+      throw err
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* View toggle */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground font-medium">Pipeline de leads</p>
+        <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode('kanban')}
+            className={cn(
+              'flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors',
+              viewMode === 'kanban' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <KanbanSquare className="h-3 w-3" />
+            Kanban
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={cn(
+              'flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors',
+              viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <List className="h-3 w-3" />
+            Lista
+          </button>
+        </div>
+      </div>
+
+      {/* Kanban view */}
+      {viewMode === 'kanban' && (
+        <LeadKanban
+          steps={steps}
+          leads={leads}
+          loading={loading}
+          onMoveStep={handleMoveStep}
+          onAddNote={handleAddNote}
+          onMarkWon={handleMarkWon}
+          onMarkLost={handleMarkLost}
+          onSetNextAction={handleSetNextAction}
+          onCreateLead={handleCreateLead}
+          onRefresh={handleRefresh}
+        />
+      )}
+
+      {/* List view */}
+      {viewMode === 'list' && (
+        <LeadsListView
+          token={token}
+          toast={toast}
+          leads={leads}
+          meta={meta}
+          page={page}
+          search={search}
+          statusFilter={statusFilter}
+          loading={loading}
+          setPage={setPage}
+          setSearch={setSearch}
+          setStatusFilter={setStatusFilter}
+          onLoad={loadList}
+        />
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// List sub-view (original list, kept for toggle)
+// ---------------------------------------------------------------------------
+
+const LEAD_STATUS_OPTIONS = [
+  { value: '', label: 'Todos os status' },
+  { value: 'new', label: 'Novo' },
+  { value: 'in_progress', label: 'Em progresso' },
+  { value: 'demo_scheduled', label: 'Demo agendada' },
+  { value: 'proposal_sent', label: 'Proposta enviada' },
+  { value: 'won', label: 'Ganho' },
+  { value: 'lost', label: 'Perdido' },
+  { value: 'nurturing', label: 'Nutrição' },
+]
+
+function LeadsListView({ token, toast, leads, meta, page, search, statusFilter, loading, setPage, setSearch, setStatusFilter, onLoad }) {
+  const [noteTarget, setNoteTarget] = useState(null)
+  const [noteText, setNoteText] = useState('')
+  const [addingNote, setAddingNote] = useState(false)
+
+  const [wonTarget, setWonTarget] = useState(null)
+  const [wonAmount, setWonAmount] = useState('')
+  const [markingWon, setMarkingWon] = useState(false)
+
+  const [lostTarget, setLostTarget] = useState(null)
+  const [lostReason, setLostReason] = useState('')
+  const [markingLost, setMarkingLost] = useState(false)
+
+  const [createOpen, setCreateOpen] = useState(false)
+  const [form, setForm] = useState({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
+  const [saving, setSaving] = useState(false)
 
   const handleCreate = async () => {
     if (!form.company_name.trim()) return
@@ -278,18 +447,14 @@ function LeadsTab({ token, toast }) {
         ...(form.contact_name && { contact_name: form.contact_name.trim() }),
         ...(form.email && { email: form.email.trim() }),
         ...(form.phone && { phone: form.phone.trim() }),
-        ...(form.whatsapp && { whatsapp: form.whatsapp.trim() }),
         priority: form.priority,
         ...(form.general_notes && { general_notes: form.general_notes.trim() }),
       }
       const { duplicate_warning } = await createAffiliateLead(token, payload)
-      toast({
-        title: 'Lead criado',
-        description: duplicate_warning ? 'Possível duplicata detectada.' : undefined,
-      })
+      toast({ title: 'Lead criado', description: duplicate_warning ? 'Possível duplicata detectada.' : undefined })
       setCreateOpen(false)
-      setForm(buildLeadForm())
-      await load(1, search, statusFilter)
+      setForm({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
+      onLoad(1, search, statusFilter)
     } catch (err) {
       toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao criar lead.', variant: 'error' })
     } finally {
@@ -320,7 +485,7 @@ function LeadsTab({ token, toast }) {
       toast({ title: 'Lead marcado como ganho' })
       setWonTarget(null)
       setWonAmount('')
-      await load(page, search, statusFilter)
+      onLoad(page, search, statusFilter)
     } catch {
       toast({ title: 'Erro', description: 'Falha ao marcar como ganho.', variant: 'error' })
     } finally {
@@ -336,7 +501,7 @@ function LeadsTab({ token, toast }) {
       toast({ title: 'Lead marcado como perdido' })
       setLostTarget(null)
       setLostReason('')
-      await load(page, search, statusFilter)
+      onLoad(page, search, statusFilter)
     } catch {
       toast({ title: 'Erro', description: 'Falha ao marcar como perdido.', variant: 'error' })
     } finally {
@@ -344,21 +509,8 @@ function LeadsTab({ token, toast }) {
     }
   }
 
-  const handleSearch = (q) => {
-    setSearch(q)
-    setPage(1)
-    load(1, q, statusFilter)
-  }
-
-  const handleStatusFilter = (st) => {
-    setStatusFilter(st)
-    setPage(1)
-    load(1, search, st)
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -366,13 +518,13 @@ function LeadsTab({ token, toast }) {
             className={cn(formControlClass, 'pl-8 w-full')}
             placeholder="Buscar leads..."
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); onLoad(1, e.target.value, statusFilter) }}
           />
         </div>
         <select
           className={cn(formControlClass, 'w-full sm:w-48')}
           value={statusFilter}
-          onChange={(e) => handleStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); onLoad(1, search, e.target.value) }}
         >
           {LEAD_STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -385,18 +537,12 @@ function LeadsTab({ token, toast }) {
       </div>
 
       {loading && <p className="py-8 text-center text-[12px] text-muted-foreground">Carregando...</p>}
-
-      {!loading && leads.length === 0 && (
-        <p className="py-8 text-center text-[12px] text-muted-foreground">Nenhum lead encontrado.</p>
-      )}
+      {!loading && leads.length === 0 && <p className="py-8 text-center text-[12px] text-muted-foreground">Nenhum lead encontrado.</p>}
 
       {!loading && leads.length > 0 && (
         <div className="flex flex-col gap-2">
           {leads.map((lead) => (
-            <div
-              key={lead.id}
-              className="rounded-[14px] border border-border/70 bg-card/80 px-4 py-3 backdrop-blur-xl"
-            >
+            <div key={lead.id} className="rounded-[14px] border border-border/70 bg-card/80 px-4 py-3 backdrop-blur-xl">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -408,14 +554,13 @@ function LeadsTab({ token, toast }) {
                       {PRIORITY_LABELS[lead.priority] ?? lead.priority}
                     </span>
                   </div>
-                  {lead.contact_name && (
-                    <p className="text-[11px] text-muted-foreground">{lead.contact_name}</p>
-                  )}
-                  {lead.email && (
-                    <p className="text-[10px] text-muted-foreground">{lead.email}</p>
-                  )}
-                  {lead.current_step && (
-                    <p className="text-[10px] text-muted-foreground">Etapa: {lead.current_step.name}</p>
+                  {lead.contact_name && <p className="text-[11px] text-muted-foreground">{lead.contact_name}</p>}
+                  {lead.email && <p className="text-[10px] text-muted-foreground">{lead.email}</p>}
+                  {lead.current_step && <p className="text-[10px] text-muted-foreground">Etapa: {lead.current_step.name}</p>}
+                  {lead.next_action_at && (
+                    <p className="text-[10px] text-amber-600">
+                      ⏰ {lead.next_action_type} · {new Date(lead.next_action_at).toLocaleDateString('pt-BR')}
+                    </p>
                   )}
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1">
@@ -441,9 +586,9 @@ function LeadsTab({ token, toast }) {
 
       {meta && meta.lastPage > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage((p) => p - 1); load(page - 1, search, statusFilter) }}>Anterior</Button>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage((p) => p - 1); onLoad(page - 1, search, statusFilter) }}>Anterior</Button>
           <span className="text-[11px] text-muted-foreground">{page} / {meta.lastPage}</span>
-          <Button variant="outline" size="sm" disabled={page >= meta.lastPage} onClick={() => { setPage((p) => p + 1); load(page + 1, search, statusFilter) }}>Próximo</Button>
+          <Button variant="outline" size="sm" disabled={page >= meta.lastPage} onClick={() => { setPage((p) => p + 1); onLoad(page + 1, search, statusFilter) }}>Próximo</Button>
         </div>
       )}
 
@@ -493,7 +638,6 @@ function LeadsTab({ token, toast }) {
         </DialogContent>
       </Dialog>
 
-      {/* Note dialog */}
       <Dialog open={!!noteTarget} onOpenChange={() => setNoteTarget(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Adicionar nota — {noteTarget?.company_name}</DialogTitle></DialogHeader>
@@ -507,12 +651,11 @@ function LeadsTab({ token, toast }) {
         </DialogContent>
       </Dialog>
 
-      {/* Mark won dialog */}
       <Dialog open={!!wonTarget} onOpenChange={() => setWonTarget(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Marcar como ganho — {wonTarget?.company_name}</DialogTitle></DialogHeader>
           <div className="flex flex-col gap-2 py-2">
-            <label className="text-[11px] font-medium text-muted-foreground">Valor base (opcional, para cálculo de comissão)</label>
+            <label className="text-[11px] font-medium text-muted-foreground">Valor base (opcional)</label>
             <input type="number" min="0" step="0.01" className={formControlClass} value={wonAmount} onChange={(e) => setWonAmount(e.target.value)} placeholder="0.00" />
           </div>
           <DialogFooter>
@@ -524,7 +667,6 @@ function LeadsTab({ token, toast }) {
         </DialogContent>
       </Dialog>
 
-      {/* Mark lost dialog */}
       <Dialog open={!!lostTarget} onOpenChange={() => setLostTarget(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Marcar como perdido — {lostTarget?.company_name}</DialogTitle></DialogHeader>
