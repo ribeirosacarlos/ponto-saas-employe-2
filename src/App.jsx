@@ -498,7 +498,10 @@ export default function App() {
     let active = true
 
     const fetchWorkedToday = async () => {
-      if (!isSessionReady || !token || accessDeniedReason) {
+      const canViewWorkedToday = canRenderCard(capabilities, {
+        anyOf: ['employee', 'area_manager', 'manager', 'admin'],
+      })
+      if (!isSessionReady || !token || accessDeniedReason || !canViewWorkedToday) {
         setTodayBadge(t('dashboardPage.badges.today'))
         return
       }
@@ -518,7 +521,7 @@ export default function App() {
     return () => {
       active = false
     }
-  }, [accessDeniedReason, formatMinutesToLabel, isSessionReady, t, token])
+  }, [accessDeniedReason, capabilities, formatMinutesToLabel, isSessionReady, t, token])
 
   const handleGoToDashboard = () => navigateTo('dashboard')
   const handleGoToHistory = () => navigateTo('history')
