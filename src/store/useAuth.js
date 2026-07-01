@@ -78,6 +78,12 @@ export const useAuthStore = create((set, get) => ({
     api.defaults.headers.common.Authorization = `Bearer ${token}`
     set({ token, user, roles, error: null, isSessionReady: false })
 
+    if (Array.isArray(roles) && roles.some((role) => String(role).toLowerCase() === 'affiliate')) {
+      set({ token, user, roles, error: null, isSessionReady: true })
+      emitAccessClear()
+      return { user, roles }
+    }
+
     try {
       const profile = await getCurrentUser(true)
       const nextUser = profile?.user || user || null
@@ -151,6 +157,13 @@ export const useAuthStore = create((set, get) => ({
     if (!user) return
     persistAuthSession({ token: get().token, user: user || null, roles })
     set({ user, roles, error: null, isSessionReady: true })
+  },
+  bootstrapSession: ({ token, user = null, roles = [] }) => {
+    if (!token) return
+    api.defaults.headers.common.Authorization = `Bearer ${token}`
+    persistAuthSession({ token, user, roles })
+    set({ token, user, roles, error: null, isSessionReady: true })
+    emitAccessClear()
   },
   clearLocalSession: () => {
     resetAuthState(set)

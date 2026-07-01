@@ -476,7 +476,6 @@ const ptBR = {
         commercialSteps: 'Etapas do Pipeline',
         commercialAffiliates: 'Afiliados',
         commercialCommissions: 'Comissões e Bônus',
-        commercialTeam: 'Equipe Comercial',
         affiliateOverview: 'Visão Geral',
         affiliateLeads: 'Meus Leads',
         affiliateCommissions: 'Minhas Comissões',

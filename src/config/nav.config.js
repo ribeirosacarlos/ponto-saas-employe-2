@@ -19,7 +19,6 @@ import {
   TrendingUp,
   UserCheck,
   Users,
-  Users2,
   LayoutDashboard,
 } from 'lucide-react'
 
@@ -314,16 +313,6 @@ export const NAV_ITEMS = [
     page: 'commercialCommissions',
     group: 'commercial',
     requires: { anyOf: ['super_admin', 'commercial_manager'] },
-    showInDrawer: true,
-    showInDesktop: true,
-  },
-  {
-    id: 'commercialTeam',
-    labelKey: 'sidebar.items.commercialTeam',
-    icon: Users2,
-    page: 'commercialTeam',
-    group: 'commercial',
-    requires: { anyOf: ['super_admin'] },
     showInDrawer: true,
     showInDesktop: true,
   },

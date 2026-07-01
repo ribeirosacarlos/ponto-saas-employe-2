@@ -1,8 +1,9 @@
 export const ROUTES = {
   login: { path: '/', isPublic: true },
-  affiliateActivate: { path: '/affiliate/activate', isPublic: true },
-  affiliateLogin: { path: '/affiliate/login', isPublic: true },
-  affiliatePanel: { path: '/affiliate/panel', isPublic: true },
+  affiliateActivate: { path: '/affiliate/activate', aliases: ['/parceiro/ativar'], isPublic: true },
+  affiliateLogin: { path: '/affiliate/login', aliases: ['/parceiro/login'], isPublic: true },
+  affiliateForgotPassword: { path: '/affiliate/esqueci-senha', aliases: ['/parceiro/esqueci-senha'], isPublic: true },
+  affiliateResetPassword: { path: '/affiliate/nova-senha', aliases: ['/parceiro/nova-senha'], isPublic: true },
   activateAccount: { path: '/activate-account', isPublic: true },
   resetPassword: { path: '/reset-password', isPublic: true },
   forgotPassword: { path: '/forgot-password', isPublic: true },
@@ -119,12 +120,9 @@ export const ROUTES = {
     path: '/commercial/commissions',
     guard: { anyOf: ['super_admin', 'commercial_manager'] },
   },
-  commercialTeam: {
-    path: '/commercial/team',
-    guard: { anyOf: ['super_admin'] },
-  },
   affiliateOverview: {
     path: '/affiliate/overview',
+    aliases: ['/affiliate/panel'],
     guard: { anyOf: ['affiliate'] },
   },
   affiliateLeads: {
