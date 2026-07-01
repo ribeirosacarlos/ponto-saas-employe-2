@@ -279,12 +279,15 @@ export function LeadKanban({
 
   const [wonTarget, setWonTarget] = useState(null)
   const [wonAmount, setWonAmount] = useState('')
+  const [markingWon, setMarkingWon] = useState(false)
 
   const [lostTarget, setLostTarget] = useState(null)
   const [lostReason, setLostReason] = useState('')
+  const [markingLost, setMarkingLost] = useState(false)
 
   const [nextActionTarget, setNextActionTarget] = useState(null)
   const [nextActionForm, setNextActionForm] = useState({ type: 'ligacao', at: '', user_id: '' })
+  const [settingNextAction, setSettingNextAction] = useState(false)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
@@ -381,13 +384,15 @@ export function LeadKanban({
     if (!wonTarget) return
     const id = wonTarget.id
     const snapshot = { status: wonTarget.status }
-    // Optimistic update
+    setMarkingWon(true)
     patchLead(id, { status: 'won' })
     setWonTarget(null)
     try {
       await onMarkWon(id, wonAmount ? { base_amount: Number(wonAmount) } : {})
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setMarkingWon(false)
     }
   }
 
@@ -395,13 +400,15 @@ export function LeadKanban({
     if (!lostTarget) return
     const id = lostTarget.id
     const snapshot = { status: lostTarget.status }
-    // Optimistic update
+    setMarkingLost(true)
     patchLead(id, { status: 'lost' })
     setLostTarget(null)
     try {
       await onMarkLost(id, lostReason.trim() || undefined)
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setMarkingLost(false)
     }
   }
 
@@ -417,13 +424,15 @@ export function LeadKanban({
       next_action_at: nextActionForm.at,
       ...(nextActionForm.user_id && { next_action_user_id: nextActionForm.user_id }),
     }
-    // Optimistic update
+    setSettingNextAction(true)
     patchLead(id, { next_action_type: nextActionForm.type, next_action_at: nextActionForm.at })
     setNextActionTarget(null)
     try {
       await onSetNextAction(id, payload)
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setSettingNextAction(false)
     }
   }
 
