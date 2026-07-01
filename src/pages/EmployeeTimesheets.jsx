@@ -35,6 +35,7 @@ import {
   fetchMyTimesheetPdf,
 } from '../services/employeeTimesheetsService'
 import { downloadBlob } from '../utils/pdf/downloadBlob'
+import { useDateTime } from '../hooks/useDateTime'
 
 const TIMESHEET_STATUS_STYLES = {
   pending_employee:
@@ -106,6 +107,7 @@ const extractMonthYear = (ts) => {
 
 export default function EmployeeTimesheets() {
   const { i18n } = useTranslation()
+  const { formatTime } = useDateTime()
   const { toast } = useToast()
 
   const [timesheets, setTimesheets] = useState([])
@@ -453,7 +455,7 @@ export default function EmployeeTimesheets() {
                                               entry.is_adjusted ? 'italic' : '',
                                             )}
                                           >
-                                            {entry.clocked_at ? entry.clocked_at.slice(11, 16) : '—'}
+                                            {entry.clocked_at ? formatTime(entry.clocked_at) : '—'}
                                             {entry.is_adjusted ? '*' : ''}
                                           </span>
                                         ))}
