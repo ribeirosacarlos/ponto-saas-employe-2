@@ -384,13 +384,15 @@ export function LeadKanban({
     if (!wonTarget) return
     const id = wonTarget.id
     const snapshot = { status: wonTarget.status }
-    // Optimistic update
+    setMarkingWon(true)
     patchLead(id, { status: 'won' })
     setWonTarget(null)
     try {
       await onMarkWon(id, wonAmount ? { base_amount: Number(wonAmount) } : {})
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setMarkingWon(false)
     }
   }
 
@@ -398,13 +400,15 @@ export function LeadKanban({
     if (!lostTarget) return
     const id = lostTarget.id
     const snapshot = { status: lostTarget.status }
-    // Optimistic update
+    setMarkingLost(true)
     patchLead(id, { status: 'lost' })
     setLostTarget(null)
     try {
       await onMarkLost(id, lostReason.trim() || undefined)
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setMarkingLost(false)
     }
   }
 
@@ -421,6 +425,7 @@ export function LeadKanban({
       next_action_at: nextActionForm.at,
       ...(nextActionForm.user_id && { next_action_user_id: nextActionForm.user_id }),
     }
+    setSettingNextAction(true)
     patchLead(id, { next_action_type: nextActionForm.type, next_action_at: nextActionForm.at })
     setNextActionTarget(null)
     try {
