@@ -63,12 +63,12 @@ const normalizePage = (data, fallbackPage = 1) => {
 // ---------------------------------------------------------------------------
 
 export async function acceptAffiliateInvite(payload) {
-  const { data } = await api.post('/v1/invites/accept', payload, { skipAuth: true })
+  const { data } = await api.post('/v1/invites/affiliate/accept', payload, { skipAuth: true })
   return data?.data ?? data ?? {}
 }
 
 export async function affiliateLogin(email, password) {
-  const { data } = await api.post('/v1/auth/login', { email, password }, { skipAuth: true })
+  const { data } = await api.post('/v1/auth/affiliate/login', { email, password }, { skipAuth: true })
   return data?.data ?? data ?? {}
 }
 
@@ -78,7 +78,7 @@ export async function getAffiliateMe(token) {
 }
 
 export async function affiliateLogout(token) {
-  await api.post('/v1/auth/logout', {}, authHeader(token))
+  await api.post('/v1/affiliate/logout', {}, authHeader(token))
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ export async function getAffiliateDashboard(token) {
 // ---------------------------------------------------------------------------
 
 export async function listAffiliateSteps(token) {
-  const { data } = await api.get('/v1/admin/commercial/steps', authHeader(token))
+  const { data } = await api.get(`${PORTAL}/steps`, authHeader(token))
   return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
 }
 
@@ -185,6 +185,40 @@ export async function listAffiliateCommissions(token, params = {}) {
     })),
     meta,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Partner Portal Auth (new dedicated endpoints — separate from legacy affiliate auth)
+// ---------------------------------------------------------------------------
+
+export async function partnerLogin(email, password) {
+  return affiliateLogin(email, password)
+}
+
+export async function partnerLogout(token) {
+  await affiliateLogout(token)
+}
+
+export async function acceptPartnerInvite(payload) {
+  return acceptAffiliateInvite(payload)
+}
+
+export async function affiliateForgotPassword(email) {
+  const { data } = await api.post('/v1/auth/affiliate/forgot-password', { email }, { skipAuth: true })
+  return data?.data ?? data ?? {}
+}
+
+export async function partnerForgotPassword(email) {
+  return affiliateForgotPassword(email)
+}
+
+export async function affiliateResetPassword(payload) {
+  const { data } = await api.post('/v1/auth/affiliate/reset-password', payload, { skipAuth: true })
+  return data?.data ?? data ?? {}
+}
+
+export async function partnerResetPassword(payload) {
+  return affiliateResetPassword(payload)
 }
 
 // ---------------------------------------------------------------------------

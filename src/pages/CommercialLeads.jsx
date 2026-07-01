@@ -102,7 +102,7 @@ export default function CommercialLeads() {
   const hasAccess = useMemo(() => canRenderCard(capabilities, ACCESS_REQUIRES), [capabilities])
   const hasManage = useMemo(() => canRenderCard(capabilities, MANAGE_REQUIRES), [capabilities])
 
-  const [viewMode, setViewMode] = useState('list')
+  const [viewMode, setViewMode] = useState('kanban')
 
   const [leads, setLeads] = useState([])
   const [meta, setMeta] = useState(null)
@@ -166,18 +166,10 @@ export default function CommercialLeads() {
     }
   }, [hasAccess, page, search, statusFilter, toast])
 
-  useEffect(() => { load() }, [load])
-
   useEffect(() => {
     if (!hasAccess) return
     listSteps().then(setSteps).catch(() => {})
   }, [hasAccess])
-
-  // search debounce
-  useEffect(() => {
-    const timer = setTimeout(() => { load(1, search, statusFilter) }, 400)
-    return () => clearTimeout(timer)
-  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenCreate = () => {
     setFormMode('create')
@@ -242,7 +234,7 @@ export default function CommercialLeads() {
         toast({ title: 'Lead atualizado' })
         setFormOpen(false)
       }
-      await load()
+      await refreshCurrentView()
     } catch (err) {
       toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao salvar lead.', variant: 'error' })
     } finally {
@@ -261,7 +253,7 @@ export default function CommercialLeads() {
       toast({ title: 'Etapa atualizada' })
       setMoveStepOpen(false)
       setMoveTarget(null)
-      await load()
+      await refreshCurrentView()
     } catch (err) {
       toast({ title: 'Erro', description: 'Falha ao mover etapa.', variant: 'error' })
     } finally {
@@ -296,7 +288,7 @@ export default function CommercialLeads() {
       setWonOpen(false)
       setWonTarget(null)
       setWonBaseAmount('')
-      await load()
+      await refreshCurrentView()
     } catch {
       toast({ title: 'Erro', description: 'Falha ao marcar como ganho.', variant: 'error' })
     } finally {
@@ -315,7 +307,7 @@ export default function CommercialLeads() {
       setLostOpen(false)
       setLostTarget(null)
       setLostReason('')
-      await load()
+      await refreshCurrentView()
     } catch {
       toast({ title: 'Erro', description: 'Falha ao marcar como perdido.', variant: 'error' })
     } finally {
@@ -330,7 +322,7 @@ export default function CommercialLeads() {
       await deleteLead(deleteTarget.id)
       toast({ title: 'Lead removido' })
       setDeleteTarget(null)
-      await load()
+      await refreshCurrentView()
     } catch {
       toast({ title: 'Erro', description: 'Falha ao remover lead.', variant: 'error' })
     } finally {
@@ -356,6 +348,37 @@ export default function CommercialLeads() {
       setLoading(false)
     }
   }, [hasAccess, search, statusFilter, toast])
+
+  const refreshCurrentView = useCallback(async () => {
+    if (viewMode === 'kanban') {
+      await loadKanban()
+      return
+    }
+
+    await load()
+  }, [load, loadKanban, viewMode])
+
+  useEffect(() => {
+    if (viewMode === 'kanban') {
+      loadKanban()
+      return
+    }
+
+    load()
+  }, [load, loadKanban, viewMode])
+
+  // search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (viewMode === 'kanban') {
+        loadKanban()
+        return
+      }
+
+      load(1, search, statusFilter)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [load, loadKanban, search, statusFilter, viewMode])
 
   const handleKanbanMoveStep = async (leadId, stepId, note) => {
     try {
@@ -484,7 +507,16 @@ export default function CommercialLeads() {
               <select
                 className={cn(formControlClass, 'w-44')}
                 value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); load(1, search, e.target.value) }}
+                onChange={(e) => {
+                  const nextStatus = e.target.value
+                  setStatusFilter(nextStatus)
+
+                  if (viewMode === 'kanban') {
+                    return
+                  }
+
+                  load(1, search, nextStatus)
+                }}
               >
                 <option value="">Todos os status</option>
                 {STATUS_OPTIONS.map((s) => (

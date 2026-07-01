@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Hash, Lock, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Hash, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -8,31 +8,26 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
-import { acceptAffiliateInvite } from '../services/modules/affiliateAuth'
+import { affiliateResetPassword } from '../services/modules/affiliateAuth'
 
-export default function AffiliateActivate() {
+export default function AffiliateResetPassword() {
   const [email, setEmail] = useState(() => {
     if (typeof window === 'undefined') return ''
     return new URLSearchParams(window.location.search).get('email') || ''
   })
-  const [inviteCode, setInviteCode] = useState('')
+  const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
   const [success, setSuccess] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const { toast } = useToast()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
-
-    if (inviteCode.trim().length !== 8) {
-      setErrorMessage('Código de convite deve ter 8 caracteres.')
-      return
-    }
 
     if (password !== passwordConfirmation) {
       setErrorMessage('As senhas não conferem.')
@@ -46,20 +41,21 @@ export default function AffiliateActivate() {
 
     setLoading(true)
     try {
-      await acceptAffiliateInvite({
-        invite_code: inviteCode.trim(),
+      await affiliateResetPassword({
+        email: email.trim(),
+        code: code.trim(),
         password,
         password_confirmation: passwordConfirmation,
       })
 
       setSuccess(true)
-      toast({ title: 'Conta ativada!', description: 'Sua senha foi criada. Faça login para continuar.', variant: 'success' })
+      toast({ title: 'Senha redefinida!', description: 'Faça login com sua nova senha.', variant: 'success' })
 
       setTimeout(() => {
-        window.location.href = `/affiliate/login?email=${encodeURIComponent(email.trim())}`
-      }, 1500)
+        window.location.href = `/affiliate/login${email ? `?email=${encodeURIComponent(email.trim())}` : ''}`
+      }, 1800)
     } catch (err) {
-      const message = err?.response?.data?.message || 'Não foi possível ativar a conta. Verifique o código e tente novamente.'
+      const message = err?.response?.data?.message || 'Não foi possível redefinir a senha. Verifique o código e tente novamente.'
       setErrorMessage(message)
       toast({ title: 'Erro', description: message, variant: 'error' })
     } finally {
@@ -91,15 +87,15 @@ export default function AffiliateActivate() {
               <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
                 Painel do Afiliado
               </span>
-              <h1 className="text-[22px] font-semibold leading-tight">Ativar conta</h1>
+              <h1 className="text-[22px] font-semibold leading-tight">Redefinir senha</h1>
               <p className="text-sm text-muted-foreground">
-                Insira o código do convite recebido por e-mail e crie sua senha de acesso.
+                Insira o código recebido por e-mail e defina sua nova senha.
               </p>
             </div>
 
             {success && (
               <div className="mb-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
-                Conta ativada! Redirecionando para o login...
+                Senha redefinida! Redirecionando para o login...
               </div>
             )}
 
@@ -132,24 +128,22 @@ export default function AffiliateActivate() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-foreground/80" htmlFor="inviteCode">
-                  Código do convite
+                <Label className="text-xs font-semibold text-foreground/80" htmlFor="code">
+                  Código de verificação
                 </Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-500">
                     <Hash className="h-5 w-5" />
                   </span>
                   <Input
-                    id="inviteCode"
+                    id="code"
                     type="text"
                     autoComplete="one-time-code"
-                    placeholder="XXXXXXXX"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    minLength={8}
-                    maxLength={8}
+                    placeholder="Código recebido por e-mail"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
                     required
-                    className="h-[54px] rounded-2xl border border-border/80 bg-background/70 pl-12 pr-4 text-[15px] uppercase tracking-[0.12em] shadow-[0_16px_40px_-28px_rgba(62,82,152,0.45)] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-input/80"
+                    className="h-[54px] rounded-2xl border border-border/80 bg-background/70 pl-12 pr-4 text-[15px] shadow-[0_16px_40px_-28px_rgba(62,82,152,0.45)] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-input/80"
                   />
                 </div>
               </div>
@@ -159,8 +153,8 @@ export default function AffiliateActivate() {
                   Nova senha
                 </Label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-500">
-                    <Lock className="h-5 w-5 fill-amber-500" />
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Lock className="h-5 w-5" />
                   </span>
                   <Input
                     id="password"
@@ -185,11 +179,11 @@ export default function AffiliateActivate() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-foreground/80" htmlFor="passwordConfirm">
-                  Confirmar senha
+                  Confirmar nova senha
                 </Label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-500">
-                    <Lock className="h-5 w-5 fill-amber-500" />
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Lock className="h-5 w-5" />
                   </span>
                   <Input
                     id="passwordConfirm"
@@ -217,16 +211,19 @@ export default function AffiliateActivate() {
                 className="mt-2 h-[48px] w-full rounded-full shadow-[0_18px_40px_-22px_rgba(62,82,152,0.6)] hover:-translate-y-0.5"
                 disabled={loading || success}
               >
-                {loading ? 'Ativando...' : 'Ativar conta'}
+                {loading ? 'Redefinindo...' : 'Redefinir senha'}
               </Button>
-
-              <p className="text-center text-[12px] text-muted-foreground">
-                Já tem senha?{' '}
-                <a href="/affiliate/login" className="font-semibold text-primary hover:underline">
-                  Fazer login
-                </a>
-              </p>
             </form>
+
+            <div className="mt-5 flex justify-center">
+              <a
+                href="/affiliate/login"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Voltar ao login
+              </a>
+            </div>
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-3 text-xs text-muted-foreground">

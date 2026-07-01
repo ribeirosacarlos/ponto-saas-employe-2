@@ -471,7 +471,6 @@ const es = {
         commercialSteps: 'Etapas del Pipeline',
         commercialAffiliates: 'Afiliados',
         commercialCommissions: 'Comisiones y Bonos',
-        commercialTeam: 'Equipo Comercial',
         affiliateOverview: 'Visión General',
         affiliateLeads: 'Mis Leads',
         affiliateCommissions: 'Mis Comisiones',

@@ -9,6 +9,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { affiliateLogin } from '../services/modules/affiliateAuth'
+import { useAuthStore } from '../store/useAuth'
 import { useAffiliateAuth } from '../store/useAffiliateAuth'
 
 export default function AffiliateLogin() {
@@ -22,6 +23,7 @@ export default function AffiliateLogin() {
   const [errorMessage, setErrorMessage] = useState('')
   const { toast } = useToast()
   const setSession = useAffiliateAuth((s) => s.setSession)
+  const bootstrapSession = useAuthStore((s) => s.bootstrapSession)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,6 +38,7 @@ export default function AffiliateLogin() {
       if (!token) throw new Error('Token não retornado pelo servidor.')
 
       setSession(token, affiliate)
+      bootstrapSession({ token, user: affiliate, roles: ['affiliate'] })
       toast({ title: 'Login realizado!', variant: 'success' })
 
       window.location.href = '/affiliate/panel'
@@ -108,9 +111,17 @@ export default function AffiliateLogin() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-foreground/80" htmlFor="password">
-                  Senha
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-foreground/80" htmlFor="password">
+                    Senha
+                  </Label>
+                  <a
+                    href="/affiliate/esqueci-senha"
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    Esqueci minha senha
+                  </a>
+                </div>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <Lock className="h-5 w-5" />

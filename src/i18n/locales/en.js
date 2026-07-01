@@ -472,7 +472,6 @@ const en = {
         commercialSteps: 'Pipeline Stages',
         commercialAffiliates: 'Affiliates',
         commercialCommissions: 'Commissions & Bonuses',
-        commercialTeam: 'Commercial Team',
         affiliateOverview: 'Overview',
         affiliateLeads: 'My Leads',
         affiliateCommissions: 'My Commissions',

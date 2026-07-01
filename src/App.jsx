@@ -40,10 +40,11 @@ import CommercialLeads from './pages/CommercialLeads.jsx'
 import CommercialSteps from './pages/CommercialSteps.jsx'
 import CommercialAffiliates from './pages/CommercialAffiliates.jsx'
 import CommercialCommissions from './pages/CommercialCommissions.jsx'
-import CommercialTeam from './pages/CommercialTeam.jsx'
 import AffiliateActivate from './pages/AffiliateActivate.jsx'
+import AffiliateForgotPassword from './pages/AffiliateForgotPassword.jsx'
 import AffiliateLogin from './pages/AffiliateLogin.jsx'
 import AffiliatePanel from './pages/AffiliatePanel.jsx'
+import AffiliateResetPassword from './pages/AffiliateResetPassword.jsx'
 import { EfferdSidebar } from './components/sidebar/EfferdSidebar.jsx'
 import { EfferdTopBar } from './components/sidebar/EfferdTopBar.jsx'
 import { MobileSidebarDrawer } from './components/sidebar/MobileSidebarDrawer.jsx'
@@ -54,6 +55,7 @@ import { HelpContactDialog } from './components/HelpContactDialog.jsx'
 import { useAuthStore } from './store/useAuth.js'
 import { useAffiliateAuth } from './store/useAffiliateAuth.js'
 import { getWorkedToday } from './services/modules/employee'
+import { affiliateLogout } from './services/modules/affiliateAuth'
 import { getCurrentUser } from './services/authService'
 import { listAuditLogs } from './services/auditLogsService'
 import { useToast } from './components/ui/use-toast'
@@ -70,7 +72,7 @@ import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 import { getWorkedTodayMinutes } from './lib/timesheet'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
-const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword', 'affiliateActivate', 'affiliateLogin', 'affiliatePanel'])
+const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword', 'affiliateActivate', 'affiliateLogin', 'affiliateForgotPassword', 'affiliateResetPassword'])
 const NAV_GROUP_ORDER = {
   workspace: 0,
   admin: 1,
@@ -125,7 +127,6 @@ const PAGE_TITLE_CONFIG = {
   commercialSteps: { key: 'sidebar.items.commercialSteps', fallback: 'Etapas do Pipeline' },
   commercialAffiliates: { key: 'sidebar.items.commercialAffiliates', fallback: 'Afiliados' },
   commercialCommissions: { key: 'sidebar.items.commercialCommissions', fallback: 'Comissões e Bônus' },
-  commercialTeam: { key: 'sidebar.items.commercialTeam', fallback: 'Equipe Comercial' },
   affiliateOverview: { key: 'sidebar.items.affiliateOverview', fallback: 'Visão Geral' },
   affiliateLeads: { key: 'sidebar.items.affiliateLeads', fallback: 'Meus Leads' },
   affiliateCommissions: { key: 'sidebar.items.affiliateCommissions', fallback: 'Minhas Comissões' },
@@ -146,8 +147,10 @@ export default function App() {
   const restoreSession = useAuthStore((state) => state.restoreSession)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const clearLocalSession = useAuthStore((state) => state.clearLocalSession)
   const roles = useAuthStore((state) => state.roles)
   const setAffiliateSession = useAffiliateAuth((s) => s.setSession)
+  const clearAffiliateSession = useAffiliateAuth((s) => s.clearSession)
   const syncProfile = useAuthStore((state) => state.syncProfile)
   const { theme } = useTheme()
   const { toast } = useToast()
@@ -542,7 +545,18 @@ export default function App() {
     setHelpDialogOpen(true)
   }
   const handleLogout = async () => {
-    await logout()
+    if (isAffiliateUser) {
+      try {
+        if (token) await affiliateLogout(token)
+      } catch (error) {
+        console.warn('Falha ao chamar logout de afiliado na API', error)
+      } finally {
+        clearAffiliateSession()
+        clearLocalSession()
+      }
+    } else {
+      await logout()
+    }
     toast({
       title: t('toast.logout.title'),
       description: t('toast.logout.description'),
@@ -709,8 +723,6 @@ export default function App() {
         return <CommercialAffiliates />
       case 'commercialCommissions':
         return <CommercialCommissions />
-      case 'commercialTeam':
-        return <CommercialTeam />
       case 'affiliateOverview':
         return <AffiliatePanel key="overview" embeddedMode initialTab="overview" authToken={token} authAffiliate={user} onLogout={handleLogout} />
       case 'affiliateLeads':
@@ -735,7 +747,7 @@ export default function App() {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
-  const AFFILIATE_PAGES = new Set(['affiliateActivate', 'affiliateLogin', 'affiliatePanel'])
+  const AFFILIATE_PAGES = new Set(['affiliateActivate', 'affiliateLogin', 'affiliateForgotPassword', 'affiliateResetPassword'])
   const shouldRenderPublicAuthPage =
     PUBLIC_AUTH_PAGES.has(currentPage) && (!token || isHandlingPublicAuthRoute || AFFILIATE_PAGES.has(currentPage))
   const isRestoringProtectedSession = token && !isSessionReady && !shouldRenderPublicAuthPage
@@ -764,8 +776,10 @@ export default function App() {
             <AffiliateActivate />
           ) : currentPage === 'affiliateLogin' ? (
             <AffiliateLogin />
-          ) : currentPage === 'affiliatePanel' ? (
-            <AffiliatePanel />
+          ) : currentPage === 'affiliateForgotPassword' ? (
+            <AffiliateForgotPassword />
+          ) : currentPage === 'affiliateResetPassword' ? (
+            <AffiliateResetPassword />
           ) : (
             <ForgotPassword />
           )
