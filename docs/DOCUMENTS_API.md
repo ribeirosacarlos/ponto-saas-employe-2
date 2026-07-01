@@ -49,19 +49,19 @@ O backend valida o conteudo real do arquivo antes de salvar no S3. Um arquivo re
 Hoje o upload salva diretamente no disco `s3` com visibilidade privada:
 
 ```text
-jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}
+{company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}
 ```
 
 Exemplo:
 
 ```text
-jornafy-documents/0f0d4d6e-7d0b-4fa0-9c1c-2df0f3e9a111/documents/employees/a1b2c3d4-0000-4000-9000-111111111111/01HXABCDEF1234567890ABCDE1.pdf
+0f0d4d6e-7d0b-4fa0-9c1c-2df0f3e9a111/documents/employees/a1b2c3d4-0000-4000-9000-111111111111/01HXABCDEF1234567890ABCDE1.pdf
 ```
 
 O banco salva:
 
 - `storage_disk = s3`
-- `path = jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}`
+- `path = {company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}`
 - `original_name`
 - `uploaded_by`
 - `mime_type`
@@ -72,36 +72,32 @@ Se o upload no S3 falhar, o registro no banco nao e criado. Se o upload no S3 pa
 
 ## Organizacao Para Outros Modulos
 
-O prefixo `jornafy-documents/{company_uuid}` e a raiz compartilhada da empresa para arquivos de negocio:
+O bucket `jornafy-documents` armazena os arquivos de negocio. Dentro dele, o UUID da empresa e a raiz compartilhada:
 
 ```text
-jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}
+{company_uuid}/documents/employees/{employee_uuid}/{ulid}.{ext}
 ```
 
 Exemplo:
 
 ```text
-jornafy-documents/0f0d4d6e-7d0b-4fa0-9c1c-2df0f3e9a111/documents/employees/a1b2c3d4-0000-4000-9000-111111111111/01HXABCDEF1234567890ABCDE1.pdf
+0f0d4d6e-7d0b-4fa0-9c1c-2df0f3e9a111/documents/employees/a1b2c3d4-0000-4000-9000-111111111111/01HXABCDEF1234567890ABCDE1.pdf
 ```
 
 ```text
-jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/...
-jornafy-documents/{company_uuid}/timesheets/...
-jornafy-documents/{company_uuid}/signatures/...
-jornafy-documents/{company_uuid}/exports/...
+{company_uuid}/documents/employees/{employee_uuid}/...
+{company_uuid}/timesheets/...
+{company_uuid}/signatures/...
+{company_uuid}/exports/...
 ```
 
 ## Rotas Do Usuario
 
 ### GET `/v1/documents`
 
-Lista documentos visiveis para o usuario autenticado.
+Lista os documentos do proprio usuario autenticado (`user_id = usuario logado`), independente do papel (`employee`, `manager`, `area_manager` ou `admin`).
 
-Permissoes:
-
-- `employee`: ve apenas os proprios documentos.
-- `admin`: ve documentos da empresa.
-- `manager` e `area_manager`: ve documentos conforme regras de visibilidade de usuarios gerenciados.
+Para listar/gerenciar documentos de outros funcionarios, use as rotas administrativas em `/v1/admin/documents/*`.
 
 Query params:
 
@@ -128,7 +124,7 @@ Resposta `200`:
       "mime_type": "application/pdf",
       "ext": "pdf",
       "storage_disk": "s3",
-      "storage_path": "jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
+      "storage_path": "{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
       "created_at": "2026-06-04 10:00:00",
       "updated_at": "2026-06-04 10:00:00"
     }
@@ -182,7 +178,7 @@ Resposta `201`:
       "mime_type": "application/pdf",
       "ext": "pdf",
       "storage_disk": "s3",
-      "storage_path": "jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
+      "storage_path": "{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
       "created_at": "2026-06-04 10:00:00",
       "updated_at": "2026-06-04 10:00:00"
     }
@@ -220,7 +216,7 @@ Resposta `200`:
     "mime_type": "application/pdf",
     "ext": "pdf",
     "storage_disk": "s3",
-    "storage_path": "jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
+    "storage_path": "{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
     "created_at": "2026-06-04 10:00:00",
     "updated_at": "2026-06-04 10:00:00",
     "view_url": "https://api.jornafy.com/api/v1/documents/{document}/view",
@@ -310,7 +306,7 @@ Resposta `200`:
     "mime_type": "application/pdf",
     "ext": "pdf",
     "storage_disk": "s3",
-    "storage_path": "jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
+    "storage_path": "{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
     "created_at": "2026-06-04 10:00:00",
     "updated_at": "2026-06-04 10:05:00"
   }
@@ -394,24 +390,80 @@ Permissoes:
 
 ### GET `/v1/admin/documents/pending`
 
-Lista documentos com status `pending`.
+Lista, em uma unica colecao paginada, os itens que dependem de acao do admin/gestor:
+
+- Documentos (`documents`) com `status = pending` — inclui anexos de ausencia (atestados),
+  que sao criados com `category = personal` e vinculados a uma `Absence` via `absence_document`.
+- Folhas de ponto (`employee_timesheets`) com `status = pending_manager` — o colaborador ja
+  assinou e falta a assinatura do admin/gestor.
+
+Cada item da colecao tem um campo `type` que indica seu formato:
+
+- `type = "document"` — `DocumentAdminResource`. Quando o documento esta vinculado a uma
+  `Absence`, o item inclui tambem um objeto `absence` com `id`, `type`, `status`,
+  `coverage_type`, `start_date` e `end_date`. Quando nao houver vinculo, `absence` e `null`.
+- `type = "timesheet_signature"` — representa a folha de ponto pendente de assinatura,
+  com `id` (id do `EmployeeTimesheet`), `status` (`pending_manager`), `employee`
+  (`id`, `name`, `email`), `monthly_closure` (`id`, `reference_month`, `reference_year`),
+  `created_at` e `updated_at`. A assinatura e feita via
+  `POST /v1/admin/timesheets/{timesheet}/sign`.
 
 Query params:
 
 | Campo | Tipo | Obrigatorio | Descricao |
 | --- | --- | --- | --- |
-| `search` | string | Nao | Busca por `title` e `notes`. |
-| `category` | string | Nao | Filtra por categoria. |
-| `employee_id` | uuid | Nao | Filtra por funcionario, respeitando visibilidade. |
+| `search` | string | Nao | Busca por `title` e `notes`. Quando informado, itens `timesheet_signature` sao omitidos. |
+| `category` | string | Nao | Filtra por categoria. Quando informado, itens `timesheet_signature` sao omitidos. |
+| `employee_id` | uuid | Nao | Filtra por funcionario, respeitando visibilidade. Aplica-se a ambos os tipos. |
 | `per_page` | integer | Nao | De 1 a 100. |
 | `page` | integer | Nao | Pagina. |
-| `sort` | string | Nao | `updated_at:asc` ou `updated_at:desc`. |
+| `sort` | string | Nao | `updated_at:asc` ou `updated_at:desc`. Ordena os itens mesclados pela data de atualizacao. |
 
-Resposta `200`: collection de `DocumentAdminResource`.
+Resposta `200`: collection paginada com itens `DocumentAdminResource` (`type = "document"`) e/ou
+itens `timesheet_signature` (ver acima).
+
+```json
+{
+  "data": [
+    {
+      "type": "document",
+      "id": "uuid",
+      "title": "Atestado medico - atestado.pdf",
+      "category": "personal",
+      "status": "pending",
+      "employee": { "id": "uuid", "name": "...", "email": "..." },
+      "absence": {
+        "id": "uuid",
+        "type": "sick_leave",
+        "status": "pending",
+        "coverage_type": "full_day",
+        "start_date": "2026-04-10",
+        "end_date": "2026-04-11"
+      },
+      "view_url": "...",
+      "download_url": "..."
+    },
+    {
+      "type": "timesheet_signature",
+      "id": "uuid",
+      "title": "Folha de ponto - 04/2026",
+      "status": "pending_manager",
+      "employee": { "id": "uuid", "name": "...", "email": "..." },
+      "monthly_closure": { "id": "uuid", "reference_month": 4, "reference_year": 2026 },
+      "created_at": "2026-04-30 10:00:00",
+      "updated_at": "2026-04-30 10:00:00"
+    }
+  ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": null },
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 20, "total": 2, "...": "..." }
+}
+```
 
 ### GET `/v1/admin/documents/review`
 
-Lista documentos com status `review`.
+Lista documentos com status `review`. Diferente de `/pending`, esta rota retorna apenas
+itens `Document` (collection simples de `DocumentAdminResource`, sem mesclar folhas de
+ponto) — nao ha paginacao mesclada nem campo `type` no nivel da colecao.
 
 Aceita os mesmos query params de `/v1/admin/documents/pending`.
 
@@ -427,6 +479,7 @@ Resposta `200`:
 {
   "data": {
     "id": "uuid",
+    "type": "document",
     "title": "Contrato - contrato.pdf",
     "category": "personal",
     "status": "review",
@@ -435,7 +488,7 @@ Resposta `200`:
     "mime_type": "application/pdf",
     "ext": "pdf",
     "storage_disk": "s3",
-    "storage_path": "jornafy-documents/{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
+    "storage_path": "{company_uuid}/documents/employees/{employee_uuid}/{ulid}.pdf",
     "employee": {
       "id": "employee_uuid",
       "name": "Nome do funcionario",
@@ -444,11 +497,15 @@ Resposta `200`:
     "rejected_comment": "Documento ilegivel",
     "rejected_by": "admin_uuid",
     "rejected_at": "2026-06-04 10:10:00",
+    "absence": null,
     "view_url": "https://api.jornafy.com/api/v1/documents/{document}/view",
     "download_url": "https://api.jornafy.com/api/v1/documents/{document}/download"
   }
 }
 ```
+
+`absence` traz `id`, `type`, `status`, `coverage_type`, `start_date` e `end_date` quando o
+documento esta vinculado a uma `Absence` (ex.: anexo de atestado medico); caso contrario `null`.
 
 ### PATCH `/v1/admin/documents/{document}/approve`
 

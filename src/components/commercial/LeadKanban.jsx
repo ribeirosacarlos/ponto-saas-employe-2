@@ -279,12 +279,15 @@ export function LeadKanban({
 
   const [wonTarget, setWonTarget] = useState(null)
   const [wonAmount, setWonAmount] = useState('')
+  const [markingWon, setMarkingWon] = useState(false)
 
   const [lostTarget, setLostTarget] = useState(null)
   const [lostReason, setLostReason] = useState('')
+  const [markingLost, setMarkingLost] = useState(false)
 
   const [nextActionTarget, setNextActionTarget] = useState(null)
   const [nextActionForm, setNextActionForm] = useState({ type: 'ligacao', at: '', user_id: '' })
+  const [settingNextAction, setSettingNextAction] = useState(false)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
@@ -407,6 +410,7 @@ export function LeadKanban({
 
   const handleSetNextAction = async () => {
     if (!nextActionTarget || !nextActionForm.at) return
+    setSettingNextAction(true)
     const id = nextActionTarget.id
     const snapshot = {
       next_action_type: nextActionTarget.next_action_type,
@@ -417,13 +421,14 @@ export function LeadKanban({
       next_action_at: nextActionForm.at,
       ...(nextActionForm.user_id && { next_action_user_id: nextActionForm.user_id }),
     }
-    // Optimistic update
     patchLead(id, { next_action_type: nextActionForm.type, next_action_at: nextActionForm.at })
     setNextActionTarget(null)
     try {
       await onSetNextAction(id, payload)
     } catch {
       patchLead(id, snapshot)
+    } finally {
+      setSettingNextAction(false)
     }
   }
 

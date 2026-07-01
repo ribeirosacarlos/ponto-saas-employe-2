@@ -324,3 +324,8 @@ export async function getCommercialDashboard() {
   const { data } = await api.get(`${BASE}/dashboard`)
   return data?.data ?? data ?? {}
 }
+
+export async function resendAffiliateInvite(id) {
+  const { data } = await api.post(`${BASE}/affiliates/${id}/resend-invite`)
+  return data?.data ?? data ?? {}
+}
