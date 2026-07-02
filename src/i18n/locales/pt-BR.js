@@ -1255,6 +1255,7 @@ const ptBR = {
       successTitle: 'Código enviado',
       successDescription: 'Enviamos um código para o seu e-mail.',
       errorTitle: 'Não foi possível enviar o código',
+      errorDescription: 'Não foi possível processar a solicitação agora.',
       errors: {
         emailRequired: 'Informe o e-mail da conta.',
       },
@@ -1289,6 +1290,7 @@ const ptBR = {
       successTitle: 'Senha atualizada',
       successDescription: 'Sua senha foi atualizada com sucesso.',
       errorTitle: 'Não foi possível redefinir a senha',
+      errorDescription: 'Não foi possível redefinir a senha. Verifique os dados e tente novamente.',
       errors: {
         codeRequired: 'Informe o código de verificação.',
         passwordRules:
@@ -2640,6 +2642,9 @@ const ptBR = {
         tokenMissing: 'Token não retornado pela API',
         loginFailed: 'Não foi possível fazer login. Verifique as credenciais.',
         unauthorized: 'Credenciais inválidas. Confira e tente novamente.',
+        rateLimited: 'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.',
+        sessionExpired: 'Sua sessão expirou. Faça login novamente.',
+        requestInProgress: 'Já existe uma solicitação em andamento.',
       },
     },
     holidaysPage: {

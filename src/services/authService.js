@@ -1,5 +1,6 @@
 import { api } from './http/api'
 import { DEFAULT_TIMEZONE } from '../lib/datetime'
+import { securityLogger } from '../lib/security/logger'
 
 let cachedUserData = null
 let lastFetchTime = 0
@@ -43,7 +44,6 @@ export async function getCurrentUser(forceRefresh = false) {
 }
 
 export function clearAuthCache() {
-  console.log('[AuthService] Clearing cached user data')
   cachedUserData = null
   lastFetchTime = 0
   inflightPromise = null
@@ -55,7 +55,7 @@ export async function getEffectiveTimezone() {
     const timezone = extractTimezoneFromUser(userData)
     if (timezone) return timezone
   } catch (error) {
-    console.warn('Failed to get timezone from user data:', error)
+    securityLogger.warn('[authService] Failed to get timezone from user data', error)
   }
 
   // Fallback logic here (similar to existing timezone service)

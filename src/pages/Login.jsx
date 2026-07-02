@@ -27,6 +27,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading) return
     try {
       await login(email, password)
       toast({
@@ -37,7 +38,7 @@ export default function Login() {
     } catch (error) {
       toast({
         title: t('toast.loginError.title'),
-        description: error.message,
+        description: t('auth.errors.unauthorized'),
         variant: 'error',
       })
     }

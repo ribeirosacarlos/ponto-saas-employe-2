@@ -9,6 +9,8 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { affiliateForgotPassword } from '../services/modules/affiliateAuth'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 export default function AffiliateForgotPassword() {
   const [email, setEmail] = useState('')
@@ -19,16 +21,25 @@ export default function AffiliateForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading) return
+
     setErrorMessage('')
     setLoading(true)
     try {
-      await affiliateForgotPassword(email.trim())
+      await runWithRequestLock('affiliate:forgot-password', () => affiliateForgotPassword(email.trim()))
       setSent(true)
-      toast({ title: 'E-mail enviado!', description: 'Verifique sua caixa de entrada.', variant: 'success' })
-    } catch (err) {
-      const message = err?.response?.data?.message || 'Não foi possível enviar o e-mail. Tente novamente.'
-      setErrorMessage(message)
-      toast({ title: 'Erro', description: message, variant: 'error' })
+      toast({
+        title: 'Solicitação recebida',
+        description: 'Se o e-mail existir, enviaremos instruções para redefinir a senha.',
+        variant: 'success',
+      })
+    } catch (error) {
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: 'Não foi possível processar a solicitação agora.',
+        rateLimitMessage: 'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.',
+      })
+      setErrorMessage(normalized.message)
+      toast({ title: 'Erro', description: normalized.message, variant: 'error' })
     } finally {
       setLoading(false)
     }
@@ -60,16 +71,16 @@ export default function AffiliateForgotPassword() {
               </span>
               <h1 className="text-[22px] font-semibold leading-tight">Esqueci minha senha</h1>
               <p className="text-sm text-muted-foreground">
-                Informe o e-mail da sua conta e enviaremos as instruções para redefinir sua senha.
+                Informe o e-mail da sua conta e enviaremos instruções para redefinir sua senha.
               </p>
             </div>
 
             {sent ? (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-emerald-300/40 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-700 dark:text-emerald-400">
-                  <p className="font-semibold">E-mail enviado!</p>
+                  <p className="font-semibold">Solicitação recebida</p>
                   <p className="mt-1 text-xs opacity-80">
-                    Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
+                    Se o e-mail existir, enviaremos instruções para redefinir a senha.
                   </p>
                 </div>
                 <a

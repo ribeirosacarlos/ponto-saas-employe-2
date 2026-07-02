@@ -9,12 +9,11 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { affiliateResetPassword } from '../services/modules/affiliateAuth'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 export default function AffiliateResetPassword() {
-  const [email, setEmail] = useState(() => {
-    if (typeof window === 'undefined') return ''
-    return new URLSearchParams(window.location.search).get('email') || ''
-  })
+  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
@@ -27,6 +26,8 @@ export default function AffiliateResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading || success) return
+
     setErrorMessage('')
 
     if (password !== passwordConfirmation) {
@@ -41,12 +42,14 @@ export default function AffiliateResetPassword() {
 
     setLoading(true)
     try {
-      await affiliateResetPassword({
-        email: email.trim(),
-        code: code.trim(),
-        password,
-        password_confirmation: passwordConfirmation,
-      })
+      await runWithRequestLock('affiliate:reset-password', () =>
+        affiliateResetPassword({
+          email: email.trim(),
+          code: code.trim(),
+          password,
+          password_confirmation: passwordConfirmation,
+        }),
+      )
 
       setSuccess(true)
       toast({ title: 'Senha redefinida!', description: 'Faça login com sua nova senha.', variant: 'success' })
@@ -54,10 +57,13 @@ export default function AffiliateResetPassword() {
       setTimeout(() => {
         window.location.href = `/affiliate/login${email ? `?email=${encodeURIComponent(email.trim())}` : ''}`
       }, 1800)
-    } catch (err) {
-      const message = err?.response?.data?.message || 'Não foi possível redefinir a senha. Verifique o código e tente novamente.'
-      setErrorMessage(message)
-      toast({ title: 'Erro', description: message, variant: 'error' })
+    } catch (error) {
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: 'Não foi possível redefinir a senha. Verifique os dados e tente novamente.',
+        rateLimitMessage: 'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.',
+      })
+      setErrorMessage(normalized.message)
+      toast({ title: 'Erro', description: normalized.message, variant: 'error' })
     } finally {
       setLoading(false)
     }

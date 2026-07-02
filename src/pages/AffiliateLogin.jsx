@@ -11,6 +11,8 @@ import { BrandSignature } from '../components/BrandSignature'
 import { affiliateLogin } from '../services/modules/affiliateAuth'
 import { useAuthStore } from '../store/useAuth'
 import { useAffiliateAuth } from '../store/useAffiliateAuth'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 export default function AffiliateLogin() {
   const [email, setEmail] = useState(() => {
@@ -27,25 +29,32 @@ export default function AffiliateLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading) return
+
     setErrorMessage('')
     setLoading(true)
     try {
-      const data = await affiliateLogin(email.trim(), password)
-
+      const data = await runWithRequestLock('affiliate:login', () => affiliateLogin(email.trim(), password))
       const token = data?.token ?? data?.access_token
       const affiliate = data?.affiliate ?? data?.user ?? data
 
-      if (!token) throw new Error('Token não retornado pelo servidor.')
+      if (!token) {
+        throw new Error('Token não retornado pelo servidor.')
+      }
 
       setSession(token, affiliate)
       bootstrapSession({ token, user: affiliate, roles: ['affiliate'] })
       toast({ title: 'Login realizado!', variant: 'success' })
-
       window.location.href = '/affiliate/panel'
-    } catch (err) {
-      const message = err?.response?.data?.message || err?.message || 'Credenciais inválidas.'
-      setErrorMessage(message)
-      toast({ title: 'Erro', description: message, variant: 'error' })
+    } catch (error) {
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: 'Não foi possível entrar. Verifique as credenciais.',
+        unauthorizedMessage: 'Não foi possível entrar. Verifique as credenciais.',
+        rateLimitMessage: 'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.',
+        clearSessionOnUnauthorized: false,
+      })
+      setErrorMessage(normalized.message)
+      toast({ title: 'Erro', description: normalized.message, variant: 'error' })
     } finally {
       setLoading(false)
     }

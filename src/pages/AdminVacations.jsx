@@ -33,6 +33,7 @@ import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
+import { sanitizeSingleScopedId } from '../lib/security/idGuards'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useAdminVacations } from '../features/adminVacations/useAdminVacations'
@@ -402,6 +403,18 @@ export default function AdminVacations() {
     const nextUrl = nextSearch ? `${window.location.pathname}?${nextSearch}` : window.location.pathname
     window.history.replaceState({}, '', nextUrl)
   }, [listFilters])
+
+  useEffect(() => {
+    if (!employeesToRender.length) return
+    setListFilters((prev) => {
+      const sanitizedUserId = sanitizeSingleScopedId(
+        prev.userId,
+        employeesToRender.map((employee) => employee.id),
+      )
+      if (sanitizedUserId === prev.userId) return prev
+      return { ...prev, userId: sanitizedUserId }
+    })
+  }, [employeesToRender])
 
   const handleApprove = async () => {
     if (!approvalTarget?.id) return
