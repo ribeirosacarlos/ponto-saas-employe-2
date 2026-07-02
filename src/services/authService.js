@@ -7,6 +7,20 @@ let lastFetchTime = 0
 let inflightPromise = null
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
 
+const normalizeCurrentUserPayload = (payload = {}) => {
+  const nested = payload?.data && typeof payload.data === 'object' ? payload.data : null
+
+  if (!nested) {
+    return payload || {}
+  }
+
+  return {
+    ...nested,
+    timezone: payload.timezone ?? payload.timeZone ?? nested.timezone ?? nested.timeZone ?? null,
+    timeZone: payload.timeZone ?? payload.timezone ?? nested.timeZone ?? nested.timezone ?? null,
+  }
+}
+
 const shouldUseCache = (now, forceRefresh) =>
   !forceRefresh && cachedUserData && now - lastFetchTime < CACHE_DURATION
 
@@ -29,7 +43,7 @@ export async function getCurrentUser(forceRefresh = false) {
   inflightPromise = (async () => {
     try {
       const { data } = await api.get('/v1/auth/me')
-      const userData = data?.data || data || {}
+      const userData = normalizeCurrentUserPayload(data || {})
       cachedUserData = userData
       lastFetchTime = Date.now()
       return userData
