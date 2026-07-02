@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Ponto SaaS API",
-        "description": "DocumentaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o da API de controle de ponto",
+        "description": "Documentação da API de controle de ponto",
         "version": "1.0.0"
     },
     "servers": [
@@ -12,743 +12,24 @@
         },
         {
             "url": "https://api.jornafy.com/api",
-            "description": "ProduÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+            "description": "Produção"
         },
         {
             "url": "/api"
         }
     ],
     "paths": {
-        "/v1/admin/blog/posts/{id}": {
-            "get": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Exibe um post do blog",
-                "operationId": "d99b92c155426de9d0804dc1fa0a9225",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostAdminResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Atualiza um post do blog",
-                "description": "Aceita os mesmos campos do cadastro (parcialmente). Campos traduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis devem ser enviados como objeto com as chaves pt, es e en.",
-                "operationId": "cae9b9e0733d3a288070349f4534ccc1",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "slug": {
-                                        "type": "string"
-                                    },
-                                    "author": {
-                                        "type": "string"
-                                    },
-                                    "category": {
-                                        "type": "string"
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "draft",
-                                            "published",
-                                            "archived"
-                                        ]
-                                    },
-                                    "cover_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "hero_image_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "audience_tag": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "reading_time": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "trending_score": {
-                                        "type": "integer",
-                                        "nullable": true
-                                    },
-                                    "featured": {
-                                        "type": "boolean",
-                                        "nullable": true
-                                    },
-                                    "published_at": {
-                                        "type": "string",
-                                        "format": "date-time",
-                                        "nullable": true
-                                    },
-                                    "og_image_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "canonical_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "title": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "type": "object"
-                                    },
-                                    "excerpt": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "type": "object"
-                                    },
-                                    "content_html": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "type": "object"
-                                    },
-                                    "faq": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "question": {
-                                                    "type": "object"
-                                                },
-                                                "answer": {
-                                                    "type": "object"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "related_post_ids": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Atualizado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostAdminResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Remove um post do blog",
-                "operationId": "06364fc5ff30a8e8fc5cdca6188f5289",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Removido"
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/admin/blog/posts": {
-            "get": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Lista posts do blog",
-                "description": "Retorna uma lista paginada de posts, com filtro opcional por status e categoria.",
-                "operationId": "6de2abfccc4a45aa247d05438f0209e5",
-                "parameters": [
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "description": "Filtra por status do post",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "draft",
-                                "published",
-                                "archived"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "category",
-                        "in": "query",
-                        "description": "Filtra por categoria",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "compliance"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Itens por pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 20
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista paginada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/BlogPostListItem"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "total": {
-                                                    "type": "integer",
-                                                    "example": 42
-                                                },
-                                                "page": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "per_page": {
-                                                    "type": "integer",
-                                                    "example": 20
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "post": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Cria um novo post do blog",
-                "description": "Campos de texto (title, excerpt, content_html, etc.) sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o traduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis e devem ser enviados como objeto com as chaves pt, es e en.",
-                "operationId": "5574fbcaa7a8661a7aaccf7e43f5b9e8",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "slug",
-                                    "author",
-                                    "category",
-                                    "status",
-                                    "title",
-                                    "excerpt"
-                                ],
-                                "properties": {
-                                    "slug": {
-                                        "type": "string",
-                                        "example": "ponto-eletronico-espanha"
-                                    },
-                                    "author": {
-                                        "type": "string",
-                                        "example": "Equipe Jornafy"
-                                    },
-                                    "category": {
-                                        "type": "string",
-                                        "example": "compliance"
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "draft",
-                                            "published",
-                                            "archived"
-                                        ]
-                                    },
-                                    "cover_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "hero_image_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "audience_tag": {
-                                        "type": "string",
-                                        "example": "rh",
-                                        "nullable": true
-                                    },
-                                    "reading_time": {
-                                        "type": "string",
-                                        "example": "5 min",
-                                        "nullable": true
-                                    },
-                                    "trending_score": {
-                                        "type": "integer",
-                                        "example": 80,
-                                        "nullable": true
-                                    },
-                                    "featured": {
-                                        "type": "boolean",
-                                        "nullable": true
-                                    },
-                                    "published_at": {
-                                        "type": "string",
-                                        "format": "date-time",
-                                        "nullable": true
-                                    },
-                                    "og_image_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "canonical_url": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "title": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "properties": {
-                                            "pt": {
-                                                "type": "string",
-                                                "example": "Como funciona o controle de ponto na Espanha"
-                                            },
-                                            "es": {
-                                                "type": "string"
-                                            },
-                                            "en": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "type": "object"
-                                    },
-                                    "excerpt": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "properties": {
-                                            "pt": {
-                                                "type": "string"
-                                            },
-                                            "es": {
-                                                "type": "string"
-                                            },
-                                            "en": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "type": "object"
-                                    },
-                                    "content_html": {
-                                        "description": "TraduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel (pt, es, en)",
-                                        "properties": {
-                                            "pt": {
-                                                "type": "string"
-                                            },
-                                            "es": {
-                                                "type": "string"
-                                            },
-                                            "en": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "type": "object"
-                                    },
-                                    "faq": {
-                                        "description": "Itens de FAQ, com pergunta e resposta traduzÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis",
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "question": {
-                                                    "properties": {
-                                                        "pt": {
-                                                            "type": "string"
-                                                        },
-                                                        "es": {
-                                                            "type": "string"
-                                                        },
-                                                        "en": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                },
-                                                "answer": {
-                                                    "properties": {
-                                                        "pt": {
-                                                            "type": "string"
-                                                        },
-                                                        "es": {
-                                                            "type": "string"
-                                                        },
-                                                        "en": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "related_post_ids": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Criado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostAdminResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "properties": {
-                                                "slug": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "The slug has already been taken."
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/admin/blog/posts/{id}/publish": {
-            "patch": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Publica um post do blog",
-                "description": "Define status=published e, se ainda nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o houver, define published_at como agora.",
-                "operationId": "38c53c4edb8d50d01660a7b49303381e",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Publicado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostAdminResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/admin/blog/posts/{id}/unpublish": {
-            "patch": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Despublica um post do blog",
-                "description": "Define status=draft.",
-                "operationId": "e0d04f7ff1f21c08bc56e38fd227b745",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Despublicado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostAdminResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/admin/blog/uploads/presign": {
-            "post": {
-                "tags": [
-                    "Admin - Blog"
-                ],
-                "summary": "Gera URL prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©-assinada para upload de mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­dia do blog (S3)",
-                "description": "Retorna uma URL prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©-assinada (vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida por 5 minutos) para upload direto ao S3 e a URL pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblica final do arquivo.",
-                "operationId": "c79af7aebed4ebabf3f9d9031698bf35",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "filename",
-                                    "mime_type",
-                                    "folder"
-                                ],
-                                "properties": {
-                                    "filename": {
-                                        "type": "string",
-                                        "example": "capa-ponto-espanha.jpg"
-                                    },
-                                    "mime_type": {
-                                        "type": "string",
-                                        "enum": [
-                                            "image/jpeg",
-                                            "image/png",
-                                            "image/webp"
-                                        ]
-                                    },
-                                    "folder": {
-                                        "type": "string",
-                                        "enum": [
-                                            "covers",
-                                            "heroes",
-                                            "og"
-                                        ]
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "URL prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©-assinada gerada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "upload_url": {
-                                            "type": "string",
-                                            "example": "https://bucket.s3.amazonaws.com/blog/covers/abc.jpg?X-Amz-..."
-                                        },
-                                        "public_url": {
-                                            "type": "string",
-                                            "example": "https://cdn.jornafy.com/blog/covers/abc.jpg"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/v1/admin/company/signatures": {
             "get": {
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Retorna as configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de assinatura de folha de ponto",
+                "summary": "Retorna as configurações de assinatura de folha de ponto",
                 "description": "==========================================\nGET /admin/company/signatures\n==========================================",
                 "operationId": "85c744d85bfd6dc55759d7a042acbdf7",
                 "responses": {
                     "200": {
-                        "description": "ConfiguraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de assinatura",
+                        "description": "Configurações de assinatura",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -776,10 +57,10 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     }
                 },
                 "security": [
@@ -792,8 +73,8 @@
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Atualiza as configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de assinatura de folha de ponto",
-                "description": "Todos os campos sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o opcionais (PATCH semÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ntico). Envie apenas os campos que deseja alterar.",
+                "summary": "Atualiza as configurações de assinatura de folha de ponto",
+                "description": "Todos os campos são opcionais (PATCH semântico). Envie apenas os campos que deseja alterar.",
                 "operationId": "f5f04efe6ef280015704e007f60b1570",
                 "requestBody": {
                     "required": true,
@@ -825,7 +106,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "ConfiguraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes atualizadas",
+                        "description": "Configurações atualizadas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -853,16 +134,16 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Sem permissão"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     },
                     "422": {
-                        "description": "ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o falhou"
+                        "description": "Validação falhou"
                     }
                 },
                 "security": [
@@ -877,12 +158,12 @@
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Retorna as informaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes cadastrais da empresa",
+                "summary": "Retorna as informações cadastrais da empresa",
                 "description": "==========================================\nGET /admin/company/info\n==========================================",
                 "operationId": "7944f0eabd5bccaf0cc1d6aba11d00e4",
                 "responses": {
                     "200": {
-                        "description": "InformaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes cadastrais",
+                        "description": "Informações cadastrais",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -909,7 +190,7 @@
                                         },
                                         "city": {
                                             "type": "string",
-                                            "example": "SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Paulo",
+                                            "example": "São Paulo",
                                             "nullable": true
                                         },
                                         "state": {
@@ -924,10 +205,10 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     }
                 },
                 "security": [
@@ -940,8 +221,8 @@
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Atualiza as informaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes cadastrais da empresa",
-                "description": "Todos os campos sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o opcionais. Envie apenas os campos que deseja alterar.",
+                "summary": "Atualiza as informações cadastrais da empresa",
+                "description": "Todos os campos são opcionais. Envie apenas os campos que deseja alterar.",
                 "operationId": "94fb251d0808d63f5b367cceb847b4a3",
                 "requestBody": {
                     "required": true,
@@ -975,7 +256,7 @@
                                     "city": {
                                         "type": "string",
                                         "maxLength": 100,
-                                        "example": "SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Paulo",
+                                        "example": "São Paulo",
                                         "nullable": true
                                     },
                                     "state": {
@@ -992,7 +273,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "InformaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes atualizadas",
+                        "description": "Informações atualizadas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1018,7 +299,7 @@
                                         },
                                         "city": {
                                             "type": "string",
-                                            "example": "SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Paulo",
+                                            "example": "São Paulo",
                                             "nullable": true
                                         },
                                         "state": {
@@ -1033,16 +314,16 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Sem permissão"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     },
                     "422": {
-                        "description": "ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o falhou"
+                        "description": "Validação falhou"
                     }
                 },
                 "security": [
@@ -1057,12 +338,12 @@
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Retorna o paÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­s e idioma configurados para a empresa",
+                "summary": "Retorna o país e idioma configurados para a empresa",
                 "description": "==========================================\nGET /admin/company/locale\n==========================================",
                 "operationId": "437f38fc0bee8557c8468875587e77b1",
                 "responses": {
                     "200": {
-                        "description": "ConfiguraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de locale",
+                        "description": "Configurações de locale",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1084,10 +365,10 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     }
                 },
                 "security": [
@@ -1100,8 +381,8 @@
                 "tags": [
                     "Admin - Company Settings"
                 ],
-                "summary": "Atualiza o paÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­s e idioma da empresa",
-                "description": "country aceita cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo ISO 3166-1 alpha-2 (ex: BR, US). locale aceita cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo BCP 47 (ex: pt-BR, en-US).",
+                "summary": "Atualiza o país e idioma da empresa",
+                "description": "country aceita código ISO 3166-1 alpha-2 (ex: BR, US). locale aceita código BCP 47 (ex: pt-BR, en-US).",
                 "operationId": "7e03fc7e0fa4765914fd2361ef4d5e06",
                 "requestBody": {
                     "required": true,
@@ -1151,16 +432,16 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Sem permissão"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     },
                     "422": {
-                        "description": "ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o falhou"
+                        "description": "Validação falhou"
                     }
                 },
                 "security": [
@@ -1215,7 +496,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "AssociaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o criada",
+                        "description": "Associação criada",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1237,7 +518,7 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Exibe funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                "summary": "Exibe funcionário",
                 "operationId": "d04734d38380dde1ac1c37e4afcaadcd",
                 "parameters": [
                     {
@@ -1272,7 +553,7 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Atualiza funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                "summary": "Atualiza funcionário",
                 "operationId": "62549cf95d1a17012af2fbe150ab08f2",
                 "parameters": [
                     {
@@ -1344,7 +625,7 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Remove funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                "summary": "Remove funcionário",
                 "operationId": "fe20028e2f92772cc8939515f8fe4358",
                 "parameters": [
                     {
@@ -1387,14 +668,14 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Resumo de saldo de horas do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
-                "description": "Retorna o total de horas extras/dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vidas no perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo informado e, opcionalmente, o detalhamento diÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio.",
+                "summary": "Resumo de saldo de horas do funcionário",
+                "description": "Retorna o total de horas extras/dívidas no período informado e, opcionalmente, o detalhamento diário.",
                 "operationId": "1d2c3471b8e9be3fdb5be9cd83233857",
                 "parameters": [
                     {
                         "name": "employee",
                         "in": "path",
-                        "description": "ID do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                        "description": "ID do funcionário",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -1426,7 +707,7 @@
                     {
                         "name": "include_days",
                         "in": "query",
-                        "description": "Use 1 para incluir o array diÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio em resposta.",
+                        "description": "Use 1 para incluir o array diário em resposta.",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -1440,7 +721,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Resumo de horas extras/dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vidas retornado com sucesso.",
+                        "description": "Resumo de horas extras/dívidas retornado com sucesso.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1450,13 +731,13 @@
                         }
                     },
                     "401": {
-                        "description": "UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado."
+                        "description": "Usuário não autenticado."
                     },
                     "403": {
-                        "description": "UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Usuário sem permissão"
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                        "description": "Erro de validação",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1487,14 +768,14 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Lista todos os funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios da empresa",
-                "description": "Retorna uma lista paginada contendo todos os funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios associados ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  empresa.",
+                "summary": "Lista todos os funcionários da empresa",
+                "description": "Retorna uma lista paginada contendo todos os funcionários associados à empresa.",
                 "operationId": "cdc74514cfb54ba8907fbb4eab28be76",
                 "parameters": [
                     {
                         "name": "page",
                         "in": "query",
-                        "description": "PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina atual",
+                        "description": "Página atual",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -1566,8 +847,8 @@
                 "tags": [
                     "Admin - Employees"
                 ],
-                "summary": "Cria um novo funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio e dispara um convite",
-                "description": "O convite chega por e-mail (Resend) e pode conter link ou senha provisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ria, tudo via job em fila.",
+                "summary": "Cria um novo funcionário e dispara um convite",
+                "description": "O convite chega por e-mail (Resend) e pode conter link ou senha provisória, tudo via job em fila.",
                 "operationId": "003b07c984533abdca4dba95b0f6e1bc",
                 "requestBody": {
                     "required": true,
@@ -1581,7 +862,7 @@
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "example": "JoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Silva"
+                                        "example": "João Silva"
                                     },
                                     "email": {
                                         "type": "string",
@@ -1597,7 +878,7 @@
                                         ]
                                     },
                                     "shift_id": {
-                                        "description": "Opcional: forÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§a vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nculo com jornada especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­fica",
+                                        "description": "Opcional: força vínculo com jornada específica",
                                         "type": "string",
                                         "format": "uuid",
                                         "nullable": true
@@ -1620,7 +901,7 @@
                         }
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de e-mail",
+                        "description": "Erro de validação de e-mail",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1857,7 +1138,7 @@
                 "tags": [
                     "Admin - Leave Policies"
                 ],
-                "summary": "Lista polÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ticas de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias",
+                "summary": "Lista políticas de férias",
                 "operationId": "afc65c72e853cfba4b838e325288d007",
                 "responses": {
                     "200": {
@@ -1880,7 +1161,7 @@
                                                     },
                                                     "name": {
                                                         "type": "string",
-                                                        "example": "PolÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Espanha"
+                                                        "example": "Política Padrão Espanha"
                                                     },
                                                     "days_per_year": {
                                                         "type": "number",
@@ -1915,7 +1196,7 @@
                 "tags": [
                     "Admin - Leave Policies"
                 ],
-                "summary": "Cria nova polÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica",
+                "summary": "Cria nova política",
                 "operationId": "e80c270e883523554fa87a5fcda5edd2",
                 "requestBody": {
                     "required": true,
@@ -1928,7 +1209,7 @@
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "example": "PolÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Espanha"
+                                        "example": "Política Padrão Espanha"
                                     },
                                     "days_per_year": {
                                         "type": "number",
@@ -1960,7 +1241,7 @@
                                         },
                                         "name": {
                                             "type": "string",
-                                            "example": "PolÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Espanha"
+                                            "example": "Política Padrão Espanha"
                                         }
                                     },
                                     "type": "object"
@@ -1969,7 +1250,7 @@
                         }
                     },
                     "422": {
-                        "description": "ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                        "description": "Validação",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1984,7 +1265,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "O campo name ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© obrigatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio."
+                                                        "example": "O campo name é obrigatório."
                                                     }
                                                 }
                                             },
@@ -2009,7 +1290,7 @@
                 "tags": [
                     "Admin - Leave Policies"
                 ],
-                "summary": "Atualiza polÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica",
+                "summary": "Atualiza política",
                 "operationId": "f35cfcc06a3ecf4b4a90ae8adfdb915b",
                 "parameters": [
                     {
@@ -2027,7 +1308,7 @@
                         "description": "Atualizado"
                     },
                     "404": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Não encontrado"
                     }
                 },
                 "security": [
@@ -2040,7 +1321,7 @@
                 "tags": [
                     "Admin - Leave Policies"
                 ],
-                "summary": "Remove polÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tica",
+                "summary": "Remove política",
                 "operationId": "11c40a634b18bea7ac6c96ae1a72a4b8",
                 "parameters": [
                     {
@@ -2058,7 +1339,7 @@
                         "description": "Removido"
                     },
                     "404": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Não encontrado"
                     }
                 },
                 "security": [
@@ -2073,8 +1354,8 @@
                 "tags": [
                     "Admin - Reports"
                 ],
-                "summary": "RelatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio de batidas por perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo",
-                "description": "Retorna todas as batidas de ponto dentro de um intervalo de datas, incluindo os dados do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio.",
+                "summary": "Relatório de batidas por período",
+                "description": "Retorna todas as batidas de ponto dentro de um intervalo de datas, incluindo os dados do usuário.",
                 "operationId": "db3f7ac54a1e6705098088f50f11bcd9",
                 "parameters": [
                     {
@@ -2100,7 +1381,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista de batidas no perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo fornecido",
+                        "description": "Lista de batidas no período fornecido",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2138,7 +1419,7 @@
                                                 "example": "web"
                                             },
                                             "user": {
-                                                "description": "InformaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                                                "description": "Informações do funcionário",
                                                 "properties": {
                                                     "id": {
                                                         "type": "integer",
@@ -2163,7 +1444,7 @@
                         }
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (datas ausentes ou invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidas)"
+                        "description": "Erro de validação (datas ausentes ou inválidas)"
                     }
                 },
                 "security": [
@@ -2225,7 +1506,7 @@
                                                     },
                                                     "name": {
                                                         "type": "string",
-                                                        "example": "Jornada PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (SegÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSex)"
+                                                        "example": "Jornada Padrão (Seg–Sex)"
                                                     },
                                                     "start_time": {
                                                         "type": "string",
@@ -2320,7 +1601,7 @@
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "example": "Jornada PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (SegÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSex)"
+                                        "example": "Jornada Padrão (Seg–Sex)"
                                     },
                                     "is_flexible": {
                                         "type": "boolean",
@@ -2402,7 +1683,7 @@
                                         },
                                         "name": {
                                             "type": "string",
-                                            "example": "Jornada PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (SegÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSex)"
+                                            "example": "Jornada Padrão (Seg–Sex)"
                                         },
                                         "start_time": {
                                             "type": "string",
@@ -2445,7 +1726,7 @@
                 "tags": [
                     "Admin - Shifts"
                 ],
-                "summary": "Exibe uma jornada especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­fica",
+                "summary": "Exibe uma jornada específica",
                 "description": "MOSTRAR SHIFT\n---------------------------------------------------------",
                 "operationId": "88de3342e8ff22e10cb6a084bbff852f",
                 "parameters": [
@@ -2476,7 +1757,7 @@
                                         },
                                         "name": {
                                             "type": "string",
-                                            "example": "Jornada PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (SegÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSex)"
+                                            "example": "Jornada Padrão (Seg–Sex)"
                                         },
                                         "start_time": {
                                             "type": "string",
@@ -2507,7 +1788,7 @@
                         }
                     },
                     "404": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Não encontrado"
                     }
                 },
                 "security": [
@@ -2642,7 +1923,7 @@
                 "tags": [
                     "Admin - Vacations"
                 ],
-                "summary": "Lista solicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias da empresa",
+                "summary": "Lista solicitações de férias da empresa",
                 "operationId": "78d8f190cacd36bdfc0782e1f8d33a9b",
                 "parameters": [
                     {
@@ -2715,7 +1996,7 @@
                 "tags": [
                     "Admin - Vacations"
                 ],
-                "summary": "Cria fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias para um colaborador",
+                "summary": "Cria férias para um colaborador",
                 "operationId": "f1069e5cd1d44be11342579b03965b0e",
                 "requestBody": {
                     "required": true,
@@ -2790,7 +2071,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "JÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ existe um pedido de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias que conflita com este perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo."
+                                                        "example": "Já existe um pedido de férias que conflita com este período."
                                                     }
                                                 }
                                             },
@@ -2815,7 +2096,7 @@
                 "tags": [
                     "Admin - Vacations"
                 ],
-                "summary": "Aprova solicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias",
+                "summary": "Aprova solicitação de férias",
                 "operationId": "92d296518b7826c2dbff29d4d428f760",
                 "parameters": [
                     {
@@ -2865,7 +2146,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "VocÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âª nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o possui saldo suficiente para este perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo."
+                                                        "example": "Você não possui saldo suficiente para este período."
                                                     }
                                                 }
                                             },
@@ -2890,7 +2171,7 @@
                 "tags": [
                     "Admin - Vacations"
                 ],
-                "summary": "Rejeita solicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                "summary": "Rejeita solicitação",
                 "operationId": "ab65dbb003dc8f77d6d7f981ad9977cb",
                 "parameters": [
                     {
@@ -2934,7 +2215,7 @@
                                         },
                                         "rejection_reason": {
                                             "type": "string",
-                                            "example": "PerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo crÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tico de operaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o."
+                                            "example": "Período crítico de operação."
                                         }
                                     },
                                     "type": "object"
@@ -2955,7 +2236,7 @@
                 "tags": [
                     "Admin - Vacations"
                 ],
-                "summary": "Consulta saldo de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias do colaborador",
+                "summary": "Consulta saldo de férias do colaborador",
                 "operationId": "3aef580b6c1fc18ead52a28f15a702dc",
                 "parameters": [
                     {
@@ -3027,7 +2308,7 @@
                         }
                     },
                     "404": {
-                        "description": "FuncionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Funcionário não encontrado"
                     }
                 },
                 "security": [
@@ -3042,13 +2323,13 @@
                 "tags": [
                     "Employee - Announcements"
                 ],
-                "summary": "Lista comunicados visÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis para o colaborador",
+                "summary": "Lista comunicados visíveis para o colaborador",
                 "operationId": "29c09d1d83ee607ccedc3677a75316de",
                 "parameters": [
                     {
                         "name": "from",
                         "in": "query",
-                        "description": "Data mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nima de envio (YYYY-MM-DD)",
+                        "description": "Data mínima de envio (YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -3058,7 +2339,7 @@
                     {
                         "name": "to",
                         "in": "query",
-                        "description": "Data mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡xima de envio (YYYY-MM-DD)",
+                        "description": "Data máxima de envio (YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -3127,7 +2408,7 @@
                 "tags": [
                     "Employee - Announcements"
                 ],
-                "summary": "Consulta um comunicado especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­fico",
+                "summary": "Consulta um comunicado específico",
                 "operationId": "29062a4fa0d837ba63d225a1af27cbd3",
                 "parameters": [
                     {
@@ -3233,7 +2514,7 @@
                     {
                         "name": "from",
                         "in": "query",
-                        "description": "Data mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nima de envio (YYYY-MM-DD)",
+                        "description": "Data mínima de envio (YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -3243,7 +2524,7 @@
                     {
                         "name": "to",
                         "in": "query",
-                        "description": "Data mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡xima de envio (YYYY-MM-DD)",
+                        "description": "Data máxima de envio (YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -3268,7 +2549,7 @@
                     {
                         "name": "query",
                         "in": "query",
-                        "description": "Busca por tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo",
+                        "description": "Busca por título",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3334,7 +2615,7 @@
                                 "properties": {
                                     "title": {
                                         "type": "string",
-                                        "example": "Novas orientaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes para o expediente"
+                                        "example": "Novas orientações para o expediente"
                                     },
                                     "summary": {
                                         "type": "string",
@@ -3614,7 +2895,7 @@
                     "Area Manager - Adjustments"
                 ],
                 "summary": "Lista ajustes via time_entries",
-                "description": "Retorna os time entries que possuem ajustes pendentes na empresa do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio autenticado.",
+                "description": "Retorna os time entries que possuem ajustes pendentes na empresa do usuário autenticado.",
                 "operationId": "1f0c5e7a8e55b7710cbefbea9c4ecb58",
                 "parameters": [
                     {
@@ -3628,7 +2909,7 @@
                     {
                         "name": "user_id",
                         "in": "query",
-                        "description": "UUID do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                        "description": "UUID do funcionário",
                         "schema": {
                             "type": "string",
                             "format": "uuid"
@@ -3823,7 +3104,7 @@
                     "Area Manager - Adjustments"
                 ],
                 "summary": "Rejeita um ajuste pendente",
-                "description": "Marca o ajuste como rejeitado e mantÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©m os dados oficiais.",
+                "description": "Marca o ajuste como rejeitado e mantém os dados oficiais.",
                 "operationId": "179b9784e602e25abfd77a4c45aa5f6b",
                 "parameters": [
                     {
@@ -3893,14 +3174,14 @@
                 "tags": [
                     "Area Manager - Time Entries"
                 ],
-                "summary": "Resumo de horas extras/dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vidas do membro da equipe",
+                "summary": "Resumo de horas extras/dívidas do membro da equipe",
                 "description": "Permite que area managers vejam o saldo de horas da equipe (mesmo comportamento da rota admin).",
                 "operationId": "8466d11f44728a451c0708e5c088bfdc",
                 "parameters": [
                     {
                         "name": "employee",
                         "in": "path",
-                        "description": "ID do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                        "description": "ID do funcionário",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -3932,7 +3213,7 @@
                     {
                         "name": "include_days",
                         "in": "query",
-                        "description": "Use 1 para incluir o array diÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio em resposta.",
+                        "description": "Use 1 para incluir o array diário em resposta.",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -3946,7 +3227,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Resumo de horas extras/dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vidas retornado com sucesso.",
+                        "description": "Resumo de horas extras/dívidas retornado com sucesso.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3956,13 +3237,13 @@
                         }
                     },
                     "401": {
-                        "description": "UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado."
+                        "description": "Usuário não autenticado."
                     },
                     "403": {
-                        "description": "UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para consultar o funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio."
+                        "description": "Usuário sem permissão para consultar o funcionário."
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Erro de validação"
                     }
                 },
                 "security": [
@@ -3998,7 +3279,7 @@
                     {
                         "name": "user_id",
                         "in": "query",
-                        "description": "Filtra por funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­fico (UUID).",
+                        "description": "Filtra por funcionário específico (UUID).",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -4031,7 +3312,7 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero da pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina para paginaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o. Ignorado quando user_id for informado.",
+                        "description": "Número da página para paginação. Ignorado quando user_id for informado.",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -4041,7 +3322,7 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Quantidade de itens por pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina (mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡x 200). Default 30. Ignorado quando user_id for informado.",
+                        "description": "Quantidade de itens por página (máx 200). Default 30. Ignorado quando user_id for informado.",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -4106,7 +3387,7 @@
                                                         "nullable": true
                                                     },
                                                     "user": {
-                                                        "description": "InformaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                                                        "description": "Informações do funcionário",
                                                         "properties": {
                                                             "id": {
                                                                 "type": "string",
@@ -4115,7 +3396,7 @@
                                                             },
                                                             "name": {
                                                                 "type": "string",
-                                                                "example": "JoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o da Silva"
+                                                                "example": "João da Silva"
                                                             },
                                                             "email": {
                                                                 "type": "string",
@@ -4187,13 +3468,13 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "403": {
-                        "description": "UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autorizado a visualizar entradas da equipe"
+                        "description": "Usuário não autorizado a visualizar entradas da equipe"
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metros invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos)"
+                        "description": "Erro de validação (parâmetros inválidos)"
                     }
                 },
                 "security": [
@@ -4470,7 +3751,7 @@
                 "tags": [
                     "Billing"
                 ],
-                "summary": "Lista os planos ativos disponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis para assinatura",
+                "summary": "Lista os planos ativos disponíveis para assinatura",
                 "operationId": "6fb38ad0d58739677009a74568be124c",
                 "responses": {
                     "200": {
@@ -4492,7 +3773,7 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "500": {
                         "description": "Erro interno"
@@ -4510,7 +3791,7 @@
                 "tags": [
                     "Billing"
                 ],
-                "summary": "Cria sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do Stripe Checkout para um plano",
+                "summary": "Cria sessão do Stripe Checkout para um plano",
                 "operationId": "c3178daf1d99f43946cf282556bb2218",
                 "requestBody": {
                     "required": true,
@@ -4534,13 +3815,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "422": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos ou plano sem price_id"
+                        "description": "Dados inválidos ou plano sem price_id"
                     },
                     "500": {
-                        "description": "Erro ao gerar sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de checkout"
+                        "description": "Erro ao gerar sessão de checkout"
                     }
                 },
                 "security": [
@@ -4555,8 +3836,8 @@
                 "tags": [
                     "Billing"
                 ],
-                "summary": "Cria sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblica do Stripe Checkout para o site",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico utilizado pelo site apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s cadastro. Protegido por rate limit e honeypot.",
+                "summary": "Cria sessão pública do Stripe Checkout para o site",
+                "description": "Endpoint público utilizado pelo site após cadastro. Protegido por rate limit e honeypot.",
                 "operationId": "b4a5f7ad751f1d6dd4bf4069daa6643f",
                 "requestBody": {
                     "required": true,
@@ -4570,7 +3851,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "URL pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblica do Stripe Checkout Session",
+                        "description": "URL pública do Stripe Checkout Session",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4583,16 +3864,16 @@
                         "description": "Empresa bloqueada"
                     },
                     "404": {
-                        "description": "Empresa ou plano nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Empresa ou plano não encontrado"
                     },
                     "422": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos, plano gratuito ou sem preÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o configurado"
+                        "description": "Dados inválidos, plano gratuito ou sem preço configurado"
                     },
                     "429": {
-                        "description": "Limite de requisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes excedido"
+                        "description": "Limite de requisições excedido"
                     },
                     "500": {
-                        "description": "Erro ao gerar sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de checkout"
+                        "description": "Erro ao gerar sessão de checkout"
                     }
                 }
             }
@@ -4616,10 +3897,10 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "422": {
-                        "description": "Stripe customer nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Stripe customer não encontrado"
                     },
                     "500": {
                         "description": "Erro ao abrir o portal"
@@ -4638,7 +3919,7 @@
                     "Billing"
                 ],
                 "summary": "Recebe eventos da Stripe para atualizar assinaturas",
-                "description": "A Stripe envia os eventos definidos no webhook. A assinatura ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© validada pelo segredo configurado.",
+                "description": "A Stripe envia os eventos definidos no webhook. A assinatura é validada pelo segredo configurado.",
                 "operationId": "6101dcf9c7e7cc37ee9c558ce5248bd9",
                 "requestBody": {
                     "description": "Payload enviado pela Stripe",
@@ -4652,7 +3933,7 @@
                         "description": "Evento processado"
                     },
                     "400": {
-                        "description": "Webhook invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido ou sem assinatura"
+                        "description": "Webhook inválido ou sem assinatura"
                     },
                     "500": {
                         "description": "Erro interno ao processar evento"
@@ -4663,10 +3944,10 @@
         "/v1/auth/affiliate/login": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Login do afiliado",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico. Retorna um token Sanctum vinculado ao registro de afiliado (nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o a um User).",
+                "description": "Endpoint público. Retorna um token Sanctum vinculado ao registro CommercialAffiliate (não a um User).",
                 "operationId": "b4492d3d5dcf25a0baf4de887d08c540",
                 "requestBody": {
                     "required": true,
@@ -4711,7 +3992,7 @@
                         }
                     },
                     "401": {
-                        "description": "Credenciais invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidas"
+                        "description": "Credenciais inválidas"
                     },
                     "403": {
                         "description": "Conta de afiliado inativa"
@@ -4722,13 +4003,13 @@
         "/v1/affiliate/me": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Dados do afiliado autenticado",
                 "operationId": "df212d738c2966c69193f937760c42b1",
                 "responses": {
                     "200": {
-                        "description": "Afiliado autenticado, incluindo plano de comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Afiliado autenticado, incluindo plano de comissão"
                     }
                 },
                 "security": [
@@ -4741,7 +4022,7 @@
         "/v1/affiliate/logout": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Logout do afiliado",
                 "description": "Revoga o token Sanctum atual do afiliado.",
@@ -4761,10 +4042,10 @@
         "/v1/invites/affiliate/accept": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Aceita convite de afiliado e define senha",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico. Valida o invite_code (hash SHA-256) enviado por e-mail e expiraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (invite_expires_at).",
+                "description": "Endpoint público. Valida o invite_code (hash SHA-256) enviado por e-mail e expiração (invite_expires_at).",
                 "operationId": "44e882bf7ae831c7c5d33087b57738bc",
                 "requestBody": {
                     "required": true,
@@ -4798,7 +4079,7 @@
                         "description": "Senha criada com sucesso"
                     },
                     "422": {
-                        "description": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de convite invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido ou expirado"
+                        "description": "Código de convite inválido ou expirado"
                     }
                 }
             }
@@ -4806,10 +4087,10 @@
         "/v1/auth/affiliate/forgot-password": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Solicita recuperaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de senha do afiliado",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico. Sempre retorna 200 (mesmo se o e-mail nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o existir) para evitar enumeraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de contas. Envia um cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de 8 caracteres por e-mail, vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido por 60 minutos.",
+                "summary": "Solicita recuperação de senha do afiliado",
+                "description": "Endpoint público. Sempre retorna 200 (mesmo se o e-mail não existir) para evitar enumeração de contas. Envia um código de 8 caracteres por e-mail, válido por 60 minutos.",
                 "operationId": "5f3494512e84898aa0b15f34ed8eab6b",
                 "requestBody": {
                     "required": true,
@@ -4832,7 +4113,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Se o e-mail existir, um cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de recuperaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o foi enviado"
+                        "description": "Se o e-mail existir, um código de recuperação foi enviado"
                     }
                 }
             }
@@ -4840,10 +4121,10 @@
         "/v1/auth/affiliate/reset-password": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Redefine a senha do afiliado",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico. Valida o cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de 8 caracteres enviado por e-mail (vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido por 60 minutos) e define a nova senha.",
+                "description": "Endpoint público. Valida o código de 8 caracteres enviado por e-mail (válido por 60 minutos) e define a nova senha.",
                 "operationId": "347227be9f5c8ba02c601d5820612f9f",
                 "requestBody": {
                     "required": true,
@@ -4883,7 +4164,7 @@
                         "description": "Senha redefinida com sucesso"
                     },
                     "422": {
-                        "description": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido ou expirado"
+                        "description": "Código inválido ou expirado"
                     }
                 }
             }
@@ -4891,13 +4172,13 @@
         "/v1/affiliate-portal/me": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Perfil do afiliado (portal)",
                 "operationId": "a1d066f9215680cace73d309dbb32bb2",
                 "responses": {
                     "200": {
-                        "description": "Dados do afiliado autenticado, incluindo plano de comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Dados do afiliado autenticado, incluindo plano de comissão"
                     }
                 },
                 "security": [
@@ -4910,9 +4191,9 @@
         "/v1/affiliate-portal/dashboard": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas do afiliado (portal)",
+                "summary": "Métricas do afiliado (portal)",
                 "operationId": "a28bf9f9eb29a5478867ab65a6c49567",
                 "responses": {
                     "200": {
@@ -4929,9 +4210,9 @@
         "/v1/affiliate-portal/leads": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Lista os leads do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio afiliado",
+                "summary": "Lista os leads do próprio afiliado",
                 "operationId": "bbb4375fb33bea7411ba815fae2908b1",
                 "parameters": [
                     {
@@ -4972,6 +4253,14 @@
                         }
                     },
                     {
+                        "name": "is_overdue",
+                        "in": "query",
+                        "description": "Filtra leads cuja etapa atual já venceu (true) ou ainda está no prazo (false)",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "search",
                         "in": "query",
                         "description": "Busca em company_name, contact_name, email, phone",
@@ -4990,7 +4279,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de leads do afiliado"
+                        "description": "Lista paginada de leads do afiliado. Inclui created_by_user e assigned_to_user quando aplicável, além dos campos calculados de pipeline."
                     }
                 },
                 "security": [
@@ -5001,10 +4290,10 @@
             },
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Cria um lead indicado pelo afiliado",
-                "description": "affiliate_id ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© definido automaticamente a partir do afiliado autenticado. Detecta (sem bloquear) possÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis duplicados.",
+                "description": "affiliate_id é definido automaticamente a partir do afiliado autenticado. Detecta (sem bloquear) possíveis duplicados.",
                 "operationId": "f700dde988fe78a90253d2849d0135ca",
                 "requestBody": {
                     "required": true,
@@ -5086,10 +4375,10 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Lead criado. Inclui aviso de possÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis duplicados (duplicate_warning, possible_duplicates)"
+                        "description": "Lead criado. Inclui aviso de possíveis duplicados (duplicate_warning, possible_duplicates)"
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Erro de validação"
                     }
                 },
                 "security": [
@@ -5102,9 +4391,9 @@
         "/v1/affiliate-portal/leads/{id}": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Exibe um lead do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio afiliado",
+                "summary": "Exibe um lead do próprio afiliado",
                 "operationId": "7e51dd63973d4fa0be854012b63e5d32",
                 "parameters": [
                     {
@@ -5119,10 +4408,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Detalhes do lead, incluindo notas e histÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rico de etapas"
+                        "description": "Detalhes do lead, incluindo notas e histórico de etapas"
                     },
                     "404": {
-                        "description": "Lead nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado ou nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pertence a este afiliado"
+                        "description": "Lead não encontrado ou não pertence a este afiliado"
                     }
                 },
                 "security": [
@@ -5133,9 +4422,9 @@
             },
             "put": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Atualiza um lead do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio afiliado",
+                "summary": "Atualiza um lead do próprio afiliado",
                 "operationId": "e1933a06195c7a31fbc7752def3de9e8",
                 "parameters": [
                     {
@@ -5153,10 +4442,10 @@
                         "description": "Lead atualizado"
                     },
                     "404": {
-                        "description": "Lead nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado ou nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pertence a este afiliado"
+                        "description": "Lead não encontrado ou não pertence a este afiliado"
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Erro de validação"
                     }
                 },
                 "security": [
@@ -5169,9 +4458,9 @@
         "/v1/affiliate-portal/leads/{id}/notes": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Adiciona uma observaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o a um lead do afiliado",
+                "summary": "Adiciona uma observação a um lead do afiliado",
                 "operationId": "68f9ff48ba8532b5fe33103c390b7958",
                 "parameters": [
                     {
@@ -5217,9 +4506,9 @@
         "/v1/affiliate-portal/leads/{id}/next-action": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Define a prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³xima aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de um lead do afiliado",
+                "summary": "Define a próxima ação de um lead do afiliado",
                 "operationId": "125404612562062ff3b0994410311f73",
                 "parameters": [
                     {
@@ -5257,7 +4546,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³xima aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o registrada"
+                        "description": "Próxima ação registrada"
                     }
                 },
                 "security": [
@@ -5270,7 +4559,7 @@
         "/v1/affiliate-portal/leads/{id}/move-step": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Move um lead do afiliado para outra etapa",
                 "description": "Cria um registro em lead_step_logs.",
@@ -5329,10 +4618,10 @@
         "/v1/affiliate-portal/leads/{id}/mark-won": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Marca um lead do afiliado como convertido",
-                "description": "Se base_amount for informado, gera as comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes recorrentes do afiliado (padrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: 20% por 6 meses).",
+                "description": "Se base_amount for informado, gera as comissões recorrentes do afiliado (padrão: 20% por 6 meses).",
                 "operationId": "0fb8866df043f2a176f678e8dc47a367",
                 "parameters": [
                     {
@@ -5381,7 +4670,7 @@
         "/v1/affiliate-portal/leads/{id}/mark-lost": {
             "post": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
                 "summary": "Marca um lead do afiliado como perdido",
                 "operationId": "fe0b6bf9867e36fde6896d990cffa85d",
@@ -5426,9 +4715,9 @@
         "/v1/affiliate-portal/commissions": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Lista as comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio afiliado",
+                "summary": "Lista as comissões do próprio afiliado",
                 "operationId": "95d18f4ce7fdc17264a340ab556adcf1",
                 "parameters": [
                     {
@@ -5455,7 +4744,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes"
+                        "description": "Lista paginada de comissões"
                     }
                 },
                 "security": [
@@ -5468,9 +4757,9 @@
         "/v1/affiliate-portal/bonuses": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Lista os bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus mensais do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio afiliado",
+                "summary": "Lista os bônus mensais do próprio afiliado",
                 "operationId": "331d63abfcb39e2a42a7370d4d8235c6",
                 "parameters": [
                     {
@@ -5498,7 +4787,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus (50ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ a cada 5 clientes pagos no mesmo mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªs calendÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio)"
+                        "description": "Lista paginada de bônus (50€ a cada 5 clientes pagos no mesmo mês calendário)"
                     }
                 },
                 "security": [
@@ -5511,9 +4800,9 @@
         "/v1/affiliate-portal/steps": {
             "get": {
                 "tags": [
-                    "Affiliate - Portal"
+                    "Commercial - Affiliate Portal"
                 ],
-                "summary": "Lista etapas do funil de afiliados (visÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do afiliado)",
+                "summary": "Lista etapas do funil comercial (visão do afiliado)",
                 "operationId": "d5fbadc1cf45216cf8ae5fd625d7220d",
                 "responses": {
                     "200": {
@@ -5530,7 +4819,7 @@
         "/v1/admin/commercial/affiliates": {
             "get": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Lista afiliados",
                 "operationId": "c17ea621fe292e0a0157cb2bf871d1d2",
@@ -5539,7 +4828,7 @@
                         "description": "Lista paginada de afiliados"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para acessar afiliados"
+                        "description": "Sem permissão para acessar afiliados"
                     }
                 },
                 "security": [
@@ -5550,7 +4839,7 @@
             },
             "post": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Cria um afiliado",
                 "operationId": "4c8800ea4ac549e2b4a89852de5b0548",
@@ -5577,7 +4866,7 @@
                                         "nullable": true
                                     },
                                     "slug": {
-                                        "description": "Usado no link pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico /r/{slug}",
+                                        "description": "Usado no link público /r/{slug}",
                                         "type": "string"
                                     },
                                     "commission_plan_id": {
@@ -5604,7 +4893,7 @@
                         "description": "Afiliado criado"
                     },
                     "422": {
-                        "description": "Slug duplicado ou dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos"
+                        "description": "Slug duplicado ou dados inválidos"
                     }
                 },
                 "security": [
@@ -5617,7 +4906,7 @@
         "/v1/admin/commercial/affiliates/{affiliate}": {
             "get": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Exibe um afiliado",
                 "operationId": "2bb686e6b356618536ecba7ea79f92fa",
@@ -5645,7 +4934,7 @@
             },
             "put": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Atualiza um afiliado",
                 "operationId": "be24700c4d1f1a7b62809d24a8e88ec2",
@@ -5673,7 +4962,7 @@
             },
             "delete": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Remove um afiliado",
                 "operationId": "e415e384c2f7fb2dbe19ef5e772c1540",
@@ -5703,10 +4992,10 @@
         "/v1/admin/commercial/affiliates/{id}/resend-invite": {
             "post": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
                 "summary": "Reenvia o convite de acesso ao afiliado",
-                "description": "Gera um novo invite_code, atualiza invite_expires_at e reenvia o e-mail de convite. Restrito a super_admin e admin.",
+                "description": "Gera um novo invite_code, atualiza invite_expires_at e reenvia o e-mail de convite. Restrito a super_admin.",
                 "operationId": "28b63bedb6081bd1ba1127717557276f",
                 "parameters": [
                     {
@@ -5724,7 +5013,7 @@
                         "description": "Convite reenviado com sucesso"
                     },
                     "404": {
-                        "description": "Afiliado nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Afiliado não encontrado"
                     }
                 },
                 "security": [
@@ -5737,9 +5026,9 @@
         "/v1/admin/commercial/affiliates/{id}/metrics": {
             "get": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
-                "summary": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas de performance do afiliado",
+                "summary": "Métricas de performance do afiliado",
                 "operationId": "f07967c2df650eb7f89fd38f38d29cb6",
                 "parameters": [
                     {
@@ -5767,10 +5056,10 @@
         "/r/{slug}": {
             "get": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
-                "summary": "Link pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico de rastreamento do afiliado",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico (sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o). Registra o clique (IP salvo apenas como hash SHA-256) e redireciona para a landing page do Jornafy com ?ref={slug}.",
+                "summary": "Link público de rastreamento do afiliado",
+                "description": "Endpoint público (sem autenticação). Registra o clique (IP salvo apenas como hash SHA-256) e redireciona para a landing page do Jornafy com ?ref={slug}.",
                 "operationId": "8ef589cb94249f9049ab8244a5109937",
                 "parameters": [
                     {
@@ -5792,10 +5081,10 @@
         "/v1/commercial/track-affiliate-click": {
             "post": {
                 "tags": [
-                    "Affiliate - Management"
+                    "Commercial - Affiliates"
                 ],
-                "summary": "Registra um clique de afiliado (alternativa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o-redirect)",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico (sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o), pensado para frontends que nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o seguem o redirect HTTP de /r/{slug}.",
+                "summary": "Registra um clique de afiliado (alternativa não-redirect)",
+                "description": "Endpoint público (sem autenticação), pensado para frontends que não seguem o redirect HTTP de /r/{slug}.",
                 "operationId": "e01d2865672f1e9465744724a96a0a4e",
                 "requestBody": {
                     "required": true,
@@ -5836,7 +5125,7 @@
                         "description": "Clique registrado"
                     },
                     "404": {
-                        "description": "Afiliado nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado ou inativo"
+                        "description": "Afiliado não encontrado ou inativo"
                     }
                 }
             }
@@ -5844,9 +5133,9 @@
         "/v1/admin/commercial/commissions": {
             "get": {
                 "tags": [
-                    "Affiliate - Commissions"
+                    "Commercial - Commissions"
                 ],
-                "summary": "Lista comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de afiliados",
+                "summary": "Lista comissões de afiliados",
                 "operationId": "0979117cbef4260b690382f7d02aa0a1",
                 "parameters": [
                     {
@@ -5873,10 +5162,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes"
+                        "description": "Lista paginada de comissões"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para acessar comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes"
+                        "description": "Sem permissão para acessar comissões"
                     }
                 },
                 "security": [
@@ -5889,10 +5178,10 @@
         "/v1/admin/commercial/commissions/{id}/approve": {
             "post": {
                 "tags": [
-                    "Affiliate - Commissions"
+                    "Commercial - Commissions"
                 ],
-                "summary": "Aprova uma comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pendente",
-                "description": "Fluxo manual/administrativo, usado enquanto nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o houver integraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica com evento de pagamento.",
+                "summary": "Aprova uma comissão pendente",
+                "description": "Fluxo manual/administrativo, usado enquanto não houver integração automática com evento de pagamento.",
                 "operationId": "d289899d918c8af80309bd2c744c9891",
                 "parameters": [
                     {
@@ -5907,7 +5196,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "ComissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aprovada"
+                        "description": "Comissão aprovada"
                     }
                 },
                 "security": [
@@ -5920,10 +5209,10 @@
         "/v1/admin/commercial/commissions/{id}/mark-paid": {
             "post": {
                 "tags": [
-                    "Affiliate - Commissions"
+                    "Commercial - Commissions"
                 ],
-                "summary": "Marca uma comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o como paga",
-                "description": "ApÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s marcar como paga, recalcula automaticamente o bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus mensal do afiliado (50ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ a cada 5 clientes pagos no mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªs).",
+                "summary": "Marca uma comissão como paga",
+                "description": "Após marcar como paga, recalcula automaticamente o bônus mensal do afiliado (50€ a cada 5 clientes pagos no mês).",
                 "operationId": "f8b1225eaf5838d77ac0d792f0abda5f",
                 "parameters": [
                     {
@@ -5938,7 +5227,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "ComissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o paga"
+                        "description": "Comissão paga"
                     }
                 },
                 "security": [
@@ -5951,9 +5240,9 @@
         "/v1/admin/commercial/affiliate-bonuses": {
             "get": {
                 "tags": [
-                    "Affiliate - Commissions"
+                    "Commercial - Commissions"
                 ],
-                "summary": "Lista bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus mensais de afiliados",
+                "summary": "Lista bônus mensais de afiliados",
                 "operationId": "6812a67ccafb513293258ecc044733aa",
                 "parameters": [
                     {
@@ -5981,7 +5270,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus por afiliado/mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªs"
+                        "description": "Lista paginada de bônus por afiliado/mês"
                     }
                 },
                 "security": [
@@ -5994,10 +5283,10 @@
         "/v1/admin/commercial/leads": {
             "get": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Lista leads comerciais",
-                "description": "super_admin e admin veem todos os leads.",
+                "description": "super_admin vê todos os leads.",
                 "operationId": "8f6c3b73b519508b8e6ac39691d0374d",
                 "parameters": [
                     {
@@ -6035,6 +5324,14 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "is_overdue",
+                        "in": "query",
+                        "description": "Filtra leads cuja etapa atual já venceu (true) ou ainda está no prazo (false), com base em current_step_started_at + default_due_days da etapa",
+                        "schema": {
+                            "type": "boolean"
                         }
                     },
                     {
@@ -6132,13 +5429,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista paginada de leads"
+                        "description": "Lista paginada de leads. Cada lead inclui created_by_user {id,name,email} (quem cadastrou o lead) e assigned_to_user {id,name,email} (responsável atual), além dos campos calculados de pipeline (current_stage_name, current_stage_due_at, current_stage_is_overdue, current_stage_warning_message, next_stage_id, next_stage_name)."
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     },
                     "403": {
-                        "description": "Role sem acesso ao mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³dulo de afiliados"
+                        "description": "Role sem acesso ao módulo Comercial"
                     }
                 },
                 "security": [
@@ -6149,10 +5446,10 @@
             },
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Cria um novo lead",
-                "description": "DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para super_admin e admin. Detecta (sem bloquear) possÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis duplicados por email, telefone, whatsapp, website ou nome da empresa.",
+                "description": "Disponível para super_admin. Detecta (sem bloquear) possíveis duplicados por email, telefone, whatsapp, website ou nome da empresa.",
                 "operationId": "607fa2aa431bde3ee592ed6345224b9b",
                 "requestBody": {
                     "required": true,
@@ -6219,7 +5516,7 @@
                                         "nullable": true
                                     },
                                     "assigned_to_user_id": {
-                                        "description": "Precisa ser um usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio com role super_admin ou admin",
+                                        "description": "Precisa ser um usuário com role super_admin",
                                         "type": "string",
                                         "format": "uuid",
                                         "nullable": true
@@ -6246,10 +5543,10 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Lead criado. Inclui aviso de possÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis duplicados (duplicate_warning, possible_duplicates), sem bloquear a criaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o."
+                        "description": "Lead criado. Inclui aviso de possíveis duplicados (duplicate_warning, possible_duplicates), sem bloquear a criação."
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Erro de validação"
                     }
                 },
                 "security": [
@@ -6262,10 +5559,10 @@
         "/v1/admin/commercial/leads/{id}": {
             "get": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Exibe um lead",
-                "description": "DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para super_admin e admin.",
+                "description": "Disponível para super_admin.",
                 "operationId": "861d2fc198917dd6b864dc7ac3b5f4f7",
                 "parameters": [
                     {
@@ -6280,10 +5577,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Detalhes do lead, incluindo notas e histÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rico de etapas"
+                        "description": "Detalhes do lead, incluindo notas e histórico de etapas"
                     },
                     "404": {
-                        "description": "Lead nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado ou fora do escopo do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio"
+                        "description": "Lead não encontrado ou fora do escopo do usuário"
                     }
                 },
                 "security": [
@@ -6294,7 +5591,7 @@
             },
             "put": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Atualiza um lead",
                 "operationId": "cfc22360ac3a06d9d4f60ca59e5f4a49",
@@ -6314,10 +5611,10 @@
                         "description": "Lead atualizado"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para editar o lead"
+                        "description": "Sem permissão para editar o lead"
                     },
                     "422": {
-                        "description": "Erro de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Erro de validação"
                     }
                 },
                 "security": [
@@ -6328,10 +5625,10 @@
             },
             "delete": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Remove um lead (soft delete)",
-                "description": "Restrito a super_admin e admin.",
+                "description": "Restrito a super_admin.",
                 "operationId": "5ffdf4508c5025528cfe582b4978c9a9",
                 "parameters": [
                     {
@@ -6349,7 +5646,7 @@
                         "description": "Lead removido"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para remover leads"
+                        "description": "Sem permissão para remover leads"
                     }
                 },
                 "security": [
@@ -6362,10 +5659,10 @@
         "/v1/admin/commercial/leads/{id}/assign": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
-                "summary": "Atribui o lead a um usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio de afiliados",
-                "description": "Restrito a super_admin e admin.",
+                "summary": "Atribui o lead a um usuário comercial",
+                "description": "Restrito a super_admin.",
                 "operationId": "37bd7ff1d16f47a02b8a3608b3bc24f0",
                 "parameters": [
                     {
@@ -6399,10 +5696,10 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "ResponsÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel atualizado"
+                        "description": "Responsável atualizado"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para atribuir leads"
+                        "description": "Sem permissão para atribuir leads"
                     }
                 },
                 "security": [
@@ -6415,10 +5712,10 @@
         "/v1/admin/commercial/leads/{id}/move-step": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
-                "summary": "Move o lead para outra etapa do funil",
-                "description": "DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para super_admin e admin. Cria um registro em lead_step_logs.",
+                "summary": "Move o lead para outra etapa comercial",
+                "description": "Disponível para super_admin. Cria um registro em lead_step_logs.",
                 "operationId": "2411a2def694e682f518d2395fd8737f",
                 "parameters": [
                     {
@@ -6474,10 +5771,10 @@
         "/v1/admin/commercial/leads/{id}/notes": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
-                "summary": "Adiciona uma observaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ao lead",
-                "description": "DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para super_admin e admin.",
+                "summary": "Adiciona uma observação ao lead",
+                "description": "Disponível para super_admin.",
                 "operationId": "aa6dfb00f093d9e66da81d224ee51400",
                 "parameters": [
                     {
@@ -6523,9 +5820,9 @@
         "/v1/admin/commercial/leads/{id}/next-action": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
-                "summary": "Define a prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³xima aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do lead",
+                "summary": "Define a próxima ação do lead",
                 "operationId": "d42708b155c990ba8a573cb9928a4427",
                 "parameters": [
                     {
@@ -6568,7 +5865,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³xima aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o registrada"
+                        "description": "Próxima ação registrada"
                     }
                 },
                 "security": [
@@ -6581,10 +5878,10 @@
         "/v1/admin/commercial/leads/{id}/mark-won": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Marca o lead como convertido (cliente ganho)",
-                "description": "Se o lead tiver afiliado e base_amount for informado, gera as comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes recorrentes (padrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: 20% por 6 meses).",
+                "description": "Se o lead tiver afiliado e base_amount for informado, gera as comissões recorrentes (padrão: 20% por 6 meses).",
                 "operationId": "0f78bfa45e5967a28d3dac0975777c5b",
                 "parameters": [
                     {
@@ -6609,7 +5906,7 @@
                                         "nullable": true
                                     },
                                     "base_amount": {
-                                        "description": "Valor mensal base usado para calcular a comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do afiliado",
+                                        "description": "Valor mensal base usado para calcular a comissão do afiliado",
                                         "type": "number",
                                         "format": "float",
                                         "nullable": true
@@ -6635,7 +5932,7 @@
         "/v1/admin/commercial/leads/{id}/mark-lost": {
             "post": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
                 "summary": "Marca o lead como perdido",
                 "operationId": "1be3ad120e1cfb2a05d495a36df064cf",
@@ -6680,14 +5977,14 @@
         "/v1/admin/commercial/dashboard": {
             "get": {
                 "tags": [
-                    "Affiliate - Leads"
+                    "Commercial - Leads"
                 ],
-                "summary": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas de afiliados (dashboard)",
-                "description": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas completas do mÃ³dulo de afiliados para super_admin e admin.",
+                "summary": "Métricas comerciais (dashboard)",
+                "description": "Métricas completas para super_admin.",
                 "operationId": "e0cdce1a0d3686a08544e5cd70a347e3",
                 "responses": {
                     "200": {
-                        "description": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas agregadas: total_leads, new_leads, leads_in_progress, demos_scheduled, proposals_sent, won_leads, lost_leads, leads_by_step, leads_by_priority, leads_by_agent, leads_by_affiliate, next_actions_today, overdue_next_actions"
+                        "description": "Métricas agregadas: total_leads, new_leads, leads_in_progress, demos_scheduled, proposals_sent, won_leads, lost_leads, leads_by_step, leads_by_priority, leads_by_agent, leads_by_affiliate, next_actions_today, overdue_next_actions"
                     }
                 },
                 "security": [
@@ -6700,9 +5997,9 @@
         "/v1/admin/commercial/steps": {
             "get": {
                 "tags": [
-                    "Affiliate - Steps"
+                    "Commercial - Steps"
                 ],
-                "summary": "Lista etapas do funil de afiliados ativas e inativas",
+                "summary": "Lista etapas comerciais ativas e inativas",
                 "operationId": "7458c0a60f89dfcb1bfc52e6479a26c5",
                 "responses": {
                     "200": {
@@ -6717,10 +6014,10 @@
             },
             "post": {
                 "tags": [
-                    "Affiliate - Steps"
+                    "Commercial - Steps"
                 ],
-                "summary": "Cria uma etapa do funil de afiliados",
-                "description": "Restrito a super_admin e admin.",
+                "summary": "Cria uma etapa comercial",
+                "description": "Restrito a super_admin.",
                 "operationId": "ee4f6e150bf572b453bd7532c4c99698",
                 "requestBody": {
                     "required": true,
@@ -6761,7 +6058,7 @@
                         "description": "Etapa criada"
                     },
                     "403": {
-                        "description": "Sem permissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para gerenciar etapas"
+                        "description": "Sem permissão para gerenciar etapas"
                     }
                 },
                 "security": [
@@ -6774,9 +6071,9 @@
         "/v1/admin/commercial/steps/{id}": {
             "put": {
                 "tags": [
-                    "Affiliate - Steps"
+                    "Commercial - Steps"
                 ],
-                "summary": "Atualiza uma etapa do funil de afiliados",
+                "summary": "Atualiza uma etapa comercial",
                 "operationId": "e16df41478b7c4d81e0250f3074816b5",
                 "parameters": [
                     {
@@ -6802,9 +6099,9 @@
             },
             "delete": {
                 "tags": [
-                    "Affiliate - Steps"
+                    "Commercial - Steps"
                 ],
-                "summary": "Remove uma etapa do funil de afiliados",
+                "summary": "Remove uma etapa comercial",
                 "description": "Bloqueado pelo banco se houver lead_step_logs referenciando a etapa.",
                 "operationId": "e8cd049192a9d53332842bdf2401ce58",
                 "parameters": [
@@ -6833,9 +6130,9 @@
         "/v1/admin/commercial/steps/reorder": {
             "post": {
                 "tags": [
-                    "Affiliate - Steps"
+                    "Commercial - Steps"
                 ],
-                "summary": "Reordena as etapas do funil de afiliados",
+                "summary": "Reordena as etapas comerciais",
                 "operationId": "b9b05c2ce7c2166cbb107f408e1961cc",
                 "requestBody": {
                     "required": true,
@@ -6900,7 +6197,7 @@
                     {
                         "name": "enviar_email",
                         "in": "query",
-                        "description": "Alias em portuguÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªs para 'send_email'",
+                        "description": "Alias em português para 'send_email'",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -6910,7 +6207,7 @@
                     {
                         "name": "user_id",
                         "in": "query",
-                        "description": "UUID do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio que deve receber o convite (usar para direcionar o job)",
+                        "description": "UUID do usuário que deve receber o convite (usar para direcionar o job)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -6920,7 +6217,7 @@
                     {
                         "name": "recipient_email",
                         "in": "query",
-                        "description": "Email que deve receber o convite (padrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o dev.carlosdesa@gmail.com)",
+                        "description": "Email que deve receber o convite (padrão dev.carlosdesa@gmail.com)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -6941,7 +6238,7 @@
                     {
                         "name": "invite_url",
                         "in": "query",
-                        "description": "URL de convite usada pelo payload (caso nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o seja configurada, usa config('app.invite_url'))",
+                        "description": "URL de convite usada pelo payload (caso não seja configurada, usa config('app.invite_url'))",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -6951,7 +6248,7 @@
                     {
                         "name": "invite_code",
                         "in": "query",
-                        "description": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de convite personalizado",
+                        "description": "Código de convite personalizado",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -6960,7 +6257,7 @@
                     {
                         "name": "temporary_password",
                         "in": "query",
-                        "description": "Senha temporÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ria enviada no convite",
+                        "description": "Senha temporária enviada no convite",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -6969,7 +6266,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Retorna indicaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de job criado e payload usado",
+                        "description": "Retorna indicação de job criado e payload usado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7020,7 +6317,7 @@
                         }
                     },
                     "404": {
-                        "description": "Rota disponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel apenas em ambientes locais ou de teste"
+                        "description": "Rota disponível apenas em ambientes locais ou de teste"
                     }
                 }
             }
@@ -7030,8 +6327,8 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Lista os documentos do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio logado",
-                "description": "Permite filtrar por categoria, status, busca e paginar. O filtro user_id sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© respeitado por funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes privilegiadas.",
+                "summary": "Lista os documentos do funcionário logado",
+                "description": "Permite filtrar por categoria, status, busca e paginar. O filtro user_id só é respeitado por funções privilegiadas.",
                 "operationId": "213e569ecec66d86203467553dd23ed7",
                 "parameters": [
                     {
@@ -7067,7 +6364,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "description": "Busca parcial no tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo ou notas",
+                            "description": "Busca parcial no título ou notas",
                             "type": "string"
                         }
                     },
@@ -7076,7 +6373,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "description": "DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel apenas para admins/gerentes/area managers",
+                            "description": "Disponível apenas para admins/gerentes/area managers",
                             "type": "string",
                             "format": "uuid"
                         }
@@ -7145,13 +6442,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "422": {
-                        "description": "ParÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metros invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos"
+                        "description": "Parâmetros inválidos"
                     }
                 },
                 "security": [
@@ -7224,13 +6521,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "422": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos ou arquivo muito grande"
+                        "description": "Dados inválidos ou arquivo muito grande"
                     }
                 },
                 "security": [
@@ -7270,13 +6567,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7307,13 +6604,13 @@
                         "description": "Documento removido"
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7389,16 +6686,16 @@
                         }
                     },
                     "400": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos"
+                        "description": "Dados inválidos"
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7431,13 +6728,13 @@
                         "description": "Stream do arquivo"
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Arquivo nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Arquivo não encontrado"
                     }
                 },
                 "security": [
@@ -7470,13 +6767,13 @@
                         "description": "Download do arquivo"
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Arquivo nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Arquivo não encontrado"
                     }
                 },
                 "security": [
@@ -7535,13 +6832,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "422": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ em revisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "description": "Documento não está em revisão"
                     }
                 },
                 "security": [
@@ -7556,7 +6853,7 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Marca o documento como disponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel",
+                "summary": "Marca o documento como disponível",
                 "operationId": "c6b07eb2e68723491a1f5b8b7da9b178",
                 "parameters": [
                     {
@@ -7581,13 +6878,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7602,7 +6899,7 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Lista documentos pendentes para revisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                "summary": "Lista documentos pendentes para revisão",
                 "operationId": "dc945bbcaa148f60a78a7190f674983d",
                 "parameters": [
                     {
@@ -7692,7 +6989,7 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
@@ -7774,7 +7071,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Documentos em revisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                        "description": "Documentos em revisão",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7800,7 +7097,7 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
@@ -7843,13 +7140,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7864,7 +7161,7 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Aprova um documento e limpa o estado de rejeiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o",
+                "summary": "Aprova um documento e limpa o estado de rejeição",
                 "operationId": "af0688d568ab73fcccf680cfa47cdde2",
                 "parameters": [
                     {
@@ -7889,13 +7186,13 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     }
                 },
                 "security": [
@@ -7910,7 +7207,7 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Rejeita um documento com comentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                "summary": "Rejeita um documento com comentário",
                 "operationId": "e6bfffe7f7cda3ca7abded8acf662a6f",
                 "parameters": [
                     {
@@ -7952,16 +7249,16 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "Documento nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Documento não encontrado"
                     },
                     "422": {
-                        "description": "ComentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio obrigatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio"
+                        "description": "Comentário obrigatório"
                     }
                 },
                 "security": [
@@ -7976,7 +7273,7 @@
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Upload de documentos para funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio (apenas admin)",
+                "summary": "Upload de documentos para funcionário (apenas admin)",
                 "operationId": "0b438869ca05af0ee8387326daaffc2a",
                 "requestBody": {
                     "required": true,
@@ -7990,7 +7287,7 @@
                                 ],
                                 "properties": {
                                     "user_id": {
-                                        "description": "ID do funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio",
+                                        "description": "ID do funcionário",
                                         "type": "string",
                                         "format": "uuid"
                                     },
@@ -8042,19 +7339,19 @@
                         }
                     },
                     "400": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos"
+                        "description": "Dados inválidos"
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "403": {
                         "description": "Acesso negado"
                     },
                     "404": {
-                        "description": "FuncionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado"
+                        "description": "Funcionário não encontrado"
                     },
                     "422": {
-                        "description": "Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos ou arquivo muito grande"
+                        "description": "Dados inválidos ou arquivo muito grande"
                     }
                 },
                 "security": [
@@ -8231,8 +7528,8 @@
                 "tags": [
                     "Employee - Profile"
                 ],
-                "summary": "Atualiza o nome do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio autenticado",
-                "description": "Atualiza o campo name do prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prio usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio. O usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© identificado pelo Bearer token ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nenhum ID na URL. DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para employee, area_manager, manager e admin.",
+                "summary": "Atualiza o nome do usuário autenticado",
+                "description": "Atualiza o campo name do próprio usuário. O usuário é identificado pelo Bearer token — nenhum ID na URL. Disponível para employee, area_manager, manager e admin.",
                 "operationId": "d1c0f7c74ef85d2b206dfb4315661d4c",
                 "requestBody": {
                     "required": true,
@@ -8287,14 +7584,14 @@
                         }
                     },
                     "422": {
-                        "description": "ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o falhou",
+                        "description": "Validação falhou",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "O campo nome ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© obrigatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio."
+                                            "example": "O campo nome é obrigatório."
                                         },
                                         "errors": {
                                             "properties": {
@@ -8302,7 +7599,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "O campo nome ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© obrigatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio."
+                                                        "example": "O campo nome é obrigatório."
                                                     }
                                                 }
                                             },
@@ -8315,7 +7612,7 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     }
                 },
                 "security": [
@@ -8330,8 +7627,8 @@
                 "tags": [
                     "Employee - Profile"
                 ],
-                "summary": "Troca a senha do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio autenticado",
-                "description": "Verifica a senha atual antes de aplicar a nova. O usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© identificado pelo Bearer token. DisponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel para employee, area_manager, manager e admin.",
+                "summary": "Troca a senha do usuário autenticado",
+                "description": "Verifica a senha atual antes de aplicar a nova. O usuário é identificado pelo Bearer token. Disponível para employee, area_manager, manager e admin.",
                 "operationId": "82c3c16be100f1c71d364d24fc566ece",
                 "requestBody": {
                     "required": true,
@@ -8381,14 +7678,14 @@
                         }
                     },
                     "422": {
-                        "description": "Senha atual incorreta ou confirmaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o confere",
+                        "description": "Senha atual incorreta ou confirmação não confere",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "A senha atual estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ incorreta."
+                                            "example": "A senha atual está incorreta."
                                         },
                                         "errors": {
                                             "properties": {
@@ -8396,7 +7693,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "A senha atual estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ incorreta."
+                                                        "example": "A senha atual está incorreta."
                                                     }
                                                 }
                                             },
@@ -8409,7 +7706,7 @@
                         }
                     },
                     "401": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticado"
+                        "description": "Não autenticado"
                     }
                 },
                 "security": [
@@ -8797,7 +8094,7 @@
                 "tags": [
                     "Employee - Vacations"
                 ],
-                "summary": "Lista meus pedidos de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias",
+                "summary": "Lista meus pedidos de férias",
                 "operationId": "633c5020e13760ecc5c1634a4a3a1692",
                 "responses": {
                     "200": {
@@ -8857,7 +8154,7 @@
                 "tags": [
                     "Employee - Vacations"
                 ],
-                "summary": "Solicita novas fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias",
+                "summary": "Solicita novas férias",
                 "operationId": "d1a2867d6d3f4a5878d848a3522464ce",
                 "requestBody": {
                     "required": true,
@@ -8891,7 +8188,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "SolicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o criada",
+                        "description": "Solicitação criada",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -8930,7 +8227,7 @@
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string",
-                                                        "example": "VocÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âª nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o possui saldo suficiente para este perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo."
+                                                        "example": "Você não possui saldo suficiente para este período."
                                                     }
                                                 }
                                             },
@@ -8955,7 +8252,7 @@
                 "tags": [
                     "Employee - Vacations"
                 ],
-                "summary": "Consulta saldo de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias",
+                "summary": "Consulta saldo de férias",
                 "operationId": "b10686842b1f95fb6e56444eec6a60dd",
                 "responses": {
                     "200": {
@@ -9028,7 +8325,7 @@
                 "tags": [
                     "Employee - Vacations"
                 ],
-                "summary": "Cancela solicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pendente",
+                "summary": "Cancela solicitação pendente",
                 "operationId": "0560a5ade2686e4470b2183fc9cd7f52",
                 "parameters": [
                     {
@@ -9046,7 +8343,7 @@
                         "description": "Cancelado"
                     },
                     "422": {
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© possÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­vel cancelar",
+                        "description": "Não é possível cancelar",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9100,7 +8397,7 @@
                                 ],
                                 "properties": {
                                     "invite_code": {
-                                        "description": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo recebido no convite",
+                                        "description": "Código recebido no convite",
                                         "type": "string"
                                     },
                                     "password": {
@@ -9137,14 +8434,14 @@
                         }
                     },
                     "422": {
-                        "description": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido ou expirado",
+                        "description": "Código inválido ou expirado",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido."
+                                            "example": "Código inválido."
                                         }
                                     },
                                     "type": "object"
@@ -9160,7 +8457,7 @@
                 "tags": [
                     "Platform - Billing"
                 ],
-                "summary": "Lista planos disponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis",
+                "summary": "Lista planos disponíveis",
                 "operationId": "69955f855f43d9b4d27186a983c55a50",
                 "responses": {
                     "200": {
@@ -9404,7 +8701,7 @@
                 "tags": [
                     "Platform - Companies"
                 ],
-                "summary": "Cria empresa e usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio admin via super admin",
+                "summary": "Cria empresa e usuário admin via super admin",
                 "description": "REGISTRAR EMPRESA + ADMIN\n---------------------------------------------------------",
                 "operationId": "487d32e70c91f88fdb3bff31f1645d54",
                 "requestBody": {
@@ -9474,7 +8771,7 @@
                     {
                         "name": "sort",
                         "in": "query",
-                        "description": "Campo de ordenaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o, use '-' para ordenar descendente (ex.: '-created_at').",
+                        "description": "Campo de ordenação, use '-' para ordenar descendente (ex.: '-created_at').",
                         "schema": {
                             "type": "string",
                             "example": "-created_at"
@@ -9483,7 +8780,7 @@
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Quantidade de itens por pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina (1-100)",
+                        "description": "Quantidade de itens por página (1-100)",
                         "schema": {
                             "type": "integer",
                             "example": 20
@@ -9492,7 +8789,7 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "description": "NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero da pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡gina",
+                        "description": "Número da página",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -9578,7 +8875,7 @@
                 "tags": [
                     "Platform - Companies"
                 ],
-                "summary": "Exibe os dados de uma empresa especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­fica",
+                "summary": "Exibe os dados de uma empresa específica",
                 "description": "VER DETALHES DE UMA EMPRESA\n---------------------------------------------------------",
                 "operationId": "6e62e55b811fe0dc3005c85480d59a12",
                 "parameters": [
@@ -9604,7 +8901,7 @@
                         }
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada"
+                        "description": "Empresa não encontrada"
                     }
                 },
                 "security": [
@@ -9720,7 +9017,7 @@
                         }
                     },
                     "422": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ deletada"
+                        "description": "Empresa não está deletada"
                     }
                 },
                 "security": [
@@ -9814,238 +9111,13 @@
                 ]
             }
         },
-        "/v1/public/blog/categories": {
-            "get": {
-                "tags": [
-                    "Public - Blog"
-                ],
-                "summary": "Lista categorias do blog",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico, sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.",
-                "operationId": "b9ed3c4a2f72acdac1b383c311ebd3b7",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "key": {
-                                                        "type": "string",
-                                                        "example": "compliance"
-                                                    },
-                                                    "label_pt": {
-                                                        "type": "string"
-                                                    },
-                                                    "label_es": {
-                                                        "type": "string"
-                                                    },
-                                                    "label_en": {
-                                                        "type": "string"
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/public/blog/posts": {
-            "get": {
-                "tags": [
-                    "Public - Blog"
-                ],
-                "summary": "Lista posts publicados do blog",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico, sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o. Retorna apenas posts com status=published.",
-                "operationId": "c3aa8a7eedffe6c30dbe5d4ac1f9662a",
-                "parameters": [
-                    {
-                        "name": "language",
-                        "in": "query",
-                        "description": "Idioma de exibiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (default: pt)",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "pt",
-                                "es",
-                                "en"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "category",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "compliance"
-                        }
-                    },
-                    {
-                        "name": "featured",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "maxLength": 100
-                        }
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "description": "CritÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rio de ordenaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (default: published_at_desc)",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "published_at_desc",
-                                "trending_score_desc"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ximo 50",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 10
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista paginada de posts publicados",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/BlogPostListItem"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "total": {
-                                                    "type": "integer",
-                                                    "example": 42
-                                                },
-                                                "page": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "per_page": {
-                                                    "type": "integer",
-                                                    "example": 10
-                                                },
-                                                "last_page": {
-                                                    "type": "integer",
-                                                    "example": 5
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/public/blog/posts/{slug}": {
-            "get": {
-                "tags": [
-                    "Public - Blog"
-                ],
-                "summary": "Exibe um post publicado pelo slug",
-                "description": "Endpoint pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblico, sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o. Retorna 404 se o post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o existir ou nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o estiver publicado.",
-                "operationId": "6e4420d9876273a8fd05d716cc28e051",
-                "parameters": [
-                    {
-                        "name": "slug",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "example": "ponto-eletronico-espanha"
-                        }
-                    },
-                    {
-                        "name": "language",
-                        "in": "query",
-                        "description": "Idioma de exibiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (default: pt)",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "pt",
-                                "es",
-                                "en"
-                            ]
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/BlogPostDetailResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Post nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado ou nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o publicado"
-                    }
-                }
-            }
-        },
         "/v1/settings/overview": {
             "get": {
                 "tags": [
                     "Settings"
                 ],
-                "summary": "Retorna o overview das configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes e billing da empresa autenticada",
-                "description": "Fornece um snapshot local de billing, flags e metadados de configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes. Dados Stripe sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o mantidos em cache na tabela `subscriptions` (sincronizados por webhooks); quando estiverem ausentes retornam `null` mas a estrutura permanece.",
+                "summary": "Retorna o overview das configurações e billing da empresa autenticada",
+                "description": "Fornece um snapshot local de billing, flags e metadados de configurações. Dados Stripe são mantidos em cache na tabela `subscriptions` (sincronizados por webhooks); quando estiverem ausentes retornam `null` mas a estrutura permanece.",
                 "operationId": "d013701ac9d519c5287af2b710b52ec4",
                 "responses": {
                     "200": {
@@ -10059,10 +9131,10 @@
                         }
                     },
                     "401": {
-                        "description": "RequisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o autenticada"
+                        "description": "Requisição não autenticada"
                     },
                     "404": {
-                        "description": "Empresa nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrada para o usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio autenticado"
+                        "description": "Empresa não encontrada para o usuário autenticado"
                     }
                 },
                 "security": [
@@ -10075,222 +9147,6 @@
     },
     "components": {
         "schemas": {
-            "BlogPostListItem": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "slug": {
-                        "type": "string",
-                        "example": "ponto-eletronico-espanha"
-                    },
-                    "title": {
-                        "type": "string",
-                        "example": "Como funciona o controle de ponto na Espanha"
-                    },
-                    "excerpt": {
-                        "type": "string",
-                        "example": "Entenda as regras de jornada e fiscalizaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o."
-                    },
-                    "cover_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "category": {
-                        "type": "string",
-                        "example": "compliance"
-                    },
-                    "author": {
-                        "type": "string",
-                        "example": "Equipe Jornafy"
-                    },
-                    "reading_time": {
-                        "type": "string",
-                        "example": "5 min",
-                        "nullable": true
-                    },
-                    "published_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "featured": {
-                        "type": "boolean"
-                    },
-                    "trending_score": {
-                        "type": "integer",
-                        "example": 80,
-                        "nullable": true
-                    },
-                    "language": {
-                        "type": "string",
-                        "example": "pt",
-                        "nullable": true
-                    }
-                },
-                "type": "object"
-            },
-            "BlogPostAdminResource": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "slug": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "draft",
-                            "published",
-                            "archived"
-                        ]
-                    },
-                    "title": {
-                        "properties": {
-                            "pt": {
-                                "type": "string"
-                            },
-                            "es": {
-                                "type": "string"
-                            },
-                            "en": {
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "excerpt": {
-                        "properties": {
-                            "pt": {
-                                "type": "string"
-                            },
-                            "es": {
-                                "type": "string"
-                            },
-                            "en": {
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "content_html": {
-                        "properties": {
-                            "pt": {
-                                "type": "string"
-                            },
-                            "es": {
-                                "type": "string"
-                            },
-                            "en": {
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "hero_image_alt": {
-                        "type": "object",
-                        "nullable": true
-                    },
-                    "hero_caption": {
-                        "type": "object",
-                        "nullable": true
-                    },
-                    "seo_title": {
-                        "type": "object",
-                        "nullable": true
-                    },
-                    "seo_description": {
-                        "type": "object",
-                        "nullable": true
-                    },
-                    "toc": {
-                        "type": "object",
-                        "nullable": true
-                    },
-                    "author": {
-                        "type": "string"
-                    },
-                    "category": {
-                        "type": "string"
-                    },
-                    "audience_tag": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "cover_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "hero_image_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "og_image_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "canonical_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "reading_time": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "trending_score": {
-                        "type": "integer",
-                        "nullable": true
-                    },
-                    "featured": {
-                        "type": "boolean"
-                    },
-                    "published_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "faq": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                "question": {
-                                    "type": "object"
-                                },
-                                "answer": {
-                                    "type": "object"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    },
-                    "related_posts": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                "slug": {
-                                    "type": "string"
-                                },
-                                "title": {
-                                    "type": "string"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    }
-                },
-                "type": "object"
-            },
             "OvertimeDay": {
                 "properties": {
                     "date": {
@@ -10534,7 +9390,7 @@
                     },
                     "name": {
                         "type": "string",
-                        "example": "AsunciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de la Virgen"
+                        "example": "Asunción de la Virgen"
                     },
                     "scope": {
                         "type": "string",
@@ -10648,7 +9504,7 @@
                     },
                     "body": {
                         "type": "string",
-                        "example": "O escritÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rio ficarÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ fechado para manutenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.",
+                        "example": "O escritório ficará fechado para manutenção.",
                         "nullable": true
                     },
                     "sentAt": {
@@ -11768,7 +10624,7 @@
                     },
                     "city": {
                         "type": "string",
-                        "example": "SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Paulo",
+                        "example": "São Paulo",
                         "nullable": true
                     },
                     "state": {
@@ -11826,7 +10682,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
-                        "example": "Empresa PadrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o"
+                        "example": "Empresa Padrão"
                     },
                     "document": {
                         "type": "string",
@@ -11962,7 +10818,7 @@
                     },
                     "company_city": {
                         "type": "string",
-                        "example": "SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Paulo",
+                        "example": "São Paulo",
                         "nullable": true
                     },
                     "company_state": {
@@ -11994,162 +10850,6 @@
                     "email": {
                         "type": "string",
                         "format": "email"
-                    }
-                },
-                "type": "object"
-            },
-            "BlogPostDetailResource": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "slug": {
-                        "type": "string"
-                    },
-                    "title": {
-                        "type": "string"
-                    },
-                    "excerpt": {
-                        "type": "string"
-                    },
-                    "content_html": {
-                        "type": "string"
-                    },
-                    "cover_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "hero_image_url": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "hero_image_alt": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "hero_caption": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "author": {
-                        "type": "string"
-                    },
-                    "category": {
-                        "type": "string"
-                    },
-                    "audience_tag": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "reading_time": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "featured": {
-                        "type": "boolean"
-                    },
-                    "trending_score": {
-                        "type": "integer",
-                        "nullable": true
-                    },
-                    "published_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "draft",
-                            "published",
-                            "archived"
-                        ]
-                    },
-                    "seo": {
-                        "properties": {
-                            "title": {
-                                "type": "string",
-                                "nullable": true
-                            },
-                            "description": {
-                                "type": "string",
-                                "nullable": true
-                            },
-                            "og_image_url": {
-                                "type": "string",
-                                "nullable": true
-                            },
-                            "canonical_url": {
-                                "type": "string",
-                                "nullable": true
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "toc": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "label": {
-                                    "type": "string"
-                                },
-                                "href": {
-                                    "type": "string"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    },
-                    "faq": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "question": {
-                                    "type": "string"
-                                },
-                                "answer": {
-                                    "type": "string"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    },
-                    "related_posts": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "slug": {
-                                    "type": "string"
-                                },
-                                "title": {
-                                    "type": "string"
-                                },
-                                "excerpt": {
-                                    "type": "string"
-                                },
-                                "cover_url": {
-                                    "type": "string",
-                                    "nullable": true
-                                },
-                                "category": {
-                                    "type": "string"
-                                },
-                                "author": {
-                                    "type": "string"
-                                },
-                                "reading_time": {
-                                    "type": "string",
-                                    "nullable": true
-                                },
-                                "published_at": {
-                                    "type": "string",
-                                    "format": "date-time",
-                                    "nullable": true
-                                }
-                            },
-                            "type": "object"
-                        }
                     }
                 },
                 "type": "object"
@@ -12515,44 +11215,40 @@
     },
     "tags": [
         {
-            "name": "Admin - Blog",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de posts do blog (CRUD, publicaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o e upload de mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­dia)"
-        },
-        {
             "name": "Admin - Company Settings",
-            "description": "ConfiguraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes da empresa: assinaturas de folha, informaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes cadastrais e localizaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o/idioma"
+            "description": "Configurações da empresa: assinaturas de folha, informações cadastrais e localização/idioma"
         },
         {
             "name": "Admin - Employees",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios da empresa (CRUD)"
+            "description": "Gestão de funcionários da empresa (CRUD)"
         },
         {
             "name": "Admin - Holidays",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de feriados corporativos"
+            "description": "Gestão de feriados corporativos"
         },
         {
             "name": "Admin - Leave Policies",
-            "description": "PolÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ticas de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias por empresa"
+            "description": "Políticas de férias por empresa"
         },
         {
             "name": "Admin - Reports",
-            "description": "RelatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rios administrativos"
+            "description": "Relatórios administrativos"
         },
         {
             "name": "Admin - Shifts",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de jornadas de trabalho"
+            "description": "Gestão de jornadas de trabalho"
         },
         {
             "name": "Admin - Vacations",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de solicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias"
+            "description": "Gestão de solicitações de férias"
         },
         {
             "name": "Employee - Announcements",
-            "description": "Comunicados internos disponÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis para o colaborador"
+            "description": "Comunicados internos disponíveis para o colaborador"
         },
         {
             "name": "Admin - Announcements",
-            "description": "AdministraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o dos comunicados internos"
+            "description": "Administração dos comunicados internos"
         },
         {
             "name": "Area Manager - Adjustments",
@@ -12568,31 +11264,31 @@
         },
         {
             "name": "Billing",
-            "description": "Rotas pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicas de planos, sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de checkout e portal de cobranÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§a"
+            "description": "Rotas públicas de planos, sessões de checkout e portal de cobrança"
         },
         {
-            "name": "Affiliate - Portal",
-            "description": "AutenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o e ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rea logada do afiliado (papel 'affiliate'). O afiliado sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ enxerga seus prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³prios leads, comissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes e bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus."
+            "name": "Commercial - Affiliate Portal",
+            "description": "Autenticação e área logada do afiliado (papel 'affiliate'). O afiliado só enxerga seus próprios leads, comissões e bônus."
         },
         {
-            "name": "Affiliate - Management",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de afiliados, links de rastreamento e mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricas. Restrito a super_admin e admin."
+            "name": "Commercial - Affiliates",
+            "description": "Gestão de afiliados, links de rastreamento e métricas. Restrito a super_admin."
         },
         {
-            "name": "Affiliate - Commissions",
-            "description": "ComissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes e bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus de afiliados. Restrito a super_admin e admin. ComissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o padrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: 20% por 6 meses. BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nus: 50ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ a cada 5 clientes pagos no mesmo mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªs calendÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio."
+            "name": "Commercial - Commissions",
+            "description": "Comissões e bônus de afiliados. Restrito a super_admin. Comissão padrão: 20% por 6 meses. Bônus: 50€ a cada 5 clientes pagos no mesmo mês calendário."
         },
         {
-            "name": "Affiliate - Leads",
-            "description": "GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de leads do mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³dulo de afiliados. Acesso restrito a super_admin e admin."
+            "name": "Commercial - Leads",
+            "description": "Gestão de leads do módulo Comercial. Acesso restrito a super_admin."
         },
         {
-            "name": "Affiliate - Steps",
-            "description": "Etapas do funil de afiliados. GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (criar/editar/remover/reordenar) restrita a super_admin e admin."
+            "name": "Commercial - Steps",
+            "description": "Etapas do funil comercial. Gestão (criar/editar/remover/reordenar) restrita a super_admin."
         },
         {
             "name": "Documents",
-            "description": "Gerencia os documentos vinculados aos funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios."
+            "description": "Gerencia os documentos vinculados aos funcionários."
         },
         {
             "name": "Employee - Adjustments",
@@ -12600,7 +11296,7 @@
         },
         {
             "name": "Employee - Profile",
-            "description": "ConfiguraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de perfil do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio autenticado"
+            "description": "Configurações de perfil do usuário autenticado"
         },
         {
             "name": "Employee - Time Entries",
@@ -12608,27 +11304,23 @@
         },
         {
             "name": "Employee - Vacations",
-            "description": "SolicitaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o e acompanhamento de fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rias do colaborador"
+            "description": "Solicitação e acompanhamento de férias do colaborador"
         },
         {
             "name": "Invites",
-            "description": "Endpoints pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicos para aceitar convites de funcionÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios."
+            "description": "Endpoints públicos para aceitar convites de funcionários."
         },
         {
             "name": "Platform - Billing",
-            "description": "CobranÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§a e assinaturas gerenciadas pela plataforma para o super admin"
+            "description": "Cobrança e assinaturas gerenciadas pela plataforma para o super admin"
         },
         {
             "name": "Platform - Companies",
-            "description": "Rotas de gerenciamento de empresas acessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­veis ao super admin"
-        },
-        {
-            "name": "Public - Blog",
-            "description": "Endpoints pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicos do blog (sem autenticaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o) consumidos pelo site."
+            "description": "Rotas de gerenciamento de empresas acessíveis ao super admin"
         },
         {
             "name": "Settings",
-            "description": "Endpoints que expÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµem o overview de billing e configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes da empresa logada"
+            "description": "Endpoints que expõem o overview de billing e configurações da empresa logada"
         },
         {
             "name": "Debug",

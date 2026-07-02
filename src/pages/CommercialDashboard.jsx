@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/useAuth'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { getCommercialDashboard } from '../services/modules/commercial'
 
-const ACCESS_REQUIRES = { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] }
+const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 
 function StatCard({ label, value, icon: Icon, color = 'text-primary' }) {
   return (

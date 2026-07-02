@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GripVertical, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
@@ -23,15 +23,25 @@ import {
   updateStep,
 } from '../services/modules/commercial'
 
-const VIEW_REQUIRES = { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] }
-const MANAGE_REQUIRES = { anyOf: ['super_admin', 'commercial_manager'] }
+const VIEW_REQUIRES = { anyOf: ['super_admin'] }
+const MANAGE_REQUIRES = { anyOf: ['super_admin'] }
+
+const toSlug = (name) =>
+  name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
 
 const buildForm = (step = null) => ({
   id: step?.id ?? '',
   name: step?.name ?? '',
+  slug: step?.slug ?? '',
   description: step?.description ?? '',
   position: step?.position ?? '',
   default_due_days: step?.default_due_days ?? '',
+  is_final: step?.is_final ?? false,
   active: step?.active ?? true,
 })
 
@@ -51,6 +61,13 @@ export default function CommercialSteps() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
+  const slugManualRef = useRef(false)
+
+  useEffect(() => {
+    if (formMode !== 'create' || slugManualRef.current) return
+    setForm((f) => ({ ...f, slug: toSlug(f.name) }))
+  }, [form.name, formMode])
+
   const load = useCallback(async () => {
     if (!hasView) return
     setLoading(true)
@@ -68,12 +85,14 @@ export default function CommercialSteps() {
   useEffect(() => { load() }, [load])
 
   const handleOpenCreate = () => {
+    slugManualRef.current = false
     setFormMode('create')
     setForm(buildForm())
     setDialogOpen(true)
   }
 
   const handleOpenEdit = (step) => {
+    slugManualRef.current = true
     setFormMode('edit')
     setForm(buildForm(step))
     setDialogOpen(true)
@@ -157,7 +176,7 @@ export default function CommercialSteps() {
 
         {!loading && steps.length > 0 && (
           <div className="flex flex-col gap-2">
-            {steps.map((step) => (
+            {[...steps].sort((a, b) => a.position - b.position).map((step) => (
               <div
                 key={step.id}
                 className="flex items-center gap-3 rounded-[14px] border border-border/70 bg-card/80 px-4 py-3 backdrop-blur-xl"
@@ -167,12 +186,22 @@ export default function CommercialSteps() {
                   {step.position}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-semibold">{step.name}</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-[12px] font-semibold">{step.name}</p>
+                    {step.is_final && (
+                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-semibold text-amber-600">
+                        Final
+                      </span>
+                    )}
+                  </div>
                   {step.description && (
                     <p className="text-[11px] text-muted-foreground truncate">{step.description}</p>
                   )}
+                  {step.slug && (
+                    <p className="text-[10px] text-muted-foreground/60 font-mono">{step.slug}</p>
+                  )}
                 </div>
-                {step.default_due_days && (
+                {step.default_due_days != null && (
                   <span className="shrink-0 rounded-full border border-border/60 bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                     {step.default_due_days}d
                   </span>
@@ -225,6 +254,21 @@ export default function CommercialSteps() {
               />
             </div>
             <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-muted-foreground">
+                Slug
+                {formMode === 'create' && <span className="ml-1 text-[10px] text-muted-foreground/60">(gerado automaticamente)</span>}
+              </label>
+              <input
+                className={cn(formControlClass, 'font-mono')}
+                value={form.slug}
+                onChange={(e) => {
+                  slugManualRef.current = true
+                  setForm((f) => ({ ...f, slug: e.target.value }))
+                }}
+                placeholder="ex-ligacao-1"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
               <label className="text-[11px] font-medium text-muted-foreground">Descrição</label>
               <input
                 className={formControlClass}
@@ -255,14 +299,24 @@ export default function CommercialSteps() {
                 />
               </div>
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={form.active}
-                onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-              />
-              Etapa ativa
-            </label>
+            <div className="flex flex-col gap-2">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                <input
+                  type="checkbox"
+                  checked={form.is_final}
+                  onChange={(e) => setForm((f) => ({ ...f, is_final: e.target.checked }))}
+                />
+                Etapa final (Fechado ganho / perdido)
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                <input
+                  type="checkbox"
+                  checked={form.active}
+                  onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
+                />
+                Etapa ativa
+              </label>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>

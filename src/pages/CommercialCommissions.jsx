@@ -14,7 +14,7 @@ import {
   markCommissionPaid,
 } from '../services/modules/commercial'
 
-const ACCESS_REQUIRES = { anyOf: ['super_admin', 'commercial_manager'] }
+const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 
 const COMMISSION_STATUS_LABELS = {
   pending: 'Pendente',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   CheckCircle2,
   KanbanSquare,
   List,
@@ -43,8 +44,8 @@ import {
 } from '../services/modules/commercial'
 import { LeadKanban } from '../components/commercial/LeadKanban'
 
-const ACCESS_REQUIRES = { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] }
-const MANAGE_REQUIRES = { anyOf: ['super_admin', 'commercial_manager'] }
+const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
+const MANAGE_REQUIRES = { anyOf: ['super_admin'] }
 
 const STATUS_OPTIONS = ['new', 'in_progress', 'demo_scheduled', 'proposal_sent', 'won', 'lost', 'nurturing']
 const STATUS_LABELS = {
@@ -75,6 +76,41 @@ const priorityColor = (priority) => {
   if (priority === 'high') return 'text-amber-500'
   if (priority === 'medium') return 'text-primary'
   return 'text-muted-foreground'
+}
+
+// Pipeline filters — apiIsOverdue=true/false via ?is_overdue (backend); localFn apenas para "Sem etapa"
+const PIPELINE_FILTERS = [
+  { value: '', label: 'Todos', apiIsOverdue: null, apiStatus: null, localFn: null },
+  { value: 'overdue', label: 'Vencidos', apiIsOverdue: true, apiStatus: null, localFn: null },
+  { value: 'on_track', label: 'Em dia', apiIsOverdue: false, apiStatus: null, localFn: null },
+  { value: 'no_stage', label: 'Sem etapa', apiIsOverdue: null, apiStatus: null, localFn: (l) => !l.current_step_id },
+  { value: 'nurturing', label: 'Nutrição', apiIsOverdue: null, apiStatus: 'nurturing', localFn: null },
+  { value: 'won', label: 'Fechado ganho', apiIsOverdue: null, apiStatus: 'won', localFn: null },
+  { value: 'lost', label: 'Fechado perdido', apiIsOverdue: null, apiStatus: 'lost', localFn: null },
+]
+
+const isLeadFinal = (lead) =>
+  lead.status === 'won' || lead.status === 'lost' || lead.current_step?.is_final === true
+
+const sortLeads = (leads) =>
+  [...leads].sort((a, b) => {
+    const weight = (l) => {
+      if (isLeadFinal(l)) return 4
+      if (l.status === 'nurturing') return 3
+      if (l.current_stage_is_overdue) return 0
+      if (l.status === 'new') return 2
+      return 1
+    }
+    return weight(a) - weight(b)
+  })
+
+const fmtDate = (iso) => {
+  if (!iso) return null
+  try {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  } catch {
+    return null
+  }
 }
 
 const buildLeadForm = (lead = null) => ({
@@ -109,6 +145,7 @@ export default function CommercialLeads() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [pipelineFilter, setPipelineFilter] = useState('')
   const [loading, setLoading] = useState(true)
 
   const [steps, setSteps] = useState([])
@@ -151,20 +188,30 @@ export default function CommercialLeads() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const load = useCallback(async (pg = page, q = search, st = statusFilter) => {
+  const load = useCallback(async (pg = page, q = search, st = statusFilter, pf = pipelineFilter) => {
     if (!hasAccess) return
     setLoading(true)
     try {
-      const result = await listLeads({ page: pg, search: q || undefined, status: st || undefined })
-      setLeads(result.data)
-      setMeta(result.meta)
+      const activePf = PIPELINE_FILTERS.find((f) => f.value === pf)
+      const isLocalFilter = !!(activePf?.localFn)
+      const result = await listLeads({
+        page: isLocalFilter ? 1 : pg,
+        per_page: isLocalFilter ? 300 : undefined,
+        search: q || undefined,
+        status: (activePf?.apiStatus ?? st) || undefined,
+        is_overdue: activePf?.apiIsOverdue ?? undefined,
+      })
+      const sorted = sortLeads(result.data)
+      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      setLeads(filtered)
+      setMeta(isLocalFilter ? null : result.meta)
     } catch (err) {
       console.error('[CommercialLeads]', err)
       toast({ title: 'Erro', description: 'Não foi possível carregar os leads.', variant: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, page, search, statusFilter, toast])
+  }, [hasAccess, page, search, statusFilter, pipelineFilter, toast])
 
   useEffect(() => {
     if (!hasAccess) return
@@ -336,18 +383,27 @@ export default function CommercialLeads() {
     if (!hasAccess) return
     setLoading(true)
     try {
+      const activePf = PIPELINE_FILTERS.find((f) => f.value === pipelineFilter)
       const [stepsResult, leadsResult] = await Promise.all([
         listSteps(),
-        listLeads({ per_page: 200, page: 1, search: search || undefined, status: statusFilter || undefined }),
+        listLeads({
+          per_page: 300,
+          page: 1,
+          search: search || undefined,
+          status: (activePf?.apiStatus ?? statusFilter) || undefined,
+          is_overdue: activePf?.apiIsOverdue ?? undefined,
+        }),
       ])
       setSteps(stepsResult ?? [])
-      setLeads(leadsResult.data ?? [])
+      const sorted = sortLeads(leadsResult.data ?? [])
+      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      setLeads(filtered)
     } catch {
       toast({ title: 'Erro', description: 'Não foi possível carregar o pipeline.', variant: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, search, statusFilter, toast])
+  }, [hasAccess, search, statusFilter, pipelineFilter, toast])
 
   const refreshCurrentView = useCallback(async () => {
     if (viewMode === 'kanban') {
@@ -375,10 +431,10 @@ export default function CommercialLeads() {
         return
       }
 
-      load(1, search, statusFilter)
+      load(1, search, statusFilter, pipelineFilter)
     }, 400)
     return () => clearTimeout(timer)
-  }, [load, loadKanban, search, statusFilter, viewMode])
+  }, [load, loadKanban, search, statusFilter, pipelineFilter, viewMode])
 
   const handleKanbanMoveStep = async (leadId, stepId, note) => {
     try {
@@ -505,22 +561,18 @@ export default function CommercialLeads() {
                 />
               </div>
               <select
-                className={cn(formControlClass, 'w-44')}
-                value={statusFilter}
+                className={cn(formControlClass, 'w-48')}
+                value={pipelineFilter}
                 onChange={(e) => {
-                  const nextStatus = e.target.value
-                  setStatusFilter(nextStatus)
-
-                  if (viewMode === 'kanban') {
-                    return
-                  }
-
-                  load(1, search, nextStatus)
+                  const next = e.target.value
+                  setPipelineFilter(next)
+                  setStatusFilter('')
+                  if (viewMode === 'kanban') return
+                  load(1, search, '', next)
                 }}
               >
-                <option value="">Todos os status</option>
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                {PIPELINE_FILTERS.map((f) => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
             </div>
@@ -554,111 +606,168 @@ export default function CommercialLeads() {
 
         {viewMode === 'list' && !loading && leads.length > 0 && (
           <div className="flex flex-col gap-2">
-            {leads.map((lead) => (
-              <div
-                key={lead.id}
-                className="flex flex-col gap-2 rounded-[14px] border border-border/70 bg-card/80 px-4 py-3 backdrop-blur-xl"
-              >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        className="text-left text-[13px] font-semibold hover:text-primary transition-colors"
-                        onClick={() => handleOpenDetail(lead)}
-                      >
-                        {lead.company_name}
-                      </button>
-                      <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${statusColor(lead.status)}`}>
-                        {STATUS_LABELS[lead.status] ?? lead.status}
-                      </span>
-                      <span className={`text-[10px] font-medium ${priorityColor(lead.priority)}`}>
-                        ▲ {PRIORITY_LABELS[lead.priority] ?? lead.priority}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
-                      {lead.contact_name && <span>{lead.contact_name}</span>}
-                      {lead.email && <span>{lead.email}</span>}
-                      {lead.phone && <span>{lead.phone}</span>}
-                      {lead.current_step && (
-                        <span className="text-primary/80">📍 {lead.current_step.name}</span>
+            {leads.map((lead) => {
+              const isOverdue = !isLeadFinal(lead) && lead.current_stage_is_overdue === true
+              return (
+                <div
+                  key={lead.id}
+                  className={cn(
+                    'flex flex-col gap-2 rounded-[14px] border bg-card/80 px-4 py-3 backdrop-blur-xl',
+                    isOverdue ? 'border-destructive/40' : 'border-border/70',
+                  )}
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-left text-[13px] font-semibold hover:text-primary transition-colors"
+                          onClick={() => handleOpenDetail(lead)}
+                        >
+                          {lead.company_name}
+                        </button>
+                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${statusColor(lead.status)}`}>
+                          {STATUS_LABELS[lead.status] ?? lead.status}
+                        </span>
+                        {/* Pipeline status badge */}
+                        {isOverdue && (
+                          <span className="flex items-center gap-1 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-destructive">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Vencido
+                          </span>
+                        )}
+                        {!isOverdue && !isLeadFinal(lead) && lead.current_stage_name && (
+                          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600">
+                            Em dia
+                          </span>
+                        )}
+                        {isLeadFinal(lead) && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
+                            {lead.status === 'won' ? 'Ganho' : 'Perdido'}
+                          </span>
+                        )}
+                        <span className={`text-[10px] font-medium ${priorityColor(lead.priority)}`}>
+                          ▲ {PRIORITY_LABELS[lead.priority] ?? lead.priority}
+                        </span>
+                      </div>
+
+                      {/* Overdue warning */}
+                      {isOverdue && lead.current_stage_warning_message && (
+                        <div className="mt-1 flex items-start gap-1.5 rounded-lg bg-destructive/8 px-2 py-1">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+                          <p className="text-[10px] text-destructive">{lead.current_stage_warning_message}</p>
+                        </div>
                       )}
-                      {lead.assigned_to_user && (
-                        <span>👤 {lead.assigned_to_user.name}</span>
+
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
+                        {lead.contact_name && <span>{lead.contact_name}</span>}
+                        {lead.email && <span>{lead.email}</span>}
+                        {lead.phone && <span>{lead.phone}</span>}
+                        {(lead.current_stage_name || lead.current_step?.name) && (
+                          <span className="text-primary/80">📍 {lead.current_stage_name ?? lead.current_step?.name}</span>
+                        )}
+                        {lead.assigned_to_user && (
+                          <span>👤 {lead.assigned_to_user.name}</span>
+                        )}
+                      </div>
+
+                      {/* Pipeline timeline info */}
+                      {!isLeadFinal(lead) && (lead.current_step_started_at || lead.current_stage_due_at || lead.current_stage_default_days != null) && (
+                        <div className="mt-0.5 flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
+                          {lead.current_stage_default_days != null && (
+                            <span>{lead.current_stage_default_days}d padrão</span>
+                          )}
+                          {lead.current_step_started_at ? (
+                            <span>Entrada: {fmtDate(lead.current_step_started_at)}</span>
+                          ) : (
+                            <span className="text-muted-foreground/50">Sem data de entrada</span>
+                          )}
+                          {lead.current_stage_due_at && (
+                            <span className={isOverdue ? 'text-destructive font-medium' : ''}>
+                              Limite: {fmtDate(lead.current_stage_due_at)}
+                            </span>
+                          )}
+                          {lead.next_stage_name && (
+                            <span className="text-primary/70">→ {lead.next_stage_name}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {lead.next_action_at && (
+                        <p className="text-[10px] text-amber-600">
+                          ⏰ Próxima ação: {lead.next_action_type} em{' '}
+                          {new Date(lead.next_action_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
                       )}
                     </div>
-                    {lead.next_action_at && (
-                      <p className="text-[10px] text-amber-600">
-                        ⏰ Próxima ação: {lead.next_action_type} em{' '}
-                        {new Date(lead.next_action_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      title="Mover etapa"
-                      onClick={() => { setMoveTarget(lead); setMoveStepId(lead.current_step_id ?? ''); setMoveNote(''); setMoveStepOpen(true) }}
-                    >
-                      <MoveRight className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      title="Adicionar nota"
-                      onClick={() => { setNoteTarget(lead); setNoteText(''); setNoteOpen(true) }}
-                    >
-                      <MessageSquarePlus className="h-3.5 w-3.5" />
-                    </Button>
-                    {lead.status !== 'won' && lead.status !== 'lost' && (
-                      <>
+                    <div className="flex shrink-0 flex-wrap items-center gap-1">
+                      {!isLeadFinal(lead) && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-emerald-600 hover:text-emerald-600"
-                          title="Marcar como ganho"
-                          onClick={() => { setWonTarget(lead); setWonBaseAmount(''); setWonOpen(true) }}
+                          className="h-7 w-7"
+                          title="Mover etapa"
+                          onClick={() => { setMoveTarget(lead); setMoveStepId(lead.next_stage_id ?? lead.current_step_id ?? ''); setMoveNote(''); setMoveStepOpen(true) }}
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <MoveRight className="h-3.5 w-3.5" />
                         </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Adicionar nota"
+                        onClick={() => { setNoteTarget(lead); setNoteText(''); setNoteOpen(true) }}
+                      >
+                        <MessageSquarePlus className="h-3.5 w-3.5" />
+                      </Button>
+                      {!isLeadFinal(lead) && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-600"
+                            title="Marcar como ganho"
+                            onClick={() => { setWonTarget(lead); setWonBaseAmount(''); setWonOpen(true) }}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title="Marcar como perdido"
+                            onClick={() => { setLostTarget(lead); setLostReason(''); setLostOpen(true) }}
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Editar"
+                        onClick={() => handleOpenEdit(lead)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      {hasManage && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
-                          title="Marcar como perdido"
-                          onClick={() => { setLostTarget(lead); setLostReason(''); setLostOpen(true) }}
+                          title="Remover"
+                          onClick={() => setDeleteTarget(lead)}
                         >
-                          <XCircle className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      title="Editar"
-                      onClick={() => handleOpenEdit(lead)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {hasManage && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        title="Remover"
-                        onClick={() => setDeleteTarget(lead)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -759,6 +868,67 @@ export default function CommercialLeads() {
           {detailLoading && <p className="text-center text-sm text-muted-foreground py-4">Carregando...</p>}
           {!detailLoading && detailLead && (
             <div className="flex flex-col gap-4 py-2">
+              {/* Pipeline block */}
+              {(() => {
+                const dl = detailLead
+                const isOverdue = !isLeadFinal(dl) && dl.current_stage_is_overdue === true
+                if (!dl.current_stage_name && !dl.next_stage_name) return null
+                return (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pipeline</p>
+                    {isOverdue && dl.current_stage_warning_message && (
+                      <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/8 px-2 py-1.5">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                        <p className="text-[11px] text-destructive">{dl.current_stage_warning_message}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                      {dl.current_stage_name && (
+                        <div>
+                          <p className="text-muted-foreground">Etapa atual</p>
+                          <p className="font-medium">{dl.current_stage_name}</p>
+                        </div>
+                      )}
+                      {dl.current_stage_default_days != null && (
+                        <div>
+                          <p className="text-muted-foreground">Dias padrão</p>
+                          <p className="font-medium">{dl.current_stage_default_days}d</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-muted-foreground">Entrada na etapa</p>
+                        <p className="font-medium">
+                          {dl.current_step_started_at ? fmtDate(dl.current_step_started_at) : <span className="text-muted-foreground/50">Sem data</span>}
+                        </p>
+                      </div>
+                      {!isLeadFinal(dl) && dl.current_stage_due_at && (
+                        <div>
+                          <p className="text-muted-foreground">Data limite</p>
+                          <p className={cn('font-medium', isOverdue && 'text-destructive')}>{fmtDate(dl.current_stage_due_at)}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-muted-foreground">Status</p>
+                        {isLeadFinal(dl) ? (
+                          <p className="font-medium">{dl.status === 'won' ? 'Ganho' : 'Perdido'}</p>
+                        ) : isOverdue ? (
+                          <p className="font-medium text-destructive">Vencido</p>
+                        ) : dl.current_stage_name ? (
+                          <p className="font-medium text-emerald-600">Em dia</p>
+                        ) : (
+                          <p className="font-medium text-muted-foreground">Sem etapa</p>
+                        )}
+                      </div>
+                      {!isLeadFinal(dl) && dl.next_stage_name && (
+                        <div>
+                          <p className="text-muted-foreground">Próxima etapa</p>
+                          <p className="font-medium text-primary">→ {dl.next_stage_name}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 {[
                   ['Contato', detailLead.contact_name],
@@ -824,11 +994,16 @@ export default function CommercialLeads() {
             <DialogTitle>Mover etapa — {moveTarget?.company_name}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
+            {moveTarget?.next_stage_name && (
+              <p className="text-[11px] text-primary">
+                Próxima etapa sugerida: <strong>{moveTarget.next_stage_name}</strong>
+              </p>
+            )}
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-medium text-muted-foreground">Etapa *</label>
               <select className={formControlClass} value={moveStepId} onChange={(e) => setMoveStepId(e.target.value)}>
                 <option value="">Selecione...</option>
-                {steps.map((s) => (
+                {[...steps].sort((a, b) => a.position - b.position).map((s) => (
                   <option key={s.id} value={s.id}>{s.position}. {s.name}</option>
                 ))}
               </select>

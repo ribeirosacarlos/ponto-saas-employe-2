@@ -9,9 +9,11 @@ const BASE = '/v1/admin/commercial'
 const normalizeStep = (step = {}, index = 0) => ({
   id: step.id ?? `step-${index}`,
   name: step.name ?? '',
+  slug: step.slug ?? null,
   position: Number(step.position ?? index),
   description: step.description ?? null,
   default_due_days: step.default_due_days ?? null,
+  is_final: step.is_final ?? false,
   active: step.active !== false,
 })
 
@@ -42,6 +44,14 @@ const normalizeLead = (lead = {}, index = 0) => ({
   source: lead.source ?? null,
   affiliate_id: lead.affiliate_id ?? null,
   current_step_id: lead.current_step_id ?? null,
+  current_stage_name: lead.current_stage_name ?? null,
+  current_stage_default_days: lead.current_stage_default_days ?? null,
+  current_step_started_at: lead.current_step_started_at ?? null,
+  current_stage_due_at: lead.current_stage_due_at ?? null,
+  current_stage_is_overdue: lead.current_stage_is_overdue ?? false,
+  current_stage_warning_message: lead.current_stage_warning_message ?? null,
+  next_stage_id: lead.next_stage_id ?? null,
+  next_stage_name: lead.next_stage_name ?? null,
   assigned_to_user_id: lead.assigned_to_user_id ?? null,
   created_by_user_id: lead.created_by_user_id ?? null,
   status: lead.status ?? 'new',
@@ -146,6 +156,7 @@ export async function listLeads(params = {}) {
   if (params.current_step_id) query.current_step_id = params.current_step_id
   if (params.assigned_to_user_id) query.assigned_to_user_id = params.assigned_to_user_id
   if (params.affiliate_id) query.affiliate_id = params.affiliate_id
+  if (params.is_overdue !== undefined && params.is_overdue !== null) query.is_overdue = params.is_overdue
 
   const { data } = await api.get(`${BASE}/leads`, { params: query })
   const { items, meta } = normalizePaginated(data, query.page)

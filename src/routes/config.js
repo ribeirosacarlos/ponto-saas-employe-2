@@ -102,23 +102,23 @@ export const ROUTES = {
   equipo: { path: '/equipo', guard: { anyOf: ['area_manager'] } },
   commercialDashboard: {
     path: '/commercial/dashboard',
-    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+    guard: { anyOf: ['super_admin'] },
   },
   commercialLeads: {
     path: '/commercial/leads',
-    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+    guard: { anyOf: ['super_admin'] },
   },
   commercialSteps: {
     path: '/commercial/steps',
-    guard: { anyOf: ['super_admin', 'commercial_manager', 'commercial_agent'] },
+    guard: { anyOf: ['super_admin'] },
   },
   commercialAffiliates: {
     path: '/commercial/affiliates',
-    guard: { anyOf: ['super_admin', 'commercial_manager'] },
+    guard: { anyOf: ['super_admin'] },
   },
   commercialCommissions: {
     path: '/commercial/commissions',
-    guard: { anyOf: ['super_admin', 'commercial_manager'] },
+    guard: { anyOf: ['super_admin'] },
   },
   affiliateOverview: {
     path: '/affiliate/overview',
