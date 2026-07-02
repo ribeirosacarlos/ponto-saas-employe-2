@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
+  History,
   MessageSquarePlus,
   MoveRight,
   Plus,
@@ -25,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog'
-import { formControlClass } from '../ui/form-controls'
+import { actionButtonClass, formControlClass } from '../ui/form-controls'
 import { cn } from '../../lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -77,11 +78,27 @@ const PRIORITY_LABELS = { low: 'Baixa', medium: 'Média', high: 'Alta', very_hig
 
 const NEXT_ACTION_TYPES = ['ligacao', 'whatsapp', 'email', 'reuniao', 'demonstracao', 'outro']
 
+const buildDetailForm = (lead = null) => ({
+  company_name: lead?.company_name ?? '',
+  contact_name: lead?.contact_name ?? '',
+  email: lead?.email ?? '',
+  phone: lead?.phone ?? '',
+  whatsapp: lead?.whatsapp ?? '',
+  website: lead?.website ?? '',
+  country: lead?.country ?? '',
+  city: lead?.city ?? '',
+  segment: lead?.segment ?? '',
+  employees_count: lead?.employees_count ?? '',
+  source: lead?.source ?? '',
+  priority: lead?.priority ?? 'medium',
+  general_notes: lead?.general_notes ?? '',
+})
+
 // ---------------------------------------------------------------------------
 // Draggable card
 // ---------------------------------------------------------------------------
 
-function DraggableCard({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, onNextAction }) {
+function DraggableCard({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, onNextAction, onOpenDetail }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { fromStepId: lead.current_step_id ?? NO_STEP_ID },
@@ -95,8 +112,9 @@ function DraggableCard({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost,
     <div
       ref={setNodeRef}
       style={style}
+      onClick={() => onOpenDetail(lead)}
       className={cn(
-        'rounded-[14px] border border-border/70 bg-card/90 px-3 py-2.5 backdrop-blur-xl cursor-grab active:cursor-grabbing select-none',
+        'rounded-[14px] border border-border/70 bg-card/90 px-3 py-2.5 backdrop-blur-xl cursor-pointer select-none',
         'shadow-[0_4px_20px_-8px_rgba(92,134,255,0.12)] transition-shadow',
         isDragging && 'opacity-40 ring-2 ring-primary/30',
       )}
@@ -109,7 +127,7 @@ function DraggableCard({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost,
         onMarkWon={onMarkWon}
         onMarkLost={onMarkLost}
         onNextAction={onNextAction}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragHandleProps={{ ...attributes, ...listeners, className: 'cursor-grab active:cursor-grabbing' }}
       />
     </div>
   )
@@ -254,7 +272,7 @@ function CardContent({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, o
 // Droppable column
 // ---------------------------------------------------------------------------
 
-function KanbanColumn({ step, leads, steps, onNote, onMoveStep, onMarkWon, onMarkLost, onNextAction }) {
+function KanbanColumn({ step, leads, steps, onNote, onMoveStep, onMarkWon, onMarkLost, onNextAction, onOpenDetail }) {
   const { setNodeRef, isOver } = useDroppable({ id: step.id })
 
   return (
@@ -285,6 +303,7 @@ function KanbanColumn({ step, leads, steps, onNote, onMoveStep, onMarkWon, onMar
             onMarkWon={onMarkWon}
             onMarkLost={onMarkLost}
             onNextAction={onNextAction}
+            onOpenDetail={onOpenDetail}
           />
         ))}
 
@@ -311,6 +330,8 @@ export function LeadKanban({
   onSetNextAction,
   onCreateLead,
   onRefresh,
+  onOpenLead,
+  onUpdateLead,
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -350,6 +371,13 @@ export function LeadKanban({
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ company_name: '', contact_name: '', email: '', phone: '', priority: 'medium', general_notes: '' })
   const [creating, setCreating] = useState(false)
+
+  // Detail dialog — full lead info, notes, history, edit form
+  const [detailTarget, setDetailTarget] = useState(null)
+  const [detailData, setDetailData] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailForm, setDetailForm] = useState(() => buildDetailForm())
+  const [savingDetail, setSavingDetail] = useState(false)
 
   // Build columns
   const noStepColumn = useMemo(() => ({ id: NO_STEP_ID, name: 'Sem etapa', position: -1 }), [])
@@ -410,6 +438,72 @@ export function LeadKanban({
     })
   }
 
+  // ── Detail dialog ──────────────────────────────────────────────────────────
+
+  const refreshDetail = async (id) => {
+    if (!onOpenLead) return
+    try {
+      const full = await onOpenLead(id)
+      setDetailData(full)
+      setDetailTarget(full)
+      setDetailForm(buildDetailForm(full))
+    } catch {
+      // keep showing stale data if refresh fails
+    }
+  }
+
+  const openDetail = async (lead) => {
+    setDetailTarget(lead)
+    setDetailData(null)
+    setDetailForm(buildDetailForm(lead))
+    setDetailLoading(true)
+    try {
+      const full = onOpenLead ? await onOpenLead(lead.id) : lead
+      setDetailData(full)
+      setDetailForm(buildDetailForm(full))
+    } catch {
+      setDetailData(lead)
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const closeDetail = () => {
+    setDetailTarget(null)
+    setDetailData(null)
+  }
+
+  const handleSaveDetail = async () => {
+    if (!detailTarget || !onUpdateLead || !detailForm.company_name.trim()) return
+    setSavingDetail(true)
+    try {
+      const payload = {
+        company_name: detailForm.company_name.trim(),
+        ...(detailForm.contact_name && { contact_name: detailForm.contact_name.trim() }),
+        ...(detailForm.email && { email: detailForm.email.trim() }),
+        ...(detailForm.phone && { phone: detailForm.phone.trim() }),
+        ...(detailForm.whatsapp && { whatsapp: detailForm.whatsapp.trim() }),
+        ...(detailForm.website && { website: detailForm.website.trim() }),
+        ...(detailForm.country && { country: detailForm.country.trim() }),
+        ...(detailForm.city && { city: detailForm.city.trim() }),
+        ...(detailForm.segment && { segment: detailForm.segment.trim() }),
+        ...(detailForm.employees_count !== '' && { employees_count: Number(detailForm.employees_count) }),
+        ...(detailForm.source && { source: detailForm.source.trim() }),
+        priority: detailForm.priority,
+        ...(detailForm.general_notes && { general_notes: detailForm.general_notes.trim() }),
+      }
+      const id = detailTarget.id
+      const updated = await onUpdateLead(id, payload)
+      patchLead(id, updated ?? payload)
+      setDetailData((prev) => (prev ? { ...prev, ...(updated ?? payload) } : prev))
+      setDetailTarget((prev) => (prev ? { ...prev, ...(updated ?? payload) } : prev))
+    } catch {
+      // parent already surfaces an error toast
+    } finally {
+      setSavingDetail(false)
+    }
+  }
+
   // Fire-and-forget: close dialog immediately, API runs in background
   const handleAddNote = async () => {
     if (!noteTarget || !noteText.trim()) return
@@ -419,7 +513,14 @@ export function LeadKanban({
     setNoteTarget(null)
     setNoteText('')
     try {
-      await onAddNote(id, text)
+      const created = await onAddNote(id, text)
+      if (detailTarget?.id === id) {
+        if (created?.id) {
+          setDetailData((prev) => (prev ? { ...prev, notes: [...(prev.notes ?? []), created] } : prev))
+        } else {
+          await refreshDetail(id)
+        }
+      }
     } finally {
       setAddingNote(false)
     }
@@ -435,6 +536,7 @@ export function LeadKanban({
     setMoveTarget(null)
     try {
       await onMoveStep(id, moveStepId, moveNote.trim() || undefined)
+      if (detailTarget?.id === id) await refreshDetail(id)
     } catch {
       patchLead(id, snapshot)
     } finally {
@@ -451,6 +553,7 @@ export function LeadKanban({
     setWonTarget(null)
     try {
       await onMarkWon(id, wonAmount ? { base_amount: Number(wonAmount) } : {})
+      if (detailTarget?.id === id) await refreshDetail(id)
     } catch {
       patchLead(id, snapshot)
     } finally {
@@ -467,6 +570,7 @@ export function LeadKanban({
     setLostTarget(null)
     try {
       await onMarkLost(id, lostReason.trim() || undefined)
+      if (detailTarget?.id === id) await refreshDetail(id)
     } catch {
       patchLead(id, snapshot)
     } finally {
@@ -492,6 +596,7 @@ export function LeadKanban({
     setNextActionTarget(null)
     try {
       await onSetNextAction(id, payload)
+      if (detailTarget?.id === id) await refreshDetail(id)
     } catch {
       patchLead(id, snapshot)
     } finally {
@@ -560,6 +665,7 @@ export function LeadKanban({
               onMarkWon={openMarkWon}
               onMarkLost={openMarkLost}
               onNextAction={openNextAction}
+              onOpenDetail={openDetail}
             />
           ))}
         </div>
@@ -575,6 +681,184 @@ export function LeadKanban({
       </DndContext>
 
       {/* ── Dialogs ──────────────────────────────────────────────────────── */}
+
+      {/* Lead detail — info, edit, notes, history, quick actions */}
+      <Dialog open={!!detailTarget} onOpenChange={(open) => { if (!open) closeDetail() }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailTarget?.company_name || 'Lead'}</DialogTitle>
+          </DialogHeader>
+
+          {detailLoading && <p className="py-6 text-center text-[12px] text-muted-foreground">Carregando...</p>}
+
+          {!detailLoading && detailData && (
+            <div className="flex flex-col gap-4 py-2">
+              {/* Status / step / priority */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase', STATUS_BADGE[detailData.status] ?? 'bg-muted text-muted-foreground')}>
+                  {STATUS_LABELS[detailData.status] ?? detailData.status}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <span className={cn('h-2 w-2 rounded-full', PRIORITY_DOT[detailData.priority] ?? 'bg-muted-foreground')} />
+                  {PRIORITY_LABELS[detailData.priority] ?? detailData.priority}
+                </span>
+                {detailData.current_step && (
+                  <span className="text-[11px] text-primary">📍 {detailData.current_step.name}</span>
+                )}
+              </div>
+
+              {/* Quick actions */}
+              <div className="flex flex-wrap gap-1.5 border-b border-border/40 pb-3">
+                <button type="button" className={cn(actionButtonClass, 'h-7 px-2 text-[11px]')} onClick={() => openMoveStep(detailData)}>
+                  <MoveRight className="h-3.5 w-3.5" />
+                  Mover etapa
+                </button>
+                <button type="button" className={cn(actionButtonClass, 'h-7 px-2 text-[11px]')} onClick={() => openNote(detailData)}>
+                  <MessageSquarePlus className="h-3.5 w-3.5" />
+                  Nota
+                </button>
+                <button type="button" className={cn(actionButtonClass, 'h-7 px-2 text-[11px]')} onClick={() => openNextAction(detailData)}>
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Próxima ação
+                </button>
+                {detailData.status !== 'won' && detailData.status !== 'lost' && (
+                  <>
+                    <button
+                      type="button"
+                      className={cn(actionButtonClass, 'h-7 px-2 text-[11px] border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20')}
+                      onClick={() => openMarkWon(detailData)}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Ganho
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(actionButtonClass, 'h-7 px-2 text-[11px] border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20')}
+                      onClick={() => openMarkLost(detailData)}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Perdido
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Editable info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Empresa *</label>
+                  <input className={formControlClass} value={detailForm.company_name} onChange={(e) => setDetailForm((f) => ({ ...f, company_name: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Contato</label>
+                  <input className={formControlClass} value={detailForm.contact_name} onChange={(e) => setDetailForm((f) => ({ ...f, contact_name: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">E-mail</label>
+                  <input type="email" className={formControlClass} value={detailForm.email} onChange={(e) => setDetailForm((f) => ({ ...f, email: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Telefone</label>
+                  <input className={formControlClass} value={detailForm.phone} onChange={(e) => setDetailForm((f) => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">WhatsApp</label>
+                  <input className={formControlClass} value={detailForm.whatsapp} onChange={(e) => setDetailForm((f) => ({ ...f, whatsapp: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Website</label>
+                  <input className={formControlClass} value={detailForm.website} onChange={(e) => setDetailForm((f) => ({ ...f, website: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Segmento</label>
+                  <input className={formControlClass} value={detailForm.segment} onChange={(e) => setDetailForm((f) => ({ ...f, segment: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">País</label>
+                  <input className={formControlClass} value={detailForm.country} onChange={(e) => setDetailForm((f) => ({ ...f, country: e.target.value }))} maxLength={2} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Cidade</label>
+                  <input className={formControlClass} value={detailForm.city} onChange={(e) => setDetailForm((f) => ({ ...f, city: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Funcionários</label>
+                  <input type="number" className={formControlClass} value={detailForm.employees_count} onChange={(e) => setDetailForm((f) => ({ ...f, employees_count: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Origem</label>
+                  <input className={formControlClass} value={detailForm.source} onChange={(e) => setDetailForm((f) => ({ ...f, source: e.target.value }))} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Prioridade</label>
+                  <select className={formControlClass} value={detailForm.priority} onChange={(e) => setDetailForm((f) => ({ ...f, priority: e.target.value }))}>
+                    {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground">Notas gerais</label>
+                  <textarea className={cn(formControlClass, 'min-h-[60px]')} value={detailForm.general_notes} onChange={(e) => setDetailForm((f) => ({ ...f, general_notes: e.target.value }))} />
+                </div>
+              </div>
+              {onUpdateLead && (
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={handleSaveDetail} disabled={savingDetail || !detailForm.company_name.trim()}>
+                    {savingDetail ? 'Salvando...' : 'Salvar alterações'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <p className="mb-1 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+                  <MessageSquarePlus className="h-3 w-3" />
+                  Notas ({detailData.notes?.length ?? 0})
+                </p>
+                {detailData.notes?.length > 0 ? (
+                  <div className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+                    {detailData.notes.map((n) => (
+                      <div key={n.id} className="rounded-lg bg-muted/50 px-3 py-2 text-[11px]">
+                        <p>{n.note}</p>
+                        <p className="mt-0.5 text-muted-foreground">
+                          {n.user?.name} · {n.created_at ? new Date(n.created_at).toLocaleDateString('pt-BR') : ''}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Nenhuma nota ainda.</p>
+                )}
+              </div>
+
+              {/* Step history */}
+              <div>
+                <p className="mb-1 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+                  <History className="h-3 w-3" />
+                  Histórico de etapas ({detailData.step_logs?.length ?? 0})
+                </p>
+                {detailData.step_logs?.length > 0 ? (
+                  <div className="flex max-h-32 flex-col gap-1 overflow-y-auto">
+                    {detailData.step_logs.map((log, idx) => (
+                      <p key={log.id ?? idx} className="text-[10px] text-muted-foreground">
+                        {log.step?.name ?? log.step_id} — {log.status}
+                        {log.note && <> · {log.note}</>}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Sem histórico ainda.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={closeDetail}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Note */}
       <Dialog open={!!noteTarget} onOpenChange={() => setNoteTarget(null)}>

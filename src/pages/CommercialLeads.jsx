@@ -448,8 +448,9 @@ export default function CommercialLeads() {
 
   const handleKanbanAddNote = async (leadId, note) => {
     try {
-      await addLeadNote(leadId, note)
+      const created = await addLeadNote(leadId, note)
       toast({ title: 'Nota adicionada' })
+      return created
     } catch {
       toast({ title: 'Erro', description: 'Falha ao adicionar nota.', variant: 'error' })
       throw new Error('note failed')
@@ -483,6 +484,17 @@ export default function CommercialLeads() {
     } catch {
       toast({ title: 'Erro', description: 'Falha ao salvar próxima ação.', variant: 'error' })
       throw new Error('next-action failed')
+    }
+  }
+
+  const handleKanbanUpdateLead = async (id, payload) => {
+    try {
+      const updated = await updateLead(id, payload)
+      toast({ title: 'Lead atualizado' })
+      return updated
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao atualizar lead.', variant: 'error' })
+      throw err
     }
   }
 
@@ -592,6 +604,8 @@ export default function CommercialLeads() {
             onSetNextAction={handleKanbanNextAction}
             onCreateLead={handleKanbanCreate}
             onRefresh={loadKanban}
+            onOpenLead={getLead}
+            onUpdateLead={handleKanbanUpdateLead}
           />
         )}
 

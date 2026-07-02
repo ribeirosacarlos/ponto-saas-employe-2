@@ -21,6 +21,7 @@ import { useAffiliateAuth } from '../store/useAffiliateAuth'
 import {
   affiliateLogout,
   getAffiliateMe,
+  getAffiliateLead,
   listAffiliateLeads,
   listAffiliateSteps,
   createAffiliateLead,
@@ -29,6 +30,7 @@ import {
   markAffiliateLeadLost,
   moveAffiliateLeadStep,
   setAffiliateLeadNextAction,
+  updateAffiliateLead,
   listAffiliateCommissions,
   listAffiliateBonuses,
 } from '../services/modules/affiliateAuth'
@@ -287,8 +289,9 @@ function LeadsTab({ token, toast }) {
 
   const handleAddNote = async (leadId, note) => {
     try {
-      await addAffiliateLeadNote(token, leadId, note)
+      const created = await addAffiliateLeadNote(token, leadId, note)
       toast({ title: 'Nota adicionada' })
+      return created
     } catch {
       toast({ title: 'Erro', description: 'Falha ao adicionar nota.', variant: 'error' })
       throw new Error('note failed')
@@ -338,6 +341,19 @@ function LeadsTab({ token, toast }) {
     }
   }
 
+  const handleOpenLead = (leadId) => getAffiliateLead(token, leadId)
+
+  const handleUpdateLead = async (leadId, payload) => {
+    try {
+      const updated = await updateAffiliateLead(token, leadId, payload)
+      toast({ title: 'Lead atualizado' })
+      return updated
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao atualizar lead.', variant: 'error' })
+      throw err
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* View toggle */}
@@ -382,6 +398,8 @@ function LeadsTab({ token, toast }) {
           onSetNextAction={handleSetNextAction}
           onCreateLead={handleCreateLead}
           onRefresh={handleRefresh}
+          onOpenLead={handleOpenLead}
+          onUpdateLead={handleUpdateLead}
         />
       )}
 
