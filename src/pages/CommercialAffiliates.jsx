@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ExternalLink, Link2, Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
+import { ExternalLink, Link2, Pencil, Plus, Send, Trash2, TrendingUp } from 'lucide-react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { AppTopBar } from '../components/ui/AppTopBar'
 import { Button } from '../components/ui/button'
@@ -19,6 +19,7 @@ import {
   deleteAffiliate,
   getAffiliateMetrics,
   listAffiliates,
+  resendAffiliateInvite,
   updateAffiliate,
 } from '../services/modules/commercial'
 
@@ -55,6 +56,7 @@ export default function CommercialAffiliates() {
   const [metricsTarget, setMetricsTarget] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [metricsLoading, setMetricsLoading] = useState(false)
+  const [resendingId, setResendingId] = useState(null)
 
   const load = useCallback(async (nextPage = page) => {
     if (!hasAccess) return
@@ -125,6 +127,18 @@ export default function CommercialAffiliates() {
       toast({ title: 'Erro', description: 'Não foi possível remover o afiliado.', variant: 'error' })
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleResendInvite = async (aff) => {
+    setResendingId(aff.id)
+    try {
+      await resendAffiliateInvite(aff.id)
+      toast({ title: 'Convite reenviado', description: `E-mail enviado para ${aff.email ?? aff.name}.` })
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Não foi possível reenviar o convite.', variant: 'error' })
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -226,6 +240,18 @@ export default function CommercialAffiliates() {
                     <TrendingUp className="mr-1 h-3 w-3" />
                     Métricas
                   </Button>
+                  {aff.email && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="Reenviar convite de acesso"
+                      disabled={resendingId === aff.id}
+                      onClick={() => handleResendInvite(aff)}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEdit(aff)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>

@@ -518,6 +518,7 @@ export function LeadKanban({
 
   const handleSetNextAction = async () => {
     if (!nextActionTarget || !nextActionForm.at) return
+    setSettingNextAction(true)
     const id = nextActionTarget.id
     const snapshot = {
       next_action_type: nextActionTarget.next_action_type,

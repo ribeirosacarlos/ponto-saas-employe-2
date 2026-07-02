@@ -60,6 +60,7 @@ import { useAuthStore } from '../../store/useAuth'
 import { downloadBlob } from '../../utils/pdf/downloadBlob'
 import { generateSimpleTimesheetPdf } from '../../utils/pdf/simpleTimesheetPdf'
 import { mergeTimesheetDays } from '../../lib/timesheet'
+import { useDateTime } from '../../hooks/useDateTime'
 import { GroupedEntriesTable } from '../../components/time-entries/GroupedEntriesTable'
 
 const DELETE_TIME_ENTRY_REQUIRES = { anyOf: ['manager', 'area_manager', 'admin', 'super_admin'] }
@@ -683,6 +684,7 @@ const addMissingDays = (
 
 export default function CloseTimesheetPage() {
   const { t, i18n } = useTranslation()
+  const { formatTime: formatTimeTz } = useDateTime()
   const { toast } = useToast()
   const authUser = useAuthStore((state) => state.user)
   const roles = useAuthStore((state) => state.roles)
@@ -988,9 +990,9 @@ export default function CloseTimesheetPage() {
       if (!value) return t('closeTimesheetPage.table.noTime')
       const date = new Date(value)
       if (!isValid(date)) return value
-      return date.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+      return formatTimeTz(value)
     },
-    [i18n.language, t],
+    [formatTimeTz, t],
   )
 
   const formatEntryType = useCallback(
