@@ -9,6 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import {
+  AlertTriangle,
   CalendarClock,
   CheckCircle2,
   History,
@@ -33,6 +34,18 @@ import { cn } from '../../lib/utils'
 // ---------------------------------------------------------------------------
 
 const NO_STEP_ID = '__no_step__'
+
+const isFinalStage = (lead) =>
+  lead.status === 'won' || lead.status === 'lost' || lead.current_step?.is_final === true
+
+const fmtDate = (iso) => {
+  if (!iso) return null
+  try {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  } catch {
+    return null
+  }
+}
 
 const STATUS_BADGE = {
   new: 'bg-sky-500/15 text-sky-600',
@@ -125,7 +138,8 @@ function DraggableCard({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost,
 // ---------------------------------------------------------------------------
 
 function CardContent({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, onNextAction, dragHandleProps = {} }) {
-  const isFinished = lead.status === 'won' || lead.status === 'lost'
+  const isFinished = isFinalStage(lead)
+  const isOverdue = !isFinished && lead.current_stage_is_overdue === true
 
   return (
     <div {...dragHandleProps}>
@@ -139,12 +153,54 @@ function CardContent({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, o
         <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{lead.contact_name}</p>
       )}
 
-      {/* Status */}
+      {/* Status + overdue badge */}
       <div className="mt-1.5 flex flex-wrap gap-1">
         <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase', STATUS_BADGE[lead.status] ?? 'bg-muted text-muted-foreground')}>
           {STATUS_LABELS[lead.status] ?? lead.status}
         </span>
+        {isOverdue && (
+          <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-destructive">
+            Vencido
+          </span>
+        )}
+        {!isOverdue && !isFinished && lead.current_stage_name && (
+          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600">
+            Em dia
+          </span>
+        )}
+        {isFinished && (
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
+            {lead.status === 'won' ? 'Ganho' : 'Perdido'}
+          </span>
+        )}
       </div>
+
+      {/* Overdue warning message */}
+      {isOverdue && lead.current_stage_warning_message && (
+        <div className="mt-1.5 flex items-start gap-1 rounded-md bg-destructive/8 px-2 py-1">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+          <p className="text-[9px] text-destructive leading-tight">{lead.current_stage_warning_message}</p>
+        </div>
+      )}
+
+      {/* Pipeline info: dias padrão + data limite */}
+      {!isFinished && lead.current_stage_name && (
+        <div className="mt-1 flex flex-wrap gap-x-2 text-[9px] text-muted-foreground">
+          {lead.current_stage_default_days != null && (
+            <span>{lead.current_stage_default_days}d padrão</span>
+          )}
+          {lead.current_stage_due_at && (
+            <span>Limite: {fmtDate(lead.current_stage_due_at)}</span>
+          )}
+        </div>
+      )}
+
+      {/* Próxima etapa sugerida */}
+      {!isFinished && lead.next_stage_name && (
+        <p className="mt-0.5 text-[9px] text-primary/70">
+          → {lead.next_stage_name}
+        </p>
+      )}
 
       {/* Next action */}
       {lead.next_action_at && (
@@ -165,15 +221,17 @@ function CardContent({ lead, steps, onNote, onMoveStep, onMarkWon, onMarkLost, o
           <MessageSquarePlus className="h-3 w-3" />
           Nota
         </button>
-        <button
-          type="button"
-          onClick={() => onMoveStep(lead)}
-          className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-background/60 px-1.5 text-[9px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-          title="Mover etapa"
-        >
-          <MoveRight className="h-3 w-3" />
-          Mover
-        </button>
+        {!isFinished && (
+          <button
+            type="button"
+            onClick={() => onMoveStep(lead)}
+            className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-background/60 px-1.5 text-[9px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            title="Mover etapa"
+          >
+            <MoveRight className="h-3 w-3" />
+            Mover
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onNextAction(lead)}
@@ -364,7 +422,11 @@ export function LeadKanban({
   // ── Card action handlers ───────────────────────────────────────────────────
 
   const openNote = (lead) => { setNoteTarget(lead); setNoteText('') }
-  const openMoveStep = (lead) => { setMoveTarget(lead); setMoveStepId(lead.current_step_id ?? ''); setMoveNote('') }
+  const openMoveStep = (lead) => {
+    setMoveTarget(lead)
+    setMoveStepId(lead.next_stage_id ?? lead.current_step_id ?? '')
+    setMoveNote('')
+  }
   const openMarkWon = (lead) => { setWonTarget(lead); setWonAmount('') }
   const openMarkLost = (lead) => { setLostTarget(lead); setLostReason('') }
   const openNextAction = (lead) => {
