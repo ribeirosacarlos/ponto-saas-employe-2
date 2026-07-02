@@ -4,6 +4,7 @@ import { useTimezoneStore } from '../store/useTimezone'
 
 export function TimezoneProvider({ children }) {
   const token = useAuthStore((state) => state.token)
+  const roles = useAuthStore((state) => state.roles)
   const loadTimezone = useTimezoneStore((state) => state.loadTimezone)
   const resetTimezone = useTimezoneStore((state) => state.resetTimezone)
 
@@ -12,8 +13,17 @@ export function TimezoneProvider({ children }) {
       resetTimezone()
       return
     }
+
+    const isAffiliateSession =
+      Array.isArray(roles) && roles.some((role) => String(role).toLowerCase() === 'affiliate')
+
+    if (isAffiliateSession) {
+      resetTimezone()
+      return
+    }
+
     loadTimezone()
-  }, [loadTimezone, resetTimezone, token])
+  }, [loadTimezone, resetTimezone, roles, token])
 
   return children
 }
