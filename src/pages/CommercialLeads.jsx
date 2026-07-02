@@ -521,7 +521,7 @@ export default function CommercialLeads() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className={viewMode === 'kanban' ? 'lg:max-w-none lg:px-4 sm:px-4 px-3' : ''}>
       <div className="flex flex-col gap-5">
         <AppTopBar
           icon={<UserCheck className="h-3.5 w-3.5" />}
