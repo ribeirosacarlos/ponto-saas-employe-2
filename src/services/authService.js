@@ -1,10 +1,25 @@
 import { api } from './http/api'
 import { DEFAULT_TIMEZONE } from '../lib/datetime'
+import { securityLogger } from '../lib/security/logger'
 
 let cachedUserData = null
 let lastFetchTime = 0
 let inflightPromise = null
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+
+const normalizeCurrentUserPayload = (payload = {}) => {
+  const nested = payload?.data && typeof payload.data === 'object' ? payload.data : null
+
+  if (!nested) {
+    return payload || {}
+  }
+
+  return {
+    ...nested,
+    timezone: payload.timezone ?? payload.timeZone ?? nested.timezone ?? nested.timeZone ?? null,
+    timeZone: payload.timeZone ?? payload.timezone ?? nested.timeZone ?? nested.timezone ?? null,
+  }
+}
 
 const shouldUseCache = (now, forceRefresh) =>
   !forceRefresh && cachedUserData && now - lastFetchTime < CACHE_DURATION
@@ -28,7 +43,7 @@ export async function getCurrentUser(forceRefresh = false) {
   inflightPromise = (async () => {
     try {
       const { data } = await api.get('/v1/auth/me')
-      const userData = data?.data || data || {}
+      const userData = normalizeCurrentUserPayload(data || {})
       cachedUserData = userData
       lastFetchTime = Date.now()
       return userData
@@ -43,7 +58,6 @@ export async function getCurrentUser(forceRefresh = false) {
 }
 
 export function clearAuthCache() {
-  console.log('[AuthService] Clearing cached user data')
   cachedUserData = null
   lastFetchTime = 0
   inflightPromise = null
@@ -55,7 +69,7 @@ export async function getEffectiveTimezone() {
     const timezone = extractTimezoneFromUser(userData)
     if (timezone) return timezone
   } catch (error) {
-    console.warn('Failed to get timezone from user data:', error)
+    securityLogger.warn('[authService] Failed to get timezone from user data', error)
   }
 
   // Fallback logic here (similar to existing timezone service)

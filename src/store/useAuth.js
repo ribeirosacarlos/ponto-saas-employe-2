@@ -3,14 +3,19 @@ import { api } from '../services/http/api'
 import { loginRequest, logoutRequest } from '../services/modules/auth'
 import { clearAuthCache, getCurrentUser } from '../services/authService'
 import { emitAccessClear } from '../lib/accessDenied'
+import { emitAuthFailure, registerAuthFailureHandler } from '../lib/authEvents'
 import {
   clearStoredAuthSession,
   persistAuthSession,
   readStoredRoles,
   readStoredToken,
   readStoredUser,
+  setMemoryToken,
 } from '../lib/authStorage'
 import i18n from '../i18n/i18n.js'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { securityLogger } from '../lib/security/logger'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 const loadStoredAuth = () => {
   if (typeof window === 'undefined') {
@@ -27,6 +32,7 @@ const loadStoredAuth = () => {
 const initialAuth = loadStoredAuth()
 if (initialAuth.token) {
   api.defaults.headers.common.Authorization = `Bearer ${initialAuth.token}`
+  setMemoryToken(initialAuth.token)
 }
 
 const clearAccessibleCookies = () => {
@@ -76,6 +82,7 @@ export const useAuthStore = create((set, get) => ({
     }
 
     api.defaults.headers.common.Authorization = `Bearer ${token}`
+    setMemoryToken(token)
     set({ token, user, roles, error: null, isSessionReady: false })
 
     if (Array.isArray(roles) && roles.some((role) => String(role).toLowerCase() === 'affiliate')) {
@@ -99,16 +106,21 @@ export const useAuthStore = create((set, get) => ({
     }
   },
   login: async (email, password) => {
+    if (get().loading) {
+      throw new Error(i18n.t('auth.errors.requestInProgress'))
+    }
+
     set({ loading: true, error: null })
     try {
       resetAuthState(set)
-      const data = await loginRequest(email, password)
+      const data = await runWithRequestLock('auth:login', () => loginRequest(email, password))
       const { token, user } = data
       if (!token) {
         throw new Error(i18n.t('auth.errors.tokenMissing'))
       }
 
       api.defaults.headers.common.Authorization = `Bearer ${token}`
+      setMemoryToken(token)
       persistAuthSession({ token, user: user || null })
       const profile = await getCurrentUser(true)
       const nextUser = profile?.user || user || null
@@ -125,13 +137,14 @@ export const useAuthStore = create((set, get) => ({
         roles: nextRoles,
       }
     } catch (error) {
-      const status = error.response?.status
-      const friendlyUnauthorized = status === 401 ? i18n.t('auth.errors.unauthorized') : null
-      const message =
-        friendlyUnauthorized ||
-        error.response?.data?.message ||
-        error.message ||
-        i18n.t('auth.errors.loginFailed')
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: i18n.t('auth.errors.loginFailed'),
+        unauthorizedMessage: i18n.t('auth.errors.unauthorized'),
+        rateLimitMessage: i18n.t('auth.errors.rateLimited'),
+        networkErrorMessage: i18n.t('auth.errors.loginFailed'),
+        clearSessionOnUnauthorized: false,
+      })
+      const message = error.message === i18n.t('auth.errors.requestInProgress') ? error.message : normalized.message
       resetAuthState(set)
       set({ error: message })
       throw new Error(message)
@@ -144,10 +157,10 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true }) // Marca inicio do loading no fluxo de logout
     try {
       if (token) {
-        await logoutRequest()
+        await runWithRequestLock('auth:logout', () => logoutRequest())
       }
     } catch (error) {
-      console.warn('Falha ao chamar logout na API', error)
+      securityLogger.warn('[useAuth] Logout API call failed', error)
     } finally {
       resetAuthState(set)
       set({ loading: false })
@@ -161,6 +174,7 @@ export const useAuthStore = create((set, get) => ({
   bootstrapSession: ({ token, user = null, roles = [] }) => {
     if (!token) return
     api.defaults.headers.common.Authorization = `Bearer ${token}`
+    setMemoryToken(token)
     persistAuthSession({ token, user, roles })
     set({ token, user, roles, error: null, isSessionReady: true })
     emitAccessClear()
@@ -169,3 +183,13 @@ export const useAuthStore = create((set, get) => ({
     resetAuthState(set)
   },
 }))
+
+registerAuthFailureHandler((detail = {}) => {
+  if (!useAuthStore.getState().token) return
+  resetAuthState(useAuthStore.setState)
+  useAuthStore.setState({
+    error: detail.message || i18n.t('auth.errors.sessionExpired'),
+    loading: false,
+  })
+  securityLogger.warn('[useAuth] Session invalidated', detail)
+})

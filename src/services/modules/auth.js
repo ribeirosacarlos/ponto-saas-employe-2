@@ -1,4 +1,5 @@
 import { api } from '../http/api'
+import { securityLogger } from '../../lib/security/logger'
 
 export async function loginRequest(email, password) {
   const { data } = await api.post('/v1/auth/login', { email, password }, { skipAuth: true })
@@ -46,7 +47,7 @@ export async function resetPasswordRequest(payload = {}) {
 
 // Deprecated: Use getCurrentUser from authService instead
 export async function meRequest() {
-  console.warn('meRequest is deprecated. Use getCurrentUser from authService instead.')
+  securityLogger.warn('[auth] meRequest is deprecated. Use getCurrentUser from authService instead.')
   const { data } = await api.get('/v1/auth/me')
   return data?.data || data
 }

@@ -5,6 +5,7 @@ import { cn } from "../lib/utils"
 
 const isImage = (mime) => mime?.startsWith("image/")
 const isPdf = (mime) => mime === "application/pdf"
+const isTrustedPreviewUrl = (value) => typeof value === 'string' && value.startsWith('blob:')
 
 export function DocumentPreviewModal({
   open,
@@ -37,17 +38,19 @@ export function DocumentPreviewModal({
       )
     }
 
-    if (isPdf(mimeType)) {
+    if (isPdf(mimeType) && isTrustedPreviewUrl(previewUrl)) {
       return (
         <iframe
           title={document?.title || "Documento"}
           src={previewUrl}
           className="h-[70vh] w-full rounded-xl border border-border"
+          sandbox="allow-downloads allow-same-origin"
+          referrerPolicy="no-referrer"
         />
       )
     }
 
-    if (isImage(mimeType)) {
+    if (isImage(mimeType) && isTrustedPreviewUrl(previewUrl)) {
       return (
         <div className="flex max-h-[70vh] items-center justify-center overflow-auto rounded-xl bg-muted/40 p-3">
           <img src={previewUrl} alt={document?.title || "Documento"} className="max-h-[66vh] max-w-full rounded-lg" />

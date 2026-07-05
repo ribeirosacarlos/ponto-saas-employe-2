@@ -10,6 +10,8 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { resetPasswordRequest } from '../services/modules/auth'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 const RESET_PASSWORD_EMAIL_KEY = 'reset_password_email'
 
@@ -87,6 +89,7 @@ export default function ResetPassword() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (loading) return
     setErrorMessage('')
 
     if (!email.trim()) {
@@ -132,8 +135,8 @@ export default function ResetPassword() {
         password_confirmation: passwordConfirmation,
       }
 
-      const response = await resetPasswordRequest(payload)
-      const apiMessage = response?.message || t('resetPassword.successDescription')
+      await runWithRequestLock('auth:reset-password', () => resetPasswordRequest(payload))
+      const apiMessage = t('resetPassword.successDescription')
 
       toast({
         title: t('resetPassword.successTitle'),
@@ -153,9 +156,11 @@ export default function ResetPassword() {
         }, 800)
       }
     } catch (error) {
-      const apiMessage = error?.response?.data?.message
-      const fallbackMessage = t('resetPassword.errorTitle')
-      const message = apiMessage || fallbackMessage
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: t('resetPassword.errorDescription'),
+        rateLimitMessage: t('auth.errors.rateLimited'),
+      })
+      const message = normalized.message
       setErrorMessage(message)
       toast({
         title: t('resetPassword.errorTitle'),

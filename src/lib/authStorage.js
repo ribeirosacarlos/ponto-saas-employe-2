@@ -2,20 +2,23 @@ const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 const ROLES_KEY = 'auth_roles'
 const LEGACY_KEYS = [TOKEN_KEY, USER_KEY, ROLES_KEY]
+let memoryToken = null
 
 const isBrowser = () => typeof window !== 'undefined'
-
-const getLocalStorage = () => (isBrowser() ? window.localStorage : null)
 
 const getSessionStorage = () => (isBrowser() ? window.sessionStorage : null)
 
 const getAuthStorages = () => {
   if (!isBrowser()) return []
-  return [getSessionStorage(), getLocalStorage()].filter(Boolean)
+  return [getSessionStorage()].filter(Boolean)
 }
 
 const clearLegacyAuthStorage = () => {
-  getAuthStorages().forEach((storage) => {
+  if (!isBrowser()) return
+
+  ;[window.sessionStorage, window.localStorage]
+    .filter(Boolean)
+    .forEach((storage) => {
     LEGACY_KEYS.forEach((key) => storage.removeItem(key))
   })
 }
@@ -26,7 +29,6 @@ const parseStoredUser = (value) => {
   try {
     return JSON.parse(value)
   } catch (error) {
-    console.warn('[authStorage] Failed to parse stored user payload', error)
     return null
   }
 }
@@ -38,7 +40,6 @@ const parseStoredRoles = (value) => {
     const parsed = JSON.parse(value)
     return Array.isArray(parsed) ? parsed : []
   } catch (error) {
-    console.warn('[authStorage] Failed to parse stored roles payload', error)
     return []
   }
 }
@@ -55,7 +56,7 @@ const readFromStorages = (key) => {
 }
 
 export function readStoredToken() {
-  return readFromStorages(TOKEN_KEY)
+  return memoryToken || readFromStorages(TOKEN_KEY)
 }
 
 export function readStoredUser() {
@@ -72,6 +73,7 @@ export function hasStoredToken() {
 
 export function persistAuthSession({ token, user, roles = [] }) {
   clearLegacyAuthStorage()
+  memoryToken = token || null
 
   getAuthStorages().forEach((storage) => {
     if (token) {
@@ -95,6 +97,7 @@ export function persistAuthSession({ token, user, roles = [] }) {
 }
 
 export function clearStoredAuthSession() {
+  memoryToken = null
   getAuthStorages().forEach((storage) => {
     storage.removeItem(TOKEN_KEY)
     storage.removeItem(USER_KEY)
@@ -102,4 +105,8 @@ export function clearStoredAuthSession() {
   })
 
   clearLegacyAuthStorage()
+}
+
+export function setMemoryToken(token) {
+  memoryToken = token || null
 }

@@ -11,6 +11,7 @@ import EmployeeMultiSelect from '../components/EmployeeMultiSelect'
 import { useToast } from '../components/ui/use-toast'
 import { cn } from '../lib/utils'
 import { formatSourceDateTime } from '../lib/datetime'
+import { filterAllowedIds } from '../lib/security/idGuards'
 import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { useAuthStore } from '../store/useAuth'
 import { useDateTime } from '../hooks/useDateTime'
@@ -285,6 +286,16 @@ export default function AdminAdjustments({ sidebarOpen = false, onToggleSidebar 
     if (!hasAccess) return
     loadEmployees()
   }, [hasAccess, loadEmployees])
+
+  useEffect(() => {
+    if (!employees.length) return
+    setFilters((prev) => {
+      const allowedIds = employees.map((employee) => employee.id)
+      const nextUserIds = filterAllowedIds(prev.userIds, allowedIds)
+      if (nextUserIds.join(',') === (prev.userIds || []).join(',')) return prev
+      return { ...prev, userIds: nextUserIds }
+    })
+  }, [employees])
 
   useEffect(() => {
     if (!hasAccess) return

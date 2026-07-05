@@ -10,6 +10,8 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { PageContainer } from '../components/ui/PageContainer'
 import { BrandSignature } from '../components/BrandSignature'
 import { forgotPasswordRequest } from '../services/modules/auth'
+import { normalizeApiError } from '../lib/security/httpErrors'
+import { runWithRequestLock } from '../lib/security/requestLock'
 
 const RESET_PASSWORD_EMAIL_KEY = 'reset_password_email'
 
@@ -22,6 +24,7 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (loading) return
     setErrorMessage('')
 
     if (!email.trim()) {
@@ -38,8 +41,8 @@ export default function ForgotPassword() {
     setLoading(true)
     try {
       const normalizedEmail = email.trim()
-      const response = await forgotPasswordRequest(normalizedEmail)
-      const apiMessage = response?.message || t('forgotPassword.successDescription')
+      await runWithRequestLock('auth:forgot-password', () => forgotPasswordRequest(normalizedEmail))
+      const apiMessage = t('forgotPassword.successDescription')
 
       toast({
         title: t('forgotPassword.successTitle'),
@@ -57,9 +60,11 @@ export default function ForgotPassword() {
       setErrorMessage('')
       setEmail(normalizedEmail)
     } catch (error) {
-      const apiMessage = error?.response?.data?.message
-      const fallbackMessage = t('forgotPassword.errorTitle')
-      const message = apiMessage || fallbackMessage
+      const normalized = normalizeApiError(error, {
+        fallbackMessage: t('forgotPassword.errorDescription'),
+        rateLimitMessage: t('auth.errors.rateLimited'),
+      })
+      const message = normalized.message
       setErrorMessage(message)
       toast({
         title: t('forgotPassword.errorTitle'),

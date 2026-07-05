@@ -36,6 +36,7 @@ import {
   resolveSuperAdminError,
 } from '../features/superAdmin/utils'
 import { cn } from '../lib/utils'
+import { sanitizeScopedId } from '../lib/security/idGuards'
 
 const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 
@@ -67,6 +68,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
   const roles = useAuthStore((state) => state.roles)
   const capabilities = useMemo(() => getCapabilitiesFromRoles(roles), [roles])
   const hasAccess = useMemo(() => canRenderCard(capabilities, ACCESS_REQUIRES), [capabilities])
+  const safeCompanyId = useMemo(() => sanitizeScopedId(companyId), [companyId])
 
   const [company, setCompany] = useState(null)
   const [subscription, setSubscription] = useState(null)
@@ -81,14 +83,14 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
   const [subscriptionSaving, setSubscriptionSaving] = useState(false)
 
   const loadData = useCallback(async () => {
-    if (!hasAccess || !companyId) return
+    if (!hasAccess || !safeCompanyId) return
     setLoading(true)
     setError('')
 
     try {
       const [companyResponse, subscriptionResponse, plansResponse] = await Promise.all([
-        getCompany(companyId),
-        getCompanySubscription(companyId),
+        getCompany(safeCompanyId),
+        getCompanySubscription(safeCompanyId),
         listBillingPlans(),
       ])
 
@@ -110,7 +112,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
     } finally {
       setLoading(false)
     }
-  }, [companyId, hasAccess, t])
+  }, [hasAccess, safeCompanyId, t])
 
   useEffect(() => {
     loadData()
@@ -146,18 +148,18 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
   }, [])
 
   const handleBlockConfirm = async () => {
-    if (!companyId) return
+    if (!safeCompanyId) return
     setActionLoading(true)
     try {
       if (company?.isBlocked) {
-        await unblockCompany(companyId)
+        await unblockCompany(safeCompanyId)
         toast({
           title: t('superAdmin.companyDetails.actions.unblock', 'Desbloquear empresa'),
           description: t('superAdmin.companyDetails.toast.unblockSuccess', 'Empresa desbloqueada com sucesso.'),
           variant: 'success',
         })
       } else {
-        await blockCompany(companyId, { reason: blockReason.trim() || 'manual' })
+        await blockCompany(safeCompanyId, { reason: blockReason.trim() || 'manual' })
         toast({
           title: t('superAdmin.companyDetails.actions.block', 'Bloquear empresa'),
           description: t('superAdmin.companyDetails.toast.blockSuccess', 'Empresa bloqueada com sucesso.'),
@@ -182,7 +184,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
 
   const handleSaveSubscription = async (event) => {
     event.preventDefault()
-    if (!companyId) return
+    if (!safeCompanyId) return
     setSubscriptionSaving(true)
     try {
       const payload = {
@@ -204,7 +206,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
         },
       }
 
-      const updated = await updateCompanySubscription(companyId, payload)
+      const updated = await updateCompanySubscription(safeCompanyId, payload)
       setSubscription(updated)
       setSubscriptionForm(buildSubscriptionForm(updated))
       setSubscriptionOpen(false)
@@ -246,7 +248,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
           'superAdmin.companyDetails.subtitle',
           'Detalhes da empresa, assinatura e status operacional.',
         )}
-        meta={companyId}
+        meta={safeCompanyId || '--'}
         actions={
           <>
             <Button type="button" variant="outline" size="sm" onClick={onBack}>
@@ -425,7 +427,7 @@ export default function SuperAdminCompanyDetails({ companyId, onBack, onSubscrip
           </Card>
 
           <AdministrativeSettingsCard
-            companyId={companyId}
+            companyId={safeCompanyId}
             enabled={hasAccess && Boolean(company)}
             onSaved={handleAdministrativeSettingsSaved}
           />

@@ -70,6 +70,7 @@ import { ACCESS_DENIED_REASONS, getAccessRedirect } from './lib/accessDenied'
 import { useAdminOnboarding } from './hooks/useAdminOnboarding.js'
 import { useEmployeeOnboarding } from './hooks/useEmployeeOnboarding.js'
 import { getWorkedTodayMinutes } from './lib/timesheet'
+import { securityLogger } from './lib/security/logger'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar:collapsed'
 const PUBLIC_AUTH_PAGES = new Set(['activateAccount', 'resetPassword', 'forgotPassword', 'affiliateActivate', 'affiliateLogin', 'affiliateForgotPassword', 'affiliateResetPassword'])
@@ -332,8 +333,10 @@ export default function App() {
   useEffect(() => {
     if (isAffiliateUser && token && user) {
       setAffiliateSession(token, user)
+      return
     }
-  }, [isAffiliateUser, token, user, setAffiliateSession])
+    clearAffiliateSession()
+  }, [clearAffiliateSession, isAffiliateUser, token, user, setAffiliateSession])
 
   useEffect(() => {
     if (isMobile) {
@@ -514,7 +517,7 @@ export default function App() {
         if (!active) return
         setTodayBadge(formatMinutesToLabel(minutes))
       } catch (error) {
-        console.error('[App] Failed to load worked-today', error)
+        securityLogger.warn('[App] Failed to load worked-today', error)
         if (!active) return
         setTodayBadge(t('dashboardPage.badges.today'))
       }
@@ -549,7 +552,7 @@ export default function App() {
       try {
         if (token) await affiliateLogout(token)
       } catch (error) {
-        console.warn('Falha ao chamar logout de afiliado na API', error)
+        securityLogger.warn('[App] Affiliate logout API call failed', error)
       } finally {
         clearAffiliateSession()
         clearLocalSession()
