@@ -589,6 +589,21 @@ export default function AdminVacations() {
           ),
           variant: 'success',
         })
+        if (response.warnings?.length > 0) {
+          response.warnings.forEach((w) => {
+            toast({
+              title: t('vacationsPage.absences.coverageWarningTitle', 'Cobertura incompleta'),
+              description:
+                w.message ||
+                t(
+                  'vacationsPage.absences.coverageWarningDescription',
+                  'Abono nao cobre a jornada esperada. Faltam {{time}} no dia {{date}}.',
+                  { time: w.missing_hhmm ?? '', date: w.date ?? '' },
+                ),
+              variant: 'warning',
+            })
+          })
+        }
         setAbsenceTarget(null)
         setAbsenceForm(buildAbsenceForm())
       } catch (err) {
