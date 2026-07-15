@@ -6,6 +6,7 @@ export async function listEmployees(page = 1, filters = {}) {
   if (page) params.page = page
   if (filters.perPage) params.per_page = filters.perPage
   if (filters.per_page) params.per_page = filters.per_page
+  if (filters.status) params.status = filters.status
 
   const { data } = await api.get('/v1/admin/employees', { params })
 
@@ -84,6 +85,11 @@ export async function assignEmployeeShift(id, payload) {
 
 export async function resendEmployeeInvite(id) {
   const { data } = await api.post(`/v1/admin/employees/${id}/resend-invite`)
+  return data?.data || data
+}
+
+export async function restoreEmployee(id) {
+  const { data } = await api.post(`/v1/admin/employees/${id}/restore`)
   return data?.data || data
 }
 

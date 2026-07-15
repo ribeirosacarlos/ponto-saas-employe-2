@@ -5,6 +5,7 @@ import {
   deleteEmployee,
   listAllEmployees,
   resendEmployeeInvite,
+  restoreEmployee,
   updateEmployee,
 } from '../../services/modules/employees'
 import { normalizeArea } from '../../services/modules/areas'
@@ -185,6 +186,7 @@ export const normalizeEmployee = (employee = {}, index = 0) => {
     name: employee?.name ?? employee?.full_name ?? employee?.fullName ?? employee?.profile?.name ?? '',
     email: employee?.email ?? employee?.profile?.email ?? employee?.user?.email ?? '',
     role,
+    deleted_at: employee?.deleted_at ?? employee?.deletedAt ?? null,
     createdAt:
       employee?.created_at ??
       employee?.createdAt ??
@@ -217,6 +219,7 @@ export const normalizeShift = (shift = {}, index = 0) => ({
 export function useEmployeesManagement({
   t,
   enabled = true,
+  status,
   onListError,
   onShiftsError,
 } = {}) {
@@ -235,6 +238,7 @@ export function useEmployeesManagement({
     delete: false,
     shift: false,
     resendInvite: false,
+    restore: false,
   })
 
   const loadEmployees = useCallback(
@@ -243,7 +247,8 @@ export function useEmployeesManagement({
       setLoading(true)
       setError('')
       try {
-        const data = await listAllEmployees(currentFilters)
+        const apiFilters = status ? { ...currentFilters, status } : currentFilters
+        const data = await listAllEmployees(apiFilters)
         const normalized = (data || []).map((item, index) => normalizeEmployee(item, index))
         setEmployees(normalized)
         setMeta({
@@ -266,7 +271,7 @@ export function useEmployeesManagement({
         setLoading(false)
       }
     },
-    [enabled, onListError, t],
+    [enabled, status, onListError, t],
   )
 
   const loadShifts = useCallback(async () => {
@@ -419,6 +424,11 @@ export function useEmployeesManagement({
     [runMutation],
   )
 
+  const restoreEmployeeEntry = useCallback(
+    (id) => runMutation('restore', () => restoreEmployee(id)),
+    [runMutation],
+  )
+
   return {
     employees,
     filteredEmployees,
@@ -443,5 +453,6 @@ export function useEmployeesManagement({
     deleteEmployeeEntry,
     assignShiftEntry,
     resendEmployeeInviteEntry,
+    restoreEmployeeEntry,
   }
 }
