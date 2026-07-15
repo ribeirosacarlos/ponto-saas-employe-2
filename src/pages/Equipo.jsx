@@ -14,6 +14,7 @@ import {
   Pencil,
   Plus,
   RefreshCcw,
+  RotateCcw,
   Search,
   ShieldAlert,
   Trash2,
@@ -575,6 +576,8 @@ export default function Equipo() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [showShiftPreview, setShowShiftPreview] = useState(false)
   const [isPayingExtraEmployees, setIsPayingExtraEmployees] = useState(false)
+  const [activeTab, setActiveTab] = useState('active')
+  const [restoreTarget, setRestoreTarget] = useState(null)
 
   const roleOptions = useMemo(
     () =>
@@ -649,12 +652,18 @@ export default function Equipo() {
     deleteEmployeeEntry,
     assignShiftEntry,
     resendEmployeeInviteEntry,
+    restoreEmployeeEntry,
   } = useEmployeesManagement({
     t,
     enabled: hasManagementAccess,
+    status: activeTab === 'inactive' ? 'inactive' : undefined,
     onListError: handleListError,
     onShiftsError: handleShiftsError,
   })
+
+  useEffect(() => {
+    setPage(1)
+  }, [activeTab, setPage])
 
   useEffect(() => {
     if (createOpen || editOpen || assignOpen) {
@@ -907,6 +916,47 @@ export default function Equipo() {
     })
   }
 
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget?.id) return
+    const result = await restoreEmployeeEntry(restoreTarget.id)
+    if (result.ok) {
+      const restoredEmployee = result.result
+      const hasRole = Boolean(restoredEmployee?.role)
+      toast({
+        title: hasRole
+          ? t('equipoPage.toasts.restoreSuccess.title')
+          : t('equipoPage.toasts.restoreSuccessNoRole.title'),
+        description: hasRole
+          ? t('equipoPage.toasts.restoreSuccess.description')
+          : t('equipoPage.toasts.restoreSuccessNoRole.description'),
+        variant: 'success',
+      })
+      setRestoreTarget(null)
+      await refreshEmployees(page)
+      await reloadOverview()
+      return
+    }
+
+    const status = result.error?.response?.status
+    const message = result.error?.response?.data?.message || result.error?.message
+
+    if (status === 404) {
+      toast({
+        title: t('equipoPage.toasts.restoreError.title'),
+        description: message || t('equipoPage.toasts.restoreError.description'),
+        variant: 'error',
+      })
+      await refreshEmployees(page)
+      return
+    }
+
+    toast({
+      title: t('equipoPage.toasts.restoreError.title'),
+      description: message || t('equipoPage.toasts.restoreError.description'),
+      variant: 'error',
+    })
+  }
+
   const handleAssignOpen = (employee) => {
     if (!employee?.id) return
     setAssignEmployee(employee)
@@ -1131,9 +1181,37 @@ export default function Equipo() {
                 <h2 className="text-sm font-semibold">{t('equipoPage.table.title')}</h2>
               </div>
             </div>
-            <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-              {t('equipoPage.table.count', { count: filteredEmployees.length })}
-            </span>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-xl border border-border/70 bg-background/60 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('active')}
+                  className={cn(
+                    'rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition',
+                    activeTab === 'active'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {t('equipoPage.tabs.active')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inactive')}
+                  className={cn(
+                    'rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition',
+                    activeTab === 'inactive'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {t('equipoPage.tabs.inactive')}
+                </button>
+              </div>
+              <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                {t('equipoPage.table.count', { count: filteredEmployees.length })}
+              </span>
+            </div>
           </div>
 
           <div className="mt-4 space-y-4">
@@ -1187,8 +1265,11 @@ export default function Equipo() {
                       mutationLoading.delete ||
                       mutationLoading.edit ||
                       mutationLoading.shift ||
-                      mutationLoading.resendInvite
+                      mutationLoading.resendInvite ||
+                      mutationLoading.restore
                     const isDisabled = !employee.id || isBusy
+                    const isInactive = activeTab === 'inactive'
+                    const hasNoRole = isInactive && !employee.role
                     return (
                       <div
                         key={employee.id}
@@ -1209,6 +1290,11 @@ export default function Equipo() {
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                               <span>{formatRole(employee.role)}</span>
+                              {hasNoRole ? (
+                                <span className="rounded-full border border-amber-300/70 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                  {t('equipoPage.badges.noRole')}
+                                </span>
+                              ) : null}
                               <span>
                                 {employee.area_name || employee.areaName || t('equipoPage.table.emptyArea')}
                               </span>
@@ -1220,8 +1306,12 @@ export default function Equipo() {
                                     .join(', ')}
                                 </span>
                               ) : null}
-                              <span>{formatDate(employee.createdAt)}</span>
-                              {employee.shiftId || employee.shiftName ? (
+                              <span>
+                                {isInactive
+                                  ? formatDate(employee.deleted_at)
+                                  : formatDate(employee.createdAt)}
+                              </span>
+                              {!isInactive && (employee.shiftId || employee.shiftName) ? (
                                 <span className="rounded-full border border-emerald-200/70 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                                   {t('equipoPage.badges.shiftAssigned')}
                                 </span>
@@ -1230,19 +1320,37 @@ export default function Equipo() {
                           </div>
                         </div>
                         <div className="mt-3 flex justify-end">
-                          <EmployeeActionsMenu
-                            disabled={isDisabled}
-                            showResendFirstAccessEmail={Boolean(
-                              employee.must_change_password ?? employee.mustChangePassword,
-                            )}
-                            resendInviteLoading={mutationLoading.resendInvite}
-                            onEdit={() => handleEditOpen(employee)}
-                            onAssignShift={() => handleAssignOpen(employee)}
-                            onOpenVacations={() => handleOpenEmployeeVacations(employee)}
-                            onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
-                            onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
-                            onDeactivate={() => setDeleteTarget(employee)}
-                          />
+                          {isInactive ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-2xl"
+                              disabled={isDisabled}
+                              onClick={() => setRestoreTarget(employee)}
+                            >
+                              {mutationLoading.restore ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4 text-primary" />
+                              )}
+                              {t('equipoPage.actions.reactivate')}
+                            </Button>
+                          ) : (
+                            <EmployeeActionsMenu
+                              disabled={isDisabled}
+                              showResendFirstAccessEmail={Boolean(
+                                employee.must_change_password ?? employee.mustChangePassword,
+                              )}
+                              resendInviteLoading={mutationLoading.resendInvite}
+                              onEdit={() => handleEditOpen(employee)}
+                              onAssignShift={() => handleAssignOpen(employee)}
+                              onOpenVacations={() => handleOpenEmployeeVacations(employee)}
+                              onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
+                              onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
+                              onDeactivate={() => setDeleteTarget(employee)}
+                            />
+                          )}
                         </div>
                       </div>
                     )
@@ -1259,17 +1367,21 @@ export default function Equipo() {
                         <th className="px-3 py-3">{t('equipoPage.table.headers.role')}</th>
                         <th className="px-3 py-3">{t('equipoPage.table.headers.area')}</th>
                         <th className="px-3 py-3">
-                          <button
-                            type="button"
-                            onClick={handleToggleDateSort}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-inherit transition hover:text-foreground"
-                            aria-label={t('equipoPage.sort.columnAriaLabel', {
-                              column: t('equipoPage.table.headers.createdAt'),
-                            })}
-                          >
-                            <span>{t('equipoPage.table.headers.createdAt')}</span>
-                            {renderDateSortIcon()}
-                          </button>
+                          {activeTab === 'inactive' ? (
+                            <span>{t('equipoPage.table.headers.deletedAt')}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleToggleDateSort}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-inherit transition hover:text-foreground"
+                              aria-label={t('equipoPage.sort.columnAriaLabel', {
+                                column: t('equipoPage.table.headers.createdAt'),
+                              })}
+                            >
+                              <span>{t('equipoPage.table.headers.createdAt')}</span>
+                              {renderDateSortIcon()}
+                            </button>
+                          )}
                         </th>
                         <th className="px-3 py-3 text-right">{t('equipoPage.table.headers.actions')}</th>
                       </tr>
@@ -1280,8 +1392,11 @@ export default function Equipo() {
                           mutationLoading.delete ||
                           mutationLoading.edit ||
                           mutationLoading.shift ||
-                          mutationLoading.resendInvite
+                          mutationLoading.resendInvite ||
+                          mutationLoading.restore
                         const isDisabled = !employee.id || isBusy
+                        const isInactive = activeTab === 'inactive'
+                        const hasNoRole = isInactive && !employee.role
                         return (
                           <tr
                             key={employee.id}
@@ -1293,7 +1408,12 @@ export default function Equipo() {
                                 <p className="font-semibold">
                                   {employee.name || t('equipoPage.table.emptyName')}
                                 </p>
-                                {employee.shiftId || employee.shiftName ? (
+                                {hasNoRole ? (
+                                  <span className="inline-flex w-fit rounded-full border border-amber-300/70 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                    {t('equipoPage.badges.noRole')}
+                                  </span>
+                                ) : null}
+                                {!isInactive && (employee.shiftId || employee.shiftName) ? (
                                   <span className="inline-flex w-fit rounded-full border border-emerald-200/70 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                                     {t('equipoPage.badges.shiftAssigned')}
                                   </span>
@@ -1317,22 +1437,42 @@ export default function Equipo() {
                                 ) : null}
                               </div>
                             </td>
-                            <td className="px-3 py-4">{formatDate(employee.createdAt)}</td>
+                            <td className="px-3 py-4">
+                              {isInactive ? formatDate(employee.deleted_at) : formatDate(employee.createdAt)}
+                            </td>
                             <td className="px-3 py-4">
                               <div className="flex justify-end">
-                                <EmployeeActionsMenu
-                                  disabled={isDisabled}
-                                  showResendFirstAccessEmail={Boolean(
-                                    employee.must_change_password ?? employee.mustChangePassword,
-                                  )}
-                                  resendInviteLoading={mutationLoading.resendInvite}
-                                  onEdit={() => handleEditOpen(employee)}
-                                  onAssignShift={() => handleAssignOpen(employee)}
-                                  onOpenVacations={() => handleOpenEmployeeVacations(employee)}
-                                  onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
-                                  onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
-                                  onDeactivate={() => setDeleteTarget(employee)}
-                                />
+                                {isInactive ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="rounded-2xl"
+                                    disabled={isDisabled}
+                                    onClick={() => setRestoreTarget(employee)}
+                                  >
+                                    {mutationLoading.restore ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <RotateCcw className="h-4 w-4 text-primary" />
+                                    )}
+                                    {t('equipoPage.actions.reactivate')}
+                                  </Button>
+                                ) : (
+                                  <EmployeeActionsMenu
+                                    disabled={isDisabled}
+                                    showResendFirstAccessEmail={Boolean(
+                                      employee.must_change_password ?? employee.mustChangePassword,
+                                    )}
+                                    resendInviteLoading={mutationLoading.resendInvite}
+                                    onEdit={() => handleEditOpen(employee)}
+                                    onAssignShift={() => handleAssignOpen(employee)}
+                                    onOpenVacations={() => handleOpenEmployeeVacations(employee)}
+                                    onOpenAdjustments={() => handleOpenEmployeeAdjustments(employee)}
+                                    onResendFirstAccessEmail={() => handleResendFirstAccessEmail(employee)}
+                                    onDeactivate={() => setDeleteTarget(employee)}
+                                  />
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1684,6 +1824,40 @@ export default function Equipo() {
               {mutationLoading.delete
                 ? t('equipoPage.actions.deactivating')
                 : t('equipoPage.actions.deactivate')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(restoreTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRestoreTarget(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('equipoPage.modals.restoreTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('equipoPage.modals.restoreDescription', {
+                name: restoreTarget?.name || t('equipoPage.table.emptyName'),
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                {t('common.actions.cancel')}
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              disabled={mutationLoading.restore}
+              onClick={handleRestoreConfirm}
+            >
+              {mutationLoading.restore
+                ? t('equipoPage.actions.reactivating')
+                : t('equipoPage.actions.reactivate')}
             </Button>
           </div>
         </DialogContent>

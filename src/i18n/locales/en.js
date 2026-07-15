@@ -2006,11 +2006,17 @@ const en = {
           role: 'Role',
           area: 'Area',
           createdAt: 'Created at',
+          deletedAt: 'Deactivated at',
           actions: 'Actions',
         },
       },
+      tabs: {
+        active: 'Active',
+        inactive: 'Inactive',
+      },
       badges: {
         shiftAssigned: 'Shift assigned',
+        noRole: 'No role',
       },
       pagination: {
         page: 'Page {{page}}',
@@ -2033,6 +2039,8 @@ const en = {
         assigning: 'Assigning...',
         deactivate: 'Deactivate',
         deactivating: 'Removing...',
+        reactivate: 'Reactivate',
+        reactivating: 'Reactivating...',
         retry: 'Try again',
       },
         form: {
@@ -2063,6 +2071,8 @@ const en = {
         assignDescription: 'Choose a shift and start date.',
         deleteTitle: 'Deactivate employee',
         deleteDescription: 'Remove {{name}} from the team?',
+        restoreTitle: 'Reactivate employee',
+        restoreDescription: 'Are you sure you want to reactivate {{name}}? Their system access will be restored.',
       },
       roles: {
         all: 'All roles',
@@ -2157,6 +2167,18 @@ const en = {
         assignError: {
           title: 'Failed to assign shift',
           description: 'We could not assign the shift.',
+        },
+        restoreSuccess: {
+          title: 'Employee reactivated',
+          description: 'The employee has been reactivated successfully.',
+        },
+        restoreSuccessNoRole: {
+          title: 'Employee reactivated',
+          description: 'Reactivated without a role. Please set the role in the edit screen.',
+        },
+        restoreError: {
+          title: 'Failed to reactivate',
+          description: 'We could not reactivate the employee.',
         },
       },
       states: {

@@ -2114,11 +2114,17 @@ const ptBR = {
           role: 'Perfil',
           area: 'Área',
           createdAt: 'Criado em',
+          deletedAt: 'Desativado em',
           actions: 'Ações',
         },
       },
+      tabs: {
+        active: 'Ativos',
+        inactive: 'Inativos',
+      },
       badges: {
         shiftAssigned: 'Jornada atribuida',
+        noRole: 'Sem cargo',
       },
       pagination: {
         page: 'Página {{page}}',
@@ -2141,6 +2147,8 @@ const ptBR = {
         assigning: 'Atribuindo...',
         deactivate: 'Desativar',
         deactivating: 'Removendo...',
+        reactivate: 'Reativar',
+        reactivating: 'Reativando...',
         retry: 'Tentar novamente',
       },
         form: {
@@ -2171,6 +2179,8 @@ const ptBR = {
         assignDescription: 'Defina a jornada e a data de inicio.',
         deleteTitle: 'Remover colaborador',
         deleteDescription: 'Deseja remover {{name}} do quadro?',
+        restoreTitle: 'Reativar colaborador',
+        restoreDescription: 'Tem certeza que deseja reativar {{name}}? O acesso ao sistema será restaurado.',
       },
       roles: {
         all: 'Todos os papéis',
@@ -2265,6 +2275,18 @@ const ptBR = {
         assignError: {
           title: 'Erro ao atribuir jornada',
           description: 'Não foi possível atribuir a jornada.',
+        },
+        restoreSuccess: {
+          title: 'Colaborador reativado',
+          description: 'O colaborador foi reativado com sucesso.',
+        },
+        restoreSuccessNoRole: {
+          title: 'Colaborador reativado',
+          description: 'Reativado sem cargo. Defina o cargo na tela de edição.',
+        },
+        restoreError: {
+          title: 'Erro ao reativar',
+          description: 'Não foi possível reativar o colaborador.',
         },
       },
       states: {

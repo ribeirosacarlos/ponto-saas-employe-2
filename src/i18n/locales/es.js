@@ -2051,11 +2051,17 @@ const es = {
           role: 'Rol',
           area: 'Area',
           createdAt: 'Creado en',
+          deletedAt: 'Desactivado en',
           actions: 'Acciones',
         },
       },
+      tabs: {
+        active: 'Activos',
+        inactive: 'Inactivos',
+      },
       badges: {
         shiftAssigned: 'Jornada asignada',
+        noRole: 'Sin rol',
       },
       pagination: {
         page: 'Pagina {{page}}',
@@ -2078,6 +2084,8 @@ const es = {
         assigning: 'Asignando...',
         deactivate: 'Dar de baja',
         deactivating: 'Eliminando...',
+        reactivate: 'Reactivar',
+        reactivating: 'Reactivando...',
         retry: 'Reintentar',
       },
       form: {
@@ -2108,6 +2116,8 @@ const es = {
         assignDescription: 'Selecciona la jornada y la fecha de inicio.',
         deleteTitle: 'Dar de baja',
         deleteDescription: 'Quieres remover a {{name}} del equipo?',
+        restoreTitle: 'Reactivar colaborador',
+        restoreDescription: '¿Seguro que deseas reactivar a {{name}}? Su acceso al sistema será restaurado.',
       },
       roles: {
         all: 'Todos los roles',
@@ -2202,6 +2212,18 @@ const es = {
         assignError: {
           title: 'Error al asignar jornada',
           description: 'No se pudo asignar la jornada.',
+        },
+        restoreSuccess: {
+          title: 'Colaborador reactivado',
+          description: 'El colaborador fue reactivado con exito.',
+        },
+        restoreSuccessNoRole: {
+          title: 'Colaborador reactivado',
+          description: 'Reactivado sin rol. Define el rol en la pantalla de edicion.',
+        },
+        restoreError: {
+          title: 'Error al reactivar',
+          description: 'No se pudo reactivar el colaborador.',
         },
       },
       states: {
