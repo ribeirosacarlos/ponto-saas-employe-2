@@ -178,6 +178,21 @@ export async function createLead(payload = {}) {
   return result
 }
 
+export async function bulkCreateLeads(leads = []) {
+  const { data } = await api.post(`${BASE}/leads/bulk`, { leads })
+  return {
+    data: (data?.data ?? []).map((item) => ({
+      index: item.index,
+      status: item.status,
+      lead: item.lead ? normalizeLead(item.lead) : null,
+      duplicate_warning: item.duplicate_warning ?? false,
+      possible_duplicates: item.possible_duplicates ?? [],
+      errors: item.errors ?? null,
+    })),
+    meta: data?.meta ?? { total: leads.length, created: 0, failed: 0 },
+  }
+}
+
 export async function updateLead(id, payload = {}) {
   const { data } = await api.put(`${BASE}/leads/${id}`, payload)
   return normalizeLead(data?.data ?? data ?? {})

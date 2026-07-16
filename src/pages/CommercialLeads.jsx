@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   UserCheck,
   XCircle,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ import { cn } from '../lib/utils'
 import {
   addLeadNote,
   assignLead,
+  bulkCreateLeads,
   createLead,
   deleteLead,
   getLead,
@@ -187,6 +189,12 @@ export default function CommercialLeads() {
   // Delete
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Bulk create
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkRows, setBulkRows] = useState([])
+  const [bulkSubmitting, setBulkSubmitting] = useState(false)
+  const [bulkResults, setBulkResults] = useState(null)
 
   const load = useCallback(async (pg = page, q = search, st = statusFilter, pf = pipelineFilter) => {
     if (!hasAccess) return
@@ -512,6 +520,37 @@ export default function CommercialLeads() {
     }
   }
 
+  const buildBulkRow = () => ({ id: crypto.randomUUID(), company_name: '', email: '' })
+
+  const handleOpenBulk = () => {
+    setBulkRows([buildBulkRow(), buildBulkRow()])
+    setBulkResults(null)
+    setBulkOpen(true)
+  }
+
+  const handleBulkCreate = async () => {
+    const leads = bulkRows
+      .filter((r) => r.company_name.trim())
+      .map((r) => ({
+        company_name: r.company_name.trim(),
+        ...(r.email.trim() && { email: r.email.trim() }),
+      }))
+    if (!leads.length) return
+    setBulkSubmitting(true)
+    try {
+      const result = await bulkCreateLeads(leads)
+      setBulkResults(result)
+      if (result.meta.created > 0) {
+        toast({ title: `${result.meta.created} lead(s) criado(s)` })
+        await refreshCurrentView()
+      }
+    } catch {
+      toast({ title: 'Erro', description: 'Falha ao importar leads.', variant: 'error' })
+    } finally {
+      setBulkSubmitting(false)
+    }
+  }
+
   if (!hasAccess) {
     return (
       <PageContainer>
@@ -555,6 +594,12 @@ export default function CommercialLeads() {
                   Kanban
                 </button>
               </div>
+              {hasManage && (
+                <Button variant="outline" size="sm" onClick={handleOpenBulk}>
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  Importar
+                </Button>
+              )}
               <Button size="sm" onClick={handleOpenCreate}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Novo lead
@@ -793,6 +838,125 @@ export default function CommercialLeads() {
           </div>
         )}
       </div>
+
+      {/* Bulk Create Dialog */}
+      <Dialog open={bulkOpen} onOpenChange={(o) => { if (!bulkSubmitting) setBulkOpen(o) }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar leads em massa</DialogTitle>
+          </DialogHeader>
+
+          {!bulkResults ? (
+            <>
+              <p className="text-[11px] text-muted-foreground">
+                Preencha empresa e e-mail para cada lead. Máximo de 100 por vez. Cada linha é processada independentemente.
+              </p>
+              <div className="flex flex-col gap-2 max-h-[340px] overflow-y-auto py-1 pr-1">
+                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 pb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Empresa *</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">E-mail</span>
+                  <span />
+                </div>
+                {bulkRows.map((row, i) => (
+                  <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                    <input
+                      className={formControlClass}
+                      placeholder="Acme Ltda"
+                      value={row.company_name}
+                      onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, company_name: e.target.value } : r))}
+                    />
+                    <input
+                      type="email"
+                      className={formControlClass}
+                      placeholder="contato@acme.com"
+                      value={row.email}
+                      onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, email: e.target.value } : r))}
+                    />
+                    <button
+                      type="button"
+                      disabled={bulkRows.length <= 1}
+                      onClick={() => setBulkRows((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive disabled:opacity-30"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={bulkRows.length >= 100}
+                onClick={() => setBulkRows((prev) => [...prev, buildBulkRow()])}
+                className="flex items-center gap-1.5 text-[11px] text-primary hover:underline disabled:opacity-40 self-start"
+              >
+                <Plus className="h-3 w-3" />
+                Adicionar linha
+              </button>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setBulkOpen(false)}>Cancelar</Button>
+                <Button
+                  size="sm"
+                  onClick={handleBulkCreate}
+                  disabled={bulkSubmitting || !bulkRows.some((r) => r.company_name.trim())}
+                >
+                  {bulkSubmitting ? 'Enviando...' : `Importar ${bulkRows.filter((r) => r.company_name.trim()).length} lead(s)`}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-[12px]">
+                <span className="font-semibold text-emerald-600">{bulkResults.meta.created} criado(s)</span>
+                {bulkResults.meta.failed > 0 && (
+                  <span className="font-semibold text-destructive">{bulkResults.meta.failed} com erro</span>
+                )}
+                <span className="text-muted-foreground">de {bulkResults.meta.total} total</span>
+              </div>
+              <div className="flex flex-col gap-1.5 max-h-[340px] overflow-y-auto pr-1">
+                {bulkResults.data.map((item) => {
+                  const originalRow = bulkRows[item.index]
+                  const label = item.lead?.company_name ?? originalRow?.company_name ?? `#${item.index + 1}`
+                  return (
+                    <div
+                      key={item.index}
+                      className={cn(
+                        'flex items-start gap-2.5 rounded-lg border px-3 py-2 text-[11px]',
+                        item.status === 'created'
+                          ? 'border-emerald-300/40 bg-emerald-500/8'
+                          : 'border-destructive/30 bg-destructive/8',
+                      )}
+                    >
+                      {item.status === 'created'
+                        ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                        : <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                      }
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{label}</p>
+                        {item.status === 'error' && item.errors && (
+                          <p className="text-destructive mt-0.5">
+                            {Object.values(item.errors).flat().join(' · ')}
+                          </p>
+                        )}
+                        {item.status === 'created' && item.duplicate_warning && (
+                          <p className="text-amber-600 mt-0.5">
+                            ⚠️ Possível duplicata detectada
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => { setBulkResults(null); setBulkRows([buildBulkRow(), buildBulkRow()]) }}>
+                  Nova importação
+                </Button>
+                <Button size="sm" onClick={() => setBulkOpen(false)}>Fechar</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create / Edit Lead Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
