@@ -1233,6 +1233,7 @@ const en = {
         subtitle: 'Fast glance at planned vs. recorded time.',
         planned: 'Planned hours',
         recorded: 'Recorded hours',
+        totalBank: 'Time bank (total)',
         bank: 'Time bank (month)',
         todayBadge: 'Today',
       },

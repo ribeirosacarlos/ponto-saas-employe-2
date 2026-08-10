@@ -1277,6 +1277,7 @@ const es = {
         subtitle: 'Vista rápida de horas planeadas y registradas.',
         planned: 'Horas previstas',
         recorded: 'Horas registradas',
+        totalBank: 'Banco de horas (total)',
         bank: 'Banco de horas (mes)',
         todayBadge: 'Hoy',
         hoursWorked: 'Horas trabajadas',

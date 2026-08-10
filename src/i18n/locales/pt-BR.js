@@ -1340,6 +1340,7 @@ const ptBR = {
         subtitle: 'Visão rápida do planejado x registrado.',
         planned: 'Horas previstas',
         recorded: 'Horas registradas',
+        totalBank: 'Banco de horas (total)',
         bank: 'Banco de horas (mês)',
         todayBadge: 'Hoje',
         hoursWorked: 'Horas trabalhadas',

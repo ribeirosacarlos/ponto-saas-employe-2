@@ -44,7 +44,6 @@ export default function TimeClock({ onContinueToDashboard }) {
   const {
     formatDate,
     formatTime,
-    formatDateForApi,
     isSameDay,
     toCompanyZonedParts,
     tz: companyTimezone,
@@ -70,6 +69,8 @@ export default function TimeClock({ onContinueToDashboard }) {
   const [plannedLoading, setPlannedLoading] = useState(false)
   const [overtimeMinutes, setOvertimeMinutes] = useState(null)
   const [overtimeHhmm, setOvertimeHhmm] = useState(null)
+  const [totalOvertimeMinutes, setTotalOvertimeMinutes] = useState(null)
+  const [totalOvertimeHhmm, setTotalOvertimeHhmm] = useState(null)
   const [overtimeLoading, setOvertimeLoading] = useState(false)
   const [recentEntries, setRecentEntries] = useState([])
   const [todayPendingAdjustments, setTodayPendingAdjustments] = useState([])
@@ -620,6 +621,8 @@ export default function TimeClock({ onContinueToDashboard }) {
         if (active) {
           setOvertimeMinutes(null)
           setOvertimeHhmm(null)
+          setTotalOvertimeMinutes(null)
+          setTotalOvertimeHhmm(null)
           setOvertimeLoading(false)
         }
         return
@@ -633,22 +636,29 @@ export default function TimeClock({ onContinueToDashboard }) {
           month: today.getMonth() + 1,
           day: today.getDate(),
         }
-        const firstDayUtc = new Date(Date.UTC(zonedToday.year, zonedToday.month - 1, 1))
-        const from =
-          formatDateForApi(firstDayUtc) ||
-          `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-01`
-        const to = formatDateForApi(today) || `${zonedToday.year}-${String(zonedToday.month).padStart(2, '0')}-${String(zonedToday.day).padStart(2, '0')}`
-        const balance = await getEmployeeOvertimeBalance(employeeId, { from, to })
+        const month = String(zonedToday.month).padStart(2, '0')
+        const from = `${zonedToday.year}-${month}-01`
+        const lastDayOfMonth = new Date(Date.UTC(zonedToday.year, zonedToday.month, 0)).getUTCDate()
+        const to = `${zonedToday.year}-${month}-${String(lastDayOfMonth).padStart(2, '0')}`
+        const [balance, totalBalance] = await Promise.all([
+          getEmployeeOvertimeBalance(employeeId, { from, to, includeDays: false }),
+          getEmployeeOvertimeBalance(employeeId, { includeDays: false }),
+        ])
         const minutes = balance?.balanceMinutes ?? null
+        const totalMinutes = totalBalance?.balanceMinutes ?? null
 
         if (!active) return
         setOvertimeMinutes(minutes)
         setOvertimeHhmm(balance?.totals?.balanceHhmm ?? balance?.totals?.balance_hhmm ?? null)
+        setTotalOvertimeMinutes(totalMinutes)
+        setTotalOvertimeHhmm(totalBalance?.totals?.balanceHhmm ?? totalBalance?.totals?.balance_hhmm ?? null)
       } catch (error) {
         console.error('[TimeClock] Failed to load overtime balance', error)
         if (!active) return
         setOvertimeMinutes(null)
         setOvertimeHhmm(null)
+        setTotalOvertimeMinutes(null)
+        setTotalOvertimeHhmm(null)
       } finally {
         if (active) setOvertimeLoading(false)
       }
@@ -696,6 +706,19 @@ export default function TimeClock({ onContinueToDashboard }) {
     [getBalanceTone, overtimeLoading, overtimeMinutes],
   )
 
+  const totalOvertimeLabel = useMemo(
+    () =>
+      overtimeLoading
+        ? t('common.loading', 'Carregando...')
+        : (totalOvertimeHhmm ?? formatBalanceToLabel(totalOvertimeMinutes)),
+    [formatBalanceToLabel, overtimeLoading, t, totalOvertimeHhmm, totalOvertimeMinutes],
+  )
+
+  const totalOvertimeTone = useMemo(
+    () => (overtimeLoading ? 'text-muted-foreground' : getBalanceTone(totalOvertimeMinutes)),
+    [getBalanceTone, overtimeLoading, totalOvertimeMinutes],
+  )
+
   const plannedLabel = useMemo(() => {
     if (plannedLoading) return t('common.loading', 'Carregando...')
     if (plannedMinutes === null || plannedMinutes === undefined || Number.isNaN(plannedMinutes)) {
@@ -717,9 +740,10 @@ export default function TimeClock({ onContinueToDashboard }) {
             ? 'text-muted-foreground'
             : 'text-emerald-500 dark:text-emerald-300',
       },
+      { label: t('timeClock.summary.totalBank'), value: totalOvertimeLabel, tone: totalOvertimeTone },
       { label: t('timeClock.summary.bank'), value: overtimeLabel, tone: overtimeTone },
     ],
-    [normalizedStatus, overtimeLabel, overtimeTone, plannedLabel, plannedTone, t, workedTodayLabel],
+    [normalizedStatus, overtimeLabel, overtimeTone, plannedLabel, plannedTone, t, totalOvertimeLabel, totalOvertimeTone, workedTodayLabel],
   )
 
   const handleOpenEntryAdjustment = async (payload, closeModal, resetForm) => {
