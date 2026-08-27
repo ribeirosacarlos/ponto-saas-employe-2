@@ -40,6 +40,7 @@ import CommercialLeads from './pages/CommercialLeads.jsx'
 import CommercialSteps from './pages/CommercialSteps.jsx'
 import CommercialAffiliates from './pages/CommercialAffiliates.jsx'
 import CommercialCommissions from './pages/CommercialCommissions.jsx'
+import CommercialEmailAutomation from './pages/CommercialEmailAutomation.jsx'
 import AffiliateActivate from './pages/AffiliateActivate.jsx'
 import AffiliateForgotPassword from './pages/AffiliateForgotPassword.jsx'
 import AffiliateLogin from './pages/AffiliateLogin.jsx'
@@ -128,6 +129,7 @@ const PAGE_TITLE_CONFIG = {
   commercialSteps: { key: 'sidebar.items.commercialSteps', fallback: 'Etapas do Pipeline' },
   commercialAffiliates: { key: 'sidebar.items.commercialAffiliates', fallback: 'Afiliados' },
   commercialCommissions: { key: 'sidebar.items.commercialCommissions', fallback: 'Comissões e Bônus' },
+  commercialEmailAutomation: { key: 'sidebar.items.commercialEmailAutomation', fallback: 'Automação de E-mail' },
   affiliateOverview: { key: 'sidebar.items.affiliateOverview', fallback: 'Visão Geral' },
   affiliateLeads: { key: 'sidebar.items.affiliateLeads', fallback: 'Meus Leads' },
   affiliateCommissions: { key: 'sidebar.items.affiliateCommissions', fallback: 'Minhas Comissões' },
@@ -726,6 +728,8 @@ export default function App() {
         return <CommercialAffiliates />
       case 'commercialCommissions':
         return <CommercialCommissions />
+      case 'commercialEmailAutomation':
+        return <CommercialEmailAutomation />
       case 'affiliateOverview':
         return <AffiliatePanel key="overview" embeddedMode initialTab="overview" authToken={token} authAffiliate={user} onLogout={handleLogout} />
       case 'affiliateLeads':
