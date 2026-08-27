@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   KanbanSquare,
   List,
+  Mail,
   MessageSquarePlus,
   MoveRight,
   Pencil,
@@ -45,6 +46,15 @@ import {
   updateLead,
 } from '../services/modules/commercial'
 import { LeadKanban } from '../components/commercial/LeadKanban'
+import { EmailStatusBadge, EXIT_REASON_LABELS } from '../components/commercial/EmailStatusBadge'
+import {
+  bulkEnrollLeads,
+  getLeadEmailTimeline,
+  listEmailSequences,
+  markEnrollmentReplied,
+  pauseEnrollment,
+  resumeEnrollment,
+} from '../services/modules/commercialEmails'
 
 const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 const MANAGE_REQUIRES = { anyOf: ['super_admin'] }
@@ -196,6 +206,20 @@ export default function CommercialLeads() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
 
+  // Email enrollment
+  const [selectedLeadIds, setSelectedLeadIds] = useState(new Set())
+  const [enrollOpen, setEnrollOpen] = useState(false)
+  const [enrollTargetIds, setEnrollTargetIds] = useState(new Set())
+  const [eligibleSequences, setEligibleSequences] = useState([])
+  const [enrollSequenceId, setEnrollSequenceId] = useState('')
+  const [enrolling, setEnrolling] = useState(false)
+  const [enrollResults, setEnrollResults] = useState(null)
+
+  // Email timeline (detail dialog)
+  const [emailTimeline, setEmailTimeline] = useState(null)
+  const [emailTimelineLoading, setEmailTimelineLoading] = useState(false)
+  const [pausingEnrollmentId, setPausingEnrollmentId] = useState(null)
+
   const load = useCallback(async (pg = page, q = search, st = statusFilter, pf = pipelineFilter) => {
     if (!hasAccess) return
     setLoading(true)
@@ -244,6 +268,8 @@ export default function CommercialLeads() {
     setDetailLead(null)
     setDetailOpen(true)
     setDetailLoading(true)
+    setEmailTimeline(null)
+    loadEmailTimeline(lead.id)
     try {
       const full = await getLead(lead.id)
       setDetailLead(full)
@@ -252,6 +278,95 @@ export default function CommercialLeads() {
       setDetailOpen(false)
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const loadEmailTimeline = async (leadId) => {
+    setEmailTimelineLoading(true)
+    try {
+      const result = await getLeadEmailTimeline(leadId)
+      setEmailTimeline(result)
+    } catch {
+      setEmailTimeline(null)
+    } finally {
+      setEmailTimelineLoading(false)
+    }
+  }
+
+  // ── Email enrollment ────────────────────────────────────────────────────
+
+  const handleOpenEnroll = async (leadIds) => {
+    setEnrollTargetIds(leadIds)
+    setEnrollSequenceId('')
+    setEnrollResults(null)
+    setEnrollOpen(true)
+    try {
+      const sequences = await listEmailSequences()
+      setEligibleSequences(sequences.filter((s) => s.status === 'active' && s.steps.some((step) => step.is_active)))
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível carregar as sequências.', variant: 'error' })
+    }
+  }
+
+  const handleBulkEnroll = async () => {
+    if (!enrollSequenceId || enrollTargetIds.size === 0) return
+    setEnrolling(true)
+    try {
+      const result = await bulkEnrollLeads(enrollSequenceId, Array.from(enrollTargetIds))
+      setEnrollResults(result)
+      if (result.meta.enrolled > 0) {
+        toast({ title: `${result.meta.enrolled} lead(s) inscrito(s)` })
+      }
+      await refreshCurrentView()
+      if (detailLead && enrollTargetIds.has(detailLead.id)) {
+        await loadEmailTimeline(detailLead.id)
+      }
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao inscrever leads.', variant: 'error' })
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
+  const toggleLeadSelection = (leadId) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(leadId)) next.delete(leadId)
+      else next.add(leadId)
+      return next
+    })
+  }
+
+  const handlePauseEnrollment = async (enrollmentId, reason) => {
+    setPausingEnrollmentId(enrollmentId)
+    try {
+      await pauseEnrollment(enrollmentId, reason)
+      toast({ title: 'Inscrição pausada' })
+      if (detailLead) await loadEmailTimeline(detailLead.id)
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao pausar inscrição.', variant: 'error' })
+    } finally {
+      setPausingEnrollmentId(null)
+    }
+  }
+
+  const handleResumeEnrollment = async (enrollmentId) => {
+    try {
+      await resumeEnrollment(enrollmentId)
+      toast({ title: 'Inscrição retomada' })
+      if (detailLead) await loadEmailTimeline(detailLead.id)
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao retomar inscrição.', variant: 'error' })
+    }
+  }
+
+  const handleMarkReplied = async (enrollmentId) => {
+    try {
+      await markEnrollmentReplied(enrollmentId)
+      toast({ title: 'Marcado como respondido' })
+      if (detailLead) await loadEmailTimeline(detailLead.id)
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao marcar como respondido.', variant: 'error' })
     }
   }
 
@@ -665,6 +780,33 @@ export default function CommercialLeads() {
 
         {viewMode === 'list' && !loading && leads.length > 0 && (
           <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 px-1">
+              <input
+                type="checkbox"
+                checked={leads.length > 0 && leads.every((l) => selectedLeadIds.has(l.id))}
+                onChange={(e) => {
+                  setSelectedLeadIds(e.target.checked ? new Set(leads.map((l) => l.id)) : new Set())
+                }}
+              />
+              <span className="text-[10px] text-muted-foreground">Selecionar todos visíveis</span>
+            </div>
+
+            {selectedLeadIds.size > 0 && (
+              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-[12px]">
+                <span className="font-semibold">{selectedLeadIds.size} selecionado(s)</span>
+                <Button size="sm" disabled={selectedLeadIds.size > 200} onClick={() => handleOpenEnroll(new Set(selectedLeadIds))}>
+                  <Mail className="mr-1.5 h-3.5 w-3.5" />
+                  Inscrever em sequência
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedLeadIds(new Set())}>
+                  Limpar seleção
+                </Button>
+                {selectedLeadIds.size > 200 && (
+                  <span className="text-destructive text-[11px]">Máximo de 200 leads por inscrição.</span>
+                )}
+              </div>
+            )}
+
             {leads.map((lead) => {
               const isOverdue = !isLeadFinal(lead) && lead.current_stage_is_overdue === true
               return (
@@ -678,6 +820,11 @@ export default function CommercialLeads() {
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedLeadIds.has(lead.id)}
+                          onChange={() => toggleLeadSelection(lead.id)}
+                        />
                         <button
                           type="button"
                           className="text-left text-[13px] font-semibold hover:text-primary transition-colors"
@@ -1157,11 +1304,198 @@ export default function CommercialLeads() {
                   </div>
                 </div>
               )}
+
+              {/* Email timeline */}
+              <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">E-mails</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={emailTimeline?.is_email_suppressed}
+                    onClick={() => handleOpenEnroll(new Set([detailLead.id]))}
+                  >
+                    <Mail className="mr-1.5 h-3.5 w-3.5" />
+                    Inscrever em sequência
+                  </Button>
+                </div>
+
+                {emailTimelineLoading && <p className="text-[11px] text-muted-foreground">Carregando...</p>}
+
+                {!emailTimelineLoading && emailTimeline?.is_email_suppressed && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-300/40 bg-amber-500/10 px-2.5 py-1.5">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                    <p className="text-[11px] text-amber-700">
+                      E-mail deste lead está suprimido (bounce/descadastro) — não é possível inscrever em novas sequências.
+                    </p>
+                  </div>
+                )}
+
+                {!emailTimelineLoading && emailTimeline && emailTimeline.enrollments.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">Nenhuma inscrição em sequência.</p>
+                )}
+
+                {!emailTimelineLoading && emailTimeline?.enrollments?.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {[...emailTimeline.enrollments]
+                      .sort((a, b) => new Date(b.enrolled_at ?? 0) - new Date(a.enrolled_at ?? 0))
+                      .map((enrollment) => {
+                        const isLive = enrollment.status === 'active' || enrollment.status === 'paused'
+                        return (
+                          <div
+                            key={enrollment.id}
+                            className={cn(
+                              'flex flex-col gap-1.5 rounded-lg border px-3 py-2',
+                              isLive ? 'border-primary/30 bg-primary/5' : 'border-border/50 bg-muted/30 opacity-80',
+                            )}
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[11px] font-semibold">{enrollment.sequence?.name ?? 'Sequência'}</span>
+                                <EmailStatusBadge status={enrollment.status} kind="enrollment" />
+                              </div>
+                              {enrollment.status === 'active' && (
+                                <div className="flex items-center gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-[10px]"
+                                    disabled={pausingEnrollmentId === enrollment.id}
+                                    onClick={() => handlePauseEnrollment(enrollment.id)}
+                                  >
+                                    Pausar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="h-6 px-2 text-[10px]"
+                                    onClick={() => handleMarkReplied(enrollment.id)}
+                                  >
+                                    Marcar como respondido
+                                  </Button>
+                                </div>
+                              )}
+                              {enrollment.status === 'paused' && (
+                                <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => handleResumeEnrollment(enrollment.id)}>
+                                  Retomar
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              {enrollment.current_step?.name && `Etapa atual: ${enrollment.current_step.name}`}
+                              {enrollment.next_step?.name && ` → ${enrollment.next_step.name}`}
+                            </p>
+                            {enrollment.next_send_at && (
+                              <p className="text-[10px] text-muted-foreground">
+                                Próximo envio: {new Date(enrollment.next_send_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                              </p>
+                            )}
+                            {enrollment.status === 'paused' && enrollment.pause_reason && (
+                              <p className="text-[10px] text-amber-600">Pausado: {enrollment.pause_reason}</p>
+                            )}
+                            {enrollment.exit_reason && (
+                              <p className="text-[10px] text-muted-foreground">
+                                Motivo de saída: {EXIT_REASON_LABELS[enrollment.exit_reason] ?? enrollment.exit_reason}
+                              </p>
+                            )}
+                            {enrollment.sends.length > 0 && (
+                              <div className="flex flex-col gap-1 pt-1">
+                                {enrollment.sends.map((send) => (
+                                  <div key={send.id} className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                    <span className="truncate">{send.rendered_subject ?? send.template?.name ?? 'E-mail'}</span>
+                                    <EmailStatusBadge status={send.status} kind="send" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDetailOpen(false)}>Fechar</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enroll in Sequence Dialog */}
+      <Dialog open={enrollOpen} onOpenChange={(o) => { if (!enrolling) setEnrollOpen(o) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inscrever em sequência ({enrollTargetIds.size} lead{enrollTargetIds.size === 1 ? '' : 's'})</DialogTitle>
+          </DialogHeader>
+
+          {!enrollResults ? (
+            <>
+              {eligibleSequences.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground py-2">
+                  Nenhuma sequência ativa e elegível encontrada. Crie e ative uma sequência com pelo menos um passo ativo na aba "Automação de E-mail".
+                </p>
+              ) : (
+                <div className="flex flex-col gap-1 py-2">
+                  <label className="text-[11px] font-medium text-muted-foreground">Sequência *</label>
+                  <select className={formControlClass} value={enrollSequenceId} onChange={(e) => setEnrollSequenceId(e.target.value)}>
+                    <option value="">Selecione...</option>
+                    {eligibleSequences.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setEnrollOpen(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleBulkEnroll} disabled={enrolling || !enrollSequenceId}>
+                  {enrolling ? 'Inscrevendo...' : 'Inscrever'}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-[12px]">
+                <span className="font-semibold text-emerald-600">{enrollResults.meta.enrolled} inscrito(s)</span>
+                {enrollResults.meta.failed > 0 && (
+                  <span className="font-semibold text-destructive">{enrollResults.meta.failed} com erro</span>
+                )}
+                <span className="text-muted-foreground">de {enrollResults.meta.total} total</span>
+              </div>
+              <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto pr-1">
+                {enrollResults.data.map((item) => {
+                  const lead = leads.find((l) => l.id === item.lead_id)
+                  const label = lead?.company_name ?? (item.lead_id ?? `#${item.index + 1}`)
+                  return (
+                    <div
+                      key={item.index}
+                      className={cn(
+                        'flex items-start gap-2.5 rounded-lg border px-3 py-2 text-[11px]',
+                        item.status === 'enrolled'
+                          ? 'border-emerald-300/40 bg-emerald-500/8'
+                          : 'border-destructive/30 bg-destructive/8',
+                      )}
+                    >
+                      {item.status === 'enrolled'
+                        ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                        : <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                      }
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{label}</p>
+                        {item.status === 'error' && item.errors && (
+                          <p className="text-destructive mt-0.5">
+                            {Object.values(item.errors).flat().join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <DialogFooter>
+                <Button size="sm" onClick={() => { setEnrollOpen(false); setSelectedLeadIds(new Set()) }}>Fechar</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

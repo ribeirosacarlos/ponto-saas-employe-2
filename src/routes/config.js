@@ -120,6 +120,10 @@ export const ROUTES = {
     path: '/commercial/commissions',
     guard: { anyOf: ['super_admin'] },
   },
+  commercialEmailAutomation: {
+    path: '/commercial/email-automation',
+    guard: { anyOf: ['super_admin'] },
+  },
   affiliateOverview: {
     path: '/affiliate/overview',
     aliases: ['/affiliate/panel'],
