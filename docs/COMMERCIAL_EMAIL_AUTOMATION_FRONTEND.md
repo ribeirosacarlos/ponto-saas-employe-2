@@ -231,6 +231,56 @@ Um lead pode ter mais de um `enrollment` (histórico de sequências passadas + u
 
 ---
 
+## 4.5. Dashboard geral (todas as inscrições / todos os envios)
+
+A timeline da seção 4 é por lead (dentro da tela de detalhe). Estes dois endpoints são a visão **geral**, tipo "todos os e-mails comerciais cadastrados/enviados no sistema" — pensados para uma tela de dashboard/relatório, fora do contexto de um lead específico. `commercial_agent` só vê os próprios leads em ambos; manager/super_admin veem tudo.
+
+### Todas as inscrições
+
+`GET /admin/commercial/email/enrollments`
+
+Query opcional: `status` (`active`/`paused`/`completed`/`cancelled`), `sequence_id`, `email` (busca parcial no e-mail do lead), `per_page` (default 20).
+
+```json
+{ "data": [
+  {
+    "id": "uuid", "lead_id": "uuid", "sequence_id": "uuid",
+    "status": "active", "exit_reason": null,
+    "current_step_id": "uuid-step-1", "next_step_id": "uuid-step-2",
+    "next_send_at": "2026-09-02T11:00:00-03:00",
+    "enrolled_at": "2026-08-30T14:00:00-03:00",
+    "lead": { "id": "uuid", "company_name": "Acme", "contact_name": "João Silva", "email": "joao@acme.test", "assigned_to_user_id": "uuid" },
+    "sequence": { "id": "uuid", "name": "Outbound España — Equipos externos" },
+    "current_step": { "id": "uuid-step-1", "name": "Dia 1 - Primer contacto", "position": 1 },
+    "next_step": { "id": "uuid-step-2", "name": "Dia 3 - Registro horario", "position": 2 }
+  }
+], "links": { "...": "paginação padrão Laravel" }, "meta": { "...": "paginação padrão Laravel" } }
+```
+
+### Todos os envios
+
+`GET /admin/commercial/email/sends`
+
+Query opcional: `status` (`queued`/`sent`/`delivered`/`opened`/`clicked`/`bounced`/`complained`/`failed`/`cancelled`), `email` (busca parcial no destinatário), `enrollment_id`, `per_page` (default 20).
+
+```json
+{ "data": [
+  {
+    "id": "uuid", "enrollment_id": "uuid", "to_email": "joao@acme.test",
+    "rendered_subject": "Olá João", "status": "delivered",
+    "sent_at": "2026-08-30T14:05:00-03:00", "delivered_at": "2026-08-30T14:05:30-03:00",
+    "opened_at": null, "failure_reason": null,
+    "lead": { "id": "uuid", "company_name": "Acme", "contact_name": "João Silva", "assigned_to_user_id": "uuid" },
+    "template": { "id": "uuid", "name": "Primeiro contato" },
+    "sequence_step": { "id": "uuid", "position": 1, "name": "Dia 1 - Primer contacto", "sequence": { "id": "uuid", "name": "Outbound España — Equipos externos" } }
+  }
+], "links": { "...": "paginação padrão Laravel" }, "meta": { "...": "paginação padrão Laravel" } }
+```
+
+Ambos retornam paginação padrão do Laravel (`links`/`meta` com `current_page`, `last_page`, `total`, etc.) — igual à listagem de leads que o front já consome.
+
+---
+
 ## 5. Configurações globais (Settings)
 
 Tela separada, só para manager/super_admin — kill switch e limites de envio.

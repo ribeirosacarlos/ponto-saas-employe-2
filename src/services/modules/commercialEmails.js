@@ -88,6 +88,70 @@ const normalizeEnrollment = (e = {}, index = 0) => ({
   sends: Array.isArray(e.sends) ? e.sends.map((send, i) => normalizeSend(send, i)) : [],
 })
 
+const normalizeLeadSummary = (l = {}) => ({
+  id: l.id ?? '',
+  company_name: l.company_name ?? '',
+  contact_name: l.contact_name ?? null,
+  email: l.email ?? null,
+  assigned_to_user_id: l.assigned_to_user_id ?? null,
+})
+
+const normalizeSequenceSummary = (s = {}) => ({
+  id: s.id ?? '',
+  name: s.name ?? '',
+})
+
+const normalizeStepSummary = (s = {}) => ({
+  id: s.id ?? '',
+  name: s.name ?? null,
+  position: s.position ?? null,
+  sequence: s.sequence ? normalizeSequenceSummary(s.sequence) : null,
+})
+
+const normalizePaginated = (data, fallbackPage = 1) => {
+  const payload = data?.data ?? data
+  const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+  const metaSource = payload?.meta ?? data?.meta ?? payload ?? {}
+  const meta = {
+    currentPage: metaSource.current_page ?? metaSource.currentPage ?? fallbackPage,
+    perPage: metaSource.per_page ?? metaSource.perPage ?? 20,
+    total: metaSource.total ?? 0,
+    lastPage: metaSource.last_page ?? metaSource.lastPage ?? 1,
+  }
+  return { items, meta }
+}
+
+const normalizeEnrollmentListItem = (e = {}, index = 0) => ({
+  id: e.id ?? `enrollment-${index}`,
+  lead_id: e.lead_id ?? null,
+  sequence_id: e.sequence_id ?? null,
+  status: e.status ?? 'active',
+  exit_reason: e.exit_reason ?? null,
+  current_step_id: e.current_step_id ?? null,
+  next_step_id: e.next_step_id ?? null,
+  next_send_at: e.next_send_at ?? null,
+  enrolled_at: e.enrolled_at ?? null,
+  lead: e.lead ? normalizeLeadSummary(e.lead) : null,
+  sequence: e.sequence ? normalizeSequenceSummary(e.sequence) : null,
+  current_step: e.current_step ? normalizeStepSummary(e.current_step) : null,
+  next_step: e.next_step ? normalizeStepSummary(e.next_step) : null,
+})
+
+const normalizeSendListItem = (s = {}, index = 0) => ({
+  id: s.id ?? `send-${index}`,
+  enrollment_id: s.enrollment_id ?? null,
+  to_email: s.to_email ?? null,
+  rendered_subject: s.rendered_subject ?? null,
+  status: s.status ?? 'queued',
+  sent_at: s.sent_at ?? null,
+  delivered_at: s.delivered_at ?? null,
+  opened_at: s.opened_at ?? null,
+  failure_reason: s.failure_reason ?? null,
+  lead: s.lead ? normalizeLeadSummary(s.lead) : null,
+  template: s.template ? { id: s.template.id ?? '', name: s.template.name ?? '' } : null,
+  sequence_step: s.sequence_step ? normalizeStepSummary(s.sequence_step) : null,
+})
+
 const normalizeEmailTimeline = (payload = {}) => ({
   is_email_suppressed: !!payload.is_email_suppressed,
   enrollments: Array.isArray(payload.enrollments) ? payload.enrollments.map((e, i) => normalizeEnrollment(e, i)) : [],
@@ -226,6 +290,34 @@ export async function markEnrollmentReplied(id) {
 export async function getLeadEmailTimeline(leadId) {
   const { data } = await api.get(`${BASE}/leads/${leadId}/email-timeline`)
   return normalizeEmailTimeline(data?.data ?? data ?? {})
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard geral (todas as inscrições / todos os envios)
+// ---------------------------------------------------------------------------
+
+export async function listAllEmailEnrollments(params = {}) {
+  const query = { page: params.page ?? 1 }
+  if (params.per_page) query.per_page = params.per_page
+  if (params.status) query.status = params.status
+  if (params.sequence_id) query.sequence_id = params.sequence_id
+  if (params.email) query.email = params.email
+
+  const { data } = await api.get(`${EMAIL_BASE}/enrollments`, { params: query })
+  const { items, meta } = normalizePaginated(data, query.page)
+  return { data: items.map((e, i) => normalizeEnrollmentListItem(e, i)), meta }
+}
+
+export async function listAllEmailSends(params = {}) {
+  const query = { page: params.page ?? 1 }
+  if (params.per_page) query.per_page = params.per_page
+  if (params.status) query.status = params.status
+  if (params.email) query.email = params.email
+  if (params.enrollment_id) query.enrollment_id = params.enrollment_id
+
+  const { data } = await api.get(`${EMAIL_BASE}/sends`, { params: query })
+  const { items, meta } = normalizePaginated(data, query.page)
+  return { data: items.map((s, i) => normalizeSendListItem(s, i)), meta }
 }
 
 // ---------------------------------------------------------------------------
