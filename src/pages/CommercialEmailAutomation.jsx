@@ -8,6 +8,7 @@ import { cn } from '../lib/utils'
 import { EmailTemplatesTab } from '../components/commercial/EmailTemplatesTab'
 import { EmailSequencesTab } from '../components/commercial/EmailSequencesTab'
 import { EmailSendsTab } from '../components/commercial/EmailSendsTab'
+import { EmailEnrollmentsTab } from '../components/commercial/EmailEnrollmentsTab'
 import { EmailSettingsTab } from '../components/commercial/EmailSettingsTab'
 import { getEmailSettings } from '../services/modules/commercialEmails'
 
@@ -16,6 +17,7 @@ const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 const TABS = [
   { value: 'templates', label: 'Templates' },
   { value: 'sequences', label: 'Sequências' },
+  { value: 'enrollments', label: 'Inscrições' },
   { value: 'sends', label: 'Enviados' },
   { value: 'settings', label: 'Configurações' },
 ]
@@ -89,6 +91,7 @@ export default function CommercialEmailAutomation() {
 
         {activeTab === 'templates' && <EmailTemplatesTab />}
         {activeTab === 'sequences' && <EmailSequencesTab />}
+        {activeTab === 'enrollments' && <EmailEnrollmentsTab />}
         {activeTab === 'sends' && <EmailSendsTab />}
         {activeTab === 'settings' && <EmailSettingsTab onSettingsChange={setSettings} />}
       </div>
