@@ -7,6 +7,7 @@ import { canRenderCard, getCapabilitiesFromRoles } from '../auth/acl'
 import { cn } from '../lib/utils'
 import { EmailTemplatesTab } from '../components/commercial/EmailTemplatesTab'
 import { EmailSequencesTab } from '../components/commercial/EmailSequencesTab'
+import { EmailSendsTab } from '../components/commercial/EmailSendsTab'
 import { EmailSettingsTab } from '../components/commercial/EmailSettingsTab'
 import { getEmailSettings } from '../services/modules/commercialEmails'
 
@@ -15,6 +16,7 @@ const ACCESS_REQUIRES = { anyOf: ['super_admin'] }
 const TABS = [
   { value: 'templates', label: 'Templates' },
   { value: 'sequences', label: 'Sequências' },
+  { value: 'sends', label: 'Enviados' },
   { value: 'settings', label: 'Configurações' },
 ]
 
@@ -87,6 +89,7 @@ export default function CommercialEmailAutomation() {
 
         {activeTab === 'templates' && <EmailTemplatesTab />}
         {activeTab === 'sequences' && <EmailSequencesTab />}
+        {activeTab === 'sends' && <EmailSendsTab />}
         {activeTab === 'settings' && <EmailSettingsTab onSettingsChange={setSettings} />}
       </div>
     </PageContainer>
