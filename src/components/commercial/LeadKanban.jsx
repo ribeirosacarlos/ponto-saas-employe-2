@@ -693,6 +693,15 @@ export function LeadKanban({
 
           {!detailLoading && detailData && (
             <div className="flex flex-col gap-4 py-2">
+              {/* Contact quick view */}
+              {(detailData.contact_name || detailData.email || detailData.phone) && (
+                <div className="-mt-2 flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
+                  {detailData.contact_name && <span>{detailData.contact_name}</span>}
+                  {detailData.email && <span>{detailData.email}</span>}
+                  {detailData.phone && <span>{detailData.phone}</span>}
+                </div>
+              )}
+
               {/* Status / step / priority */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase', STATUS_BADGE[detailData.status] ?? 'bg-muted text-muted-foreground')}>
