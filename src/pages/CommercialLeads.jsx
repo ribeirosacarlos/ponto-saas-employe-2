@@ -52,6 +52,7 @@ import { EmailStatusBadge, EXIT_REASON_LABELS } from '../components/commercial/E
 import {
   bulkEnrollLeads,
   getLeadEmailTimeline,
+  listAllEmailEnrollments,
   listEmailSequences,
   markEnrollmentReplied,
   pauseEnrollment,
@@ -101,10 +102,19 @@ const PIPELINE_FILTERS = [
   { value: 'nurturing', label: 'Nutrição', apiIsOverdue: null, apiStatus: 'nurturing', localFn: null },
   { value: 'won', label: 'Fechado ganho', apiIsOverdue: null, apiStatus: 'won', localFn: null },
   { value: 'lost', label: 'Fechado perdido', apiIsOverdue: null, apiStatus: 'lost', localFn: null },
+  // 'no_email_automation' é local mas depende de enrolledLeadIds (estado assíncrono), por isso não tem localFn aqui —
+  // é resolvido em applyPipelineLocalFilter, dentro do componente.
+  { value: 'no_email_automation', label: 'Sem e-mail automático', apiIsOverdue: null, apiStatus: null, localFn: null },
 ]
 
 const isLeadFinal = (lead) =>
   lead.status === 'won' || lead.status === 'lost' || lead.current_step?.is_final === true
+
+const applyPipelineLocalFilter = (sorted, activePf, enrolledLeadIds) => {
+  if (activePf?.localFn) return sorted.filter(activePf.localFn)
+  if (activePf?.value === 'no_email_automation') return sorted.filter((l) => !enrolledLeadIds.has(l.id))
+  return sorted
+}
 
 const sortLeads = (leads) =>
   [...leads].sort((a, b) => {
@@ -163,6 +173,9 @@ export default function CommercialLeads() {
   const [loading, setLoading] = useState(true)
 
   const [steps, setSteps] = useState([])
+
+  // IDs de leads já inscritos em pelo menos uma sequência de e-mail (para o filtro "Sem e-mail automático")
+  const [enrolledLeadIds, setEnrolledLeadIds] = useState(new Set())
 
   // Lead form dialog
   const [formOpen, setFormOpen] = useState(false)
@@ -232,7 +245,7 @@ export default function CommercialLeads() {
     setLoading(true)
     try {
       const activePf = PIPELINE_FILTERS.find((f) => f.value === pf)
-      const isLocalFilter = !!(activePf?.localFn)
+      const isLocalFilter = !!(activePf?.localFn) || activePf?.value === 'no_email_automation'
       const result = await listLeads({
         page: isLocalFilter ? 1 : pg,
         per_page: isLocalFilter ? 300 : undefined,
@@ -241,7 +254,7 @@ export default function CommercialLeads() {
         is_overdue: activePf?.apiIsOverdue ?? undefined,
       })
       const sorted = sortLeads(result.data)
-      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      const filtered = applyPipelineLocalFilter(sorted, activePf, enrolledLeadIds)
       setLeads(filtered)
       setMeta(isLocalFilter ? null : result.meta)
     } catch (err) {
@@ -250,12 +263,34 @@ export default function CommercialLeads() {
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, page, search, statusFilter, pipelineFilter, toast])
+  }, [hasAccess, page, search, statusFilter, pipelineFilter, enrolledLeadIds, toast])
 
   useEffect(() => {
     if (!hasAccess) return
     listSteps().then(setSteps).catch(() => {})
   }, [hasAccess])
+
+  const loadEnrolledLeadIds = useCallback(async () => {
+    if (!hasAccess) return
+    try {
+      const ids = new Set()
+      let page = 1
+      let lastPage = 1
+      do {
+        const result = await listAllEmailEnrollments({ page, per_page: 200 })
+        result.data.forEach((e) => { if (e.lead_id) ids.add(e.lead_id) })
+        lastPage = result.meta?.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage && page <= 20)
+      setEnrolledLeadIds(ids)
+    } catch {
+      // filtro "Sem e-mail automático" fica indisponível silenciosamente se a listagem de inscrições falhar
+    }
+  }, [hasAccess])
+
+  useEffect(() => {
+    loadEnrolledLeadIds()
+  }, [loadEnrolledLeadIds])
 
   const handleOpenCreate = () => {
     setFormMode('create')
@@ -323,6 +358,7 @@ export default function CommercialLeads() {
       setEnrollResults(result)
       if (result.meta.enrolled > 0) {
         toast({ title: `${result.meta.enrolled} lead(s) inscrito(s)` })
+        await loadEnrolledLeadIds()
       }
       await refreshCurrentView()
       if (detailLead && enrollTargetIds.has(detailLead.id)) {
@@ -526,14 +562,14 @@ export default function CommercialLeads() {
       ])
       setSteps(stepsResult ?? [])
       const sorted = sortLeads(leadsResult.data ?? [])
-      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      const filtered = applyPipelineLocalFilter(sorted, activePf, enrolledLeadIds)
       setLeads(filtered)
     } catch {
       toast({ title: 'Erro', description: 'Não foi possível carregar o pipeline.', variant: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, search, statusFilter, pipelineFilter, toast])
+  }, [hasAccess, search, statusFilter, pipelineFilter, enrolledLeadIds, toast])
 
   const refreshCurrentView = useCallback(async () => {
     if (viewMode === 'kanban') {
