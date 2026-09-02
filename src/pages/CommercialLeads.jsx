@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   CheckCircle2,
+  Check,
+  Copy,
   KanbanSquare,
   List,
   Mail,
@@ -209,6 +211,7 @@ export default function CommercialLeads() {
   const [bulkSubmittedLeads, setBulkSubmittedLeads] = useState([])
   const [bulkSubmitting, setBulkSubmitting] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Email enrollment
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set())
@@ -658,6 +661,51 @@ export default function CommercialLeads() {
     }
   ]
 }`
+
+  const BULK_JSON_PROMPT = `Gere um JSON para importação em massa de leads comerciais, seguindo exatamente este formato:
+
+{
+  "leads": [
+    {
+      "company_name": "Padaria do João",
+      "contact_name": "João Silva",
+      "email": "joao@padaria.com",
+      "phone": "11999998888"
+    },
+    {
+      "company_name": "Mercado Central",
+      "whatsapp": "11988887777",
+      "city": "São Paulo",
+      "segment": "varejo",
+      "source": "indicação"
+    }
+  ]
+}
+
+Regras:
+- A raiz do JSON deve ser um objeto com a chave "leads", contendo um array de objetos (um por lead).
+- O único campo obrigatório em cada lead é "company_name" (nome da empresa).
+- Os demais campos são opcionais e só devem aparecer se você tiver a informação — não invente valores:
+  contact_name (nome do contato), email, phone (telefone), whatsapp, website,
+  google_maps_place_id, country (código do país, ex: "BR"), city (cidade), segment (segmento/ramo),
+  employees_count (número de funcionários, inteiro), source (origem do lead, ex: "indicação", "google"),
+  general_notes (observações gerais), priority ("low", "medium", "high" ou "very_high"),
+  status ("new", "in_progress", "demo_scheduled", "proposal_sent", "won", "lost" ou "nurturing").
+- Máximo de 100 leads no array.
+- Responda APENAS com o JSON válido, sem texto antes ou depois, sem comentários e sem markdown (sem \`\`\`json).
+
+Dados dos leads que quero importar:
+[cole aqui a lista de empresas/contatos, uma por linha ou como preferir]`
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(BULK_JSON_PROMPT)
+      setPromptCopied(true)
+      setTimeout(() => setPromptCopied(false), 2000)
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível copiar o prompt.', variant: 'error' })
+    }
+  }
 
   const handleOpenBulk = () => {
     setBulkMode('manual')
@@ -1134,8 +1182,38 @@ export default function CommercialLeads() {
                 </>
               ) : (
                 <>
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium">
+                        Não sabe montar o JSON? Copie o prompt abaixo e mande para o ChatGPT junto com os dados dos leads —
+                        ele devolve o JSON pronto para colar aqui.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 shrink-0 px-2 text-[10px]"
+                        onClick={handleCopyPrompt}
+                      >
+                        {promptCopied ? (
+                          <>
+                            <Check className="mr-1 h-3 w-3 text-emerald-600" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="mr-1 h-3 w-3" />
+                            Copiar prompt
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <pre className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-background/60 px-2.5 py-2 text-[10px] leading-snug text-muted-foreground">
+                      {BULK_JSON_PROMPT}
+                    </pre>
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Cole um array de leads (ou um objeto <code>{'{ "leads": [...] }'}</code>). Apenas <strong>company_name</strong> é
+                    Ou cole diretamente um array de leads (ou um objeto <code>{'{ "leads": [...] }'}</code>). Apenas <strong>company_name</strong> é
                     obrigatório — os demais campos (contact_name, email, phone, whatsapp, website, google_maps_place_id, country,
                     city, segment, employees_count, source, general_notes, priority, status, assigned_to_user_id,
                     current_step_id, affiliate_id) são opcionais. Máximo de 100 leads por vez.
