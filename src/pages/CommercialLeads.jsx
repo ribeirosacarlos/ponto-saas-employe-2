@@ -202,7 +202,11 @@ export default function CommercialLeads() {
 
   // Bulk create
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkMode, setBulkMode] = useState('manual') // 'manual' | 'json'
   const [bulkRows, setBulkRows] = useState([])
+  const [bulkJsonText, setBulkJsonText] = useState('')
+  const [bulkJsonError, setBulkJsonError] = useState(null)
+  const [bulkSubmittedLeads, setBulkSubmittedLeads] = useState([])
   const [bulkSubmitting, setBulkSubmitting] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
 
@@ -637,20 +641,82 @@ export default function CommercialLeads() {
 
   const buildBulkRow = () => ({ id: crypto.randomUUID(), company_name: '', email: '' })
 
+  const BULK_JSON_PLACEHOLDER = `{
+  "leads": [
+    {
+      "company_name": "Padaria do João",
+      "contact_name": "João Silva",
+      "email": "joao@padaria.com",
+      "phone": "11999998888"
+    },
+    {
+      "company_name": "Mercado Central",
+      "whatsapp": "11988887777",
+      "city": "São Paulo",
+      "segment": "varejo",
+      "source": "indicação"
+    }
+  ]
+}`
+
   const handleOpenBulk = () => {
+    setBulkMode('manual')
     setBulkRows([buildBulkRow(), buildBulkRow()])
+    setBulkJsonText('')
+    setBulkJsonError(null)
     setBulkResults(null)
     setBulkOpen(true)
   }
 
+  const parseBulkJson = () => {
+    setBulkJsonError(null)
+    if (!bulkJsonText.trim()) {
+      setBulkJsonError('Cole um JSON com os leads a importar.')
+      return null
+    }
+    let parsed
+    try {
+      parsed = JSON.parse(bulkJsonText)
+    } catch (err) {
+      setBulkJsonError(`JSON inválido: ${err.message}`)
+      return null
+    }
+    const arr = Array.isArray(parsed) ? parsed : parsed?.leads
+    if (!Array.isArray(arr)) {
+      setBulkJsonError('O JSON deve ser um array de leads ou um objeto com a chave "leads".')
+      return null
+    }
+    if (arr.length === 0) {
+      setBulkJsonError('Nenhum lead encontrado no JSON.')
+      return null
+    }
+    if (arr.length > 100) {
+      setBulkJsonError(`Máximo de 100 leads por importação (encontrados: ${arr.length}).`)
+      return null
+    }
+    const invalidIndex = arr.findIndex((item) => !item || typeof item !== 'object' || !`${item.company_name ?? ''}`.trim())
+    if (invalidIndex !== -1) {
+      setBulkJsonError(`O item ${invalidIndex + 1} não tem "company_name" preenchido.`)
+      return null
+    }
+    return arr
+  }
+
   const handleBulkCreate = async () => {
-    const leads = bulkRows
-      .filter((r) => r.company_name.trim())
-      .map((r) => ({
-        company_name: r.company_name.trim(),
-        ...(r.email.trim() && { email: r.email.trim() }),
-      }))
+    let leads
+    if (bulkMode === 'json') {
+      leads = parseBulkJson()
+      if (!leads) return
+    } else {
+      leads = bulkRows
+        .filter((r) => r.company_name.trim())
+        .map((r) => ({
+          company_name: r.company_name.trim(),
+          ...(r.email.trim() && { email: r.email.trim() }),
+        }))
+    }
     if (!leads.length) return
+    setBulkSubmittedLeads(leads)
     setBulkSubmitting(true)
     try {
       const result = await bulkCreateLeads(leads)
@@ -659,8 +725,8 @@ export default function CommercialLeads() {
         toast({ title: `${result.meta.created} lead(s) criado(s)` })
         await refreshCurrentView()
       }
-    } catch {
-      toast({ title: 'Erro', description: 'Falha ao importar leads.', variant: 'error' })
+    } catch (err) {
+      toast({ title: 'Erro', description: err?.response?.data?.message ?? 'Falha ao importar leads.', variant: 'error' })
     } finally {
       setBulkSubmitting(false)
     }
@@ -995,59 +1061,117 @@ export default function CommercialLeads() {
 
           {!bulkResults ? (
             <>
-              <p className="text-[11px] text-muted-foreground">
-                Preencha empresa e e-mail para cada lead. Máximo de 100 por vez. Cada linha é processada independentemente.
-              </p>
-              <div className="flex flex-col gap-2 max-h-[340px] overflow-y-auto py-1 pr-1">
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 pb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Empresa *</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">E-mail</span>
-                  <span />
-                </div>
-                {bulkRows.map((row, i) => (
-                  <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                    <input
-                      className={formControlClass}
-                      placeholder="Acme Ltda"
-                      value={row.company_name}
-                      onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, company_name: e.target.value } : r))}
-                    />
-                    <input
-                      type="email"
-                      className={formControlClass}
-                      placeholder="contato@acme.com"
-                      value={row.email}
-                      onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, email: e.target.value } : r))}
-                    />
-                    <button
-                      type="button"
-                      disabled={bulkRows.length <= 1}
-                      onClick={() => setBulkRows((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive disabled:opacity-30"
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 self-start">
+                <button
+                  type="button"
+                  onClick={() => setBulkMode('manual')}
+                  className={cn(
+                    'flex h-6 items-center gap-1 rounded-md px-2.5 text-[10px] font-medium transition-colors',
+                    bulkMode === 'manual' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  Formulário
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkMode('json')}
+                  className={cn(
+                    'flex h-6 items-center gap-1 rounded-md px-2.5 text-[10px] font-medium transition-colors',
+                    bulkMode === 'json' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  Colar JSON
+                </button>
               </div>
-              <button
-                type="button"
-                disabled={bulkRows.length >= 100}
-                onClick={() => setBulkRows((prev) => [...prev, buildBulkRow()])}
-                className="flex items-center gap-1.5 text-[11px] text-primary hover:underline disabled:opacity-40 self-start"
-              >
-                <Plus className="h-3 w-3" />
-                Adicionar linha
-              </button>
+
+              {bulkMode === 'manual' ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    Preencha empresa e e-mail para cada lead. Máximo de 100 por vez. Cada linha é processada independentemente.
+                    Para importar outros campos (telefone, whatsapp, cidade, segmento, prioridade etc.), use a aba "Colar JSON".
+                  </p>
+                  <div className="flex flex-col gap-2 max-h-[340px] overflow-y-auto py-1 pr-1">
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2 pb-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Empresa *</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">E-mail</span>
+                      <span />
+                    </div>
+                    {bulkRows.map((row, i) => (
+                      <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                        <input
+                          className={formControlClass}
+                          placeholder="Acme Ltda"
+                          value={row.company_name}
+                          onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, company_name: e.target.value } : r))}
+                        />
+                        <input
+                          type="email"
+                          className={formControlClass}
+                          placeholder="contato@acme.com"
+                          value={row.email}
+                          onChange={(e) => setBulkRows((prev) => prev.map((r, idx) => idx === i ? { ...r, email: e.target.value } : r))}
+                        />
+                        <button
+                          type="button"
+                          disabled={bulkRows.length <= 1}
+                          onClick={() => setBulkRows((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive disabled:opacity-30"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={bulkRows.length >= 100}
+                    onClick={() => setBulkRows((prev) => [...prev, buildBulkRow()])}
+                    className="flex items-center gap-1.5 text-[11px] text-primary hover:underline disabled:opacity-40 self-start"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Adicionar linha
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    Cole um array de leads (ou um objeto <code>{'{ "leads": [...] }'}</code>). Apenas <strong>company_name</strong> é
+                    obrigatório — os demais campos (contact_name, email, phone, whatsapp, website, google_maps_place_id, country,
+                    city, segment, employees_count, source, general_notes, priority, status, assigned_to_user_id,
+                    current_step_id, affiliate_id) são opcionais. Máximo de 100 leads por vez.
+                  </p>
+                  <textarea
+                    className={cn(formControlClass, 'h-64 resize-none font-mono text-[11px] leading-snug')}
+                    value={bulkJsonText}
+                    onChange={(e) => { setBulkJsonText(e.target.value); setBulkJsonError(null) }}
+                    placeholder={BULK_JSON_PLACEHOLDER}
+                    spellCheck={false}
+                  />
+                  {bulkJsonError && (
+                    <p className="text-[11px] text-destructive">{bulkJsonError}</p>
+                  )}
+                </>
+              )}
+
               <DialogFooter>
                 <Button variant="outline" size="sm" onClick={() => setBulkOpen(false)}>Cancelar</Button>
-                <Button
-                  size="sm"
-                  onClick={handleBulkCreate}
-                  disabled={bulkSubmitting || !bulkRows.some((r) => r.company_name.trim())}
-                >
-                  {bulkSubmitting ? 'Enviando...' : `Importar ${bulkRows.filter((r) => r.company_name.trim()).length} lead(s)`}
-                </Button>
+                {bulkMode === 'manual' ? (
+                  <Button
+                    size="sm"
+                    onClick={handleBulkCreate}
+                    disabled={bulkSubmitting || !bulkRows.some((r) => r.company_name.trim())}
+                  >
+                    {bulkSubmitting ? 'Enviando...' : `Importar ${bulkRows.filter((r) => r.company_name.trim()).length} lead(s)`}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleBulkCreate}
+                    disabled={bulkSubmitting || !bulkJsonText.trim()}
+                  >
+                    {bulkSubmitting ? 'Enviando...' : 'Importar JSON'}
+                  </Button>
+                )}
               </DialogFooter>
             </>
           ) : (
@@ -1061,7 +1185,7 @@ export default function CommercialLeads() {
               </div>
               <div className="flex flex-col gap-1.5 max-h-[340px] overflow-y-auto pr-1">
                 {bulkResults.data.map((item) => {
-                  const originalRow = bulkRows[item.index]
+                  const originalRow = bulkSubmittedLeads[item.index]
                   const label = item.lead?.company_name ?? originalRow?.company_name ?? `#${item.index + 1}`
                   return (
                     <div
@@ -1095,7 +1219,7 @@ export default function CommercialLeads() {
                 })}
               </div>
               <DialogFooter>
-                <Button variant="outline" size="sm" onClick={() => { setBulkResults(null); setBulkRows([buildBulkRow(), buildBulkRow()]) }}>
+                <Button variant="outline" size="sm" onClick={() => { setBulkResults(null); setBulkRows([buildBulkRow(), buildBulkRow()]); setBulkJsonText(''); setBulkJsonError(null) }}>
                   Nova importação
                 </Button>
                 <Button size="sm" onClick={() => setBulkOpen(false)}>Fechar</Button>
