@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   CheckCircle2,
+  Check,
+  Copy,
   KanbanSquare,
   List,
   Mail,
@@ -50,6 +52,7 @@ import { EmailStatusBadge, EXIT_REASON_LABELS } from '../components/commercial/E
 import {
   bulkEnrollLeads,
   getLeadEmailTimeline,
+  listAllEmailEnrollments,
   listEmailSequences,
   markEnrollmentReplied,
   pauseEnrollment,
@@ -99,10 +102,19 @@ const PIPELINE_FILTERS = [
   { value: 'nurturing', label: 'Nutrição', apiIsOverdue: null, apiStatus: 'nurturing', localFn: null },
   { value: 'won', label: 'Fechado ganho', apiIsOverdue: null, apiStatus: 'won', localFn: null },
   { value: 'lost', label: 'Fechado perdido', apiIsOverdue: null, apiStatus: 'lost', localFn: null },
+  // 'no_email_automation' é local mas depende de enrolledLeadIds (estado assíncrono), por isso não tem localFn aqui —
+  // é resolvido em applyPipelineLocalFilter, dentro do componente.
+  { value: 'no_email_automation', label: 'Sem e-mail automático', apiIsOverdue: null, apiStatus: null, localFn: null },
 ]
 
 const isLeadFinal = (lead) =>
   lead.status === 'won' || lead.status === 'lost' || lead.current_step?.is_final === true
+
+const applyPipelineLocalFilter = (sorted, activePf, enrolledLeadIds) => {
+  if (activePf?.localFn) return sorted.filter(activePf.localFn)
+  if (activePf?.value === 'no_email_automation') return sorted.filter((l) => !enrolledLeadIds.has(l.id))
+  return sorted
+}
 
 const sortLeads = (leads) =>
   [...leads].sort((a, b) => {
@@ -162,6 +174,9 @@ export default function CommercialLeads() {
 
   const [steps, setSteps] = useState([])
 
+  // IDs de leads já inscritos em pelo menos uma sequência de e-mail (para o filtro "Sem e-mail automático")
+  const [enrolledLeadIds, setEnrolledLeadIds] = useState(new Set())
+
   // Lead form dialog
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState('create')
@@ -209,6 +224,7 @@ export default function CommercialLeads() {
   const [bulkSubmittedLeads, setBulkSubmittedLeads] = useState([])
   const [bulkSubmitting, setBulkSubmitting] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Email enrollment
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set())
@@ -229,7 +245,7 @@ export default function CommercialLeads() {
     setLoading(true)
     try {
       const activePf = PIPELINE_FILTERS.find((f) => f.value === pf)
-      const isLocalFilter = !!(activePf?.localFn)
+      const isLocalFilter = !!(activePf?.localFn) || activePf?.value === 'no_email_automation'
       const result = await listLeads({
         page: isLocalFilter ? 1 : pg,
         per_page: isLocalFilter ? 300 : undefined,
@@ -238,7 +254,7 @@ export default function CommercialLeads() {
         is_overdue: activePf?.apiIsOverdue ?? undefined,
       })
       const sorted = sortLeads(result.data)
-      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      const filtered = applyPipelineLocalFilter(sorted, activePf, enrolledLeadIds)
       setLeads(filtered)
       setMeta(isLocalFilter ? null : result.meta)
     } catch (err) {
@@ -247,12 +263,34 @@ export default function CommercialLeads() {
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, page, search, statusFilter, pipelineFilter, toast])
+  }, [hasAccess, page, search, statusFilter, pipelineFilter, enrolledLeadIds, toast])
 
   useEffect(() => {
     if (!hasAccess) return
     listSteps().then(setSteps).catch(() => {})
   }, [hasAccess])
+
+  const loadEnrolledLeadIds = useCallback(async () => {
+    if (!hasAccess) return
+    try {
+      const ids = new Set()
+      let page = 1
+      let lastPage = 1
+      do {
+        const result = await listAllEmailEnrollments({ page, per_page: 200 })
+        result.data.forEach((e) => { if (e.lead_id) ids.add(e.lead_id) })
+        lastPage = result.meta?.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage && page <= 20)
+      setEnrolledLeadIds(ids)
+    } catch {
+      // filtro "Sem e-mail automático" fica indisponível silenciosamente se a listagem de inscrições falhar
+    }
+  }, [hasAccess])
+
+  useEffect(() => {
+    loadEnrolledLeadIds()
+  }, [loadEnrolledLeadIds])
 
   const handleOpenCreate = () => {
     setFormMode('create')
@@ -320,6 +358,7 @@ export default function CommercialLeads() {
       setEnrollResults(result)
       if (result.meta.enrolled > 0) {
         toast({ title: `${result.meta.enrolled} lead(s) inscrito(s)` })
+        await loadEnrolledLeadIds()
       }
       await refreshCurrentView()
       if (detailLead && enrollTargetIds.has(detailLead.id)) {
@@ -523,14 +562,14 @@ export default function CommercialLeads() {
       ])
       setSteps(stepsResult ?? [])
       const sorted = sortLeads(leadsResult.data ?? [])
-      const filtered = activePf?.localFn ? sorted.filter(activePf.localFn) : sorted
+      const filtered = applyPipelineLocalFilter(sorted, activePf, enrolledLeadIds)
       setLeads(filtered)
     } catch {
       toast({ title: 'Erro', description: 'Não foi possível carregar o pipeline.', variant: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, search, statusFilter, pipelineFilter, toast])
+  }, [hasAccess, search, statusFilter, pipelineFilter, enrolledLeadIds, toast])
 
   const refreshCurrentView = useCallback(async () => {
     if (viewMode === 'kanban') {
@@ -658,6 +697,51 @@ export default function CommercialLeads() {
     }
   ]
 }`
+
+  const BULK_JSON_PROMPT = `Gere um JSON para importação em massa de leads comerciais, seguindo exatamente este formato:
+
+{
+  "leads": [
+    {
+      "company_name": "Padaria do João",
+      "contact_name": "João Silva",
+      "email": "joao@padaria.com",
+      "phone": "11999998888"
+    },
+    {
+      "company_name": "Mercado Central",
+      "whatsapp": "11988887777",
+      "city": "São Paulo",
+      "segment": "varejo",
+      "source": "indicação"
+    }
+  ]
+}
+
+Regras:
+- A raiz do JSON deve ser um objeto com a chave "leads", contendo um array de objetos (um por lead).
+- O único campo obrigatório em cada lead é "company_name" (nome da empresa).
+- Os demais campos são opcionais e só devem aparecer se você tiver a informação — não invente valores:
+  contact_name (nome do contato), email, phone (telefone), whatsapp, website,
+  google_maps_place_id, country (código do país, ex: "BR"), city (cidade), segment (segmento/ramo),
+  employees_count (número de funcionários, inteiro), source (origem do lead, ex: "indicação", "google"),
+  general_notes (observações gerais), priority ("low", "medium", "high" ou "very_high"),
+  status ("new", "in_progress", "demo_scheduled", "proposal_sent", "won", "lost" ou "nurturing").
+- Máximo de 100 leads no array.
+- Responda APENAS com o JSON válido, sem texto antes ou depois, sem comentários e sem markdown (sem \`\`\`json).
+
+Dados dos leads que quero importar:
+[cole aqui a lista de empresas/contatos, uma por linha ou como preferir]`
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(BULK_JSON_PROMPT)
+      setPromptCopied(true)
+      setTimeout(() => setPromptCopied(false), 2000)
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível copiar o prompt.', variant: 'error' })
+    }
+  }
 
   const handleOpenBulk = () => {
     setBulkMode('manual')
@@ -1134,8 +1218,38 @@ export default function CommercialLeads() {
                 </>
               ) : (
                 <>
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium">
+                        Não sabe montar o JSON? Copie o prompt abaixo e mande para o ChatGPT junto com os dados dos leads —
+                        ele devolve o JSON pronto para colar aqui.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 shrink-0 px-2 text-[10px]"
+                        onClick={handleCopyPrompt}
+                      >
+                        {promptCopied ? (
+                          <>
+                            <Check className="mr-1 h-3 w-3 text-emerald-600" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="mr-1 h-3 w-3" />
+                            Copiar prompt
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <pre className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-background/60 px-2.5 py-2 text-[10px] leading-snug text-muted-foreground">
+                      {BULK_JSON_PROMPT}
+                    </pre>
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Cole um array de leads (ou um objeto <code>{'{ "leads": [...] }'}</code>). Apenas <strong>company_name</strong> é
+                    Ou cole diretamente um array de leads (ou um objeto <code>{'{ "leads": [...] }'}</code>). Apenas <strong>company_name</strong> é
                     obrigatório — os demais campos (contact_name, email, phone, whatsapp, website, google_maps_place_id, country,
                     city, segment, employees_count, source, general_notes, priority, status, assigned_to_user_id,
                     current_step_id, affiliate_id) são opcionais. Máximo de 100 leads por vez.
