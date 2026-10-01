@@ -150,8 +150,16 @@ export default function EmployeeTimesheets() {
     setLoading(true)
     setError('')
     try {
-      const { items } = await listMyTimesheets({ perPage: 50 })
-      setTimesheets(items)
+      const allItems = []
+      let page = 1
+      let lastPage = 1
+      do {
+        const { items, meta } = await listMyTimesheets({ page, perPage: 100 })
+        allItems.push(...items)
+        lastPage = meta.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage)
+      setTimesheets(allItems)
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Erro ao carregar folhas de ponto.')
     } finally {

@@ -220,8 +220,16 @@ export default function AdminMonthlyClosures() {
     setTimesheetsLoading({})
     setTimesheetsError({})
     try {
-      const { items } = await listMonthlyClosures()
-      setClosures(items)
+      const allItems = []
+      let page = 1
+      let lastPage = 1
+      do {
+        const { items, meta } = await listMonthlyClosures({ page, perPage: 100 })
+        allItems.push(...items)
+        lastPage = meta.lastPage
+        page += 1
+      } while (page <= lastPage)
+      setClosures(allItems)
 
       // Restore deep link from URL
       const urlClosureId = readClosureIdFromUrl()

@@ -100,15 +100,24 @@ export default function AdminHolidays() {
       end: overrides.end ?? filters.end,
     }
     try {
-      const { data, meta: responseMeta } = await listHolidays(params)
+      const allItems = []
+      let page = 1
+      let lastPage = 1
+      do {
+        const { data, meta: responseMeta } = await listHolidays({ ...params, page })
+        allItems.push(...data)
+        lastPage = responseMeta.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage)
+
       const search = (overrides.search ?? filters.search).toLowerCase().trim()
-      const filtered = search ? data.filter((h) => h.name.toLowerCase().includes(search)) : data
+      const filtered = search ? allItems.filter((h) => h.name.toLowerCase().includes(search)) : allItems
       setHolidays(filtered)
       setMeta({
-        currentPage: responseMeta.currentPage ?? 1,
-        perPage: responseMeta.perPage ?? 50,
+        currentPage: 1,
+        perPage: filtered.length || 1,
         total: filtered.length,
-        lastPage: responseMeta.lastPage ?? 1,
+        lastPage: 1,
       })
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || t('holidaysPage.states.loadError')

@@ -44,8 +44,16 @@ export default function AdminAnnouncements({ sidebarOpen = false, onToggleSideba
     setListLoading(true)
     setListError('')
     try {
-      const { data } = await listAdminAnnouncements({ page: 1, perPage: 20 })
-      setAnnouncements(data || [])
+      const allItems = []
+      let page = 1
+      let lastPage = 1
+      do {
+        const { data, meta } = await listAdminAnnouncements({ page, perPage: 100 })
+        allItems.push(...(data || []))
+        lastPage = meta?.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage)
+      setAnnouncements(allItems)
     } catch (error) {
       console.error('[AdminAnnouncements] list error', error)
       setListError('Não foi possível carregar os comunicados.')
