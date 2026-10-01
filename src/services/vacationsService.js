@@ -45,9 +45,10 @@ const normalizeListResponse = (data, fallbackPage = 1) => {
   return { items, meta }
 }
 
-export async function listEmployeeVacations({ page = 1 } = {}) {
+export async function listEmployeeVacations({ page = 1, perPage } = {}) {
   const params = {}
   if (page) params.page = page
+  if (perPage) params.per_page = perPage
 
   const { data } = await api.get('/v1/employee/vacations', { params })
   const { items, meta } = normalizeListResponse(data, page)

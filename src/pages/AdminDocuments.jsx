@@ -311,49 +311,34 @@ export default function AdminDocuments() {
     }
     try {
       const service = tab === 'pending' ? listPending : tab === 'review' ? listReview : listAll
+      const employeeIds = (query.employeeIds || []).length ? query.employeeIds : ['']
 
-      if ((query.employeeIds || []).length > 1) {
-        const results = await Promise.all(
-          query.employeeIds.map((employeeId) =>
-            fetchAllDocumentsByEmployee({
-              service,
-              employeeId,
-              category: query.category,
-              search: query.search,
-            }),
-          ),
-        )
+      const results = await Promise.all(
+        employeeIds.map((employeeId) =>
+          fetchAllDocumentsByEmployee({
+            service,
+            employeeId,
+            category: query.category,
+            search: query.search,
+          }),
+        ),
+      )
 
-        const merged = results
-          .flat()
-          .sort((left, right) => {
-            const leftTime = new Date(left?.updatedAt || left?.createdAt || 0).getTime()
-            const rightTime = new Date(right?.updatedAt || right?.createdAt || 0).getTime()
-            return rightTime - leftTime
-          })
+      const merged = results
+        .flat()
+        .sort((left, right) => {
+          const leftTime = new Date(left?.updatedAt || left?.createdAt || 0).getTime()
+          const rightTime = new Date(right?.updatedAt || right?.createdAt || 0).getTime()
+          return rightTime - leftTime
+        })
 
-        setDocuments(merged)
-        setMeta({
-          currentPage: 1,
-          perPage: merged.length || 10,
-          total: merged.length,
-          lastPage: 1,
-        })
-      } else {
-        const { data, meta: responseMeta } = await service({
-          page: query.page,
-          category: query.category,
-          search: query.search,
-          employeeId: query.employeeIds?.[0] || '',
-        })
-        setDocuments(data)
-        setMeta({
-          currentPage: responseMeta.currentPage || 1,
-          perPage: responseMeta.perPage || 10,
-          total: responseMeta.total || data.length,
-          lastPage: responseMeta.lastPage || 1,
-        })
-      }
+      setDocuments(merged)
+      setMeta({
+        currentPage: 1,
+        perPage: merged.length || 10,
+        total: merged.length,
+        lastPage: 1,
+      })
     } catch (err) {
       const message =
         err?.response?.data?.message || err.message || t('documentsPage.admin.toasts.loadErrorDescription')

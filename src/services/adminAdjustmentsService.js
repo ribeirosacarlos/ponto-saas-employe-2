@@ -121,7 +121,7 @@ export async function rejectAdminAdjustment(id) {
 
 export async function listTeamEntries({
   page = 1,
-  perPage,
+  perPage = 1000,
   userId,
   dateFrom,
   dateTo,

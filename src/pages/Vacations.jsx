@@ -149,8 +149,16 @@ export default function Vacations() {
     setVacationsLoading(true)
     setError('')
     try {
-      const response = await listEmployeeVacations({ page: 1 })
-      setVacations(response.data || [])
+      const allItems = []
+      let page = 1
+      let lastPage = 1
+      do {
+        const response = await listEmployeeVacations({ page, perPage: 100 })
+        allItems.push(...(response.data || []))
+        lastPage = response?.meta?.lastPage ?? 1
+        page += 1
+      } while (page <= lastPage)
+      setVacations(allItems)
     } catch (err) {
       setError(
         err?.response?.data?.message ||

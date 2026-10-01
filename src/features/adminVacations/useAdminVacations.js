@@ -55,16 +55,39 @@ export function useAdminVacations({ enabled = true } = {}) {
     setPendingLoading(true)
     setPendingError('')
     try {
-      const [vacationsResponse, medicalResponse] = await Promise.all([
-        listPendingAdminVacations({ page: 1 }),
-        listAdminMedicalCertificates({ status: 'pending', page: 1, perPage: 100 }),
-      ])
-      setPendingRequests(vacationsResponse.data || [])
-      setPendingMedicalRequests(medicalResponse.data || [])
-      return {
-        vacations: vacationsResponse.data || [],
-        medicalCertificates: medicalResponse.data || [],
+      const fetchAllPendingVacations = async () => {
+        const collected = []
+        let page = 1
+        let lastPage = 1
+        do {
+          const response = await listPendingAdminVacations({ page })
+          collected.push(...(response.data || []))
+          lastPage = response?.meta?.lastPage ?? 1
+          page += 1
+        } while (page <= lastPage)
+        return collected
       }
+
+      const fetchAllPendingMedicalCertificates = async () => {
+        const collected = []
+        let page = 1
+        let lastPage = 1
+        do {
+          const response = await listAdminMedicalCertificates({ status: 'pending', page, perPage: 100 })
+          collected.push(...(response.data || []))
+          lastPage = response?.meta?.lastPage ?? 1
+          page += 1
+        } while (page <= lastPage)
+        return collected
+      }
+
+      const [vacations, medicalCertificates] = await Promise.all([
+        fetchAllPendingVacations(),
+        fetchAllPendingMedicalCertificates(),
+      ])
+      setPendingRequests(vacations)
+      setPendingMedicalRequests(medicalCertificates)
+      return { vacations, medicalCertificates }
     } catch (err) {
       const message =
         err?.response?.data?.message || err?.message || 'Unable to load pending requests.'
